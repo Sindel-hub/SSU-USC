@@ -1,0 +1,448 @@
+<!DOCTYPE html>
+<html lang="en" class="usc-officer-access-pending">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>USC External Programs Module</title>
+    <link rel="stylesheet" href="../shared/css/usc-theme.css?v=officer-readable-1" />
+    <link rel="stylesheet" href="css/programs.css?v=officer-readable-1" />
+    <link rel="stylesheet" href="../shared/css/officer-ui.css?v=instant-shell-2" />
+    <link
+    rel="stylesheet"
+    href="../shared/css/officer-responsive.css?v=officer-readable-1"
+/>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+<link rel="stylesheet" href="../../shared/profile-manager.css" />
+  <script src="../../shared/app-config.js"></script>
+  <script type="module" src="../../shared/auth-guard.js?v=rbac7"></script>
+<link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet" />
+</head>
+
+<body class="officer-app-shell program-management-page">
+    <div class="page">
+        <div class="page-label">Dashboard</div>
+
+        <div class="app-shell">
+            <header class="top-banner">
+                <div class="brand-logos">
+                    <img src="../shared/assets/SSUlogo.webp" alt="Samar State University Logo" class="brand-logo"
+                        onerror="this.style.display='none'" />
+                    <img src="../shared/assets/USClogo.webp" alt="University Student Council Logo"
+                        class="brand-logo" onerror="this.style.display='none'" />
+                </div>
+
+                <div class="brand">
+                    <h1>SSU UNIVERSITY STUDENT COUNCIL</h1>
+                    <p>LEADERSHIP | EXCELLENCE | DISCIPLINE | SERVICE</p>
+                </div>
+            </header>
+
+            <nav class="top-nav officer-global-toolbar">
+
+    <!-- LEFT: sidebar + module search -->
+    <div class="nav-left officer-global-search-wrap">
+
+        <button
+            class="sidebar-toggle"
+            type="button"
+            data-sidebar-toggle
+            aria-label="Open sidebar"
+            aria-expanded="false"
+        >
+            <span class="grid-icon"></span>
+        </button>
+
+
+        <div class="officer-search-box" id="officerSearchBox">
+
+            <div class="officer-search">
+
+                <i
+                    class="fa-solid fa-magnifying-glass"
+                    aria-hidden="true"
+                ></i>
+
+                <input
+                    id="officerQuickSearch"
+                    type="search"
+                    aria-label="Search officer modules"
+                    placeholder="Search modules"
+                    autocomplete="off"
+                />
+
+                <button
+                    class="officer-search-clear"
+                    id="officerSearchClear"
+                    type="button"
+                    aria-label="Clear search"
+                    hidden
+                >
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+
+            </div>
+
+
+            <div
+                class="officer-search-results"
+                id="officerSearchResults"
+                role="listbox"
+                aria-label="Officer module search results"
+                hidden
+            ></div>
+
+        </div>
+
+    </div>
+
+
+    <!-- RIGHT: notifications + profile -->
+    <div class="nav-right">
+
+        <button
+            class="bell officer-bell"
+            type="button"
+            aria-label="Notifications"
+        >
+            <i class="fa-regular fa-bell"></i>
+        </button>
+
+        <div
+            class="avatar"
+            aria-label="Officer profile"
+        ></div>
+
+    </div>
+
+</nav>
+
+            <div class="sidebar-overlay" data-sidebar-overlay></div>
+
+            <main class="layout">
+                <aside class="sidebar officer-reference-sidebar">
+                    <div class="officer-sidebar-mark"><i class="fa-solid fa-user-tie"></i></div>
+                    <nav class="officer-module-nav" aria-label="Officer modules">
+                        <a class="nav-btn" href="../overview/overview.html"><span class="icon"><i class="fa-solid fa-table-columns"></i></span><span>Dashboard</span></a>
+                        <a class="nav-btn" href="../announcements/announcements.html"><span class="icon"><i class="fa-solid fa-note-sticky"></i></span><span>Bulletin Board Center</span></a>
+                        <a class="nav-btn" href="../elections/elections.html"><span class="icon"><i class="fa-regular fa-rectangle-list"></i></span><span>Election Management</span></a>
+                        <a class="nav-btn" href="../events/events.html"><span class="icon"><i class="fa-regular fa-calendar"></i></span><span>Events</span></a>
+                        <a class="nav-btn active" href="../programs/programs.html"><span class="icon"><i class="fa-solid fa-earth-americas"></i></span><span>Programs</span></a>
+                        <a class="nav-btn" href="../organizational-chart/organizational-chart.html"><span class="icon"><i class="fa-solid fa-users"></i></span><span>Organizational Chart</span></a>
+                        <a class="nav-btn" href="../complaints/complaints.html"><span class="icon"><i class="fa-solid fa-message"></i></span><span>Complaints Management</span></a>
+                    </nav>
+                    <button class="nav-btn logout-btn" type="button" onclick="logoutOfficer()"><span class="icon"><i class="fa-solid fa-right-from-bracket"></i></span><span>Logout</span></button>
+                </aside>
+
+                <section class="main">
+                    <section class="hero">
+                        <div class="hero-left">
+                            <div class="hero-title">
+                                <div class="module-hero-heading">
+                                    <span class="module-hero-icon" aria-hidden="true"><i class="fa-solid fa-earth-americas"></i></span>
+                                    <div>
+                                        <span class="module-hero-kicker">EXTERNAL PROGRAM CONTROL CENTER</span>
+                                        <h1>External Programs & Participation Module</h1>
+                                        <p>Publish off-campus opportunities, partner activities, and external programs that students can join beyond the university.</p>
+                                    </div>
+                                </div>
+                                <div class="hero-tag">External engagement</div>
+                            </div>
+
+                            <div class="stats module-summary-stats" aria-label="Event statistics">
+                                <article class="stat-card module-stat-card">
+                                    <div class="module-stat-icon" aria-hidden="true"><i class="fa-regular fa-calendar-plus"></i></div>
+                                    <div class="module-stat-copy">
+                                        <div class="stat-label">Upcoming Programs</div>
+                                        <div class="stat-value" id="upcomingEventCount">0</div>
+                                        <div class="stat-sub">Future external schedules</div>
+                                    </div>
+                                </article>
+
+                                <article class="stat-card module-stat-card">
+                                    <div class="module-stat-icon" aria-hidden="true"><i class="fa-solid fa-bullhorn"></i></div>
+                                    <div class="module-stat-copy">
+                                        <div class="stat-label">Published Programs</div>
+                                        <div class="stat-value blue" id="publishedEventCount">0</div>
+                                        <div class="stat-sub">Live program posts</div>
+                                    </div>
+                                </article>
+
+                                <article class="stat-card module-stat-card">
+                                    <div class="module-stat-icon" aria-hidden="true"><i class="fa-regular fa-bell"></i></div>
+                                    <div class="module-stat-copy">
+                                        <div class="stat-label">Reminders Enabled</div>
+                                        <div class="stat-value" id="reminderEnabledCount">0</div>
+                                        <div class="stat-sub">Auto-reminder ready</div>
+                                    </div>
+                                </article>
+
+                                <article class="stat-card module-stat-card">
+                                    <div class="module-stat-icon" aria-hidden="true"><i class="fa-solid fa-user-check"></i></div>
+                                    <div class="module-stat-copy">
+                                        <div class="stat-label">Website Registrations</div>
+                                        <div class="stat-value green" id="confirmedAttendanceCount">0</div>
+                                        <div class="stat-sub">Student self-registration</div>
+                                    </div>
+                                </article>
+                            </div>
+
+                            <div class="hero-actions">
+                                <button class="btn primary" type="button" id="scrollToEventFormBtn" data-rbac-permission="programs.manage"><i class="fa-solid fa-circle-plus" aria-hidden="true"></i> Create Program</button>
+                                <button class="btn light" type="button" data-nav="../overview/overview.html"><i class="fa-solid fa-arrow-left" aria-hidden="true"></i> Back to Dashboard</button>
+                            </div>
+                        </div>
+
+                        <div class="side-panel">
+                            <div class="panel-head module-panel-head">
+                                <div class="module-card-title"><span class="module-card-icon"><i class="fa-solid fa-circle-info"></i></span><div><h3>Program Publishing Notes</h3><small>External opportunity guidance</small></div></div>
+                                <span class="panel-link"><i class="fa-solid fa-signal"></i> Live schedule</span>
+                            </div>
+
+                            <div class="activity">
+                                <div class="activity-item">
+                                    <div class="activity-function-icon"><i class="fa-solid fa-handshake"></i></div>
+                                    <div class="activity-text">
+                                        <strong>Outside-university participation</strong>
+                                        <span>Choose portal registration, an external organizer link, or no registration for each published program.</span>
+                                    </div>
+                                </div>
+
+                                <div class="activity-item">
+                                    <div class="activity-function-icon"><i class="fa-solid fa-hourglass-half"></i></div>
+                                    <div class="activity-text">
+                                        <strong>Registration deadlines</strong>
+                                        <span>Portal registrations automatically close at the deadline you set, while program reminders surface the deadline to students.</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+
+                    <section class="module-workflow-strip" aria-label="Program publishing workflow">
+                        <article class="module-workflow-step">
+                            <span class="workflow-number">1</span><span class="workflow-icon"><i class="fa-solid fa-earth-americas"></i></span>
+                            <div><strong>Program Details</strong><small>Set the opportunity title, schedule, venue, category, and description.</small></div>
+                        </article>
+                        <article class="module-workflow-step">
+                            <span class="workflow-number">2</span><span class="workflow-icon"><i class="fa-solid fa-handshake"></i></span>
+                            <div><strong>Partner & Participation</strong><small>Add the external host, eligible students, registration method, and deadline.</small></div>
+                        </article>
+                        <article class="module-workflow-step">
+                            <span class="workflow-number">3</span><span class="workflow-icon"><i class="fa-solid fa-bullhorn"></i></span>
+                            <div><strong>Publish Opportunity</strong><small>Publish the program, monitor registrations, and manage the external opportunity.</small></div>
+                        </article>
+                    </section>
+
+                    <section class="grid-2 module-management-grid">
+                        <article class="card" id="programFormCard">
+                            <div class="card-head module-card-head">
+                                <div class="module-card-title"><span class="module-card-icon"><i class="fa-solid fa-earth-americas"></i></span><div><h3>Create External Program</h3><small>Outside-university program form</small></div></div>
+                                <span class="module-card-badge"><i class="fa-solid fa-pen"></i> Create</span>
+                            </div>
+
+                            <form class="card-body" id="eventForm" data-rbac-permission="programs.manage">
+                                <div class="field">
+                                    <label for="eventTitle"><i class="fa-solid fa-heading" aria-hidden="true"></i> Program Title</label>
+                                    <input id="eventTitle" type="text" placeholder="Enter program title" required />
+                                </div>
+
+                                <div class="grid-2">
+                                    <div class="field">
+                                        <label for="eventDate"><i class="fa-regular fa-calendar" aria-hidden="true"></i> Date</label>
+                                        <input id="eventDate" type="date" required />
+                                    </div>
+
+                                    <div class="field">
+                                        <label for="eventVenue"><i class="fa-solid fa-location-dot" aria-hidden="true"></i> External Venue</label>
+                                        <input id="eventVenue" type="text" placeholder="Enter off-campus venue / location" required />
+                                    </div>
+                                </div>
+
+
+                                <div class="grid-2">
+                                    <div class="field">
+                                        <label for="eventStartTime"><i class="fa-regular fa-clock" aria-hidden="true"></i> Start Time</label>
+                                        <input id="eventStartTime" type="time" />
+                                    </div>
+                                    <div class="field">
+                                        <label for="eventEndTime"><i class="fa-solid fa-clock-rotate-left" aria-hidden="true"></i> End Time</label>
+                                        <input id="eventEndTime" type="time" />
+                                    </div>
+                                </div>
+
+                                <div class="field">
+                                    <label for="eventCategory"><i class="fa-solid fa-tags" aria-hidden="true"></i> Program Category</label>
+                                    <select id="eventCategory">
+                                        <option value="Community Outreach">Community Outreach</option>
+                                        <option value="Conference / Seminar">Conference / Seminar</option>
+                                        <option value="Training / Workshop">Training / Workshop</option>
+                                        <option value="Competition">Competition</option>
+                                        <option value="Scholarship Opportunity">Scholarship Opportunity</option>
+                                        <option value="Internship / Career">Internship / Career</option>
+                                        <option value="Volunteer Program">Volunteer Program</option>
+                                        <option value="Partner Organization Activity">Partner Organization Activity</option>
+                                        <option value="Other">Other</option>
+                                    </select>
+                                </div>
+
+                                <div class="field">
+                                    <label for="programHostOrganization"><i class="fa-solid fa-handshake" aria-hidden="true"></i> Host / Partner Organization</label>
+                                    <input id="programHostOrganization" type="text" placeholder="Example: LGU, NGO, company, agency, or partner university" required />
+                                    <small>Identify the outside organization responsible for or partnering on this program.</small>
+                                </div>
+
+                                <div class="field">
+                                    <label for="eventDescription"><i class="fa-regular fa-file-lines" aria-hidden="true"></i> Description</label>
+                                    <textarea id="eventDescription" placeholder="Write program details, objectives, eligibility, and external organizer information..."
+                                        required></textarea>
+                                </div>
+
+                                <div class="field">
+                                    <label><i class="fa-regular fa-image" aria-hidden="true"></i> Program Background Image</label>
+                                    <div class="event-upload-box">
+                                        <input id="eventBackgroundImage" type="file" accept="image/jpeg,image/png,image/webp" hidden />
+                                        <button class="mini-btn primary" type="button" id="eventImagePickerBtn"><i class="fa-regular fa-image"></i> Choose Image</button>
+                                        <span class="event-upload-file-name" id="eventImageFileName">No image selected</span>
+                                    </div>
+                                    <small class="event-upload-note">
+                                        Optional. JPG, PNG, or WEBP up to 5MB. This image becomes the full program highlight background students see first.
+                                    </small>
+                                    <div class="event-image-preview-wrap" id="eventImagePreviewWrap" hidden>
+                                        <img id="eventImagePreview" class="event-image-preview" alt="Selected program background preview" />
+                                    </div>
+                                </div>
+
+                                <div class="grid-2">
+                                    <div class="field">
+                                        <label for="eventAudience"><i class="fa-solid fa-user-graduate" aria-hidden="true"></i> Eligible Students</label>
+                                        <select id="eventAudience" required>
+                                            <option value="All Students">All Students</option>
+                                            <option value="Selected Group">Selected Group</option>
+                                            <option value="Registered Group Only">Registered Group Only</option>
+                                        </select>
+                                    </div>
+
+                                    <div class="field">
+                                        <label for="eventReminderEnabled"><i class="fa-regular fa-bell" aria-hidden="true"></i> Send Reminder</label>
+                                        <select id="eventReminderEnabled" required>
+                                            <option value="true">Enable Reminder</option>
+                                            <option value="false">Disable Reminder</option>
+                                        </select>
+                                    </div>
+                                </div>
+
+
+                                <div class="event-registration-config">
+                                    <div class="event-registration-config-head">
+                                        <div>
+                                            <span class="event-registration-kicker">PARTICIPATION SETUP</span>
+                                            <h4>Student Program Registration</h4>
+                                        </div>
+                                        <i class="fa-solid fa-ticket"></i>
+                                    </div>
+
+                                    <div class="grid-2">
+                                        <div class="field">
+                                            <label for="eventRegistrationMode"><i class="fa-solid fa-ticket" aria-hidden="true"></i> Registration Method</label>
+                                            <select id="eventRegistrationMode" required>
+                                                <option value="internal">Register inside USC Portal</option>
+                                                <option value="external">External registration link</option>
+                                                <option value="none">No registration required</option>
+                                            </select>
+                                        </div>
+
+                                        <div class="field" id="eventRegistrationDeadlineField">
+                                            <label for="eventRegistrationDeadline"><i class="fa-solid fa-hourglass-end" aria-hidden="true"></i> Registration Deadline</label>
+                                            <input id="eventRegistrationDeadline" type="datetime-local" />
+                                            <small>Students cannot register or cancel after this deadline.</small>
+                                        </div>
+                                    </div>
+
+                                    <div class="field" id="eventExternalRegistrationField" hidden>
+                                        <label for="eventExternalRegistrationUrl"><i class="fa-solid fa-link" aria-hidden="true"></i> External Registration URL</label>
+                                        <input id="eventExternalRegistrationUrl" type="url" placeholder="https://forms.google.com/..." />
+                                        <small>Students will be sent to the external organizer's registration page instead of registering in the portal.</small>
+                                    </div>
+
+                                    <div class="field">
+                                        <label for="eventParticipationNotes"><i class="fa-solid fa-list-check" aria-hidden="true"></i> Participation Instructions</label>
+                                        <textarea id="eventParticipationNotes" placeholder="Example: Bring your school ID, prepare travel requirements, follow the partner organization dress code, or include other external participation requirements."></textarea>
+                                    </div>
+                                </div>
+ 
+                                <div class="row-actions">
+                                    <button class="mini-btn primary" type="submit" id="publishEventBtn"><i class="fa-solid fa-paper-plane"></i> Publish Program</button>
+                                    <button class="mini-btn light" type="button" id="clearEventBtn"><i class="fa-solid fa-eraser"></i> Clear Form</button>
+                                </div>
+                            </form>
+                        </article>
+
+                        <article class="card">
+                            <div class="card-head module-card-head">
+                                <div class="module-card-title"><span class="module-card-icon"><i class="fa-solid fa-bullhorn"></i></span><div><h3>Published Programs</h3><small>External opportunities feed</small></div></div>
+                                <span class="module-card-badge live"><i class="fa-solid fa-circle"></i> Live</span>
+                            </div>
+
+                            <div class="card-body">
+                                <div class="recent-list" id="recentEventsList"></div>
+                            </div>
+                        </article>
+                    </section>
+                </section>
+            </main>
+        </div>
+    </div>
+
+    
+
+<div class="event-participants-modal" id="eventParticipantsModal" hidden>
+  <button class="event-participants-backdrop" id="eventParticipantsBackdrop" type="button" aria-label="Close participant list"></button>
+  <section class="event-participants-dialog" role="dialog" aria-modal="true" aria-labelledby="eventParticipantsTitle">
+    <div class="event-participants-head">
+      <div>
+        <span>PROGRAM REGISTRATIONS</span>
+        <h2 id="eventParticipantsTitle">Program participants</h2>
+      </div>
+      <button id="eventParticipantsClose" class="mini-btn light" type="button"><i class="fa-solid fa-xmark"></i> Close</button>
+    </div>
+    <div class="event-participants-body" id="eventParticipantsBody">
+      <div class="empty-state">Select a program to view registrations.</div>
+    </div>
+  </section>
+</div>
+
+<footer class="officer-shared-footer">
+  <div class="officer-footer-main">
+    <div class="officer-footer-col">
+      <h3>ABOUT US</h3>
+      <a href="../overview/overview.html">USC Officer Portal</a>
+      <a href="../organizational-chart/organizational-chart.html">University Student Council</a>
+      <a href="../organizational-chart/organizational-chart.html">Organizational Chart</a>
+    </div>
+    <div class="officer-footer-col">
+      <h3>CONTACT US</h3>
+      <p><strong>Samar State University</strong></p>
+      <p>Arteche Boulevard</p>
+      <p>Catbalogan, Samar 6700</p>
+    </div>
+    <div class="officer-footer-col officer-footer-links">
+      <a href="https://ssu.edu.ph" target="_blank" rel="noopener"><i class="fa-brands fa-square-facebook"></i> ssu.edu.ph</a>
+      <a href="mailto:ssuuniversitystudentcouncil@gmail.com"><i class="fa-regular fa-envelope"></i> ssuuniversitystudentcouncil@gmail.com</a>
+    </div>
+  </div>
+  <div class="officer-footer-bottom">
+    <img src="../shared/assets/SSUlogo.webp" alt="SSU Logo" />
+    <img src="../shared/assets/USClogo.webp" alt="USC Logo" />
+    <div><strong>SSU UNIVERSITY STUDENT COUNCIL</strong><span>LEADERSHIP&nbsp;&nbsp;|&nbsp;&nbsp;EXCELLENCE&nbsp;&nbsp;|&nbsp;&nbsp;DISCIPLINE&nbsp;&nbsp;|&nbsp;&nbsp;SERVICE</span></div>
+  </div>
+</footer>
+
+    <script src="../shared/js/nav-active.js?v=6"></script>
+    <script type="module" src="js/programs.js?v=programs-1"></script>
+    <script type="module" src="../shared/js/admin-auth.js?v=rbac4"></script>
+<script type="module" src="../../shared/profile-manager.js?v=supabase-email-1"></script>
+  <script type="module" src="../shared/js/officer-rbac.js?v=programs-1"></script>
+</body>
+
+</html>

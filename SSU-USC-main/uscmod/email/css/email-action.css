@@ -1,0 +1,45 @@
+:root{
+  font-family:Inter,"Segoe UI",system-ui,-apple-system,BlinkMacSystemFont,sans-serif;
+  color:#173552;
+  background:#edf4fb;
+  --blue:#174f98;
+  --blue2:#1c78bc;
+  --cyan:#20b7e4;
+  --green:#249363;
+  --danger:#b34d58;
+  --muted:#6f8498;
+}
+*{box-sizing:border-box}
+html,body{margin:0;min-width:320px;min-height:100%}
+body{min-height:100vh;display:grid;place-items:center;padding:24px;background:
+  radial-gradient(circle at 85% 10%,rgba(32,183,228,.18),transparent 28%),
+  radial-gradient(circle at 15% 90%,rgba(36,79,162,.12),transparent 32%),
+  linear-gradient(135deg,#eaf3fb,#f8fbfe)}
+.email-action-shell{width:min(560px,100%)}
+.email-action-brand{display:flex;align-items:center;justify-content:center;gap:11px;margin-bottom:14px;color:#24507b;font-size:12px;font-weight:900;letter-spacing:.08em;text-transform:uppercase}
+.email-action-brand img{width:40px;height:40px;object-fit:contain}
+.email-action-card{overflow:hidden;border:1px solid #d8e7f2;border-radius:26px;background:rgba(255,255,255,.96);box-shadow:0 22px 56px rgba(31,73,112,.14)}
+.email-action-head{padding:28px 30px 22px;color:#fff;background:linear-gradient(135deg,#123f79 0%,#176eaf 58%,#20aede 100%)}
+.email-action-icon{width:48px;height:48px;display:grid;place-items:center;margin-bottom:14px;border:1px solid rgba(255,255,255,.24);border-radius:15px;background:rgba(255,255,255,.13);font-size:23px;font-weight:900}
+.email-action-head h1{margin:0;font-size:28px;line-height:1.1;letter-spacing:-.025em}
+.email-action-head p{margin:8px 0 0;max-width:440px;color:rgba(244,250,255,.86);font-size:13px;line-height:1.55}
+.email-action-body{padding:25px 30px 30px}
+.email-action-status{display:flex;gap:12px;align-items:flex-start;padding:14px 15px;border:1px solid #dbe7f0;border-radius:16px;background:#f7fbfe}
+.email-action-status .status-icon{width:34px;height:34px;flex:0 0 34px;display:grid;place-items:center;border-radius:11px;background:#e7f3fb;color:#2477ad;font-weight:900}
+.email-action-status strong{display:block;color:#31566f;font-size:13px}
+.email-action-status p{margin:3px 0 0;color:var(--muted);font-size:11px;line-height:1.48}
+.email-action-status.success{border-color:#cfe9da;background:#f2fbf6}.email-action-status.success .status-icon{background:#dff5e8;color:var(--green)}.email-action-status.success strong{color:#257753}
+.email-action-status.error{border-color:#efd0d4;background:#fff6f7}.email-action-status.error .status-icon{background:#fae5e8;color:var(--danger)}.email-action-status.error strong{color:#a84854}
+.email-action-form{margin-top:18px}
+.email-action-form label{display:block;margin-bottom:7px;color:#3d607c;font-size:11px;font-weight:900;text-transform:uppercase;letter-spacing:.06em}
+.email-action-form input{width:100%;height:48px;padding:0 14px;border:1px solid #cfdde8;border-radius:13px;background:#fff;color:#173552;font:inherit;font-size:13px;outline:none}
+.email-action-form input:focus{border-color:#58bfe4;box-shadow:0 0 0 3px rgba(32,183,228,.12)}
+.email-action-note{margin:15px 0 0;padding:12px 14px;border-radius:14px;background:#f4f8fb;color:#687d90;font-size:10.5px;line-height:1.55}
+.email-action-actions{display:flex;flex-wrap:wrap;gap:10px;margin-top:18px}
+.email-action-btn{min-height:44px;padding:0 18px;border:0;border-radius:13px;display:inline-flex;align-items:center;justify-content:center;gap:8px;text-decoration:none;font:inherit;font-size:12px;font-weight:900;cursor:pointer}
+.email-action-btn.primary{background:linear-gradient(135deg,#20b6e4,#245bb0);color:#fff;box-shadow:0 10px 22px rgba(36,91,176,.18)}
+.email-action-btn.secondary{border:1px solid #d4e2ec;background:#f7fafc;color:#49677f}
+.email-action-btn:disabled{opacity:.58;cursor:wait;box-shadow:none}
+.email-action-foot{margin-top:14px;text-align:center;color:#8a9aa8;font-size:9.5px;line-height:1.45}
+[hidden]{display:none!important}
+@media(max-width:560px){body{padding:14px}.email-action-head{padding:23px 20px 19px}.email-action-head h1{font-size:23px}.email-action-body{padding:20px}.email-action-actions{display:grid;grid-template-columns:1fr}.email-action-btn{width:100%}}

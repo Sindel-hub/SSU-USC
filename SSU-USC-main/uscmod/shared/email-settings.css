@@ -1,0 +1,415 @@
+/* Student profile Gmail / recovery UI */
+.gmail-settings{
+  background:linear-gradient(180deg,#ffffff 0%,#fbfdff 100%);
+  border:1px solid #dbe8f2;
+  border-radius:18px;
+  color:#183253;
+  box-shadow:0 8px 24px rgba(28,76,117,.06);
+}
+.gmail-settings *{box-sizing:border-box}
+.gmail-card-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:12px}
+.gmail-card-title-wrap{display:flex;align-items:center;gap:11px;min-width:0}
+.gmail-card-icon{width:40px;height:40px;flex:0 0 40px;border-radius:13px;display:grid;place-items:center;background:linear-gradient(135deg,#e7f8ff,#e8efff);color:#1764b4;font-size:16px;box-shadow:inset 0 0 0 1px rgba(42,111,182,.08)}
+.gmail-card-title-wrap>div{display:flex;flex-direction:column;gap:2px;min-width:0}
+.gmail-card-title-wrap strong{font-size:15px;line-height:1.2;color:#173c68;font-weight:900}
+.gmail-card-title-wrap span{font-size:10px;color:#7890a4;font-weight:800;text-transform:uppercase;letter-spacing:.55px}
+.gmail-self-service-badge{flex:0 0 auto;padding:5px 9px;border-radius:999px;background:#edf8f2;color:#298155;font-size:9px;font-weight:900;white-space:nowrap}
+.gmail-card-intro{margin:0 0 13px!important;color:#657b8f!important;font-size:11px!important;line-height:1.55!important}
+
+.gmail-status-card{display:flex;align-items:center;gap:10px;margin:0 0 15px;padding:11px 12px;border:1px solid #dce9f2;border-radius:13px;background:#f6fafc}
+.gmail-status-icon{width:32px;height:32px;flex:0 0 32px;border-radius:10px;display:grid;place-items:center;background:#eaf3f8;color:#5d7d95}
+.gmail-status-copy{min-width:0;display:flex;flex-direction:column;gap:2px}
+.gmail-status-copy strong{font-size:11px;color:#36556d;font-weight:900}
+.gmail-status-copy small{font-size:9.5px;line-height:1.4;color:#7a8c99;overflow-wrap:anywhere}
+.gmail-status-card[data-state="active"]{border-color:#ccead8;background:#f1fbf5}.gmail-status-card[data-state="active"] .gmail-status-icon{background:#ddf5e6;color:#258351}.gmail-status-card[data-state="active"] .gmail-status-copy strong{color:#25764d}
+.gmail-status-card[data-state="pending"]{border-color:#f0dfb7;background:#fffbf1}.gmail-status-card[data-state="pending"] .gmail-status-icon{background:#fff1c9;color:#9c7009}.gmail-status-card[data-state="pending"] .gmail-status-copy strong{color:#805f12}
+.gmail-status-card[data-state="error"]{border-color:#f1cece;background:#fff7f7}.gmail-status-card[data-state="error"] .gmail-status-icon{background:#fde5e5;color:#b43e3e}.gmail-status-card[data-state="error"] .gmail-status-copy strong{color:#a43c3c}
+
+.gmail-editor-form fieldset{border:0;padding:0;margin:0;min-width:0}
+.gmail-field-label{display:block;margin:0 0 7px;color:#49657d;font-size:10px;font-weight:900;text-transform:uppercase;letter-spacing:.45px}
+.gmail-input-wrap{position:relative;display:flex;align-items:center}
+.gmail-input-icon{position:absolute;left:12px;width:25px;height:25px;border-radius:8px;display:grid;place-items:center;background:#f1f5f9;color:#335d83;font-size:12px;pointer-events:none}
+.gmail-settings input[type=email]{display:block;width:100%;height:46px;padding:0 13px 0 46px;border:1px solid #d6e3ec;border-radius:12px;background:#fff;color:#203d59;font:inherit;font-size:13px;outline:none;transition:border-color .16s ease,box-shadow .16s ease}
+.gmail-settings input[type=email]:focus{border-color:#54b9e0;box-shadow:0 0 0 3px rgba(31,165,217,.11)}
+.gmail-settings input[type=email]::placeholder{color:#a1aeba}
+.gmail-field-help{margin:7px 0 15px!important;color:#8292a0!important;font-size:9.5px!important;line-height:1.45!important}
+
+.gmail-preferences-head{display:flex;align-items:flex-end;justify-content:space-between;gap:10px;padding-top:13px;margin-bottom:9px;border-top:1px solid #edf2f6}
+.gmail-preferences-head>div{display:flex;flex-direction:column;gap:2px}.gmail-preferences-head strong{font-size:11px;color:#375874}.gmail-preferences-head small{font-size:9px;color:#8b99a5}
+.gmail-options{display:flex;flex-direction:column;gap:7px;margin:0}
+.gmail-option-row{display:grid!important;grid-template-columns:34px minmax(0,1fr) 20px;gap:9px;align-items:center;margin:0!important;padding:9px 10px;border:1px solid #e2ebf1;border-radius:12px;background:#fff;cursor:pointer;transition:border-color .16s ease,background .16s ease,transform .16s ease}
+.gmail-option-row:hover{border-color:#c9e3ee;background:#fbfeff;transform:translateY(-1px)}
+.gmail-option-row-important{background:#fbfcff;border-color:#dae4f3}
+.gmail-option-icon{width:32px;height:32px;border-radius:10px;display:grid;place-items:center;background:#eef7fb;color:#2178a6;font-size:12px}
+.gmail-option-row-important .gmail-option-icon{background:#eef2fd;color:#3e62b3}
+.gmail-option-copy{min-width:0;display:flex;flex-direction:column;gap:2px}.gmail-option-copy strong{font-size:10.5px;color:#34536d}.gmail-option-copy small{font-size:8.5px;line-height:1.35;color:#8a99a6}
+.gmail-option-row input[type=checkbox]{appearance:none;-webkit-appearance:none;width:19px;height:19px;margin:0;border:1.5px solid #b9c9d5;border-radius:6px;background:#fff;display:grid;place-items:center;cursor:pointer;transition:.16s ease}
+.gmail-option-row input[type=checkbox]::after{content:"✓";font-size:12px;line-height:1;color:#fff;transform:scale(0);transition:transform .12s ease}
+.gmail-option-row input[type=checkbox]:checked{border-color:#2864ad;background:#2864ad}.gmail-option-row input[type=checkbox]:checked::after{transform:scale(1)}
+.gmail-option-row input[type=checkbox]:focus-visible{outline:3px solid rgba(40,100,173,.16);outline-offset:2px}
+
+.gmail-actions{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px;margin-top:14px}
+.gmail-actions button{height:42px;border-radius:11px;padding:0 14px;font:inherit;font-size:11px;font-weight:900;display:inline-flex;align-items:center;justify-content:center;gap:7px;cursor:pointer;transition:transform .16s ease,box-shadow .16s ease,background .16s ease}
+.gmail-save-button{border:0;background:linear-gradient(135deg,#1aaee2,#245db3);color:#fff;box-shadow:0 8px 18px rgba(36,93,179,.15)}
+.gmail-save-button:hover{transform:translateY(-1px);box-shadow:0 11px 22px rgba(36,93,179,.2)}
+.gmail-remove-button{border:1px solid #d8e2ea;background:#fff;color:#61768a}.gmail-remove-button:hover{background:#f7fafc;color:#b24646;border-color:#efcdcd}
+.gmail-settings :disabled{opacity:.58;cursor:not-allowed}.gmail-settings :disabled *{cursor:not-allowed!important}
+
+.gmail-security-note{display:flex;align-items:flex-start;gap:9px;margin-top:13px;padding:10px 11px;border-radius:12px;background:#f6f8fb;color:#61758a}
+.gmail-security-note>i{margin-top:2px;color:#4c6a8c;font-size:11px}.gmail-security-note p{margin:0!important;font-size:9px!important;line-height:1.5!important;color:#718397!important}.gmail-security-note strong{color:#486279}
+.gmail-message{min-height:17px;margin:10px 1px 0!important;font-size:10px!important;font-weight:800!important;line-height:1.4!important;color:#60768a!important}.gmail-message[data-kind="success"]{color:#258151!important}.gmail-message[data-kind="error"]{color:#b33d3d!important}
+
+/* Position the card inside the student's right-side profile drawer. */
+.usc-profile-drawer>.usc-profile-gmail{flex-shrink:0;margin:7px 22px 18px;padding:16px;border-radius:17px}
+.usc-profile-gmail[hidden]{display:none!important}
+
+@media(max-width:600px){
+  .usc-profile-drawer>.usc-profile-gmail{margin:7px 17px 16px;padding:14px}
+  .gmail-card-head{align-items:flex-start}.gmail-self-service-badge{font-size:8px;padding:5px 7px}
+  .gmail-card-icon{width:36px;height:36px;flex-basis:36px}
+  .gmail-actions{grid-template-columns:1fr}.gmail-actions button{width:100%}
+  .gmail-option-row{grid-template-columns:32px minmax(0,1fr) 19px;padding:8px}
+}
+
+
+/* =========================================================
+   COMPACT GMAIL FIELD UI FIX - 2026-09-10
+   Keeps Gmail text readable inside the narrow profile drawer.
+   ========================================================= */
+.usc-profile-gmail .gmail-card-intro{
+  max-width:100%;
+  font-size:10px!important;
+  line-height:1.4!important;
+}
+.usc-profile-gmail .gmail-field-label{
+  font-size:9.5px;
+  letter-spacing:.35px;
+}
+.usc-profile-gmail .gmail-input-wrap{
+  min-width:0;
+}
+.usc-profile-gmail .gmail-input-icon{
+  left:9px;
+  width:22px;
+  height:22px;
+  border-radius:7px;
+  font-size:11px;
+}
+.usc-profile-gmail .gmail-settings input[type=email],
+.usc-profile-gmail input[type=email]{
+  min-width:0;
+  height:44px;
+  padding-left:38px!important;
+  padding-right:10px!important;
+  font-size:12px!important;
+  letter-spacing:-.05px;
+}
+.usc-profile-gmail .gmail-settings input[type=email]::placeholder,
+.usc-profile-gmail input[type=email]::placeholder{
+  font-size:11px;
+}
+.usc-profile-gmail .gmail-field-help{
+  margin:6px 0 13px!important;
+  max-width:100%;
+  font-size:8.8px!important;
+  line-height:1.35!important;
+  overflow-wrap:anywhere;
+}
+.usc-profile-gmail .gmail-status-card{
+  padding:10px 11px;
+  gap:9px;
+}
+.usc-profile-gmail .gmail-status-copy small{
+  font-size:8.8px;
+  line-height:1.3;
+}
+.usc-profile-drawer>.usc-profile-gmail{
+  margin-left:16px;
+  margin-right:16px;
+  padding:14px;
+}
+@media(max-width:420px){
+  .usc-profile-drawer>.usc-profile-gmail{
+    margin-left:12px;
+    margin-right:12px;
+    padding:12px;
+  }
+  .usc-profile-gmail .gmail-card-title-wrap strong{font-size:13px}
+  .usc-profile-gmail .gmail-card-title-wrap span{font-size:8.5px}
+  .usc-profile-gmail .gmail-self-service-badge{font-size:7.5px;padding:4px 6px}
+  .usc-profile-gmail .gmail-settings input[type=email],
+  .usc-profile-gmail input[type=email]{font-size:11.5px!important}
+}
+
+/* =========================================================
+   FINAL PROFILE GMAIL RESPONSIVE REPAIR - 2026-09-10
+   Keeps preference labels, descriptions, checkboxes and action
+   buttons inside the profile drawer at zoomed/narrow widths.
+   ========================================================= */
+.usc-profile-drawer,
+.usc-profile-drawer *{
+  box-sizing:border-box;
+}
+
+.usc-profile-drawer{
+  max-width:100vw;
+  overflow-x:hidden!important;
+}
+
+.usc-profile-drawer > .usc-profile-gmail{
+  position:relative!important;
+  left:auto!important;
+  right:auto!important;
+  transform:none!important;
+  width:auto!important;
+  max-width:calc(100% - 32px)!important;
+  min-width:0!important;
+  margin-left:16px!important;
+  margin-right:16px!important;
+  overflow:hidden!important;
+}
+
+.usc-profile-gmail,
+.usc-profile-gmail form,
+.usc-profile-gmail fieldset,
+.usc-profile-gmail .gmail-options,
+.usc-profile-gmail .gmail-option-row,
+.usc-profile-gmail .gmail-actions{
+  min-width:0!important;
+  max-width:100%!important;
+}
+
+.usc-profile-gmail form,
+.usc-profile-gmail fieldset,
+.usc-profile-gmail .gmail-options{
+  width:100%!important;
+  overflow:hidden!important;
+}
+
+.usc-profile-gmail .gmail-card-head{
+  min-width:0!important;
+  flex-wrap:wrap!important;
+}
+
+.usc-profile-gmail .gmail-card-title-wrap{
+  min-width:0!important;
+  flex:1 1 220px!important;
+}
+
+.usc-profile-gmail .gmail-card-title-wrap > div,
+.usc-profile-gmail .gmail-status-copy,
+.usc-profile-gmail .gmail-option-copy{
+  min-width:0!important;
+  max-width:100%!important;
+}
+
+.usc-profile-gmail .gmail-card-title-wrap strong,
+.usc-profile-gmail .gmail-card-title-wrap span,
+.usc-profile-gmail .gmail-status-copy strong,
+.usc-profile-gmail .gmail-status-copy small,
+.usc-profile-gmail .gmail-option-copy strong,
+.usc-profile-gmail .gmail-option-copy small{
+  white-space:normal!important;
+  overflow:visible!important;
+  text-overflow:clip!important;
+  overflow-wrap:anywhere!important;
+  word-break:normal!important;
+}
+
+.usc-profile-gmail .gmail-option-row{
+  position:relative!important;
+  left:auto!important;
+  right:auto!important;
+  transform:none!important;
+  width:100%!important;
+  display:grid!important;
+  grid-template-columns:34px minmax(0,1fr) 24px!important;
+  align-items:center!important;
+  gap:9px!important;
+  margin:0!important;
+  padding:10px!important;
+  overflow:hidden!important;
+}
+
+.usc-profile-gmail .gmail-option-row:hover{
+  transform:none!important;
+}
+
+.usc-profile-gmail .gmail-option-icon{
+  width:32px!important;
+  height:32px!important;
+  min-width:32px!important;
+  margin:0!important;
+}
+
+.usc-profile-gmail .gmail-option-row input[type="checkbox"]{
+  position:relative!important;
+  justify-self:end!important;
+  width:22px!important;
+  height:22px!important;
+  min-width:22px!important;
+  max-width:22px!important;
+  margin:0!important;
+  padding:0!important;
+  opacity:1!important;
+  overflow:visible!important;
+  clip:auto!important;
+  flex:none!important;
+}
+
+.usc-profile-gmail .gmail-actions{
+  width:100%!important;
+  display:grid!important;
+  grid-template-columns:minmax(0,1fr) auto!important;
+  gap:8px!important;
+}
+
+.usc-profile-gmail .gmail-actions button{
+  min-width:0!important;
+  max-width:100%!important;
+  white-space:nowrap!important;
+}
+
+@media(max-width:430px){
+  .usc-profile-drawer > .usc-profile-gmail{
+    max-width:calc(100% - 24px)!important;
+    margin-left:12px!important;
+    margin-right:12px!important;
+    padding-left:12px!important;
+    padding-right:12px!important;
+  }
+  .usc-profile-gmail .gmail-option-row{
+    grid-template-columns:32px minmax(0,1fr) 22px!important;
+    gap:8px!important;
+    padding:9px!important;
+  }
+  .usc-profile-gmail .gmail-option-icon{
+    width:30px!important;
+    height:30px!important;
+    min-width:30px!important;
+  }
+  .usc-profile-gmail .gmail-option-row input[type="checkbox"]{
+    width:20px!important;
+    height:20px!important;
+    min-width:20px!important;
+    max-width:20px!important;
+  }
+  .usc-profile-gmail .gmail-actions{
+    grid-template-columns:1fr!important;
+  }
+  .usc-profile-gmail .gmail-actions button{
+    width:100%!important;
+  }
+}
+
+@media(max-width:340px){
+  .usc-profile-gmail .gmail-option-row{
+    grid-template-columns:28px minmax(0,1fr) 20px!important;
+    gap:7px!important;
+    padding:8px!important;
+  }
+  .usc-profile-gmail .gmail-option-icon{
+    width:28px!important;
+    height:28px!important;
+    min-width:28px!important;
+    font-size:11px!important;
+  }
+  .usc-profile-gmail .gmail-option-copy strong{font-size:9.8px!important}
+  .usc-profile-gmail .gmail-option-copy small{font-size:8px!important}
+}
+
+/* =========================================================
+   OFFICER GMAIL CHECKBOX VISIBILITY / SHAPE FIX - 2026-09-10
+   Prevents officer-dashboard form styles from stretching or
+   washing out the preference checkboxes.
+   ========================================================= */
+.usc-profile-drawer[data-profile-role="officer"] .usc-profile-gmail .gmail-option-row > input[type="checkbox"],
+.usc-profile-gmail .gmail-option-row > input[type="checkbox"]{
+  appearance:none!important;
+  -webkit-appearance:none!important;
+  position:relative!important;
+  display:grid!important;
+  place-items:center!important;
+  justify-self:end!important;
+  align-self:center!important;
+  flex:0 0 28px!important;
+  width:28px!important;
+  min-width:28px!important;
+  max-width:28px!important;
+  height:28px!important;
+  min-height:28px!important;
+  max-height:28px!important;
+  aspect-ratio:1/1!important;
+  margin:0!important;
+  padding:0!important;
+  border:1.5px solid #9fc6df!important;
+  border-radius:9px!important;
+  background:#ffffff!important;
+  color:#ffffff!important;
+  opacity:1!important;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.9)!important;
+  vertical-align:middle!important;
+  overflow:hidden!important;
+  clip:auto!important;
+  cursor:pointer!important;
+  transition:background .16s ease,border-color .16s ease,box-shadow .16s ease,transform .16s ease!important;
+}
+
+.usc-profile-drawer[data-profile-role="officer"] .usc-profile-gmail .gmail-option-row > input[type="checkbox"]::after,
+.usc-profile-gmail .gmail-option-row > input[type="checkbox"]::after{
+  content:"✓"!important;
+  display:block!important;
+  font-family:Arial,sans-serif!important;
+  font-size:17px!important;
+  font-weight:900!important;
+  line-height:1!important;
+  color:#ffffff!important;
+  opacity:0!important;
+  transform:scale(.72)!important;
+  transition:opacity .12s ease,transform .12s ease!important;
+}
+
+.usc-profile-drawer[data-profile-role="officer"] .usc-profile-gmail .gmail-option-row > input[type="checkbox"]:checked,
+.usc-profile-gmail .gmail-option-row > input[type="checkbox"]:checked{
+  border-color:#2c67b7!important;
+  background:#2c67b7!important;
+  box-shadow:0 5px 12px rgba(44,103,183,.20),inset 0 1px 0 rgba(255,255,255,.16)!important;
+}
+
+.usc-profile-drawer[data-profile-role="officer"] .usc-profile-gmail .gmail-option-row > input[type="checkbox"]:checked::after,
+.usc-profile-gmail .gmail-option-row > input[type="checkbox"]:checked::after{
+  opacity:1!important;
+  transform:scale(1)!important;
+}
+
+.usc-profile-drawer[data-profile-role="officer"] .usc-profile-gmail .gmail-option-row > input[type="checkbox"]:focus-visible,
+.usc-profile-gmail .gmail-option-row > input[type="checkbox"]:focus-visible{
+  outline:3px solid rgba(44,103,183,.16)!important;
+  outline-offset:2px!important;
+}
+
+.usc-profile-drawer[data-profile-role="officer"] .usc-profile-gmail .gmail-option-row{
+  grid-template-columns:38px minmax(0,1fr) 28px!important;
+  align-items:center!important;
+}
+
+@media(max-width:430px){
+  .usc-profile-drawer[data-profile-role="officer"] .usc-profile-gmail .gmail-option-row,
+  .usc-profile-gmail .gmail-option-row{
+    grid-template-columns:34px minmax(0,1fr) 26px!important;
+  }
+  .usc-profile-drawer[data-profile-role="officer"] .usc-profile-gmail .gmail-option-row > input[type="checkbox"],
+  .usc-profile-gmail .gmail-option-row > input[type="checkbox"]{
+    flex-basis:26px!important;
+    width:26px!important;
+    min-width:26px!important;
+    max-width:26px!important;
+    height:26px!important;
+    min-height:26px!important;
+    max-height:26px!important;
+    border-radius:8px!important;
+  }
+  .usc-profile-gmail .gmail-option-row > input[type="checkbox"]::after{
+    font-size:16px!important;
+  }
+}

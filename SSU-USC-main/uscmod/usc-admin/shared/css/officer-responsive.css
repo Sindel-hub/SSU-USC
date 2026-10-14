@@ -1,0 +1,1448 @@
+/* =========================================================
+   USC OFFICER PORTAL — SHARED RESPONSIVE FIXES
+   Apply to all officer modules after officer-ui.css
+   ========================================================= */
+
+body.officer-app-shell,
+body.officer-app-shell * {
+  box-sizing: border-box;
+}
+
+body.officer-app-shell {
+  max-width: 100%;
+  overflow-x: hidden !important;
+}
+
+body.officer-app-shell img,
+body.officer-app-shell video,
+body.officer-app-shell svg {
+  max-width: 100%;
+}
+
+@media (max-width: 820px) {
+  body.officer-app-shell .page {
+    width: 100% !important;
+    max-width: 100% !important;
+    margin: 0 !important;
+    padding: 0 10px 22px !important;
+  }
+
+  body.officer-app-shell .app-shell {
+    width: 100% !important;
+    max-width: 100% !important;
+    height: auto !important;
+    min-height: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    display: block !important;
+    overflow: visible !important;
+  }
+
+  body.officer-app-shell .top-banner {
+    position: relative !important;
+    top: auto !important;
+    right: auto !important;
+    bottom: auto !important;
+    left: auto !important;
+    z-index: 10 !important;
+    width: 100% !important;
+    height: 64px !important;
+    min-height: 64px !important;
+    margin: 0 !important;
+    padding: 0 10px !important;
+  }
+
+  body.officer-app-shell .brand-logo {
+    width: 32px !important;
+    height: 32px !important;
+  }
+
+  body.officer-app-shell .brand {
+    min-width: 0 !important;
+  }
+
+  body.officer-app-shell .brand h1 {
+    font-size: 12px !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+  }
+
+  body.officer-app-shell .brand p {
+    font-size: 6px !important;
+  }
+
+  body.officer-app-shell .top-nav {
+    position: relative !important;
+    top: auto !important;
+    right: auto !important;
+    bottom: auto !important;
+    left: auto !important;
+    transform: none !important;
+    z-index: 20 !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    min-height: 54px !important;
+    height: auto !important;
+    margin: 8px 0 10px !important;
+    padding: 7px 8px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    flex-wrap: nowrap !important;
+    gap: 8px !important;
+    overflow: visible !important;
+    background: #fff !important;
+    border: 1px solid #dce8ef !important;
+    border-radius: 14px !important;
+    box-shadow: 0 5px 16px rgba(18,66,98,.08) !important;
+    backdrop-filter: none !important;
+  }
+
+  body.officer-app-shell .nav-left {
+    display: flex !important;
+    align-items: center !important;
+    flex: 1 1 auto !important;
+    min-width: 0 !important;
+    gap: 7px !important;
+  }
+
+  body.officer-app-shell .sidebar-toggle {
+    display: grid !important;
+    place-items: center !important;
+    flex: 0 0 38px !important;
+    width: 38px !important;
+    height: 38px !important;
+    min-width: 38px !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border-radius: 10px !important;
+    background: #edf6fb !important;
+  }
+
+  body.officer-app-shell .breadcrumb,
+  body.officer-app-shell .module-title-wrap {
+    min-width: 0 !important;
+    max-width: 100% !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+  }
+
+  body.officer-app-shell .breadcrumb {
+    font-size: clamp(15px, 3.7vw, 19px) !important;
+    white-space: nowrap !important;
+  }
+
+  body.officer-app-shell .module-title-wrap h2 {
+    margin: 0 !important;
+    font-size: clamp(15px, 3.7vw, 19px) !important;
+    line-height: 1.1 !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+  }
+
+  body.officer-app-shell .module-title-wrap span {
+    display: none !important;
+  }
+
+  body.officer-app-shell .nav-right {
+    position: relative !important;
+    top: auto !important;
+    right: auto !important;
+    transform: none !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: flex-end !important;
+    flex: 0 0 auto !important;
+    min-width: 0 !important;
+    gap: 5px !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  body.officer-app-shell .user-badge,
+  body.officer-app-shell .admin-pill {
+    display: none !important;
+  }
+
+  body.officer-app-shell .bell {
+    position: relative !important;
+    display: grid !important;
+    place-items: center !important;
+    flex: 0 0 36px !important;
+    width: 36px !important;
+    height: 36px !important;
+    min-width: 36px !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border: 0 !important;
+    border-radius: 50% !important;
+    background: transparent !important;
+    color: #15293b !important;
+    font-size: 17px !important;
+    transform: none !important;
+  }
+
+  body.officer-app-shell .bell::before {
+    display: none !important;
+  }
+
+  body.officer-app-shell .bell i {
+    display: block !important;
+    color: #15293b !important;
+    font-size: 17px !important;
+    line-height: 1 !important;
+  }
+
+  body.officer-app-shell .avatar {
+    flex: 0 0 34px !important;
+    width: 34px !important;
+    height: 34px !important;
+    min-width: 34px !important;
+    margin: 0 !important;
+    border-radius: 50% !important;
+    overflow: hidden !important;
+  }
+
+  body.officer-app-shell .nav-right > [data-admin-name],
+  body.officer-app-shell .nav-right > #adminName,
+  body.officer-app-shell .nav-right > .admin-name {
+    max-width: 110px !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    white-space: nowrap !important;
+    font-size:14px !important;
+  }
+
+  body.officer-app-shell .sidebar {
+    position: fixed !important;
+    z-index: 1100 !important;
+    top: 0 !important;
+    left: 0 !important;
+    bottom: 0 !important;
+    width: min(290px, 86vw) !important;
+    height: 100dvh !important;
+    min-height: 0 !important;
+    padding: 18px !important;
+    overflow-y: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+    transform: translateX(-105%) !important;
+    transition: transform .22s ease !important;
+    border-radius: 0 18px 18px 0 !important;
+  }
+
+  body.officer-app-shell .sidebar.open {
+    transform: translateX(0) !important;
+  }
+
+  body.officer-app-shell .sidebar-overlay {
+    position: fixed !important;
+    z-index: 1090 !important;
+    inset: 0 !important;
+    display: block !important;
+    background: rgba(12,29,47,.36) !important;
+    opacity: 0 !important;
+    pointer-events: none !important;
+    transition: opacity .22s ease !important;
+  }
+
+  body.officer-app-shell .sidebar-overlay.open {
+    opacity: 1 !important;
+    pointer-events: auto !important;
+  }
+
+  body.officer-app-shell .layout {
+    display: block !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  body.officer-app-shell .main {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    height: auto !important;
+    min-height: 0 !important;
+    margin: 0 !important;
+    padding: 8px !important;
+    overflow: visible !important;
+  }
+
+  body.officer-app-shell .hero {
+    grid-template-columns: 1fr !important;
+    gap: 12px !important;
+    padding: 12px !important;
+    border-radius: 14px !important;
+  }
+
+  body.officer-app-shell .hero-title,
+  body.officer-app-shell .hero-title-row {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+  }
+
+  body.officer-app-shell .hero h1,
+  body.officer-app-shell .hero-title h1,
+  body.officer-app-shell .hero-left h1 {
+    font-size: clamp(24px, 7vw, 36px) !important;
+    overflow-wrap: anywhere !important;
+  }
+
+  body.officer-app-shell .stats,
+  body.officer-app-shell .stats-grid {
+    grid-template-columns: repeat(2,minmax(0,1fr)) !important;
+    gap: 8px !important;
+  }
+
+  body.officer-app-shell .stat-card,
+  body.officer-app-shell .stat {
+    min-width: 0 !important;
+    padding: 12px 10px !important;
+  }
+
+  body.officer-app-shell .stat-value {
+    font-size: clamp(22px,7vw,32px) !important;
+    overflow-wrap: anywhere !important;
+  }
+
+  body.officer-app-shell .grid-2,
+  body.officer-app-shell .grid-3,
+  body.officer-app-shell .card-grid.two,
+  body.officer-app-shell .card-grid.equal,
+  body.officer-app-shell .card-grid.three,
+  body.officer-app-shell .form-grid,
+  body.officer-app-shell .form-row,
+  body.officer-app-shell .two-col {
+    grid-template-columns: 1fr !important;
+  }
+
+  body.officer-app-shell .table-wrap,
+  body.officer-app-shell .table-shell,
+  body.officer-app-shell .responsive-table {
+    max-width: 100% !important;
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+  }
+
+  body.officer-app-shell table,
+  body.officer-app-shell .table {
+    min-width: 680px !important;
+  }
+}
+
+@media (max-width: 560px) {
+  body.officer-app-shell .page {
+    padding: 0 7px 18px !important;
+  }
+
+  body.officer-app-shell .top-banner {
+    height: 58px !important;
+    min-height: 58px !important;
+    padding: 0 8px !important;
+  }
+
+  body.officer-app-shell .brand p {
+    display: none !important;
+  }
+
+  body.officer-app-shell .brand-logo {
+    width: 29px !important;
+    height: 29px !important;
+  }
+
+  body.officer-app-shell .top-nav {
+    min-height: 52px !important;
+    margin: 6px 0 9px !important;
+    padding: 6px !important;
+    border-radius: 12px !important;
+  }
+
+  body.officer-app-shell .sidebar-toggle {
+    flex-basis: 36px !important;
+    width: 36px !important;
+    height: 36px !important;
+    min-width: 36px !important;
+  }
+
+  body.officer-app-shell .breadcrumb,
+  body.officer-app-shell .module-title-wrap h2 {
+    font-size: 16px !important;
+  }
+
+  body.officer-app-shell .nav-right > [data-admin-name],
+  body.officer-app-shell .nav-right > #adminName,
+  body.officer-app-shell .nav-right > .admin-name {
+    display: none !important;
+  }
+
+  body.officer-app-shell .bell {
+    flex-basis: 34px !important;
+    width: 34px !important;
+    height: 34px !important;
+    min-width: 34px !important;
+  }
+
+  body.officer-app-shell .avatar {
+    flex-basis: 32px !important;
+    width: 32px !important;
+    height: 32px !important;
+    min-width: 32px !important;
+  }
+
+  body.officer-app-shell .stats,
+  body.officer-app-shell .stats-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  body.officer-app-shell table,
+  body.officer-app-shell .table {
+    min-width: 620px !important;
+  }
+}
+
+/* =========================================================
+   MOBILE SIDEBAR TAP FIX
+   ========================================================= */
+
+@media (max-width: 820px) {
+
+  /* Make menu button definitely tappable */
+  body.officer-app-shell .sidebar-toggle {
+    position: relative !important;
+    z-index: 1201 !important;
+
+    pointer-events: auto !important;
+    touch-action: manipulation !important;
+
+    cursor: pointer !important;
+  }
+
+  /* Icon must not steal the tap */
+  body.officer-app-shell .sidebar-toggle .grid-icon,
+  body.officer-app-shell .sidebar-toggle .grid-icon::before,
+  body.officer-app-shell .sidebar-toggle .grid-icon::after {
+    pointer-events: none !important;
+  }
+
+  /* Toolbar must receive touch events */
+  body.officer-app-shell .top-nav,
+  body.officer-app-shell .nav-left {
+    pointer-events: auto !important;
+  }
+
+  /* CLOSED overlay must completely disappear from hit testing */
+  body.officer-app-shell .sidebar-overlay {
+    opacity: 0 !important;
+    visibility: hidden !important;
+    pointer-events: none !important;
+
+    z-index: -1 !important;
+  }
+
+  /* OPEN overlay becomes active */
+  body.officer-app-shell .sidebar-overlay.open {
+    opacity: 1 !important;
+    visibility: visible !important;
+    pointer-events: auto !important;
+
+    z-index: 1090 !important;
+  }
+
+  /* Sidebar itself */
+  body.officer-app-shell .sidebar {
+    pointer-events: auto !important;
+    z-index: 1100 !important;
+  }
+
+  body.officer-app-shell .sidebar.open {
+    transform: translateX(0) !important;
+  }
+}
+
+/* =========================================================
+   SHARED OFFICER MODULE SEARCH
+   FINAL VERSION
+   ========================================================= */
+
+body.officer-app-shell .officer-global-toolbar {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+
+    width: 100% !important;
+
+    gap: 10px !important;
+
+    overflow: visible !important;
+}
+
+
+body.officer-app-shell .officer-global-search-wrap {
+    display: flex !important;
+    align-items: center !important;
+
+    flex: 1 1 auto !important;
+
+    width: 100% !important;
+    min-width: 0 !important;
+
+    gap: 8px !important;
+
+    position: relative !important;
+}
+
+
+body.officer-app-shell .officer-global-search-wrap .sidebar-toggle {
+    flex: 0 0 40px !important;
+
+    width: 40px !important;
+    height: 40px !important;
+    min-width: 40px !important;
+}
+
+
+body.officer-app-shell .officer-search-box {
+    position: relative !important;
+
+    display: block !important;
+
+    flex: 1 1 auto !important;
+
+    width: 100% !important;
+    min-width: 0 !important;
+    max-width: none !important;
+
+    overflow: visible !important;
+}
+
+
+body.officer-app-shell .officer-search {
+    display: flex !important;
+    align-items: center !important;
+
+    width: 100% !important;
+    min-width: 0 !important;
+    max-width: none !important;
+
+    height: 40px !important;
+
+    gap: 10px !important;
+
+    padding: 0 13px !important;
+
+    margin: 0 !important;
+
+    border: 1px solid #dce6ef !important;
+    border-radius: 12px !important;
+
+    background: #ffffff !important;
+
+    box-shadow:
+        0 4px 14px
+        rgba(13, 121, 174, .10) !important;
+}
+
+
+body.officer-app-shell .officer-search > .fa-magnifying-glass {
+    display: block !important;
+
+    flex: 0 0 20px !important;
+
+    width: 20px !important;
+
+    color: #25465f !important;
+
+    font-size: 17px !important;
+
+    pointer-events: none !important;
+}
+
+
+body.officer-app-shell #officerQuickSearch {
+    display: block !important;
+
+    flex: 1 1 auto !important;
+
+    width: 100% !important;
+    min-width: 0 !important;
+    max-width: none !important;
+
+    height: 36px !important;
+    min-height: 36px !important;
+
+    padding: 0 !important;
+    margin: 0 !important;
+
+    border: 0 !important;
+
+    background: transparent !important;
+
+    box-shadow: none !important;
+    outline: none !important;
+
+    visibility: visible !important;
+    opacity: 1 !important;
+
+    pointer-events: auto !important;
+
+    color: #19354f !important;
+
+    font-size:14px !important;
+}
+
+
+body.officer-app-shell #officerQuickSearch::placeholder {
+    color: #8797a5 !important;
+
+    opacity: 1 !important;
+}
+
+
+body.officer-app-shell .officer-search-clear {
+    flex: 0 0 28px !important;
+
+    width: 28px !important;
+    height: 28px !important;
+
+    display: grid !important;
+    place-items: center !important;
+
+    padding: 0 !important;
+
+    border: 0 !important;
+    border-radius: 50% !important;
+
+    background: transparent !important;
+
+    cursor: pointer !important;
+}
+
+
+body.officer-app-shell .officer-search-clear[hidden] {
+    display: none !important;
+}
+
+
+/* SEARCH RESULTS */
+
+body.officer-app-shell .officer-search-results {
+    position: absolute !important;
+
+    z-index: 9999 !important;
+
+    top: calc(100% + 7px) !important;
+
+    left: 0 !important;
+    right: 0 !important;
+
+    width: 100% !important;
+
+    max-height: 340px !important;
+
+    overflow-y: auto !important;
+
+    padding: 6px !important;
+
+    border: 1px solid #dce6ef !important;
+    border-radius: 13px !important;
+
+    background: #ffffff !important;
+
+    box-shadow:
+        0 16px 38px
+        rgba(12, 39, 67, .18) !important;
+}
+
+
+body.officer-app-shell .officer-search-results[hidden] {
+    display: none !important;
+}
+
+
+body.officer-app-shell .officer-search-result {
+    width: 100% !important;
+
+    display: grid !important;
+
+    grid-template-columns:
+        30px minmax(0, 1fr) 18px !important;
+
+    align-items: center !important;
+
+    gap: 9px !important;
+
+    padding: 10px !important;
+
+    border: 0 !important;
+    border-radius: 9px !important;
+
+    background: transparent !important;
+
+    text-align: left !important;
+
+    cursor: pointer !important;
+}
+
+
+body.officer-app-shell .officer-search-result:hover,
+body.officer-app-shell .officer-search-result.is-active {
+    background: #edf7fb !important;
+}
+
+
+body.officer-app-shell .officer-search-result strong {
+    display: block !important;
+
+    color: #214f7d !important;
+
+    font-size:14px !important;
+}
+
+
+body.officer-app-shell .officer-search-result small {
+    display: block !important;
+
+    margin-top: 2px !important;
+
+    color: #7b8b99 !important;
+
+    font-size:14px !important;
+}
+
+
+body.officer-app-shell .officer-search-empty {
+    padding: 16px !important;
+
+    text-align: center !important;
+
+    color: #788999 !important;
+
+    font-size:14px !important;
+}
+
+
+/* =========================================================
+   MOBILE
+   ========================================================= */
+
+@media (max-width: 820px) {
+
+    body.officer-app-shell .officer-global-toolbar {
+        padding: 7px 8px !important;
+    }
+
+
+    body.officer-app-shell .officer-global-search-wrap {
+        flex: 1 1 0 !important;
+
+        width: auto !important;
+
+        min-width: 0 !important;
+    }
+
+
+    body.officer-app-shell .officer-search-box {
+        flex: 1 1 0 !important;
+
+        width: auto !important;
+
+        min-width: 0 !important;
+    }
+
+
+    body.officer-app-shell .officer-global-toolbar > .nav-right {
+        flex: 0 0 auto !important;
+
+        position: relative !important;
+
+        top: auto !important;
+        right: auto !important;
+
+        transform: none !important;
+    }
+
+}
+
+
+@media (max-width: 560px) {
+
+    body.officer-app-shell .officer-global-toolbar {
+        gap: 5px !important;
+
+        padding: 6px !important;
+    }
+
+
+    body.officer-app-shell
+    .officer-global-search-wrap .sidebar-toggle {
+
+        flex-basis: 36px !important;
+
+        width: 36px !important;
+        height: 36px !important;
+        min-width: 36px !important;
+    }
+
+
+    body.officer-app-shell .officer-global-search-wrap {
+        gap: 6px !important;
+    }
+
+
+    body.officer-app-shell .officer-search {
+        height: 36px !important;
+
+        padding: 0 10px !important;
+
+        gap: 7px !important;
+    }
+
+
+    body.officer-app-shell #officerQuickSearch {
+        height: 32px !important;
+        min-height: 32px !important;
+
+        font-size:14px !important;
+    }
+
+
+    body.officer-app-shell
+    .officer-search > .fa-magnifying-glass {
+
+        flex-basis: 18px !important;
+
+        width: 18px !important;
+
+        font-size: 15px !important;
+    }
+
+}
+
+/* =========================================================
+   FINAL MOBILE SEARCH FIX
+   ========================================================= */
+
+@media (max-width: 820px) {
+
+  body.officer-app-shell .officer-global-toolbar {
+    position: relative !important;
+
+    display: flex !important;
+    align-items: center !important;
+
+    width: 100% !important;
+    height: 56px !important;
+    min-height: 56px !important;
+
+    /* reserve room for bell + avatar */
+    padding: 7px 88px 7px 8px !important;
+
+    overflow: visible !important;
+  }
+
+
+  /* menu + search occupy all remaining space */
+  body.officer-app-shell .officer-global-search-wrap {
+    display: flex !important;
+    align-items: center !important;
+
+    flex: 1 1 auto !important;
+
+    width: 100% !important;
+    min-width: 0 !important;
+    max-width: none !important;
+
+    gap: 8px !important;
+  }
+
+
+  body.officer-app-shell
+  .officer-global-search-wrap .sidebar-toggle {
+    flex: 0 0 40px !important;
+
+    width: 40px !important;
+    height: 40px !important;
+    min-width: 40px !important;
+
+    margin: 0 !important;
+  }
+
+
+  body.officer-app-shell .officer-search-box {
+    position: relative !important;
+
+    display: block !important;
+
+    flex: 1 1 auto !important;
+
+    width: auto !important;
+    min-width: 0 !important;
+    max-width: none !important;
+
+    z-index: 2000 !important;
+  }
+
+
+  /* search bar */
+  body.officer-app-shell .officer-search {
+    position: relative !important;
+
+    display: block !important;
+
+    width: 100% !important;
+    height: 40px !important;
+
+    min-width: 0 !important;
+
+    margin: 0 !important;
+    padding: 0 !important;
+
+    border: 1px solid #dce6ef !important;
+    border-radius: 12px !important;
+
+    background: #ffffff !important;
+
+    overflow: visible !important;
+  }
+
+
+  /* search icon */
+  body.officer-app-shell
+  .officer-search > .fa-magnifying-glass {
+    position: absolute !important;
+
+    z-index: 3 !important;
+
+    top: 50% !important;
+    left: 13px !important;
+
+    transform: translateY(-50%) !important;
+
+    width: 18px !important;
+
+    font-size: 17px !important;
+
+    color: #25465f !important;
+
+    pointer-events: none !important;
+  }
+
+
+  /*
+   * Actual input fills the ENTIRE search box.
+   * This makes the whole white search bar tappable.
+   */
+  body.officer-app-shell #officerQuickSearch {
+    position: relative !important;
+
+    z-index: 2 !important;
+
+    display: block !important;
+
+    width: 100% !important;
+    height: 100% !important;
+
+    min-width: 0 !important;
+    min-height: 40px !important;
+
+    margin: 0 !important;
+
+    padding:
+      0
+      38px
+      0
+      40px !important;
+
+    border: 0 !important;
+    border-radius: 12px !important;
+
+    background: transparent !important;
+
+    color: #19354f !important;
+
+    font-size:14px !important;
+
+    visibility: visible !important;
+    opacity: 1 !important;
+
+    pointer-events: auto !important;
+
+    touch-action: manipulation !important;
+
+    -webkit-appearance: none !important;
+    appearance: none !important;
+
+    outline: none !important;
+    box-shadow: none !important;
+  }
+
+
+  body.officer-app-shell
+  #officerQuickSearch::placeholder {
+    color: #8797a5 !important;
+
+    opacity: 1 !important;
+  }
+
+
+  /* X clear button */
+  body.officer-app-shell .officer-search-clear {
+    position: absolute !important;
+
+    z-index: 4 !important;
+
+    top: 50% !important;
+    right: 6px !important;
+
+    transform: translateY(-50%) !important;
+
+    width: 28px !important;
+    height: 28px !important;
+  }
+
+
+  /* Bell + avatar fixed inside the right side of toolbar */
+  body.officer-app-shell
+  .officer-global-toolbar > .nav-right {
+    position: absolute !important;
+
+    top: 7px !important;
+    right: 7px !important;
+
+    transform: none !important;
+
+    display: flex !important;
+    align-items: center !important;
+
+    width: auto !important;
+    height: 40px !important;
+
+    gap: 4px !important;
+
+    z-index: 2100 !important;
+  }
+
+
+  /* results dropdown */
+  body.officer-app-shell .officer-search-results {
+    position: absolute !important;
+
+    z-index: 9999 !important;
+
+    top: calc(100% + 7px) !important;
+
+    left: 0 !important;
+    right: 0 !important;
+
+    width: 100% !important;
+
+    max-height: 320px !important;
+
+    overflow-y: auto !important;
+
+    background: #ffffff !important;
+  }
+}
+
+
+@media (max-width: 560px) {
+
+  body.officer-app-shell .officer-global-toolbar {
+    height: 52px !important;
+    min-height: 52px !important;
+
+    padding:
+      6px
+      78px
+      6px
+      6px !important;
+  }
+
+
+  body.officer-app-shell
+  .officer-global-search-wrap .sidebar-toggle {
+    flex-basis: 36px !important;
+
+    width: 36px !important;
+    height: 36px !important;
+    min-width: 36px !important;
+  }
+
+
+  body.officer-app-shell .officer-search {
+    height: 36px !important;
+  }
+
+
+  body.officer-app-shell #officerQuickSearch {
+    min-height: 36px !important;
+
+    padding-left: 37px !important;
+
+    font-size:14px !important;
+  }
+
+
+  body.officer-app-shell
+  .officer-search > .fa-magnifying-glass {
+    left: 12px !important;
+
+    font-size: 15px !important;
+  }
+
+
+  body.officer-app-shell
+  .officer-global-toolbar > .nav-right {
+    top: 6px !important;
+    right: 5px !important;
+
+    height: 36px !important;
+  }
+}
+
+
+/* =========================================================
+   MOBILE OFFICER TOOLBAR FINAL OVERFLOW FIX
+   Keeps search and action buttons separated on module pages
+   ========================================================= */
+@media (max-width: 768px) {
+
+  body.officer-app-shell .officer-global-toolbar {
+    display: flex !important;
+    align-items: center !important;
+    gap: 6px !important;
+    overflow: hidden !important;
+  }
+
+  body.officer-app-shell .officer-global-search-wrap {
+    display: flex !important;
+    flex: 1 1 auto !important;
+    min-width: 0 !important;
+    max-width: calc(100% - 125px) !important;
+  }
+
+  body.officer-app-shell .officer-search {
+    flex: 1 1 auto !important;
+    min-width: 0 !important;
+  }
+
+  body.officer-app-shell #officerQuickSearch {
+    width: 100% !important;
+    min-width: 0 !important;
+    text-overflow: ellipsis !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+  }
+
+  body.officer-app-shell .officer-global-toolbar > .nav-right {
+    position: static !important;
+    flex: 0 0 auto !important;
+    margin-left: auto !important;
+    gap: 4px !important;
+  }
+
+  body.officer-app-shell .officer-global-toolbar button,
+  body.officer-app-shell .officer-global-toolbar .usc-settings-trigger,
+  body.officer-app-shell .officer-global-toolbar .profile-trigger {
+    flex: 0 0 auto !important;
+  }
+}
+
+
+/* =========================================================
+   MOBILE OFFICER HEADER CONSISTENCY PATCH
+   Keeps all modules identical to dashboard mobile toolbar
+   ========================================================= */
+@media (max-width: 820px) {
+  body.officer-app-shell .officer-global-toolbar,
+  body.officer-app-shell .top-nav {
+    display:flex !important;
+    align-items:center !important;
+    flex-wrap:nowrap !important;
+    gap:8px !important;
+    overflow:hidden !important;
+  }
+
+  body.officer-app-shell .officer-global-search-wrap {
+    flex:1 1 auto !important;
+    min-width:0 !important;
+  }
+
+  body.officer-app-shell .officer-search-box,
+  body.officer-app-shell .officer-search {
+    min-width:0 !important;
+    width:100% !important;
+  }
+
+  body.officer-app-shell .nav-right {
+    flex:0 0 auto !important;
+    display:flex !important;
+    align-items:center !important;
+    gap:6px !important;
+  }
+
+  body.officer-app-shell .nav-right .bell,
+  body.officer-app-shell .nav-right .settings-btn,
+  body.officer-app-shell .nav-right .avatar {
+    flex:0 0 36px !important;
+  }
+
+  body.officer-app-shell .admin-name,
+  body.officer-app-shell [data-admin-name],
+  body.officer-app-shell #adminName {
+    display:none !important;
+  }
+}
+
+/* =========================================================
+   OFFICER MOBILE HEADER DASHBOARD MATCH PATCH
+   Scoped only to officer app shell
+   ========================================================= */
+@media (max-width: 820px) {
+  body.officer-app-shell .officer-global-toolbar {
+    padding: 7px 8px !important;
+    gap: 8px !important;
+  }
+
+  body.officer-app-shell .officer-global-search-wrap {
+    flex: 1 1 auto !important;
+    width: auto !important;
+  }
+
+  body.officer-app-shell .officer-search-box {
+    flex: 1 1 auto !important;
+  }
+
+  body.officer-app-shell .officer-search {
+    width: 100% !important;
+  }
+
+  /* Match dashboard: remove mobile bell from officer toolbar */
+  body.officer-app-shell .notification-btn,
+  body.officer-app-shell .notification-toggle,
+  body.officer-app-shell .officer-notification-btn {
+    display: none !important;
+  }
+}
+
+
+/* ADMIN MOBILE MODULE SIDEBAR FIX */
+@media (max-width:820px){
+  body.officer-app-shell .layout{
+    display:block !important;
+    position:relative;
+  }
+
+  body.officer-app-shell .sidebar{
+    position:fixed !important;
+    top:0;
+    left:0;
+    width:270px !important;
+    height:100vh !important;
+    z-index:9999;
+    transform:translateX(-105%);
+    transition:transform .3s ease;
+    overflow-y:auto;
+    background:#fff;
+    box-shadow:18px 0 40px rgba(0,0,0,.18);
+  }
+
+  body.officer-app-shell .sidebar.mobile-open{
+    transform:translateX(0);
+  }
+
+  body.officer-app-shell .main{
+    width:100% !important;
+  }
+
+  body.officer-app-shell .top-nav{
+    position:sticky;
+    top:0;
+    z-index:20;
+  }
+
+  /* prevent settings/profile cards from inheriting broken desktop offsets */
+  .settings-card,
+  .settings-panel,
+  .profile-settings,
+  .preference-card{
+    transform:none !important;
+    opacity:1 !important;
+    visibility:visible !important;
+  }
+}
+
+/* admin module menu button */
+.admin-mobile-menu-btn{
+ display:none;
+}
+@media(max-width:820px){
+ .admin-mobile-menu-btn{
+   display:flex;
+   align-items:center;
+   justify-content:center;
+   width:42px;height:42px;
+   border-radius:14px;
+   border:1px solid #dbeafe;
+   background:#fff;
+   color:#163f8c;
+   cursor:pointer;
+ }
+}
+
+
+/* =========================================================
+   ADMIN MOBILE SIDEBAR DRAWER FIX
+   Match officer dashboard behavior
+   ========================================================= */
+@media (max-width: 820px) {
+  body.officer-app-shell .sidebar {
+    position: fixed !important;
+    left: 10px !important;
+    top: 70px !important;
+    width: 280px !important;
+    max-width: 85vw !important;
+    height: calc(100vh - 90px) !important;
+    display: flex !important;
+    grid-template-columns: none !important;
+    flex-direction: column !important;
+    overflow-y: auto !important;
+    transform: translateX(-120%) !important;
+    transition: transform .3s ease !important;
+    z-index: 1200 !important;
+    pointer-events: none !important;
+  }
+
+  body.officer-app-shell .sidebar.mobile-open {
+    transform: translateX(0) !important;
+    pointer-events: auto !important;
+  }
+
+  body.officer-app-shell .sidebar-backdrop {
+    position: fixed !important;
+    inset: 0 !important;
+    background: rgba(10,25,45,.45) !important;
+    backdrop-filter: blur(4px) !important;
+    opacity: 0 !important;
+    visibility: hidden !important;
+    pointer-events: none !important;
+    z-index: 1190 !important;
+    transition: .25s ease !important;
+  }
+
+  body.officer-app-shell .sidebar-backdrop.active {
+    opacity: 1 !important;
+    visibility: visible !important;
+    pointer-events: auto !important;
+  }
+
+  body.officer-app-shell .admin-mobile-menu-btn {
+    position: relative !important;
+    z-index: 1300 !important;
+    pointer-events: auto !important;
+    cursor: pointer !important;
+  }
+}
+
+
+/* FINAL ADMIN MOBILE SIDEBAR LAYER FIX */
+@media (max-width: 768px){
+  body.officer-app-shell .admin-mobile-menu-btn{
+    position:relative!important;
+    z-index:2000!important;
+    pointer-events:auto!important;
+    cursor:pointer!important;
+  }
+
+  body.officer-app-shell .sidebar-backdrop{
+    display:block!important;
+    position:fixed!important;
+    inset:0!important;
+    z-index:1990!important;
+    background:rgba(10,25,45,.45)!important;
+    opacity:0!important;
+    pointer-events:none!important;
+    backdrop-filter:none!important;
+    -webkit-backdrop-filter:none!important;
+  }
+
+  body.officer-app-shell .sidebar-backdrop.active{
+    opacity:1!important;
+    pointer-events:auto!important;
+  }
+
+  body.officer-app-shell .sidebar{
+    position:fixed!important;
+    top:0!important;
+    left:0!important;
+    bottom:0!important;
+    width:min(290px,85vw)!important;
+    z-index:2100!important;
+    transform:translateX(-105%)!important;
+    transition:transform .3s ease!important;
+    overflow-y:auto!important;
+  }
+
+  body.officer-app-shell .sidebar.mobile-open{
+    transform:translateX(0)!important;
+  }
+}
+
+
+/* =========================================================
+   ADMIN MOBILE DRAWER FINAL OVERRIDE
+   Fix: backdrop showing without visible sidebar
+   ========================================================= */
+@media (max-width:820px){
+
+  body.officer-app-shell .sidebar-backdrop{
+    position:fixed!important;
+    inset:0!important;
+    background:rgba(10,25,45,.45)!important;
+    backdrop-filter:none!important;
+    -webkit-backdrop-filter:none!important;
+    opacity:0!important;
+    visibility:hidden!important;
+    pointer-events:none!important;
+    z-index:1990!important;
+  }
+
+  body.officer-app-shell .sidebar-backdrop.active{
+    opacity:1!important;
+    visibility:visible!important;
+    pointer-events:auto!important;
+  }
+
+  body.officer-app-shell aside.sidebar{
+    position:fixed!important;
+    top:0!important;
+    left:0!important;
+    bottom:0!important;
+    width:290px!important;
+    max-width:86vw!important;
+    height:100dvh!important;
+    display:flex!important;
+    flex-direction:column!important;
+    background:#ffffff!important;
+    color:#18314f!important;
+    z-index:2200!important;
+    transform:translateX(-110%)!important;
+    transition:transform .28s ease!important;
+    overflow-y:auto!important;
+    box-shadow:18px 0 45px rgba(0,0,0,.22)!important;
+    pointer-events:auto!important;
+  }
+
+  body.officer-app-shell aside.sidebar.mobile-open{
+    transform:translateX(0)!important;
+  }
+
+  body.officer-app-shell .admin-mobile-menu-btn{
+    position:relative!important;
+    z-index:2300!important;
+    pointer-events:auto!important;
+  }
+}

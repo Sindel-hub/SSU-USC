@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="en" class="usc-officer-access-pending">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>USC Announcement Module</title>
+    <link rel="stylesheet" href="../shared/css/usc-theme.css?v=officer-readable-1" />
+    <link rel="stylesheet" href="css/announcements.css?v=officer-readable-1" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" />
+    <link rel="stylesheet" href="../shared/css/officer-ui.css?v=instant-shell-2" />
+    <link
+    rel="stylesheet"
+    href="../shared/css/officer-responsive.css?v=officer-readable-1"
+/>
+<link rel="stylesheet" href="../../shared/profile-manager.css" />
+  <script src="../../shared/app-config.js"></script>
+  <script type="module" src="../../shared/auth-guard.js?v=rbac7"></script>
+<link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="css/bulletin-workspace.css?v=facebook-1" />
+</head>
+
+<body class="officer-app-shell announcement-management-page">
+    <div class="page">
+        <div class="page-label">Dashboard</div>
+
+        <div class="app-shell">
+            <header class="top-banner">
+                <div class="brand-logos">
+                    <img src="../shared/assets/SSUlogo.webp" alt="Samar State University Logo" class="brand-logo"
+                        onerror="this.style.display='none'" />
+                    <img src="../shared/assets/USClogo.webp" alt="University Student Council Logo"
+                        class="brand-logo" onerror="this.style.display='none'" />
+                </div>
+
+                <div class="brand">
+                    <h1>SSU UNIVERSITY STUDENT COUNCIL</h1>
+                    <p>LEADERSHIP | EXCELLENCE | DISCIPLINE | SERVICE</p>
+                </div>
+            </header>
+
+            <nav class="top-nav officer-global-toolbar">
+
+    <!-- LEFT: sidebar + module search -->
+    <div class="nav-left officer-global-search-wrap">
+
+        <button
+            class="sidebar-toggle"
+            type="button"
+            data-sidebar-toggle
+            aria-label="Open sidebar"
+            aria-expanded="false"
+        >
+            <span class="grid-icon"></span>
+        </button>
+
+
+        <div class="officer-search-box" id="officerSearchBox">
+
+            <div class="officer-search">
+
+                <i
+                    class="fa-solid fa-magnifying-glass"
+                    aria-hidden="true"
+                ></i>
+
+                <input
+                    id="officerQuickSearch"
+                    type="search"
+                    aria-label="Search officer modules"
+                    placeholder="Search modules"
+                    autocomplete="off"
+                />
+
+                <button
+                    class="officer-search-clear"
+                    id="officerSearchClear"
+                    type="button"
+                    aria-label="Clear search"
+                    hidden
+                >
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+
+            </div>
+
+
+            <div
+                class="officer-search-results"
+                id="officerSearchResults"
+                role="listbox"
+                aria-label="Officer module search results"
+                hidden
+            ></div>
+
+        </div>
+
+    </div>
+
+
+    <!-- RIGHT: notifications + profile -->
+    <div class="nav-right">
+
+        <button
+            class="bell officer-bell"
+            type="button"
+            aria-label="Notifications"
+        >
+            <i class="fa-regular fa-bell"></i>
+        </button>
+
+        <div
+            class="avatar"
+            aria-label="Officer profile"
+        ></div>
+
+    </div>
+
+</nav>
+
+            <div class="sidebar-overlay" data-sidebar-overlay></div>
+
+            <main class="layout">
+                <aside class="sidebar officer-reference-sidebar">
+                    <div class="officer-sidebar-mark"><i class="fa-solid fa-user-tie"></i></div>
+                    <nav class="officer-module-nav" aria-label="Officer modules">
+                        <a class="nav-btn" href="../overview/overview.html"><span class="icon"><i class="fa-solid fa-table-columns"></i></span><span>Dashboard</span></a>
+                        <a class="nav-btn" href="../announcements/announcements.html"><span class="icon"><i class="fa-solid fa-note-sticky"></i></span><span>Bulletin Board Center</span></a>
+                        <a class="nav-btn" href="../elections/elections.html"><span class="icon"><i class="fa-regular fa-rectangle-list"></i></span><span>Election Management</span></a>
+                        <a class="nav-btn" href="../events/events.html"><span class="icon"><i class="fa-regular fa-calendar"></i></span><span>Events</span></a>
+                        <a class="nav-btn" href="../programs/programs.html"><span class="icon"><i class="fa-solid fa-earth-americas"></i></span><span>Programs</span></a>
+                        <a class="nav-btn" href="../organizational-chart/organizational-chart.html"><span class="icon"><i class="fa-solid fa-users"></i></span><span>Organizational Chart</span></a>
+                        <a class="nav-btn" href="../complaints/complaints.html"><span class="icon"><i class="fa-solid fa-message"></i></span><span>Complaints Management</span></a>
+                    </nav>
+                    <button class="nav-btn logout-btn" type="button" onclick="logoutOfficer()"><span class="icon"><i class="fa-solid fa-right-from-bracket"></i></span><span>Logout</span></button>
+                </aside>
+
+                <section class="main">
+                    <section class="hero">
+                        <div class="hero-left">
+                            <div class="hero-title">
+                                <div class="module-hero-heading">
+                                    <span class="module-hero-icon" aria-hidden="true"><i class="fa-solid fa-bullhorn"></i></span>
+                                    <div>
+                                    <h1>Bulletin Board Center</h1>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="stats bulletin-stats" aria-label="Announcement statistics">
+                                <article class="stat-card bulletin-stat-card"><div class="stat-label">Published</div><div class="bulletin-status-row"><div class="bulletin-stat-icon" aria-hidden="true"><i class="fa-solid fa-bullhorn"></i></div><div class="bulletin-stat-copy">
+                                        <div class="stat-value" id="publishedCount">0</div>
+                                    </div>
+                                </div></article>
+
+                                <article class="stat-card bulletin-stat-card"><div class="stat-label">With Images</div><div class="bulletin-status-row"><div class="bulletin-stat-icon" aria-hidden="true"><i class="fa-regular fa-image"></i></div><div class="bulletin-stat-copy">
+                                        <div class="stat-value" id="imageCount">0</div>
+                                    </div>
+                                </div></article>
+
+                                <article class="stat-card bulletin-stat-card"><div class="stat-label">Categories</div><div class="bulletin-status-row"><div class="bulletin-stat-icon" aria-hidden="true"><i class="fa-solid fa-layer-group"></i></div><div class="bulletin-stat-copy">
+                                        <div class="stat-value" id="categoryCount">0</div>
+                                    </div>
+                                </div></article>
+
+                                <article class="stat-card bulletin-stat-card latest-publish-card"><div class="stat-label">Latest Publish</div><div class="bulletin-status-row"><div class="bulletin-stat-icon" aria-hidden="true"><i class="fa-regular fa-clock"></i></div><div class="bulletin-stat-copy">
+                                        <div class="latest-publish-value" id="latestPublish">
+                                            <span class="latest-publish-date">No posts yet</span>
+                                            <span class="latest-publish-time">—</span>
+                                        </div>
+                                    </div>
+                                </div></article>
+                            </div>
+                        </div>
+
+</section>
+
+                    
+
+                    <section class="grid-2 announcement-workspace module-management-grid">
+                        <article class="card" id="announcementFormCard">
+                            <div class="card-head module-card-head">
+                                <div class="module-card-title"><span class="module-card-icon"><i class="fa-solid fa-pen-to-square"></i></span><div><h3>Create Announcement</h3></div></div>
+                                <span class="module-card-badge"><i class="fa-solid fa-plus"></i> Create</span>
+                            </div>
+
+                            <form class="card-body" id="announcementForm" data-rbac-permission="bulletin.manage">
+                                <div class="field">
+                                    <label for="announcementTitle"><i class="fa-solid fa-heading"></i> Announcement Title</label>
+                                    <input id="announcementTitle" type="text" placeholder="Enter announcement title"
+                                        required />
+                                </div>
+
+                                <div class="grid-2 compact-grid">
+                                    <div class="field">
+                                        <label for="announcementCategory"><i class="fa-solid fa-tags"></i> Category</label>
+                                        <select id="announcementCategory" required>
+                                            <option value="Official Notice">Official Notice</option>
+                                            <option value="Event Update">Event Update</option>
+                                            <option value="Election Notice">Election Notice</option>
+                                            <option value="Student Reminder">Student Reminder</option>
+                                        </select>
+                                    </div>
+
+                                    <div class="field">
+                                        <label for="announcementAudience"><i class="fa-solid fa-users"></i> Audience</label>
+                                        <select id="announcementAudience" required>
+                                            <option value="All Students">All Students</option>
+                                            <option value="Selected Group">Selected Group</option>
+                                            <option value="Registered Participants">Registered Participants</option>
+                                        </select>
+                                    </div>
+                                </div>
+
+                                <div class="field">
+                                    <label for="announcementContent"><i class="fa-solid fa-align-left"></i> Announcement Content</label>
+                                    <textarea id="announcementContent"
+                                        placeholder="Write the official announcement here..." required></textarea>
+                                </div>
+
+                                <div class="field">
+                                    <label><i class="fa-regular fa-image"></i> Announcement Image</label>
+                                    <div class="upload-box">
+                                        <input id="announcementImage" type="file" accept="image/*" hidden />
+                                        <button class="mini-btn primary" type="button" id="imagePickerBtn"><i class="fa-solid fa-image"></i> Add Image</button>
+                                        <span class="upload-file-name" id="imageFileName">No image selected</span>
+                                    </div>
+                                </div>
+
+                                <div class="preview-thumb-wrap">
+                                    <img
+    id="draftImagePreview"
+    class="preview-thumb"
+    alt="Announcement image preview"
+    hidden
+/>
+                                </div>
+
+                                <div class="facebook-publish-option"><label><input type="checkbox" id="alsoPostFacebook" disabled> Also post to Facebook</label><p id="facebookConnectionHint" role="status">Checking Facebook connection…</p><button type="button" id="openFacebookConnection" class="mini-btn light">Facebook Connection in Settings</button></div>
+                                <div class="row-actions form-actions">
+                                    <button class="mini-btn primary" type="submit" id="publishAnnouncementBtn"><i class="fa-solid fa-paper-plane"></i> Post Announcement</button>
+                                    <button class="mini-btn light" type="button" id="clearAnnouncementBtn"><i class="fa-solid fa-eraser"></i> Cancel</button>
+                                </div>
+                            </form>
+                        </article>
+
+                        <article class="card">
+                            <div class="card-head module-card-head">
+                                <div class="module-card-title"><span class="module-card-icon"><i class="fa-solid fa-eye"></i></span><div><h3>Live Preview</h3></div></div>
+                                <span class="module-card-badge preview"><i class="fa-regular fa-eye"></i> Preview</span>
+                            </div>
+
+                            <div class="card-body">
+                                <div class="preview-card" id="announcementPreviewCard">
+                                    <div class="preview-card-image empty" id="announcementPreviewImageWrap">
+                                        <img
+    id="announcementPreviewImage"
+    alt="Announcement preview image"
+    hidden
+/>
+                                        <div class="preview-image-placeholder" id="announcementPreviewPlaceholder">
+                                            No image selected
+                                        </div>
+                                    </div>
+
+                                    <div class="preview-meta-row">
+                                        <span class="badge live" id="previewCategoryBadge">Official Notice</span>
+                                        <span class="preview-date" id="previewDateText">Not yet posted</span>
+                                    </div>
+
+                                    <h3 id="previewTitle">Announcement title preview</h3>
+                                    <p class="preview-audience" id="previewAudience">Audience: All Students</p>
+                                    <p class="preview-content" id="previewContent">
+                                        Your announcement content will appear here as you type.
+                                    </p>
+                                </div>
+                            </div>
+                        </article>
+                    </section>
+
+                    <article class="card full-width-card bulletin-library">
+                        <div class="card-head module-card-head">
+                            <div class="module-card-title"><span class="module-card-icon"><i class="fa-solid fa-bullhorn"></i></span><div><h3 id="bulletinListTitle">Published Announcements</h3></div></div>
+                            <div class="bulletin-library-controls"><button type="button" class="mini-btn light" id="bulletinPhotos">Photos</button><button type="button" class="mini-btn light" data-bulletin-view="published" aria-pressed="true">Published</button><button type="button" class="mini-btn light" data-bulletin-view="archive" aria-pressed="false">Archive</button><button type="button" class="mini-btn light" data-bulletin-view="deleted" aria-pressed="false">Recently Deleted</button></div>
+                        </div>
+
+                        <div class="card-body">
+                            <div class="recent-list" id="recentAnnouncementsList"></div>
+                        </div>
+                    </article>
+                </section>
+            </main>
+        </div>
+    </div>
+
+    <div class="announcement-modal" id="announcementModal" hidden>
+        <div class="announcement-modal-backdrop" id="announcementModalBackdrop"></div>
+        <div class="announcement-modal-dialog">
+            <button class="modal-close" id="announcementModalClose" type="button" aria-label="Close announcement"><i class="fa-solid fa-xmark"></i></button>
+            <img
+    id="modalAnnouncementImage"
+    class="modal-image"
+    alt="Announcement image"
+    hidden
+/>
+            <div class="modal-meta">
+                <span class="badge live" id="modalAnnouncementCategory">Official Notice</span>
+                <span id="modalAnnouncementDate">N/A</span>
+            </div>
+            <h3 id="modalAnnouncementTitle"></h3>
+            <p class="modal-audience" id="modalAnnouncementAudience"></p>
+            <p id="modalAnnouncementContent"></p>
+        </div>
+    </div>
+
+    
+<footer class="officer-shared-footer">
+  <div class="officer-footer-main">
+    <div class="officer-footer-col">
+      <h3>ABOUT US</h3>
+      <a href="../overview/overview.html">USC Officer Portal</a>
+      <a href="../organizational-chart/organizational-chart.html">University Student Council</a>
+      <a href="../organizational-chart/organizational-chart.html">Organizational Chart</a>
+    </div>
+    <div class="officer-footer-col">
+      <h3>CONTACT US</h3>
+      <p><strong>Samar State University</strong></p>
+      <p>Arteche Boulevard</p>
+      <p>Catbalogan, Samar 6700</p>
+    </div>
+    <div class="officer-footer-col officer-footer-links">
+      <a href="https://ssu.edu.ph" target="_blank" rel="noopener"><i class="fa-brands fa-square-facebook"></i> ssu.edu.ph</a>
+      <a href="mailto:ssuuniversitystudentcouncil@gmail.com"><i class="fa-regular fa-envelope"></i> ssuuniversitystudentcouncil@gmail.com</a>
+    </div>
+  </div>
+  <div class="officer-footer-bottom">
+    <img src="../shared/assets/SSUlogo.webp" alt="SSU Logo" />
+    <img src="../shared/assets/USClogo.webp" alt="USC Logo" />
+    <div><strong>SSU UNIVERSITY STUDENT COUNCIL</strong><span>LEADERSHIP&nbsp;&nbsp;|&nbsp;&nbsp;EXCELLENCE&nbsp;&nbsp;|&nbsp;&nbsp;DISCIPLINE&nbsp;&nbsp;|&nbsp;&nbsp;SERVICE</span></div>
+  </div>
+</footer>
+
+    <script src="../shared/js/nav-active.js?v=6"></script>
+    <script type="module" src="js/announcements.js?v=facebook-1"></script>
+    <script type="module" src="../shared/js/admin-auth.js?v=rbac4"></script>
+<script type="module" src="../../shared/profile-manager.js?v=supabase-email-1"></script>
+  <script type="module" src="../shared/js/officer-rbac.js?v=6"></script>
+<dialog id="bulletinPhotosDialog" aria-labelledby="bulletinPhotosTitle"><button type="button" class="mini-btn light" id="closeBulletinPhotos">Close</button><h2 id="bulletinPhotosTitle">Photos</h2><div id="bulletinPhotoGrid"></div></dialog>
+<dialog id="announcementComposeDialog" aria-label="Create announcement and live preview"></dialog>
+<dialog id="bulletinPhotoViewer" aria-label="Photo viewer"><button type="button" id="closeBulletinPhotoViewer" class="mini-btn light" aria-label="Close photo">Close</button><img id="bulletinFullPhoto" alt="Announcement photo"><div class="photo-navigation"><button type="button" class="mini-btn light" data-photo-step="-1" aria-label="Previous photo">&#8592; Previous</button><span id="bulletinPhotoPosition" aria-live="polite"></span><button type="button" class="mini-btn light" data-photo-step="1" aria-label="Next photo">Next &#8594;</button></div></dialog>
+<dialog id="confirmAnnouncementPublish" aria-labelledby="publishConfirmHeading" aria-describedby="publishConfirmDescription"><form method="dialog"><h2 id="publishConfirmHeading">Publish this announcement?</h2><p id="publishConfirmationTitle"></p><p id="publishConfirmDescription">Please check your announcement before posting. It will be visible to students once published.</p><div class="publish-confirm-actions"><button class="mini-btn light" value="cancel" autofocus>Keep editing</button><button class="mini-btn primary" value="publish">Yes, publish</button></div></form></dialog>
+</body>
+
+</html>

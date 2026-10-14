@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>SSU University Student Council - Home</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="./css/home.css?v=20">
+  <script src="../shared/app-config.js?v=7"></script>
+</head>
+<body>
+        <header class="top-header" id="topHeader">
+            <a class="header-brand" href="#welcome-section" aria-label="SSU University Student Council home">
+                <span class="brand-seals" aria-hidden="true">
+                    <img src="assets/SSUlogo.webp" alt="" onerror="this.style.display='none'">
+                    <img src="assets/USClogo.webp" alt="" onerror="this.style.display='none'">
+                </span>
+                <span class="brand-copy">
+                    <strong>SSU UNIVERSITY STUDENT COUNCIL</strong>
+                    <span class="brand-motto">LEADERSHIP&nbsp;&nbsp;|&nbsp;&nbsp;EXCELLENCE&nbsp;&nbsp;|&nbsp;&nbsp;DISCIPLINE&nbsp;&nbsp;|&nbsp;&nbsp;SERVICE</span>
+                </span>
+            </a>
+
+            <button class="mobile-nav-toggle" id="mobileNavToggle" type="button" aria-label="Open navigation" aria-expanded="false" aria-controls="landingNav">
+                <i class="fa-solid fa-bars" aria-hidden="true"></i>
+            </button>
+
+            <nav class="main-nav" id="landingNav" aria-label="Primary navigation">
+                <div class="nav-links">
+                    <a href="#welcome-section" class="nav-link active" aria-current="page"><span>Home</span></a>
+                    <a href="https://drive.google.com/file/d/1SFp-SHhVKCHcHlWLwMxSQe1bdbLRuLMG/preview" class="nav-link" target="_blank" rel="noopener noreferrer"><span>Student Handbook</span></a>
+                    <a href="#about-section" class="nav-link"><span>Organizational Chart</span></a>
+                    <a href="#about-section" class="nav-link"><span>About Us</span></a>
+                    <a href="../index/index.html" class="nav-login"><span>Login</span></a>
+                </div>
+            </nav>
+        </header>
+    <div class="events-following-background" id="eventsFollowingBackground" aria-hidden="true"></div>
+    <div class="hero-events-flow">
+    <!-- Screen 1: header + welcome hero -->
+    <div class="welcome-screen snap-section" id="welcome-section">
+
+
+        <section class="preview-hero" aria-labelledby="welcomeTitle">
+            <div class="hero-content">
+                <div class="hero-copy">
+                    <p class="hero-eyebrow">Welcome to SSU</p>
+                    <h1 id="welcomeTitle">University Student<br>Council Portal</h1>
+                    <p class="hero-tagline">GET ALWAYS UPDATED HERE!</p>
+                    <a href="../index/index.html" class="hero-login-btn">LOGIN NOW</a>
+                </div>
+
+                <section class="announcement-shell mobile-snap-panel" id="announcement-section" aria-labelledby="announcementsHeading">
+                    <div class="mobile-section-intro">
+                        <span class="mobile-section-kicker">Latest from USC</span>
+                        <h2 id="announcementsHeading">Announcements</h2>
+                        <p>Swipe through the latest official updates from your University Student Council.</p>
+                    </div>
+
+                    <div class="announcement-carousel" aria-label="Announcement preview carousel">
+                        <button class="preview-arrow left" type="button" onclick="changePreviewSlide(-1)" aria-label="Previous announcement">
+                            <i class="fa-solid fa-chevron-left"></i>
+                        </button>
+
+                        <div class="preview-stage">
+                            <div id="previewSlidesHost"></div>
+                            <div class="preview-dots" id="previewDots"></div>
+                        </div>
+
+                        <button class="preview-arrow right" type="button" onclick="changePreviewSlide(1)" aria-label="Next announcement">
+                            <i class="fa-solid fa-chevron-right"></i>
+                        </button>
+                    </div>
+                </section>
+            </div>
+
+            <button class="scroll-down-indicator" id="scrollDownBtn" type="button" aria-label="Scroll to next landing section">
+                <span>Scroll down</span>
+                <i class="fa-solid fa-chevron-down"></i>
+            </button>
+        </section>
+    </div>
+
+    <!-- Screen 2: upcoming events -->
+    <section class="events-section snap-section" id="events-section" aria-labelledby="eventsHeading">
+        <div class="events-card dynamic-events-card events-showcase">
+            <div class="events-overview">
+                <div class="events-copy-block">
+                    <span class="events-eyebrow">USC CAMPUS CALENDAR</span>
+                    <h2 class="section-heading" id="eventsHeading">Upcoming Events</h2>
+                    <p class="events-intro">Every event is an opportunity to voice your ideas, learn new skills, and connect with fellow students. Step up and be part of the change.</p>
+                </div>
+                <div class="events-side" id="homeEventList"></div>
+            </div>
+
+            <div class="calendar-side calendar-card-polished">
+                <div class="calendar-header">
+                    <button class="calendar-arrow" id="homeCalendarPrev" type="button" aria-label="Previous month"><i class="fa-solid fa-chevron-left" aria-hidden="true"></i></button>
+                    <span id="homeCalendarTitle">Month Year</span>
+                    <button class="calendar-arrow" id="homeCalendarNext" type="button" aria-label="Next month"><i class="fa-solid fa-chevron-right" aria-hidden="true"></i></button>
+                </div>
+
+                <div class="calendar-legend home-calendar-legend" aria-hidden="true">
+                    <span><i class="legend-dot event"></i>Event date</span>
+                    <span><i class="legend-dot today"></i>Today</span>
+                    <span><i class="legend-dot selected"></i>Selected</span>
+                </div>
+
+                <div class="calendar-grid" id="homeCalendarGrid"></div>
+            </div>
+        </div>
+    </section>
+    </div>
+
+    <!-- Screen 3: about + goals -->
+    <section class="about-goals-wrapper snap-section" id="about-section" aria-labelledby="aboutHeading">
+        <div class="giant-usc-mark" aria-hidden="true">
+            <img src="assets/USClogo.webp" alt="">
+        </div>
+
+        <div class="feature-strip about-strip">
+            <div class="feature-inner">
+                <div class="feature-text">
+                    <h2 id="aboutHeading">ABOUT USC</h2>
+                    <p>The University Student Council at Samar State University (SSU) serves as the primary representative body for the student population. Its core mandate involves representing student interests, enacting policies related to academic and co-curricular activities, and facilitating effective student interactions.</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="feature-strip goals-strip">
+            <div class="feature-inner">
+                <div class="feature-text">
+                    <h2>Goals</h2>
+                    <p>The University Student Council at Samar State University (SSU) serves as the primary representative body for the student population. Its core mandate involves representing student interests, enacting policies related to academic and co-curricular activities, and facilitating effective student interactions.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <footer class="site-footer" id="site-footer">
+        <div class="footer-main">
+            <div class="footer-col">
+                <h3>ABOUT US</h3>
+                <a href="#about-section">About us</a>
+                <a href="#about-section">University Student Council Seal</a>
+                <a href="#about-section">Organizational Chart</a>
+            </div>
+
+            <div class="footer-col">
+                <h3>CONTACT US</h3>
+                <p><strong>Samar State University</strong></p>
+                <p>Arteche Boulevard</p>
+                <p>Catbalogan, Samar 6700</p>
+            </div>
+
+            <div class="footer-col footer-social">
+                <a href="https://ssu.edu.ph" target="_blank" rel="noopener noreferrer"><i class="fa-brands fa-facebook-square" aria-hidden="true"></i><span>ssu.edu.ph</span></a>
+                <a href="mailto:ssuuniversitystudentcouncil@gmail.com"><i class="fa-regular fa-envelope" aria-hidden="true"></i><span>ssuuniversitystudentcouncil@gmail.com</span></a>
+            </div>
+        </div>
+
+        <div class="footer-bottom">
+            <div class="footer-bottom-inner">
+                <img src="assets/SSUlogo.webp" alt="SSU Logo" onerror="this.style.display='none'">
+                <img src="assets/USClogo.webp" alt="USC Logo" onerror="this.style.display='none'">
+                <div class="footer-brand-text">
+                    <h4>SSU UNIVERSITY STUDENT COUNCIL</h4>
+                    <p>LEADERSHIP&nbsp;&nbsp; | &nbsp;&nbsp;EXCELLENCE&nbsp;&nbsp; | &nbsp;&nbsp;DISCIPLINE&nbsp;&nbsp; | &nbsp;&nbsp;SERVICE</p>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <script type="module" src="./js/home.js?v=15"></script>
+</body>
+</html>

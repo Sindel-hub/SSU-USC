@@ -1,0 +1,115 @@
+/* Native dialogs escape the dashboard's nested scrolling and stacking contexts. */
+.announcement-workspace { position: relative; border-radius: 20px; }
+.announcement-workspace .module-card-badge { display: none; }
+body.officer-app-shell .hero { grid-template-columns: 1fr !important; }
+body.officer-app-shell .bulletin-stats { display: grid !important; grid-template-columns: repeat(4,minmax(0,1fr)) !important; gap: 14px !important; }
+body.officer-app-shell .bulletin-stat-card { display: flex !important; flex-direction: column !important; align-items: stretch !important; gap: 12px !important; padding: 18px !important; }
+body.officer-app-shell .bulletin-stat-card .stat-label { color: #365675 !important; font-size: 15px !important; font-weight: 600 !important; margin: 0 !important; }
+.bulletin-status-row { display: flex; align-items: center; gap: 14px; }
+body.officer-app-shell .bulletin-stat-icon { width: 42px !important; height: 42px !important; flex: 0 0 42px; font-size: 18px !important; display: grid; place-items: center; }
+body.officer-app-shell .bulletin-stat-copy .stat-value { font-size: 28px !important; line-height: 1.2 !important; }
+.bulletin-library-controls { display: flex; gap: 8px; flex-wrap: wrap; }
+.full-width-card .card-head { flex-wrap: wrap; gap: 14px; }
+body.officer-app-shell .bulletin-library-controls [aria-pressed="true"] { background: #1d3770 !important; color: white !important; }
+
+.post-actions-menu button { font: inherit; color: #23436b; background: #f1f6fb; border: 1px solid #d0dfeb; border-radius: 8px; padding: 8px 12px; cursor: pointer; }
+.retention-countdown { color: #8c4c20 !important; font-size: 14px !important; }
+#bulletinPhotosDialog { width: min(850px,92vw); max-height: 85dvh; border: 0; border-radius: 20px; padding: 24px; color: #1d3754; }
+#bulletinPhotosDialog::backdrop { background: rgba(13,27,48,.6); }
+#closeBulletinPhotos { float: right; }
+#bulletinPhotoGrid { display: grid; grid-template-columns: repeat(auto-fill,minmax(160px,1fr)); gap: 16px; margin-top: 20px; }
+#bulletinPhotoGrid button { font: inherit; text-align: left; background: #f5f8fc; border: 1px solid #dbe5ef; border-radius: 12px; padding: 8px; cursor: pointer; }
+#bulletinPhotoGrid img { width: 100%; height: 130px; object-fit: cover; border-radius: 8px; }
+#bulletinPhotoGrid span { display: block; padding: 8px 0; overflow-wrap: anywhere; }
+@media(max-width:700px) { body.officer-app-shell .bulletin-stats { grid-template-columns: repeat(2,minmax(0,1fr)) !important; } }
+@media(prefers-reduced-motion:reduce) { .announcement-workspace, .sidebar, .top-banner, .top-nav, .sub-nav, .officer-shared-footer { transition: none; } }
+
+body.officer-app-shell :is(#announcementComposeDialog, #bulletinPhotosDialog, #bulletinPhotoViewer) {
+  position: fixed !important; inset: 0 !important; margin: auto !important;
+  box-sizing: border-box; max-width: calc(100vw - 32px) !important;
+  max-height: calc(100dvh - 32px) !important; border: 0; border-radius: 20px;
+  overflow: auto !important;
+}
+:is(#announcementComposeDialog, #bulletinPhotosDialog, #bulletinPhotoViewer):not([open]) { display: none !important; }
+:is(#announcementComposeDialog, #bulletinPhotosDialog, #bulletinPhotoViewer)::backdrop { background: rgba(0,0,0,.76); }
+body.officer-app-shell #announcementComposeDialog { width: min(1240px,calc(100vw - 32px)); padding: 0; background: #f5f9fc; }
+#announcementComposeDialog .announcement-workspace { margin: 0 !important; padding: 0 !important; box-shadow: none !important; }
+#announcementComposeDialog .module-card-badge { display: none !important; }
+body:has(#announcementComposeDialog[open], #bulletinPhotosDialog[open], #bulletinPhotoViewer[open]) { overflow: hidden !important; }
+body.officer-app-shell #bulletinPhotoViewer { width: fit-content; padding: 16px; background: #111; color: white; }
+#bulletinFullPhoto { display: block; max-width: min(1100px,calc(100vw - 64px)); max-height: calc(100dvh - 150px); object-fit: contain; margin: 12px auto; }
+#closeBulletinPhotoViewer { display: block; margin-left: auto; }
+
+/* Same horizontal reveal and easing as the complaint Sort control. */
+.post-actions-menu { position: relative; width: 220px; max-width: 100%; height: 44px; flex: 0 0 220px; }
+body.officer-app-shell .post-actions-menu .post-actions-toggle { position: absolute; right: 0; top: 0; width: 44px; height: 44px; padding: 0; z-index: 1; transition: transform .28s cubic-bezier(.22,.8,.24,1) !important; }
+body.officer-app-shell .post-actions-menu.is-open .post-actions-toggle { transform: translateX(-176px) !important; }
+.post-actions-options { position: absolute; right: 0; top: 0; width: 168px; height: 44px; display: flex; align-items: stretch; gap: 6px; opacity: 0; visibility: hidden; transform: translateX(12px); pointer-events: none; transition: opacity .22s ease, transform .28s ease, visibility .28s; }
+.post-actions-options button { flex: 1; min-width: 0; padding: 8px !important; }
+.post-actions-menu.is-open .post-actions-options { opacity: 1; visibility: visible; transform: translateX(0); pointer-events: auto; }
+body.officer-app-shell .bulletin-library { height: clamp(420px,65dvh,720px) !important; min-height: 0 !important; display: flex !important; flex-direction: column; flex: none; }
+.bulletin-library > .card-head { flex: 0 0 auto; }
+.bulletin-library > .card-head .module-card-title { flex-basis: 100%; }
+body.officer-app-shell .bulletin-library > .card-body { min-height: 0; flex: 1; overflow-y: auto !important; overflow-x: hidden; scrollbar-gutter: stable; overscroll-behavior: contain; }
+.bulletin-library .recent-list { align-content: start; }
+@media(max-width:700px) { #announcementComposeDialog .announcement-workspace { grid-template-columns: 1fr !important; } .recent-announcement-actions { flex-wrap: wrap; } }
+@media(prefers-reduced-motion:reduce) { .post-actions-menu .post-actions-toggle, .post-actions-options { transition: none !important; } }
+
+.photo-navigation { display:flex; align-items:center; justify-content:center; gap:20px; }
+#bulletinFullPhoto { cursor:pointer; }
+#bulletinPhotoPosition { color:#fff; font-size:15px; min-width:50px; text-align:center; }
+body.officer-app-shell #confirmAnnouncementPublish { position:fixed; inset:0; margin:auto !important; width:min(460px,calc(100vw - 32px)); max-height:calc(100dvh - 32px); overflow:auto; box-sizing:border-box; padding:26px; border:0; border-radius:18px; color:#23436b; background:white; }
+#confirmAnnouncementPublish:not([open]) { display:none !important; }
+#confirmAnnouncementPublish::backdrop { background:rgba(0,0,0,.76); }
+#confirmAnnouncementPublish h2 { font-size:22px; margin:0 0 14px; }
+#publishConfirmationTitle { font-weight:700; overflow-wrap:anywhere; margin:0 0 12px; }
+#publishConfirmDescription { line-height:1.5; margin-bottom:22px; }
+.publish-confirm-actions { display:flex; justify-content:flex-end; flex-wrap:wrap; gap:10px; }
+body.officer-app-shell .recent-announcement-actions [data-open-announcement] { transition:transform .28s cubic-bezier(.22,.8,.24,1),background .22s ease,box-shadow .22s ease !important; }
+body.officer-app-shell .recent-announcement-actions [data-open-announcement]:is(:hover,:focus-visible) { transform:translateX(-5px) !important; background:#e5f0fa !important; box-shadow:0 3px 10px rgba(29,55,112,.12) !important; }
+body.officer-app-shell .recent-announcement-actions [data-open-announcement]:active { transform:translateX(-2px) scale(.97) !important; }
+[data-open-announcement] i { transition:transform .28s cubic-bezier(.22,.8,.24,1); }
+[data-open-announcement]:is(:hover,:focus-visible) i { transform:translate(2px,-2px); }
+.announcement-modal:not([hidden]) .announcement-modal-dialog { animation:post-slide-in .28s cubic-bezier(.22,.8,.24,1); }
+@keyframes post-slide-in { from { opacity:0; translate:12px 0; } to { opacity:1; translate:0 0; } }
+/* A quiet thumb with no visible track, border or scrollbar divider. */
+body.officer-app-shell.announcement-management-page :is(.main,.bulletin-library > .card-body,#announcementComposeDialog) { scrollbar-width:thin; scrollbar-color:rgba(72,111,143,.3) transparent; }
+body.officer-app-shell.announcement-management-page :is(.main,.bulletin-library > .card-body,#announcementComposeDialog)::-webkit-scrollbar { width:6px !important; background:transparent !important; }
+body.officer-app-shell.announcement-management-page :is(.main,.bulletin-library > .card-body,#announcementComposeDialog)::-webkit-scrollbar-track { background:transparent !important; border:0 !important; box-shadow:none !important; }
+body.officer-app-shell.announcement-management-page :is(.main,.bulletin-library > .card-body,#announcementComposeDialog)::-webkit-scrollbar-thumb { background:rgba(72,111,143,.3) !important; border:0 !important; border-radius:99px !important; box-shadow:none !important; }
+body.officer-app-shell.announcement-management-page :is(.main,.bulletin-library > .card-body,#announcementComposeDialog)::-webkit-scrollbar-corner { background:transparent; }
+@media(prefers-reduced-motion:reduce) { body.officer-app-shell .recent-announcement-actions [data-open-announcement], [data-open-announcement] i { transition:none !important; } .announcement-modal:not([hidden]) .announcement-modal-dialog { animation:none; } }
+
+/* Keep the post button attached to the menu trigger throughout its reveal. */
+body.officer-app-shell .recent-announcement-actions {
+  display: flex; flex-wrap: nowrap !important; align-items: center;
+  justify-content: flex-end; gap: 8px; margin-left: auto;
+  max-width: 100%; overflow: visible;
+}
+body.officer-app-shell .recent-announcement-actions > [data-open-announcement] {
+  flex: 0 0 auto; white-space: nowrap;
+}
+body.officer-app-shell .recent-announcement-actions .post-actions-menu {
+  width: 44px; max-width: none; flex: 0 0 auto; margin-left: 0;
+  transition: width .28s cubic-bezier(.22,.8,.24,1);
+}
+body.officer-app-shell .recent-announcement-actions .post-actions-menu.is-open { width: 220px; }
+@media (prefers-reduced-motion: reduce) {
+  body.officer-app-shell .recent-announcement-actions .post-actions-menu { transition: none; }
+}
+
+body.officer-app-shell .post-actions-options .permanent-delete-action { color: #a52a32; white-space: normal; font-size: 13px; line-height: 1.15; }
+@media (max-width:600px) {
+  body.officer-app-shell .recent-announcement-actions > [data-open-announcement] { flex: 0 1 auto; min-width: 0; white-space: normal; padding: 8px !important; }
+  body.officer-app-shell .recent-announcement-actions .post-actions-menu.is-open { width: 180px; }
+  body.officer-app-shell .post-actions-menu.is-open .post-actions-toggle { transform: translateX(-136px) !important; }
+  .post-actions-options { width: 128px; }
+}
+
+.facebook-publish-option { padding:14px; margin:10px 0; background:#f0f5fc; border:1px solid #dce6f2; border-radius:12px; }
+.facebook-publish-option label { display:flex; gap:10px; align-items:center; font-weight:600; }
+body.officer-app-shell .facebook-publish-option input { width:20px !important; height:20px !important; min-height:0 !important; accent-color:#1d3770; }
+.facebook-publish-option p { margin:8px 0; font-size:14px; }
+.facebook-delivery-status { display:flex; gap:10px; flex-wrap:wrap; align-items:center; padding:10px 0; font-size:14px; color:#365675; }
+.facebook-delivery-status span { flex-basis:100%; }
+.facebook-delivery-status a { color:#1d3770; text-decoration:underline; }

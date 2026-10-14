@@ -1,0 +1,66 @@
+/* Student complaint form: restrained surfaces, clear controls, consistent rhythm. */
+.complaint-student-shell .complaint-module-shell { padding: 12px 4px 28px; }
+.complaint-student-shell .complaint-layout-grid { grid-template-columns: minmax(0, 1fr) 260px; gap: 24px; align-items: start; }
+.complaint-student-shell .complaint-main-card {
+  background: #fff; border: 1px solid #e1e8f0; border-radius: 20px;
+  box-shadow: 0 8px 28px rgba(20, 48, 80, .06);
+}
+.complaint-student-shell .complaint-intro-bar {
+  background: linear-gradient(120deg, #f1f7ff, #fff);
+  padding: 28px; gap: 16px; border-bottom: 1px solid #e8edf4;
+}
+.complaint-student-shell .complaint-intro-icon {
+  width: 44px; height: 44px; flex: 0 0 44px; border: 0; border-radius: 14px;
+  display: grid; place-items: center; background: #e0edff; color: #285c96; font-size: 22px;
+}
+.complaint-student-shell .complaint-intro-bar h2 { font-size: 26px; line-height: 1.2; letter-spacing: -.5px; color: #17324f; margin: 0 0 8px; }
+.complaint-student-shell .complaint-intro-bar p { color: #52657a; font-size: 15px; line-height: 1.6; max-width: 62ch; }
+.complaint-student-shell .complaint-form.redesigned { padding: 28px; display: grid; gap: 22px; }
+.complaint-student-shell .form-row.two-col { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 18px; margin: 0; }
+.complaint-student-shell .complaint-form .field { margin: 0; min-width: 0; }
+.complaint-student-shell .complaint-form.redesigned .field label { color: #33465c; font-weight: 600; font-size: 14px; margin-bottom: 8px; }
+.complaint-student-shell .complaint-form.redesigned :is(.input-wrap, .textarea-wrap) {
+  background: #fff; border: 1px solid #cbd6e2; border-radius: 10px; transition: border-color .15s, box-shadow .15s;
+}
+.complaint-student-shell .complaint-form.redesigned :is(.input-wrap, .textarea-wrap):focus-within {
+  border-color: #3474b9; box-shadow: 0 0 0 3px rgba(52,116,185,.14);
+}
+.complaint-student-shell .complaint-form.redesigned :is(input:not([type=file]), select, textarea) { color: #1c344d; font-size: 16px; width: 100%; }
+.complaint-student-shell .complaint-form.redesigned :is(input:not([type=file]), select) { min-height: 48px; }
+.complaint-student-shell .complaint-form.redesigned input[readonly] { background: #f3f6fa; color: #52657a; border-radius: 10px; }
+.complaint-student-shell .complaint-form.redesigned textarea { min-height: 190px; resize: vertical; padding: 14px 14px 36px; line-height: 1.6; }
+.complaint-student-shell .complaint-form :is(input, textarea)::placeholder { color: #718096; opacity: 1; }
+.complaint-student-shell .char-counter { color: #63758a; right: 14px; bottom: 12px; }
+.complaint-student-shell .upload-zone { position: relative; border: 1px dashed #a9bed4; border-radius: 12px; background: #f8fafd; }
+.complaint-student-shell .upload-zone:hover { border-color: #3474b9; background: #f1f6fd; }
+.complaint-student-shell .upload-zone:focus-within { outline: 3px solid #3474b9; outline-offset: 3px; }
+.complaint-student-shell .accessible-file-input { position: absolute; width: 1px; height: 1px; padding: 0; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+.complaint-student-shell .complaint-form.redesigned .field .upload-zone-label { margin: 0; min-height: 112px; padding: 18px; gap: 16px; }
+.complaint-student-shell .upload-zone-visual { width: 64px; height: 64px; flex: 0 0 64px; border: 0; background: #e8f0fb; box-shadow: none; border-radius: 12px; }
+.complaint-student-shell .upload-zone-visual .upload-placeholder-icon { font-size: 28px; color: #426f9e; }
+.complaint-student-shell .selected-file-name { background: #e8eef7; color: #365a81; overflow-wrap: anywhere; }
+.complaint-student-shell .form-actions { margin: 0; padding-top: 18px; border-top: 1px solid #edf1f5; }
+.complaint-student-shell .submit-green { min-height: 48px; padding: 12px 24px; border-radius: 10px; background: #285c96; color: #fff; font-weight: 600; font-size: 16px; letter-spacing: 0; box-shadow: 0 4px 10px rgba(40,92,150,.15); }
+.complaint-student-shell .submit-green:hover:not(:disabled) { background: #204d80; }
+.complaint-student-shell :is(.submit-green, .complaint-track-link):focus-visible { outline: 3px solid #3474b9; outline-offset: 3px; }
+.complaint-student-shell .complaint-side-stack { display: grid; gap: 16px; order: 0; }
+.complaint-student-shell :is(.side-info-card, .side-classification-card, .side-status-card) { background: #fff; border: 1px solid #e1e8f0; padding: 20px; border-radius: 16px; box-shadow: none; }
+.complaint-student-shell .complaint-side-stack h3 { font-size: 16px; font-weight: 700; color: #203b59; margin-bottom: 12px; }
+.complaint-student-shell .complaint-side-stack :is(p, .classification-guide-item span) { font-size: 14px; color: #52657a; line-height: 1.6; }
+.complaint-student-shell .complaint-track-link { display: inline-flex; gap: 8px; align-items: center; margin-top: 12px; min-height: 36px; font-size: 14px; font-weight: 600; color: #285c96; }
+.complaint-student-shell .classification-guide-item { background: #f8fafd; border-color: #e7edf4; padding: 12px; border-radius: 10px; }
+.complaint-student-shell .status-item { background: #f5f7fa; border: 0; border-radius: 8px; min-height: 38px; color: #43556c; font-size: 14px; font-weight: 500; }
+@media (max-width: 1150px) {
+  .complaint-student-shell .complaint-layout-grid { grid-template-columns: minmax(0, 1fr); }
+  .complaint-student-shell .complaint-side-stack { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .complaint-student-shell .side-status-card { grid-column: 1 / -1; }
+  .complaint-student-shell .status-list { display: flex; flex-wrap: wrap; gap: 8px; }
+}
+@media (max-width: 600px) {
+  .complaint-student-shell .complaint-module-shell { padding: 6px 0 20px; }
+  .complaint-student-shell .complaint-intro-bar { padding: 20px; gap: 12px; }
+  .complaint-student-shell .complaint-intro-bar h2 { font-size: 22px; }
+  .complaint-student-shell .complaint-form.redesigned { padding: 20px; gap: 18px; }
+  .complaint-student-shell .form-row.two-col, .complaint-student-shell .complaint-side-stack { grid-template-columns: 1fr; }
+  .complaint-student-shell .submit-green { width: 100%; }
+}

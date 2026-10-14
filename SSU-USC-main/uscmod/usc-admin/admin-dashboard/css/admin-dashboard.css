@@ -1,0 +1,3478 @@
+
+:root {
+  --bg: #f3f6fb;
+  --surface: #ffffff;
+  --surface-alt: #f8fafc;
+  --border: rgba(15, 23, 42, 0.08);
+  --text: #0f172a;
+  --muted: #64748b;
+  --primary: #1d4ed8;
+  --primary-soft: rgba(29, 78, 216, 0.1);
+  --success: #15803d;
+  --success-soft: rgba(21, 128, 61, 0.12);
+  --warning: #b45309;
+  --warning-soft: rgba(180, 83, 9, 0.12);
+  --danger: #b91c1c;
+  --danger-soft: rgba(185, 28, 28, 0.12);
+  --shadow: 0 18px 42px rgba(15, 23, 42, 0.08);
+  --radius: 24px;
+  --radius-sm: 18px;
+}
+
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body {
+  margin: 0;
+  background: linear-gradient(180deg, #eef3fb 0%, #f8fafc 100%);
+  color: var(--text);
+  font-family: "Inter", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+.page { min-height: 100vh; }
+.app-shell { max-width: 1760px; margin: 0 auto; padding: 18px; }
+.page-label {
+  position: fixed;
+  top: 14px;
+  left: 14px;
+  z-index: 20;
+  border-radius: 999px;
+  background: rgba(15, 23, 42, 0.86);
+  color: #fff;
+  font-size: 0.72rem;
+  font-weight: 800;
+  padding: 8px 12px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.top-banner,
+.top-nav,
+.sidebar,
+.card,
+.stat-card,
+.queue-item,
+.user-summary,
+.filter-shell,
+.toolbar-chip,
+.metric-chip,
+.warning-card,
+.system-card,
+.log-item,
+.table-wrap,
+.quick-link,
+.info-strip,
+.empty-state,
+.export-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow);
+}
+.top-banner,
+.top-nav,
+.sidebar,
+.card,
+.stat-card,
+.queue-item,
+.user-summary,
+.filter-shell,
+.toolbar-chip,
+.metric-chip,
+.warning-card,
+.system-card,
+.log-item,
+.table-wrap,
+.quick-link,
+.info-strip,
+.empty-state,
+.export-card {
+  border-radius: var(--radius);
+}
+
+.top-banner {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  padding: 18px 22px;
+}
+.brand-logos { display: flex; gap: 12px; }
+.brand-logo { width: 56px; height: 56px; object-fit: cover; border-radius: 18px; }
+.brand h1 { margin: 0; font-size: 1.25rem; }
+.brand p { margin: 6px 0 0; color: var(--muted); font-size: 0.9rem; }
+
+.top-nav {
+  margin-top: 16px;
+  padding: 14px 18px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+}
+.nav-left, .nav-right { display: flex; align-items: center; gap: 12px; }
+.breadcrumb { color: var(--muted); font-size: 0.92rem; }
+.avatar, .profile-avatar {
+  display: grid;
+  place-items: center;
+  border-radius: 999px;
+  background: linear-gradient(135deg, #dbeafe, #bfdbfe);
+  color: #1e3a8a;
+  font-weight: 800;
+}
+.avatar { width: 42px; height: 42px; }
+.profile-avatar { width: 62px; height: 62px; font-size: 1.1rem; }
+.admin-headline { display: flex; flex-direction: column; }
+.admin-headline span { font-weight: 700; }
+.admin-headline small { color: var(--muted); }
+.user-badge, .pill, .role-badge, .status-badge, .verify-badge, .active-badge, .metric-badge, .quick-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  padding: 6px 12px;
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+.admin-pill, .role-admin { background: rgba(127, 29, 29, 0.12); color: #7f1d1d; }
+.role-officer, .verify-yes, .active-yes, .metric-blue { background: rgba(29, 78, 216, 0.1); color: #1d4ed8; }
+.role-student, .verify-no, .active-no { background: rgba(15, 23, 42, 0.08); color: #334155; }
+.status-approved, .metric-green { background: var(--success-soft); color: var(--success); }
+.status-pending, .metric-amber { background: var(--warning-soft); color: var(--warning); }
+.status-suspended, .metric-red { background: var(--danger-soft); color: var(--danger); }
+.quick-badge { background: rgba(15, 23, 42, 0.06); color: #475569; }
+
+.layout { margin-top: 18px; display: grid; grid-template-columns: 280px minmax(0, 1fr); gap: 18px; }
+.sidebar {
+  padding: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  position: sticky;
+  top: 18px;
+  align-self: start;
+  min-height: calc(100vh - 54px);
+}
+.sidebar h2 { margin: 0; font-size: 1rem; }
+.sidebar-group { display: flex; flex-direction: column; gap: 10px; }
+.nav-btn {
+  border: 1px solid var(--border);
+  background: var(--surface-alt);
+  color: var(--text);
+  border-radius: 18px;
+  padding: 12px 14px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: 700;
+  text-decoration: none;
+  cursor: pointer;
+  transition: 0.18s ease;
+}
+.nav-btn:hover { transform: translateY(-1px); background: #fff; }
+.nav-btn.active { background: var(--primary-soft); color: var(--primary); border-color: rgba(29, 78, 216, 0.18); }
+.nav-btn.logout-btn { margin-top: auto; }
+.note-box {
+  border-radius: 20px;
+  padding: 14px 16px;
+  background: linear-gradient(180deg, rgba(29, 78, 216, 0.08), rgba(255, 255, 255, 0.98));
+  border: 1px solid rgba(29, 78, 216, 0.12);
+}
+.note-box.secondary {
+  background: linear-gradient(180deg, rgba(15, 23, 42, 0.05), rgba(255,255,255,0.98));
+  border-color: rgba(15, 23, 42, 0.08);
+}
+.note-box p, .note-box li { color: var(--muted); font-size: 0.92rem; }
+.note-box ul { margin: 10px 0 0; padding-left: 18px; }
+.admin-summary { display: grid; gap: 12px; }
+.info-strip { padding: 14px 16px; }
+.info-strip strong { display: block; margin-bottom: 4px; }
+.info-strip p { margin: 0; color: var(--muted); font-size: 0.9rem; }
+
+.main { display: flex; flex-direction: column; gap: 18px; }
+.hero {
+  display: grid;
+  grid-template-columns: minmax(0, 1.5fr) minmax(320px, 0.85fr);
+  gap: 18px;
+}
+.hero-card { padding: 22px; }
+.hero-title-row { display: flex; justify-content: space-between; gap: 16px; align-items: flex-start; }
+.hero h1 { margin: 0; font-size: 1.65rem; }
+.hero p { color: var(--muted); margin: 10px 0 0; line-height: 1.55; }
+.hero .admin-welcome-line { margin: 0 0 8px; color: #334155; font-size: 0.92rem; line-height: 1.4; }
+.hero .admin-welcome-line strong { color: var(--primary); font-weight: 800; }
+.hero-tag {
+  background: rgba(127, 29, 29, 0.08);
+  color: #7f1d1d;
+  border-radius: 999px;
+  padding: 8px 14px;
+  font-size: 0.8rem;
+  font-weight: 800;
+  white-space: nowrap;
+}
+.hero-actions, .mini-actions, .action-group, .editor-actions, .toolbar, .stack-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+.stats-grid {
+  margin-top: 18px;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 12px;
+}
+.stat-card { padding: 16px; }
+.stat-label { color: var(--muted); font-size: 0.82rem; text-transform: uppercase; letter-spacing: 0.04em; }
+.stat-value { margin-top: 8px; font-size: 1.9rem; font-weight: 800; }
+.stat-sub { margin-top: 4px; color: var(--muted); font-size: 0.85rem; }
+.stat-value.green { color: var(--success); }
+.stat-value.red { color: var(--danger); }
+.stat-value.amber { color: var(--warning); }
+.stat-value.blue { color: var(--primary); }
+
+.card { padding: 20px; }
+.card-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+.card-head h2, .card-head h3, .card-head h4 { margin: 0; }
+.card-head span, .card-head p, .muted { color: var(--muted); }
+.card-head-stack { flex-direction: column; }
+.card-grid.two { display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(300px, 0.85fr); gap: 18px; }
+.card-grid.equal { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; }
+.card-grid.three { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 18px; }
+.card-grid.stack { display: grid; grid-template-columns: minmax(0, 1fr); gap: 18px; }
+.sticky-card { position: sticky; top: 18px; align-self: start; }
+
+.quick-links { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; }
+.quick-link { padding: 16px; text-decoration: none; color: inherit; transition: 0.18s ease; }
+.quick-link:hover { transform: translateY(-2px); }
+.quick-link strong { display: block; margin-bottom: 6px; }
+.quick-link p { margin: 0; color: var(--muted); font-size: 0.9rem; }
+
+.queue-list, .log-list, .warning-list, .system-list, .detail-grid, .filters-grid { display: grid; gap: 12px; }
+.queue-item, .log-item, .warning-card, .system-card, .metric-chip, .toolbar-chip, .user-summary { padding: 16px; }
+.queue-item { display: flex; justify-content: space-between; gap: 16px; align-items: flex-start; }
+.queue-item.compact { padding: 14px; }
+.queue-copy, .log-item-copy { min-width: 0; display: grid; gap: 8px; }
+.queue-title-row, .user-header-row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.queue-title, .user-name { font-weight: 800; }
+.queue-meta, .subtext, .log-meta-side, .table-name small { color: var(--muted); font-size: 0.88rem; }
+.queue-meta { display: flex; flex-wrap: wrap; gap: 8px; }
+.log-item { display: flex; justify-content: space-between; gap: 14px; }
+.log-item p { margin: 0; color: #334155; }
+.log-item small { color: var(--muted); }
+.log-type { text-transform: capitalize; font-weight: 700; color: var(--primary); }
+
+.warning-card h4, .system-card h4, .user-summary h4 { margin: 0 0 8px; }
+.warning-card p, .system-card p, .user-summary p { margin: 0; color: var(--muted); line-height: 1.45; }
+.warning-tone-red { border-color: rgba(185, 28, 28, 0.16); background: linear-gradient(180deg, rgba(185, 28, 28, 0.05), #fff); }
+.warning-tone-amber { border-color: rgba(180, 83, 9, 0.16); background: linear-gradient(180deg, rgba(180, 83, 9, 0.05), #fff); }
+.warning-tone-blue { border-color: rgba(29, 78, 216, 0.16); background: linear-gradient(180deg, rgba(29, 78, 216, 0.05), #fff); }
+.metric-chip { display: flex; justify-content: space-between; gap: 12px; align-items: center; }
+.metric-chip strong { font-size: 1.1rem; }
+
+.filter-shell { padding: 16px; }
+.filters-grid {
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+}
+.field, .field-stack { display: grid; gap: 6px; }
+label { font-weight: 700; font-size: 0.86rem; }
+input, select, textarea {
+  width: 100%;
+  border: 1px solid rgba(15, 23, 42, 0.12);
+  background: #fff;
+  border-radius: 14px;
+  padding: 12px 13px;
+  color: var(--text);
+  font: inherit;
+}
+textarea { min-height: 96px; resize: vertical; }
+input:focus, select:focus, textarea:focus {
+  outline: none;
+  border-color: rgba(29, 78, 216, 0.45);
+  box-shadow: 0 0 0 4px rgba(29, 78, 216, 0.08);
+}
+.inline-field { display: flex; gap: 10px; align-items: center; }
+.inline-field > * { flex: 1; }
+
+.btn {
+  border: none;
+  border-radius: 14px;
+  padding: 12px 14px;
+  font-weight: 800;
+  cursor: pointer;
+  transition: 0.18s ease;
+}
+.btn:hover { transform: translateY(-1px); }
+.btn.primary { background: var(--primary); color: #fff; }
+.btn.light { background: #e2e8f0; color: #0f172a; }
+.btn.soft { background: var(--primary-soft); color: var(--primary); }
+.btn.success { background: var(--success); color: #fff; }
+.btn.warning { background: var(--warning); color: #fff; }
+.btn.danger { background: var(--danger); color: #fff; }
+.btn.danger-light { background: var(--danger-soft); color: var(--danger); }
+.btn[disabled] { opacity: 0.6; cursor: not-allowed; transform: none; }
+
+.table-wrap { overflow: auto; }
+table { width: 100%; border-collapse: collapse; min-width: 980px; }
+th, td { padding: 12px; text-align: left; border-bottom: 1px solid rgba(15, 23, 42, 0.08); vertical-align: top; }
+th { font-size: 0.82rem; text-transform: uppercase; letter-spacing: 0.04em; color: var(--muted); }
+tr:hover td { background: rgba(248, 250, 252, 0.7); }
+.mono { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.88rem; }
+.table-name { display: grid; gap: 4px; }
+.table-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+.open-btn, .mini-btn {
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  background: #fff;
+  color: var(--text);
+  border-radius: 12px;
+  padding: 8px 10px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.open-btn.selected { background: var(--primary-soft); color: var(--primary); }
+.selection-bar {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  margin-top: 14px;
+}
+
+.user-summary { display: grid; gap: 14px; }
+.user-summary-top { display: flex; gap: 14px; align-items: center; }
+.detail-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.detail-chip {
+  background: #f8fafc;
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  border-radius: 18px;
+  padding: 14px;
+}
+.detail-chip strong { display: block; margin-bottom: 4px; font-size: 0.78rem; text-transform: uppercase; color: var(--muted); }
+.detail-chip span { font-weight: 700; }
+.toggle-row { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.toggle-box {
+  border-radius: 18px;
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  background: #f8fafc;
+  padding: 14px;
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: center;
+}
+.restriction-banner {
+  border-radius: 18px;
+  padding: 14px;
+  border: 1px solid rgba(127, 29, 29, 0.16);
+  background: rgba(127, 29, 29, 0.06);
+  color: #7f1d1d;
+  font-weight: 700;
+}
+
+.empty-state {
+  padding: 24px;
+  text-align: center;
+  color: var(--muted);
+}
+.empty-state strong { display: block; margin-bottom: 6px; color: var(--text); }
+.hidden { display: none !important; }
+
+@media (max-width: 1320px) {
+  .layout { grid-template-columns: 1fr; }
+  .sidebar { position: static; min-height: auto; }
+  .hero, .card-grid.two, .card-grid.equal, .card-grid.three { grid-template-columns: 1fr; }
+  .sticky-card { position: static; }
+  .filters-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+@media (max-width: 900px) {
+  .app-shell { padding: 12px; }
+  .top-banner, .top-nav, .card, .sidebar, .stat-card { border-radius: 20px; }
+  .top-banner, .top-nav { flex-direction: column; align-items: flex-start; }
+  .filters-grid, .detail-grid, .toggle-row { grid-template-columns: 1fr; }
+  .queue-item, .log-item, .user-summary-top, .selection-bar { flex-direction: column; align-items: flex-start; }
+  .nav-right { width: 100%; justify-content: flex-start; }
+}
+
+
+/* ===== 2026 FULL RESPONSIVE SYSTEM PASS ===== */
+/* responsive admin data views */
+@media(max-width:1000px){
+  .hero,.card-grid.two,.card-grid.equal,.card-grid.three,.detail-grid,.toggle-row{grid-template-columns:1fr!important}
+  .quick-links{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .filters-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .table-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
+}
+@media(max-width:600px){
+  .app-shell{padding:8px!important}
+  .quick-links,.filters-grid{grid-template-columns:1fr!important}
+  .toolbar,.section-head,.card-head{flex-wrap:wrap;gap:8px}
+  table{min-width:760px}
+}
+
+
+/* ===== Registration Queue UI Repair + Officer Provisioning ===== */
+.queue-metrics-grid{
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:12px;
+}
+.queue-workspace{
+  display:grid;
+  grid-template-columns:minmax(0,1.35fr) minmax(360px,.9fr);
+  gap:18px;
+  align-items:start;
+}
+.queue-list-card,.queue-detail-card{min-width:0}
+.queue-detail-card{position:sticky;top:18px}
+.queue-controls{
+  display:grid;
+  grid-template-columns:minmax(0,1.5fr) minmax(190px,.7fr);
+  gap:12px;
+  margin-bottom:14px;
+  padding:12px;
+  background:#f8fafc;
+  border:1px solid rgba(15,23,42,.08);
+  border-radius:16px;
+}
+.queue-controls label{display:grid;gap:6px;color:var(--muted);font-size:.78rem;font-weight:800;text-transform:uppercase;letter-spacing:.035em}
+.queue-controls input,.queue-controls select{min-width:0}
+.queue-list{min-width:0}
+.queue-item{
+  border:1px solid rgba(15,23,42,.09);
+  border-radius:18px;
+  background:#fff;
+  box-shadow:0 4px 14px rgba(15,23,42,.025);
+  transition:border-color .16s ease,box-shadow .16s ease,transform .16s ease;
+  overflow:hidden;
+}
+.queue-item:hover{border-color:rgba(29,78,216,.2);box-shadow:0 8px 20px rgba(15,23,42,.055)}
+.queue-item.selected{border-color:rgba(29,78,216,.38);background:linear-gradient(180deg,rgba(29,78,216,.045),#fff)}
+.queue-title-row{min-width:0}
+.queue-title{font-size:1rem;overflow-wrap:anywhere}
+.queue-meta-grid{
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:8px 14px;
+  color:var(--muted);
+  font-size:.84rem;
+}
+.queue-meta-grid span{min-width:0;overflow-wrap:anywhere}
+.queue-meta-grid strong{display:block;color:#64748b;font-size:.7rem;text-transform:uppercase;letter-spacing:.04em;margin-bottom:2px}
+.queue-open-action{align-self:center;flex:0 0 auto}
+.queue-open-action .open-btn{min-width:92px}
+.queue-detail-card .user-summary{padding:0}
+.queue-detail-card .profile-avatar{flex:0 0 auto}
+.queue-detail-card .action-group .btn{flex:1 1 150px}
+.queue-detail-card select,.queue-detail-card textarea{max-width:100%}
+
+@media(max-width:1100px){
+  .queue-workspace{grid-template-columns:1fr}
+  .queue-detail-card{position:static}
+}
+@media(max-width:700px){
+  .queue-metrics-grid{grid-template-columns:1fr}
+  .queue-controls{grid-template-columns:1fr;padding:10px}
+  .queue-item{padding:14px;gap:12px}
+  .queue-meta-grid{grid-template-columns:1fr}
+  .queue-open-action{width:100%;align-self:stretch}
+  .queue-open-action .open-btn{width:100%;min-height:44px}
+  .queue-title-row{gap:6px}
+  .queue-title{width:100%;font-size:.98rem}
+  .queue-detail-card .action-group{display:grid;grid-template-columns:1fr;width:100%}
+  .queue-detail-card .action-group .btn{width:100%;min-height:44px}
+  .queue-list-head{align-items:flex-start}
+}
+
+/* ================= OFFICER RBAC EDITOR ================= */
+.officer-rbac-editor {
+  margin-top: 14px;
+  padding: 16px;
+  border: 1px solid #d8e3ef;
+  border-radius: 14px;
+  background: linear-gradient(180deg, #f8fbff, #f2f7fc);
+}
+.officer-rbac-editor-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 14px;
+  align-items: flex-start;
+}
+.officer-rbac-editor-head strong,
+.officer-rbac-editor-head span { display: block; }
+.officer-rbac-editor-head strong { color: #15345f; font-size: 15px; }
+.officer-rbac-editor-head > div > span { margin-top: 3px; color: #69798e; font-size:14px; line-height: 1.4; }
+.officer-rbac-quick-actions { display: flex; flex-wrap: wrap; gap: 8px; margin: 12px 0; }
+.officer-rbac-permission-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.officer-rbac-group {
+  border: 1px solid #dbe5f0;
+  border-radius: 12px;
+  padding: 11px;
+  background: #fff;
+}
+.officer-rbac-group h4 { margin: 0 0 8px; color: #183966; font-size:14px; text-transform: uppercase; letter-spacing: .55px; }
+.officer-rbac-option { display: grid; grid-template-columns: 20px 1fr; gap: 7px; align-items: flex-start; padding: 7px 0; cursor: pointer; }
+.officer-rbac-option + .officer-rbac-option { border-top: 1px solid #edf2f7; }
+.officer-rbac-option input { margin-top: 3px; }
+.officer-rbac-option strong { display: block; color: #1a2d47; font-size:14px; }
+.officer-rbac-option small { display: block; margin-top: 2px; color: #738196; font-size:14px; line-height: 1.3; }
+@media (max-width: 720px) {
+  .officer-rbac-permission-grid { grid-template-columns: 1fr; }
+  .officer-rbac-editor-head { flex-direction: column; }
+}
+
+
+/* =========================================================
+   REGISTRATION QUEUE METRICS POLISH - 2026-09-04
+   ========================================================= */
+.queue-metrics-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.queue-metrics-grid .queue-metric-card {
+  position: relative;
+  min-width: 0;
+  min-height: 122px;
+  padding: 16px;
+  display: grid;
+  grid-template-columns: 50px minmax(0, 1fr);
+  align-items: center;
+  gap: 14px;
+  border: 1px solid rgba(148, 163, 184, 0.22);
+  border-radius: 20px;
+  background: linear-gradient(180deg, #ffffff 0%, #f8fbff 100%);
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.055);
+  overflow: hidden;
+  transition: transform 0.18s ease, border-color 0.18s ease, box-shadow 0.18s ease;
+}
+
+.queue-metrics-grid .queue-metric-card::after {
+  content: "";
+  position: absolute;
+  width: 90px;
+  height: 90px;
+  right: -34px;
+  top: -38px;
+  border-radius: 50%;
+  background: rgba(29, 78, 216, 0.035);
+  pointer-events: none;
+}
+
+.queue-metrics-grid .queue-metric-card:hover {
+  transform: translateY(-2px);
+  border-color: rgba(29, 78, 216, 0.18);
+  box-shadow: 0 14px 30px rgba(15, 23, 42, 0.08);
+}
+
+.queue-metric-icon {
+  position: relative;
+  z-index: 1;
+  width: 50px;
+  height: 50px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 16px;
+  background: #eef4ff;
+  color: #1d4ed8;
+  font-size: 20px;
+  box-shadow: inset 0 0 0 1px rgba(29, 78, 216, 0.08);
+}
+
+.queue-metric-pending .queue-metric-icon {
+  background: #fff7ed;
+  color: #c2410c;
+  box-shadow: inset 0 0 0 1px rgba(194, 65, 12, 0.08);
+}
+
+.queue-metric-unverified .queue-metric-icon {
+  background: #fff1f2;
+  color: #be123c;
+  box-shadow: inset 0 0 0 1px rgba(190, 18, 60, 0.08);
+}
+
+.queue-metric-officers .queue-metric-icon {
+  background: #ecfdf5;
+  color: #15803d;
+  box-shadow: inset 0 0 0 1px rgba(21, 128, 61, 0.08);
+}
+
+.queue-metric-copy {
+  position: relative;
+  z-index: 1;
+  min-width: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-areas:
+    "label badge"
+    "value badge";
+  align-items: center;
+  column-gap: 8px;
+  row-gap: 3px;
+}
+
+.queue-metric-label {
+  grid-area: label;
+  min-width: 0;
+  color: #52627a;
+  font-size: 0.9rem;
+  line-height: 1.2;
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+
+.queue-metric-value {
+  grid-area: value;
+  display: block;
+  color: #163f8c;
+  font-size: clamp(1.8rem, 2.7vw, 2.35rem) !important;
+  line-height: 1;
+  font-weight: 900;
+  letter-spacing: -0.03em;
+}
+
+.queue-metrics-grid .metric-badge {
+  grid-area: badge;
+  align-self: center;
+  justify-self: end;
+  max-width: 92px;
+  padding: 6px 9px;
+  font-size: 0.68rem;
+  line-height: 1.15;
+  font-weight: 800;
+  text-align: center;
+  white-space: normal;
+}
+
+@media (max-width: 1180px) {
+  .queue-metric-copy {
+    grid-template-columns: 1fr;
+    grid-template-areas:
+      "label"
+      "value"
+      "badge";
+  }
+
+  .queue-metrics-grid .metric-badge {
+    justify-self: start;
+    max-width: 100%;
+    margin-top: 4px;
+  }
+}
+
+@media (max-width: 700px) {
+  .queue-metrics-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .queue-metrics-grid .queue-metric-card {
+    min-height: 104px;
+    grid-template-columns: 46px minmax(0, 1fr);
+    padding: 14px;
+    border-radius: 18px;
+  }
+
+  .queue-metric-icon {
+    width: 46px;
+    height: 46px;
+    border-radius: 14px;
+    font-size: 18px;
+  }
+
+  .queue-metric-copy {
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-areas:
+      "label badge"
+      "value badge";
+  }
+
+  .queue-metrics-grid .metric-badge {
+    justify-self: end;
+    max-width: 110px;
+    margin-top: 0;
+  }
+}
+
+@media (max-width: 440px) {
+  .queue-metric-copy {
+    grid-template-columns: 1fr;
+    grid-template-areas:
+      "label"
+      "value"
+      "badge";
+  }
+
+  .queue-metrics-grid .metric-badge {
+    justify-self: start;
+    margin-top: 5px;
+  }
+}
+
+
+/* =========================================================
+   REGISTRATION QUEUE METRICS LAYOUT FIX V2 - 2026-09-04
+   ========================================================= */
+/* The admin metrics panel can be quite narrow. Keep the badge away from the
+   label/count so words never collapse to one character per line. */
+.queue-metrics-grid .queue-metric-card {
+  min-width: 0 !important;
+  min-height: 154px !important;
+  padding: 15px 16px !important;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: stretch !important;
+  justify-content: flex-start !important;
+  gap: 13px !important;
+}
+
+.queue-metric-top {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.queue-metric-top .queue-metric-icon {
+  flex: 0 0 48px;
+  width: 48px;
+  height: 48px;
+  border-radius: 15px;
+}
+
+.queue-metric-top .metric-badge,
+.queue-metrics-grid .queue-metric-top .metric-badge {
+  flex: 0 1 auto;
+  max-width: 96px;
+  margin: 0 !important;
+  padding: 5px 8px;
+  justify-self: auto !important;
+  align-self: auto !important;
+  white-space: normal;
+  overflow-wrap: normal;
+  word-break: normal;
+  hyphens: none;
+  font-size: 0.64rem;
+  line-height: 1.12;
+  text-align: center;
+}
+
+.queue-metrics-grid .queue-metric-copy {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  min-width: 0;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: flex-start !important;
+  justify-content: flex-end !important;
+  gap: 4px !important;
+}
+
+.queue-metrics-grid .queue-metric-label {
+  width: 100%;
+  min-width: 0;
+  color: #52627a;
+  font-size: 0.92rem;
+  line-height: 1.25;
+  font-weight: 800;
+  white-space: normal !important;
+  overflow-wrap: normal !important;
+  word-break: normal !important;
+  hyphens: none !important;
+}
+
+.queue-metrics-grid .queue-metric-value {
+  display: block;
+  width: 100%;
+  color: #163f8c;
+  font-size: clamp(2.15rem, 3vw, 2.65rem) !important;
+  line-height: 1 !important;
+  font-weight: 900;
+  letter-spacing: -0.035em;
+}
+
+@media (max-width: 1180px) {
+  .queue-metrics-grid .queue-metric-card {
+    min-height: 150px !important;
+  }
+
+  .queue-metrics-grid .queue-metric-copy {
+    display: flex !important;
+  }
+}
+
+@media (max-width: 700px) {
+  .queue-metrics-grid .queue-metric-card {
+    min-height: 132px !important;
+  }
+
+  .queue-metric-top .metric-badge,
+  .queue-metrics-grid .queue-metric-top .metric-badge {
+    max-width: 125px;
+  }
+}
+
+@media (max-width: 390px) {
+  .queue-metric-top {
+    align-items: flex-start;
+  }
+
+  .queue-metric-top .queue-metric-icon {
+    flex-basis: 44px;
+    width: 44px;
+    height: 44px;
+  }
+
+  .queue-metric-top .metric-badge,
+  .queue-metrics-grid .queue-metric-top .metric-badge {
+    max-width: 105px;
+    font-size: 0.61rem;
+  }
+}
+
+
+/* =========================================================
+   ADMIN ACCESS OVERVIEW POLISH - 2026-09-04
+   ========================================================= */
+body.officer-app-shell .admin-overview-hero-card {
+  position: relative;
+  overflow: hidden;
+  padding: 26px;
+  border: 1px solid rgba(77, 154, 214, 0.18);
+  background:
+    radial-gradient(circle at 92% 8%, rgba(76, 201, 240, 0.16), transparent 30%),
+    linear-gradient(145deg, #ffffff 0%, #f8fcff 55%, #f1f8ff 100%);
+  box-shadow: 0 22px 48px rgba(32, 86, 132, 0.09);
+}
+
+body.officer-app-shell .admin-overview-hero-card::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 5px;
+  background: linear-gradient(90deg, #1aa7df 0%, #55d0e8 52%, #2563b9 100%);
+}
+
+body.officer-app-shell .admin-overview-hero-card .hero-title-row {
+  position: relative;
+  z-index: 1;
+  padding-bottom: 18px;
+  border-bottom: 1px solid rgba(91, 132, 173, 0.14);
+}
+
+body.officer-app-shell .admin-overview-hero-card h1 {
+  margin-top: 3px;
+  color: #123d72;
+  font-size: clamp(30px, 3vw, 42px);
+  line-height: 1.05;
+  letter-spacing: -0.03em;
+}
+
+body.officer-app-shell .admin-overview-hero-card .hero-title-row > div:first-child > p:last-child {
+  max-width: 790px;
+  margin-top: 10px;
+  color: #5b6f86;
+  font-size: 14px;
+  line-height: 1.65;
+}
+
+body.officer-app-shell .admin-overview-hero-card .admin-welcome-line {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  margin: 0 0 6px;
+  color: #60738a;
+}
+
+body.officer-app-shell .admin-overview-hero-card .hero-tag {
+  padding: 9px 15px;
+  border: 1px solid rgba(17, 115, 163, 0.10);
+  background: linear-gradient(135deg, #5cc5e8, #4ab5dc);
+  color: #ffffff;
+  box-shadow: 0 8px 18px rgba(37, 145, 190, 0.17);
+}
+
+body.officer-app-shell .admin-overview-stats {
+  position: relative;
+  z-index: 1;
+  margin-top: 20px;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 14px;
+}
+
+body.officer-app-shell .admin-overview-stat {
+  position: relative;
+  min-width: 0;
+  min-height: 132px;
+  padding: 16px;
+  display: grid;
+  grid-template-columns: 48px minmax(0, 1fr);
+  align-items: center;
+  gap: 13px;
+  overflow: hidden;
+  border: 1px solid rgba(113, 173, 210, 0.20);
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.92);
+  box-shadow: 0 12px 26px rgba(31, 91, 136, 0.08);
+  transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
+}
+
+body.officer-app-shell .admin-overview-stat::after {
+  content: "";
+  position: absolute;
+  width: 92px;
+  height: 92px;
+  right: -38px;
+  top: -38px;
+  border-radius: 50%;
+  background: rgba(65, 178, 220, 0.08);
+  pointer-events: none;
+}
+
+body.officer-app-shell .admin-overview-stat:hover {
+  transform: translateY(-2px);
+  border-color: rgba(78, 158, 206, 0.34);
+  box-shadow: 0 17px 32px rgba(31, 91, 136, 0.12);
+}
+
+body.officer-app-shell .overview-stat-icon {
+  position: relative;
+  z-index: 1;
+  width: 48px;
+  height: 48px;
+  border-radius: 15px;
+  display: grid;
+  place-items: center;
+  flex: 0 0 auto;
+  background: #eaf7fc;
+  color: #1268a7;
+  font-size: 19px;
+  border: 1px solid rgba(39, 143, 194, 0.12);
+}
+
+body.officer-app-shell .overview-stat-copy {
+  position: relative;
+  z-index: 1;
+  min-width: 0;
+}
+
+body.officer-app-shell .admin-overview-stat .stat-label {
+  color: #556d86;
+  font-size:14px;
+  line-height: 1.25;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.045em;
+}
+
+body.officer-app-shell .admin-overview-stat .stat-value {
+  margin-top: 5px;
+  color: #1454a0;
+  font-size: 36px;
+  line-height: 1;
+  font-weight: 900;
+  letter-spacing: -0.035em;
+}
+
+body.officer-app-shell .admin-overview-stat .stat-sub {
+  margin-top: 5px;
+  color: #708197;
+  font-size:14px;
+  line-height: 1.35;
+  font-weight: 600;
+}
+
+body.officer-app-shell .admin-overview-stat.stat-approved .overview-stat-icon {
+  background: #eaf8f0;
+  color: #16864f;
+}
+body.officer-app-shell .admin-overview-stat.stat-approved .stat-value { color: #16864f; }
+
+body.officer-app-shell .admin-overview-stat.stat-pending .overview-stat-icon {
+  background: #fff6df;
+  color: #b86a00;
+}
+body.officer-app-shell .admin-overview-stat.stat-pending .stat-value { color: #b86a00; }
+
+body.officer-app-shell .admin-overview-stat.stat-suspended .overview-stat-icon {
+  background: #fff0f0;
+  color: #c33d49;
+}
+body.officer-app-shell .admin-overview-stat.stat-suspended .stat-value { color: #c33d49; }
+
+body.officer-app-shell .admin-overview-stat.stat-officers .overview-stat-icon,
+body.officer-app-shell .admin-overview-stat.stat-verified .overview-stat-icon {
+  background: #edf2ff;
+  color: #3557c6;
+}
+
+body.officer-app-shell .admin-overview-stat.stat-new-week .overview-stat-icon {
+  background: #eefafa;
+  color: #168a93;
+}
+
+body.officer-app-shell .admin-overview-stat.stat-never-login .overview-stat-icon {
+  background: #f5f0ff;
+  color: #7655b8;
+}
+
+@media (max-width: 1250px) {
+  body.officer-app-shell .admin-overview-stats {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 720px) {
+  body.officer-app-shell .admin-overview-hero-card {
+    padding: 20px;
+  }
+
+  body.officer-app-shell .admin-overview-hero-card .hero-title-row {
+    flex-direction: column;
+  }
+
+  body.officer-app-shell .admin-overview-stats {
+    grid-template-columns: 1fr;
+  }
+
+  body.officer-app-shell .admin-overview-stat {
+    min-height: 112px;
+    grid-template-columns: 44px 1fr;
+  }
+
+  body.officer-app-shell .overview-stat-icon {
+    width: 44px;
+    height: 44px;
+    border-radius: 14px;
+  }
+}
+
+
+/* =========================================================
+   ADMIN REPORT STATUS POLISH - 2026-09-04
+   ========================================================= */
+body.officer-app-shell .admin-report-status-card {
+  position: relative;
+  overflow: hidden;
+  padding: 20px;
+  border: 1px solid rgba(81, 146, 198, 0.18);
+  background:
+    radial-gradient(circle at 96% 4%, rgba(84, 203, 235, 0.12), transparent 28%),
+    linear-gradient(145deg, #ffffff 0%, #f8fcff 100%);
+  box-shadow: 0 18px 38px rgba(30, 82, 126, 0.08);
+}
+
+body.officer-app-shell .admin-report-status-card::before {
+  content: "";
+  position: absolute;
+  inset: 0 auto auto 0;
+  width: 100%;
+  height: 4px;
+  background: linear-gradient(90deg, #1aa7df, #56cfe5, #2f67bc);
+}
+
+body.officer-app-shell .admin-report-status-head {
+  position: relative;
+  z-index: 1;
+  margin-bottom: 15px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid rgba(91, 132, 173, 0.13);
+}
+
+body.officer-app-shell .admin-report-status-head h3 {
+  color: #154f97;
+  font-size: 21px;
+  font-weight: 900;
+  letter-spacing: -0.015em;
+}
+
+body.officer-app-shell .admin-report-status-head span {
+  display: block;
+  margin-top: 4px;
+  color: #687c93;
+  font-size:14px;
+  line-height: 1.4;
+}
+
+body.officer-app-shell .report-status-head-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 13px;
+  display: grid;
+  place-items: center;
+  background: #e9f7fc;
+  color: #1874ad;
+  border: 1px solid rgba(46, 145, 194, 0.13);
+}
+
+body.officer-app-shell .report-status-grid {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+body.officer-app-shell .report-status-metric {
+  position: relative;
+  min-width: 0;
+  min-height: 116px;
+  padding: 14px;
+  display: grid;
+  grid-template-columns: 46px minmax(0, 1fr);
+  align-items: center;
+  gap: 12px;
+  overflow: hidden;
+  border: 1px solid rgba(103, 155, 197, 0.18);
+  border-radius: 18px;
+  background: rgba(255,255,255,0.93);
+  box-shadow: 0 10px 23px rgba(28, 80, 121, 0.07);
+  transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
+}
+
+body.officer-app-shell .report-status-metric::after {
+  content: "";
+  position: absolute;
+  top: -32px;
+  right: -32px;
+  width: 82px;
+  height: 82px;
+  border-radius: 50%;
+  background: rgba(66, 174, 216, 0.07);
+  pointer-events: none;
+}
+
+body.officer-app-shell .report-status-metric:hover {
+  transform: translateY(-2px);
+  border-color: rgba(77, 150, 204, 0.32);
+  box-shadow: 0 15px 29px rgba(28, 80, 121, 0.11);
+}
+
+body.officer-app-shell .report-status-icon {
+  position: relative;
+  z-index: 1;
+  width: 46px;
+  height: 46px;
+  border-radius: 14px;
+  display: grid;
+  place-items: center;
+  background: #edf6ff;
+  border: 1px solid rgba(40, 117, 183, 0.12);
+  color: #2565ae;
+  font-size: 18px;
+}
+
+body.officer-app-shell .report-status-copy {
+  position: relative;
+  z-index: 1;
+  min-width: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-areas:
+    "label badge"
+    "value badge";
+  align-items: center;
+  column-gap: 8px;
+}
+
+body.officer-app-shell .report-status-label {
+  grid-area: label;
+  min-width: 0;
+  color: #526b84;
+  font-size:14px;
+  line-height: 1.25;
+  font-weight: 800;
+}
+
+body.officer-app-shell .report-status-value {
+  grid-area: value;
+  margin-top: 3px;
+  color: #164f9d;
+  font-size: 32px;
+  line-height: 1;
+  font-weight: 900;
+  letter-spacing: -0.035em;
+}
+
+body.officer-app-shell .report-status-copy .metric-badge {
+  grid-area: badge;
+  justify-self: end;
+  max-width: 86px;
+  padding: 5px 8px;
+  font-size:14px;
+  line-height: 1.15;
+  font-weight: 800;
+  text-align: center;
+  white-space: normal;
+}
+
+body.officer-app-shell .report-status-role .report-status-icon {
+  background: #eaf8f0;
+  color: #188755;
+}
+body.officer-app-shell .report-status-role .report-status-value { color: #188755; }
+
+body.officer-app-shell .report-status-suspension .report-status-icon {
+  background: #fff0f1;
+  color: #c53d4a;
+}
+body.officer-app-shell .report-status-suspension .report-status-value { color: #c53d4a; }
+
+body.officer-app-shell .report-status-verification .report-status-icon {
+  background: #fff6e6;
+  color: #b76a00;
+}
+body.officer-app-shell .report-status-verification .report-status-value { color: #b76a00; }
+
+@media (max-width: 1080px) {
+  body.officer-app-shell .report-status-copy {
+    grid-template-columns: 1fr;
+    grid-template-areas:
+      "label"
+      "value"
+      "badge";
+  }
+
+  body.officer-app-shell .report-status-copy .metric-badge {
+    justify-self: start;
+    margin-top: 7px;
+    max-width: none;
+  }
+}
+
+@media (max-width: 680px) {
+  body.officer-app-shell .report-status-grid {
+    grid-template-columns: 1fr;
+  }
+
+  body.officer-app-shell .admin-report-status-card {
+    padding: 16px;
+  }
+
+  body.officer-app-shell .report-status-metric {
+    min-height: 105px;
+  }
+}
+
+/* =========================================================
+   ADMIN REPORT STATUS LAYOUT FIX V2 - 2026-09-04
+   ========================================================= */
+/* The audit sidebar is narrow. Keep metadata in a stacked card layout so
+   labels, counts, and badges never compete for the same horizontal space. */
+body.officer-app-shell .report-status-metric {
+  min-height: 142px;
+  padding: 14px 15px 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: flex-start;
+  gap: 12px;
+}
+
+body.officer-app-shell .report-status-top {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  min-width: 0;
+}
+
+body.officer-app-shell .report-status-top .metric-badge {
+  flex: 0 1 auto;
+  max-width: 92px;
+  padding: 5px 9px;
+  border-radius: 999px;
+  font-size:14px;
+  line-height: 1.15;
+  font-weight: 800;
+  white-space: normal;
+  text-align: center;
+  overflow-wrap: normal;
+  word-break: normal;
+}
+
+body.officer-app-shell .report-status-copy {
+  position: relative;
+  z-index: 1;
+  min-width: 0;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 5px;
+}
+
+body.officer-app-shell .report-status-label {
+  width: 100%;
+  min-width: 0;
+  color: #526b84;
+  font-size:14px;
+  line-height: 1.25;
+  font-weight: 800;
+  white-space: normal;
+  overflow-wrap: normal;
+  word-break: keep-all;
+  hyphens: none;
+}
+
+body.officer-app-shell .report-status-value {
+  margin: 0;
+  color: #164f9d;
+  font-size: 36px;
+  line-height: 0.95;
+  font-weight: 900;
+  letter-spacing: -0.035em;
+}
+
+/* Neutralize the older copy-grid/badge placement rules. */
+body.officer-app-shell .report-status-copy .metric-badge {
+  display: none !important;
+}
+
+@media (max-width: 1080px) {
+  body.officer-app-shell .report-status-copy {
+    display: flex;
+    grid-template-columns: none;
+    grid-template-areas: none;
+  }
+}
+
+@media (max-width: 460px) {
+  body.officer-app-shell .report-status-grid {
+    grid-template-columns: 1fr;
+  }
+
+  body.officer-app-shell .report-status-metric {
+    min-height: 126px;
+  }
+}
+
+/* =========================================================
+   ADMIN AUDIT RECORDS MODAL - 2026-09-04
+   ========================================================= */
+body.officer-app-shell .audit-content-grid {
+  align-items: start;
+}
+
+body.officer-app-shell .audit-history-summary-card {
+  position: relative;
+  overflow: hidden;
+  display: grid;
+  gap: 18px;
+  align-content: start;
+  min-height: 310px;
+  padding: 22px;
+  background:
+    radial-gradient(circle at top right, rgba(58, 169, 224, 0.12), transparent 34%),
+    linear-gradient(180deg, #ffffff 0%, #f8fbff 100%);
+  border: 1px solid #d8e5f2;
+}
+
+body.officer-app-shell .audit-history-summary-card::before {
+  content: "";
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 4px;
+  background: linear-gradient(180deg, #1aa9de, #315cb8);
+}
+
+body.officer-app-shell .audit-history-summary-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+body.officer-app-shell .audit-history-summary-icon,
+body.officer-app-shell .audit-records-title-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 16px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: #eaf6fd;
+  border: 1px solid #cfe8f5;
+  color: #1769ad;
+  font-size: 19px;
+}
+
+body.officer-app-shell .audit-history-summary-copy {
+  display: grid;
+  gap: 7px;
+}
+
+body.officer-app-shell .audit-history-kicker {
+  color: #1596ca;
+  font-size:14px;
+  line-height: 1;
+  font-weight: 900;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+body.officer-app-shell .audit-history-summary-copy h3 {
+  margin: 0;
+  color: #123f7f;
+  font-size: 24px;
+  line-height: 1.1;
+}
+
+body.officer-app-shell .audit-history-summary-copy p {
+  margin: 0;
+  max-width: 560px;
+  color: #64748b;
+  line-height: 1.55;
+}
+
+body.officer-app-shell .audit-history-summary-stats {
+  display: grid;
+  grid-template-columns: minmax(0, .75fr) minmax(0, 1.25fr);
+  gap: 12px;
+}
+
+body.officer-app-shell .audit-history-stat {
+  min-width: 0;
+  padding: 15px 16px;
+  border: 1px solid #dbe7f2;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.86);
+  display: grid;
+  gap: 4px;
+}
+
+body.officer-app-shell .audit-history-stat strong {
+  min-width: 0;
+  color: #174f99;
+  font-size: 28px;
+  line-height: 1;
+  font-weight: 900;
+  overflow-wrap: anywhere;
+}
+
+body.officer-app-shell .audit-history-latest strong {
+  font-size: 14px;
+  line-height: 1.3;
+}
+
+body.officer-app-shell .audit-history-stat span {
+  color: #7a8aa0;
+  font-size:14px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+}
+
+body.officer-app-shell .audit-history-open-btn {
+  width: max-content;
+  min-width: 150px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+body.officer-app-shell .audit-records-dialog {
+  width: min(1080px, calc(100vw - 40px));
+  max-width: 1080px;
+  max-height: min(86vh, 820px);
+  padding: 0;
+  border: 0;
+  border-radius: 24px;
+  background: transparent;
+  box-shadow: 0 30px 90px rgba(15, 42, 78, 0.24);
+  overflow: hidden;
+}
+
+body.officer-app-shell .audit-records-dialog::backdrop {
+  background: rgba(15, 31, 55, 0.52);
+  backdrop-filter: blur(5px);
+  -webkit-backdrop-filter: blur(5px);
+}
+
+body.officer-app-shell .audit-records-shell {
+  max-height: min(86vh, 820px);
+  display: grid;
+  grid-template-rows: auto auto minmax(0, 1fr);
+  background: #f8fbff;
+  border: 1px solid #d5e3f0;
+  border-radius: 24px;
+  overflow: hidden;
+}
+
+body.officer-app-shell .audit-records-header {
+  padding: 20px 22px;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 18px;
+  background: #ffffff;
+  border-bottom: 1px solid #e2eaf2;
+}
+
+body.officer-app-shell .audit-records-title-group {
+  min-width: 0;
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+}
+
+body.officer-app-shell .audit-records-title-group > div:last-child {
+  min-width: 0;
+  display: grid;
+  gap: 5px;
+}
+
+body.officer-app-shell .audit-records-title-group h2 {
+  margin: 0;
+  color: #123f7f;
+  font-size: 24px;
+  line-height: 1.15;
+}
+
+body.officer-app-shell .audit-records-title-group p {
+  margin: 0;
+  color: #718198;
+  font-size:14px;
+}
+
+body.officer-app-shell .audit-records-close {
+  flex: 0 0 auto;
+  width: 42px;
+  height: 42px;
+  border: 1px solid #d9e4ef;
+  border-radius: 14px;
+  display: inline-grid;
+  place-items: center;
+  background: #f7faff;
+  color: #49647f;
+  cursor: pointer;
+  font-size: 18px;
+}
+
+body.officer-app-shell .audit-records-close:hover,
+body.officer-app-shell .audit-records-close:focus-visible {
+  background: #edf6fd;
+  color: #155ea4;
+}
+
+body.officer-app-shell .audit-records-toolbar {
+  padding: 14px 22px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: end;
+  gap: 14px;
+  background: #f5f9fd;
+  border-bottom: 1px solid #e0e9f2;
+}
+
+body.officer-app-shell .audit-records-search-field {
+  min-width: 0;
+}
+
+body.officer-app-shell .audit-search-control {
+  position: relative;
+}
+
+body.officer-app-shell .audit-search-control i {
+  position: absolute;
+  left: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #7690a7;
+  pointer-events: none;
+}
+
+body.officer-app-shell .audit-search-control input {
+  padding-left: 40px;
+  background: #ffffff;
+}
+
+body.officer-app-shell .audit-records-count {
+  min-width: 86px;
+  min-height: 48px;
+  padding: 8px 12px;
+  border: 1px solid #d8e4ef;
+  border-radius: 14px;
+  display: grid;
+  place-items: center;
+  align-content: center;
+  background: #ffffff;
+}
+
+body.officer-app-shell .audit-records-count strong {
+  color: #174f99;
+  font-size: 20px;
+  line-height: 1;
+}
+
+body.officer-app-shell .audit-records-count span {
+  color: #8090a3;
+  font-size:14px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: .05em;
+}
+
+body.officer-app-shell .audit-records-list-wrap {
+  min-height: 0;
+  overflow: auto;
+  padding: 16px 20px 20px;
+}
+
+body.officer-app-shell .audit-records-log-list {
+  gap: 10px;
+}
+
+body.officer-app-shell .audit-records-log-list .log-item {
+  padding: 15px 16px;
+  border: 1px solid #dce6ef;
+  border-radius: 16px;
+  background: #ffffff;
+  box-shadow: 0 6px 16px rgba(34, 75, 113, 0.04);
+}
+
+body.officer-app-shell .audit-records-log-list .log-item:hover {
+  border-color: #c3d7e8;
+  background: #fbfdff;
+}
+
+@media (max-width: 760px) {
+  body.officer-app-shell .audit-history-summary-stats {
+    grid-template-columns: 1fr;
+  }
+
+  body.officer-app-shell .audit-history-open-btn {
+    width: 100%;
+  }
+
+  body.officer-app-shell .audit-records-dialog {
+    width: calc(100vw - 20px);
+    max-height: 90vh;
+    border-radius: 18px;
+  }
+
+  body.officer-app-shell .audit-records-shell {
+    max-height: 90vh;
+    border-radius: 18px;
+  }
+
+  body.officer-app-shell .audit-records-header {
+    padding: 16px;
+  }
+
+  body.officer-app-shell .audit-records-title-icon {
+    display: none;
+  }
+
+  body.officer-app-shell .audit-records-title-group h2 {
+    font-size: 20px;
+  }
+
+  body.officer-app-shell .audit-records-toolbar {
+    padding: 12px 16px;
+    grid-template-columns: 1fr;
+  }
+
+  body.officer-app-shell .audit-records-count {
+    min-height: 42px;
+    grid-auto-flow: column;
+    justify-content: start;
+    gap: 6px;
+  }
+
+  body.officer-app-shell .audit-records-list-wrap {
+    padding: 12px 14px 16px;
+  }
+
+  body.officer-app-shell .audit-records-log-list .log-item {
+    display: grid;
+    gap: 10px;
+  }
+
+  body.officer-app-shell .audit-records-log-list .log-meta-side {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 5px 10px;
+  }
+}
+
+/* =========================================================
+   ADMIN AUDIT VIEWER UI REFINEMENT - 2026-09-05
+   ========================================================= */
+body.officer-app-shell .audit-content-grid {
+  grid-template-columns: minmax(0, 1.05fr) minmax(0, .95fr) !important;
+  gap: 16px !important;
+}
+
+body.officer-app-shell .audit-history-summary-card {
+  min-height: 0;
+  padding: 20px 22px;
+  gap: 16px;
+  border-radius: 20px;
+}
+
+body.officer-app-shell .audit-history-summary-card::before {
+  width: 3px;
+}
+
+body.officer-app-shell .audit-history-summary-header {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+body.officer-app-shell .audit-history-summary-title-group {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 13px;
+}
+
+body.officer-app-shell .audit-history-summary-icon {
+  flex: 0 0 auto;
+  width: 46px;
+  height: 46px;
+  border-radius: 14px;
+}
+
+body.officer-app-shell .audit-history-summary-copy {
+  min-width: 0;
+  gap: 4px;
+}
+
+body.officer-app-shell .audit-history-summary-copy h3 {
+  font-size: 20px;
+  line-height: 1.15;
+}
+
+body.officer-app-shell .audit-live-badge {
+  flex: 0 0 auto;
+  max-width: 150px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+body.officer-app-shell .audit-history-summary-description {
+  margin: 0;
+  max-width: 610px;
+  color: #66788f;
+  font-size:14px;
+  line-height: 1.55;
+}
+
+body.officer-app-shell .audit-history-summary-stats {
+  grid-template-columns: minmax(135px, .72fr) minmax(0, 1.28fr);
+  gap: 12px;
+}
+
+body.officer-app-shell .audit-history-stat {
+  min-height: 92px;
+  padding: 14px 16px;
+  align-content: center;
+  gap: 7px;
+  border-radius: 15px;
+}
+
+body.officer-app-shell .audit-history-stat-label {
+  order: -1;
+  color: #77899f;
+  font-size:14px;
+  line-height: 1.2;
+  font-weight: 800;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+}
+
+body.officer-app-shell .audit-history-stat strong {
+  font-size: 30px;
+}
+
+body.officer-app-shell .audit-history-latest strong {
+  font-size: 15px;
+  line-height: 1.35;
+  overflow-wrap: normal;
+  word-break: normal;
+}
+
+body.officer-app-shell .audit-history-summary-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+body.officer-app-shell .audit-history-open-btn {
+  min-width: 142px;
+}
+
+body.officer-app-shell .audit-history-action-note {
+  color: #7b8ca0;
+  font-size:14px;
+  line-height: 1.4;
+}
+
+body.officer-app-shell .audit-records-dialog {
+  width: min(1120px, calc(100vw - 48px));
+  max-width: 1120px;
+  height: min(82vh, 760px);
+  max-height: min(82vh, 760px);
+  border-radius: 22px;
+}
+
+body.officer-app-shell .audit-records-shell {
+  height: 100%;
+  max-height: none;
+  grid-template-rows: auto auto minmax(0, 1fr);
+  border-radius: 22px;
+}
+
+body.officer-app-shell .audit-records-header {
+  padding: 18px 22px;
+  align-items: center;
+}
+
+body.officer-app-shell .audit-records-title-icon {
+  flex: 0 0 auto;
+  width: 46px;
+  height: 46px;
+  border-radius: 14px;
+}
+
+body.officer-app-shell .audit-records-title-group h2 {
+  font-size: 22px;
+}
+
+body.officer-app-shell .audit-records-toolbar {
+  position: relative;
+  z-index: 2;
+  padding: 13px 22px 14px;
+  align-items: end;
+  background: #f3f8fc;
+}
+
+body.officer-app-shell .audit-records-search-field {
+  margin-bottom: 0 !important;
+}
+
+body.officer-app-shell .audit-records-search-field label {
+  margin-bottom: 7px !important;
+}
+
+body.officer-app-shell .audit-search-control input,
+body.officer-app-shell .field .audit-search-control input,
+body.officer-app-shell #auditSearchInput {
+  min-height: 46px !important;
+  padding: 10px 14px 10px 42px !important;
+  border-radius: 12px !important;
+  background: #fff !important;
+  font-size:14px !important;
+}
+
+body.officer-app-shell .audit-search-control i {
+  left: 15px;
+  z-index: 2;
+  font-size: 13px;
+}
+
+body.officer-app-shell .audit-records-count {
+  min-width: 88px;
+  min-height: 46px;
+  border-radius: 12px;
+}
+
+body.officer-app-shell .audit-records-list-wrap {
+  position: relative;
+  z-index: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 14px 18px 18px;
+  scroll-padding-top: 14px;
+  background: #f8fbff;
+}
+
+body.officer-app-shell .audit-records-log-list {
+  display: grid;
+  gap: 10px;
+}
+
+body.officer-app-shell .audit-records-log-list .log-item {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(170px, auto);
+  align-items: start;
+  gap: 14px 22px;
+  padding: 14px 16px;
+}
+
+body.officer-app-shell .audit-records-log-list .log-item-copy {
+  gap: 6px;
+}
+
+body.officer-app-shell .audit-records-log-list .log-item-copy > strong {
+  color: #182f4e;
+  font-size:14px;
+  line-height: 1.2;
+}
+
+body.officer-app-shell .audit-records-log-list .log-type {
+  color: #1554d1;
+  font-size:14px;
+  line-height: 1.25;
+  font-weight: 800;
+}
+
+body.officer-app-shell .audit-records-log-list .log-item p {
+  color: #3e5068;
+  font-size:14px;
+  line-height: 1.45;
+}
+
+body.officer-app-shell .audit-records-log-list .log-meta-side {
+  min-width: 0;
+  display: grid;
+  justify-items: end;
+  gap: 3px;
+  color: #6f8198 !important;
+  font-size:14px !important;
+  line-height: 1.25;
+  text-align: right;
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 980px) {
+  body.officer-app-shell .audit-content-grid {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+@media (max-width: 760px) {
+  body.officer-app-shell .audit-history-summary-card {
+    padding: 17px;
+  }
+
+  body.officer-app-shell .audit-history-summary-header {
+    align-items: flex-start;
+  }
+
+  body.officer-app-shell .audit-live-badge {
+    max-width: 110px;
+  }
+
+  body.officer-app-shell .audit-history-summary-stats {
+    grid-template-columns: 1fr;
+  }
+
+  body.officer-app-shell .audit-records-dialog {
+    width: calc(100vw - 18px);
+    height: min(88vh, 760px);
+    max-height: min(88vh, 760px);
+  }
+
+  body.officer-app-shell .audit-records-header {
+    padding: 15px 16px;
+  }
+
+  body.officer-app-shell .audit-records-toolbar {
+    padding: 12px 14px;
+  }
+
+  body.officer-app-shell .audit-records-log-list .log-item {
+    grid-template-columns: 1fr;
+  }
+
+  body.officer-app-shell .audit-records-log-list .log-meta-side {
+    justify-items: start;
+    text-align: left;
+  }
+}
+
+
+/* =========================================================
+   ADMIN AUDIT VIEWER CENTER + POLISH - 2026-09-05
+   ========================================================= */
+body.officer-app-shell .audit-records-dialog {
+  position: fixed;
+  inset: 50% auto auto 50%;
+  transform: translate(-50%, -50%);
+  margin: 0;
+  width: min(1120px, calc(100vw - 56px));
+  max-width: 1120px;
+  height: min(84vh, 790px);
+  max-height: min(84vh, 790px);
+  border-radius: 26px;
+  background: transparent;
+  box-shadow: 0 36px 90px rgba(15, 42, 78, 0.28);
+}
+
+body.officer-app-shell .audit-records-shell {
+  border-radius: 26px;
+  border: 1px solid #d7e3ef;
+  background:
+    linear-gradient(180deg, #ffffff 0%, #f8fbff 100%);
+}
+
+body.officer-app-shell .audit-records-header {
+  padding: 20px 26px 18px;
+  border-bottom: 1px solid #e0e9f2;
+  background:
+    linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(248,251,255,0.98) 100%);
+}
+
+body.officer-app-shell .audit-records-title-group {
+  align-items: center;
+  gap: 16px;
+}
+
+body.officer-app-shell .audit-records-title-group p {
+  max-width: 720px;
+  color: #66788f;
+  line-height: 1.45;
+}
+
+body.officer-app-shell .audit-records-close {
+  width: 48px;
+  height: 48px;
+  border-radius: 16px;
+  background: #f5f9fd;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.85);
+}
+
+body.officer-app-shell .audit-records-toolbar {
+  padding: 16px 26px;
+  gap: 16px;
+  border-bottom: 1px solid #e4ecf4;
+  background: #f5f9fd;
+}
+
+body.officer-app-shell .audit-records-search-field label {
+  color: #234c80;
+  font-size:14px;
+  font-weight: 800;
+}
+
+body.officer-app-shell .audit-search-control input,
+body.officer-app-shell .field .audit-search-control input,
+body.officer-app-shell #auditSearchInput {
+  min-height: 54px !important;
+  padding: 12px 18px 12px 50px !important;
+  border-radius: 16px !important;
+  border: 1px solid #c8d9ea !important;
+  box-shadow: 0 8px 18px rgba(39, 83, 127, 0.07);
+  font-size: 14px !important;
+}
+
+body.officer-app-shell .audit-search-control i {
+  left: 18px;
+  font-size: 15px;
+  color: #7b8ea3;
+}
+
+body.officer-app-shell .audit-records-count {
+  min-width: 110px;
+  min-height: 64px;
+  padding: 10px 14px;
+  border-radius: 18px;
+  box-shadow: 0 8px 18px rgba(39, 83, 127, 0.06);
+}
+
+body.officer-app-shell .audit-records-count strong {
+  font-size: 18px;
+}
+
+body.officer-app-shell .audit-records-list-wrap {
+  padding: 18px 22px 22px;
+  background: linear-gradient(180deg, #f9fbff 0%, #f4f8fc 100%);
+}
+
+body.officer-app-shell .audit-records-log-list {
+  gap: 12px;
+}
+
+body.officer-app-shell .audit-records-log-list .log-item {
+  padding: 17px 18px;
+  border-radius: 18px;
+  border: 1px solid #d9e5ef;
+  background: rgba(255,255,255,0.97);
+  box-shadow: 0 10px 24px rgba(34, 75, 113, 0.05);
+}
+
+body.officer-app-shell .audit-records-log-list .log-item-copy > strong {
+  font-size: 15px;
+}
+
+body.officer-app-shell .audit-records-log-list .log-type {
+  font-size: 15px;
+}
+
+body.officer-app-shell .audit-records-log-list .log-item p {
+  font-size:14px;
+}
+
+body.officer-app-shell .audit-records-log-list .log-meta-side {
+  font-size:14px !important;
+  gap: 4px;
+}
+
+body.officer-app-shell .audit-records-log-list .log-meta-side > div:first-child {
+  color: #4f6d91;
+  font-weight: 700;
+}
+
+@media (max-width: 760px) {
+  body.officer-app-shell .audit-records-dialog {
+    inset: 50% auto auto 50%;
+    transform: translate(-50%, -50%);
+    width: calc(100vw - 18px);
+    height: min(88vh, 760px);
+    max-height: min(88vh, 760px);
+    border-radius: 20px;
+  }
+
+  body.officer-app-shell .audit-records-shell {
+    border-radius: 20px;
+  }
+
+  body.officer-app-shell .audit-records-header,
+  body.officer-app-shell .audit-records-toolbar {
+    padding-left: 16px;
+    padding-right: 16px;
+  }
+
+  body.officer-app-shell .audit-records-list-wrap {
+    padding: 14px 14px 16px;
+  }
+
+  body.officer-app-shell .audit-records-count {
+    min-width: 0;
+    width: 100%;
+    justify-items: start;
+  }
+}
+
+
+/* =========================================================
+   ADMIN USER DIRECTORY POLISH - 2026-09-05
+   ========================================================= */
+body.officer-app-shell .user-directory-hero {
+  grid-template-columns: minmax(0, .82fr) minmax(420px, 1.18fr);
+  grid-template-areas:
+    "search search"
+    "provision bulk";
+  align-items: stretch;
+}
+
+body.officer-app-shell .user-directory-search-card { grid-area: search; }
+body.officer-app-shell .user-directory-provision-card { grid-area: provision; }
+body.officer-app-shell .user-directory-bulk-card { grid-area: bulk; }
+
+body.officer-app-shell .user-directory-search-card,
+body.officer-app-shell .user-directory-provision-card,
+body.officer-app-shell .user-directory-bulk-card,
+body.officer-app-shell .user-directory-table-card,
+body.officer-app-shell .user-directory-editor-card {
+  border: 1px solid #d8e4f0;
+  border-radius: 22px;
+  box-shadow: 0 14px 34px rgba(24, 67, 106, .07);
+  background: linear-gradient(180deg, #ffffff 0%, #fbfdff 100%);
+}
+
+body.officer-app-shell .user-directory-search-card {
+  position: relative;
+  overflow: hidden;
+  padding: 24px;
+}
+
+body.officer-app-shell .user-directory-search-card::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 4px;
+  background: linear-gradient(90deg, #1aa9de, #315cb8 62%, #77d4ec);
+}
+
+body.officer-app-shell .user-directory-search-card .hero-title-row {
+  margin-bottom: 18px;
+}
+
+body.officer-app-shell .user-directory-search-card .filter-shell {
+  padding: 16px;
+  border-radius: 18px;
+  border: 1px solid #dce7f1;
+  background: #f7fbfe;
+  box-shadow: none;
+}
+
+body.officer-app-shell .user-directory-search-card .filters-grid {
+  grid-template-columns: minmax(240px, 1.65fr) repeat(5, minmax(120px, 1fr));
+  gap: 10px;
+}
+
+body.officer-app-shell .user-directory-search-card .field label,
+body.officer-app-shell .user-directory-bulk-card .field label,
+body.officer-app-shell .user-directory-editor-card .field label {
+  color: #3e5c7c;
+  font-size:14px;
+  letter-spacing: .02em;
+}
+
+body.officer-app-shell .user-directory-search-card input,
+body.officer-app-shell .user-directory-search-card select,
+body.officer-app-shell .user-directory-bulk-card input,
+body.officer-app-shell .user-directory-bulk-card select,
+body.officer-app-shell .user-directory-editor-card input,
+body.officer-app-shell .user-directory-editor-card select,
+body.officer-app-shell .user-directory-editor-card textarea {
+  min-height: 44px;
+  border-radius: 12px;
+  border-color: #ccdbea;
+  background: #fff;
+}
+
+body.officer-app-shell .user-directory-search-card #userSearchInput {
+  background-image: linear-gradient(#fff, #fff);
+}
+
+body.officer-app-shell .user-directory-search-card .selection-bar {
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 1px solid #e2eaf2;
+}
+
+body.officer-app-shell .user-directory-search-card .quick-badge,
+body.officer-app-shell .user-directory-table-card .quick-badge,
+body.officer-app-shell .user-directory-editor-card .quick-badge {
+  min-height: 30px;
+  padding: 6px 11px;
+  border: 1px solid #dde7f0;
+  background: #f5f8fc;
+  color: #53708d;
+}
+
+body.officer-app-shell .user-directory-provision-card,
+body.officer-app-shell .user-directory-bulk-card {
+  padding: 20px;
+}
+
+body.officer-app-shell .user-directory-provision-card {
+  background:
+    radial-gradient(circle at top right, rgba(45, 183, 222, .14), transparent 40%),
+    linear-gradient(180deg, #fff 0%, #f8fcff 100%);
+}
+
+body.officer-app-shell .user-directory-provision-card .card-head h3,
+body.officer-app-shell .user-directory-bulk-card .card-head h3 {
+  color: #164f99;
+  font-size: 18px;
+}
+
+body.officer-app-shell .user-directory-provision-card .action-group {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+body.officer-app-shell .user-directory-provision-card .btn {
+  min-height: 48px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+  border-radius: 14px;
+}
+
+body.officer-app-shell .bulk-action-grid,
+body.officer-app-shell .user-editor-fields-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+body.officer-app-shell .user-directory-bulk-card .action-group {
+  padding-top: 14px;
+  border-top: 1px solid #e4ebf2;
+}
+
+body.officer-app-shell .user-directory-workspace {
+  grid-template-columns: minmax(720px, 1.38fr) minmax(390px, .62fr);
+  align-items: start;
+  gap: 18px;
+}
+
+body.officer-app-shell .user-directory-table-card,
+body.officer-app-shell .user-directory-editor-card {
+  padding: 0;
+  overflow: hidden;
+}
+
+body.officer-app-shell .user-directory-card-head {
+  margin: 0;
+  padding: 18px 20px;
+  border-bottom: 1px solid #e1eaf2;
+  background: linear-gradient(180deg, #fbfdff 0%, #f6f9fd 100%);
+}
+
+body.officer-app-shell .user-directory-card-head h3 {
+  color: #123f7f;
+  font-size: 18px;
+}
+
+body.officer-app-shell .user-directory-table-card .table-wrap {
+  margin: 0;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+  max-height: 720px;
+  overflow: auto;
+  background: #fff;
+}
+
+body.officer-app-shell .user-directory-table-card table {
+  min-width: 1120px;
+}
+
+body.officer-app-shell .user-directory-table-card thead th {
+  position: sticky;
+  top: 0;
+  z-index: 3;
+  padding: 12px 11px;
+  background: #f4f8fc;
+  color: #60758d;
+  border-bottom: 1px solid #dce6ef;
+  font-size:14px;
+  letter-spacing: .055em;
+}
+
+body.officer-app-shell .user-directory-table-card td {
+  padding: 12px 11px;
+  vertical-align: middle;
+  background: #fff;
+}
+
+body.officer-app-shell .directory-row {
+  transition: background .16s ease, box-shadow .16s ease;
+}
+
+body.officer-app-shell .directory-row:hover td {
+  background: #f8fbfe;
+}
+
+body.officer-app-shell .directory-row.is-open td {
+  background: #eef6ff;
+  border-bottom-color: #d3e4f5;
+}
+
+body.officer-app-shell .directory-row.is-open td:first-child {
+  box-shadow: inset 4px 0 0 #2b75bd;
+}
+
+body.officer-app-shell .directory-user-cell {
+  min-width: 220px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+body.officer-app-shell .directory-user-avatar {
+  flex: 0 0 auto;
+  width: 38px;
+  height: 38px;
+  display: inline-grid;
+  place-items: center;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #e7f4fd, #d9eaff);
+  border: 1px solid #cfe0f2;
+  color: #1c5ca1;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+body.officer-app-shell .user-directory-table-card .table-name strong {
+  color: #173b68;
+  font-size:14px;
+}
+
+body.officer-app-shell .user-directory-table-card .table-name small {
+  font-size:14px;
+  overflow-wrap: anywhere;
+}
+
+body.officer-app-shell .user-directory-table-card .role-badge,
+body.officer-app-shell .user-directory-table-card .status-badge,
+body.officer-app-shell .user-directory-table-card .verify-badge,
+body.officer-app-shell .user-directory-table-card .active-badge {
+  padding: 5px 9px;
+  font-size:14px;
+  white-space: nowrap;
+}
+
+body.officer-app-shell .user-directory-table-card .open-btn {
+  min-height: 34px;
+  padding: 7px 11px;
+  border-color: #ccdaea;
+  color: #245b94;
+}
+
+body.officer-app-shell .user-directory-table-card .open-btn:hover,
+body.officer-app-shell .user-directory-table-card .open-btn.selected {
+  background: #e9f3ff;
+  border-color: #b7d0ed;
+  color: #16559c;
+}
+
+body.officer-app-shell .user-directory-table-card .table-actions .mono {
+  color: #7b8b9f;
+  font-size:14px;
+}
+
+body.officer-app-shell .user-directory-editor-card {
+  top: 18px;
+  max-height: calc(100vh - 36px);
+  overflow-y: auto;
+  scrollbar-width: thin;
+}
+
+body.officer-app-shell .directory-editor-empty {
+  min-height: 320px;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+  display: grid;
+  place-items: center;
+  align-content: center;
+  gap: 10px;
+  background:
+    radial-gradient(circle at center top, rgba(47, 158, 215, .11), transparent 45%),
+    #fff;
+}
+
+body.officer-app-shell .directory-editor-empty-icon {
+  width: 62px;
+  height: 62px;
+  display: grid;
+  place-items: center;
+  border-radius: 20px;
+  background: #eaf5fd;
+  border: 1px solid #d2e6f4;
+  color: #1d69a9;
+  font-size: 24px;
+}
+
+body.officer-app-shell .user-directory-editor-card .user-summary {
+  padding: 18px;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+  background: #fff;
+}
+
+body.officer-app-shell .user-directory-editor-card .user-summary-top {
+  padding: 14px;
+  border: 1px solid #dce7f1;
+  border-radius: 16px;
+  background: linear-gradient(180deg, #f8fbff 0%, #fff 100%);
+}
+
+body.officer-app-shell .user-directory-editor-card .profile-avatar {
+  width: 58px;
+  height: 58px;
+  border-radius: 18px;
+  background: linear-gradient(135deg, #dff2fb, #dce9ff);
+  color: #195b9c;
+}
+
+body.officer-app-shell .user-directory-editor-card .detail-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 9px;
+}
+
+body.officer-app-shell .user-directory-editor-card .detail-chip {
+  min-height: 72px;
+  padding: 11px 12px;
+  border-radius: 14px;
+  background: #f8fbfe;
+  border-color: #e0e8f0;
+  box-shadow: none;
+}
+
+body.officer-app-shell .user-directory-editor-card .detail-chip strong {
+  color: #728398;
+  font-size:14px;
+  letter-spacing: .045em;
+}
+
+body.officer-app-shell .user-directory-editor-card .detail-chip span {
+  color: #203e62;
+  font-size:14px;
+  line-height: 1.3;
+  overflow-wrap: anywhere;
+}
+
+body.officer-app-shell .user-directory-editor-card #roleEditorForm {
+  padding-top: 16px;
+  border-top: 1px solid #e5ecf3;
+}
+
+body.officer-app-shell .user-directory-editor-card .toggle-box {
+  min-height: 54px;
+  padding: 11px 13px;
+  border-radius: 14px;
+  background: #f8fbfe;
+}
+
+body.officer-app-shell .user-directory-editor-card .editor-actions {
+  padding-top: 14px;
+  border-top: 1px solid #e2eaf2;
+}
+
+body.officer-app-shell .user-directory-editor-card .editor-actions .btn {
+  flex: 1 1 145px;
+}
+
+body.officer-app-shell .officer-rbac-editor {
+  border-radius: 16px;
+  background: #f7fbfe;
+  border-color: #d6e4f1;
+}
+
+@media (max-width: 1320px) {
+  body.officer-app-shell .user-directory-hero {
+    grid-template-columns: 1fr;
+    grid-template-areas:
+      "search"
+      "provision"
+      "bulk";
+  }
+
+  body.officer-app-shell .user-directory-workspace {
+    grid-template-columns: 1fr;
+  }
+
+  body.officer-app-shell .user-directory-editor-card {
+    position: static;
+    max-height: none;
+    overflow: visible;
+  }
+}
+
+@media (max-width: 1080px) {
+  body.officer-app-shell .user-directory-search-card .filters-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  body.officer-app-shell .user-directory-search-card .field:first-child {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (max-width: 720px) {
+  body.officer-app-shell .user-directory-search-card,
+  body.officer-app-shell .user-directory-provision-card,
+  body.officer-app-shell .user-directory-bulk-card {
+    padding: 16px;
+  }
+
+  body.officer-app-shell .user-directory-search-card .filters-grid,
+  body.officer-app-shell .bulk-action-grid,
+  body.officer-app-shell .user-editor-fields-grid,
+  body.officer-app-shell .user-directory-editor-card .detail-grid {
+    grid-template-columns: 1fr;
+  }
+
+  body.officer-app-shell .user-directory-provision-card .action-group {
+    grid-template-columns: 1fr;
+  }
+
+  body.officer-app-shell .user-directory-search-card .selection-bar {
+    align-items: stretch;
+  }
+
+  body.officer-app-shell .user-directory-search-card .selection-bar > .toolbar {
+    width: 100%;
+  }
+
+  body.officer-app-shell .user-directory-search-card .selection-bar .btn,
+  body.officer-app-shell .user-directory-search-card .selection-bar .field {
+    flex: 1 1 100%;
+  }
+}
+
+
+/* =========================================================
+   USER DIRECTORY PROVISIONING HEIGHT FIX - 2026-09-05
+   ========================================================= */
+/* Provisioning sits beside the much taller Bulk Actions card. Do not stretch
+   it to the shared grid-row height; let it end naturally after its actions. */
+body.officer-app-shell .user-directory-hero {
+  align-items: start;
+}
+
+body.officer-app-shell .user-directory-search-card {
+  align-self: stretch;
+}
+
+body.officer-app-shell .user-directory-provision-card {
+  align-self: start;
+  height: auto;
+  min-height: 0;
+  padding: 20px;
+  display: grid;
+  gap: 14px;
+  align-content: start;
+}
+
+body.officer-app-shell .user-directory-provision-card .card-head {
+  margin: 0;
+  padding: 0 0 14px;
+  border-bottom: 1px solid #e2eaf2;
+}
+
+body.officer-app-shell .user-directory-provision-card .action-group {
+  margin-top: 0 !important;
+}
+
+@media (max-width: 1320px) {
+  body.officer-app-shell .user-directory-provision-card {
+    width: 100%;
+  }
+}
+
+
+/* =========================================================
+   USER DIRECTORY STATIC FLOW + EMPTY SPACE FIX - 2026-09-05
+   ========================================================= */
+/* Keep the account-management page in normal document flow. The previous
+   side-by-side grid left large empty columns whenever Provisioning or the
+   Selected User panel was shorter than the card beside it. */
+body.officer-app-shell .user-directory-hero {
+  grid-template-columns: minmax(0, 1fr) !important;
+  grid-template-areas:
+    "search"
+    "provision"
+    "bulk" !important;
+  align-items: start !important;
+  gap: 16px;
+}
+
+body.officer-app-shell .user-directory-search-card,
+body.officer-app-shell .user-directory-provision-card,
+body.officer-app-shell .user-directory-bulk-card {
+  position: static !important;
+  align-self: start !important;
+  width: 100%;
+  height: auto !important;
+  min-height: 0 !important;
+}
+
+body.officer-app-shell .user-directory-provision-card {
+  display: block;
+  overflow: hidden;
+}
+
+body.officer-app-shell .user-directory-provision-card .action-group {
+  margin-top: 14px !important;
+}
+
+body.officer-app-shell .user-directory-workspace {
+  grid-template-columns: minmax(0, 1fr) !important;
+  align-items: start !important;
+  gap: 16px;
+}
+
+body.officer-app-shell .user-directory-editor-card {
+  position: static !important;
+  inset: auto !important;
+  top: auto !important;
+  align-self: start !important;
+  width: 100%;
+  max-height: none !important;
+  overflow: visible !important;
+}
+
+body.officer-app-shell .directory-editor-empty {
+  min-height: 0 !important;
+  padding: 38px 24px !important;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  text-align: center;
+}
+
+body.officer-app-shell .directory-editor-empty-icon {
+  width: 56px;
+  height: 56px;
+  border-radius: 18px;
+}
+
+body.officer-app-shell .directory-editor-empty strong {
+  font-size: 17px;
+  color: #173b68;
+}
+
+body.officer-app-shell .directory-editor-empty span {
+  max-width: 520px;
+  color: #6d7f96;
+  font-size:14px;
+  line-height: 1.45;
+}
+
+body.officer-app-shell .user-directory-table-card .table-wrap {
+  max-height: 620px;
+}
+
+@media (max-width: 720px) {
+  body.officer-app-shell .directory-editor-empty {
+    padding: 30px 18px !important;
+  }
+
+  body.officer-app-shell .user-directory-provision-card .action-group {
+    margin-top: 12px !important;
+  }
+}
+
+/* Candidacy approval is independent from voting eligibility. */
+.user-directory-editor-card .toggle-row{grid-template-columns:repeat(3,minmax(0,1fr));}
+@media(max-width:760px){.user-directory-editor-card .toggle-row{grid-template-columns:1fr;}}
+
+
+/* =========================================================
+   ADMIN ACCESS OVERVIEW CARD LAYOUT FIX - 2026-09-06
+   Keeps metric cards readable in medium-width desktop/tablet layouts.
+   ========================================================= */
+body.officer-app-shell .admin-overview-hero-card {
+  padding: 24px;
+}
+
+body.officer-app-shell .admin-overview-stats {
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)) !important;
+  gap: 16px;
+  align-items: stretch;
+}
+
+body.officer-app-shell .admin-overview-stat {
+  min-height: 144px;
+  padding: 18px;
+  grid-template-columns: 56px minmax(0, 1fr);
+  align-items: start;
+  gap: 14px;
+}
+
+body.officer-app-shell .overview-stat-icon {
+  width: 56px;
+  height: 56px;
+  border-radius: 18px;
+  font-size: 21px;
+}
+
+body.officer-app-shell .admin-overview-stat .stat-label {
+  font-size: 0.88rem;
+  line-height: 1.25;
+  letter-spacing: 0;
+  text-transform: none;
+  color: #ffffff;
+  text-shadow: 0 1px 2px rgba(0,0,0,0.08);
+}
+
+body.officer-app-shell .admin-overview-stat .stat-value {
+  margin-top: 8px;
+  font-size: clamp(2.15rem, 2.2vw, 2.65rem);
+}
+
+body.officer-app-shell .admin-overview-stat .stat-sub {
+  margin-top: 8px;
+  font-size: 0.84rem;
+  line-height: 1.45;
+  color: rgba(255,255,255,0.96);
+  font-weight: 700;
+}
+
+body.officer-app-shell .admin-overview-stat {
+  border-color: rgba(56, 189, 248, 0.18);
+  background:
+    linear-gradient(180deg, rgba(111, 207, 240, 0.96), rgba(67, 187, 228, 0.98)),
+    linear-gradient(180deg, #7ed7ef 0%, #38bdf8 100%);
+}
+
+body.officer-app-shell .admin-overview-stat::after {
+  width: 112px;
+  height: 112px;
+  right: -40px;
+  top: -34px;
+  background: rgba(255, 255, 255, 0.14);
+}
+
+body.officer-app-shell .admin-overview-stat .stat-value,
+body.officer-app-shell .admin-overview-stat.stat-approved .stat-value,
+body.officer-app-shell .admin-overview-stat.stat-pending .stat-value,
+body.officer-app-shell .admin-overview-stat.stat-suspended .stat-value,
+body.officer-app-shell .admin-overview-stat.stat-officers .stat-value,
+body.officer-app-shell .admin-overview-stat.stat-verified .stat-value,
+body.officer-app-shell .admin-overview-stat.stat-new-week .stat-value,
+body.officer-app-shell .admin-overview-stat.stat-never-login .stat-value {
+  color: #184a9f;
+}
+
+body.officer-app-shell .admin-overview-stat.stat-total .overview-stat-icon {
+  background: rgba(255,255,255,0.9);
+  color: #1566ab;
+}
+body.officer-app-shell .admin-overview-stat.stat-approved .overview-stat-icon {
+  background: #eefcf3;
+  color: #16864f;
+}
+body.officer-app-shell .admin-overview-stat.stat-pending .overview-stat-icon {
+  background: #fff8e7;
+  color: #b86a00;
+}
+body.officer-app-shell .admin-overview-stat.stat-suspended .overview-stat-icon {
+  background: #fff1f2;
+  color: #c33d49;
+}
+body.officer-app-shell .admin-overview-stat.stat-officers .overview-stat-icon,
+body.officer-app-shell .admin-overview-stat.stat-verified .overview-stat-icon {
+  background: #eef2ff;
+  color: #3557c6;
+}
+body.officer-app-shell .admin-overview-stat.stat-new-week .overview-stat-icon {
+  background: #ecfeff;
+  color: #168a93;
+}
+body.officer-app-shell .admin-overview-stat.stat-never-login .overview-stat-icon {
+  background: #f5f3ff;
+  color: #7655b8;
+}
+
+@media (min-width: 1500px) {
+  body.officer-app-shell .admin-overview-stats {
+    grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+  }
+}
+
+@media (max-width: 1499px) and (min-width: 980px) {
+  body.officer-app-shell .hero {
+    grid-template-columns: 1fr;
+  }
+
+  body.officer-app-shell .admin-overview-stats {
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+  }
+}
+
+@media (max-width: 979px) and (min-width: 620px) {
+  body.officer-app-shell .admin-overview-stats {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+}
+
+@media (max-width: 619px) {
+  body.officer-app-shell .admin-overview-stats {
+    grid-template-columns: 1fr !important;
+  }
+
+  body.officer-app-shell .admin-overview-hero-card {
+    padding: 18px;
+  }
+
+  body.officer-app-shell .admin-overview-stat {
+    min-height: 124px;
+    grid-template-columns: 50px minmax(0, 1fr);
+    padding: 16px;
+  }
+
+  body.officer-app-shell .overview-stat-icon {
+    width: 50px;
+    height: 50px;
+    border-radius: 16px;
+    font-size: 19px;
+  }
+}
+
+/* =========================================================
+   USER DIRECTORY SIMPLE NAME / STUDENT ID SEARCH - 2026-09-06
+   ========================================================= */
+body.officer-app-shell .directory-simple-search {
+  margin: 0 0 16px;
+  padding: 14px;
+  border: 1px solid #dce7f1;
+  border-radius: 18px;
+  background: linear-gradient(180deg, #f8fbfe 0%, #f4f9fd 100%);
+  box-shadow: none;
+}
+
+body.officer-app-shell .directory-search-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 14px;
+  align-items: end;
+}
+
+body.officer-app-shell .directory-search-field {
+  min-width: 0;
+  display: grid;
+  gap: 7px;
+}
+
+body.officer-app-shell .directory-search-field > label {
+  color: #214f84;
+  font-size:14px;
+  font-weight: 900;
+}
+
+body.officer-app-shell .directory-search-field > small {
+  color: #73849a;
+  font-size:14px;
+  line-height: 1.35;
+}
+
+body.officer-app-shell .directory-search-control {
+  position: relative;
+}
+
+body.officer-app-shell .directory-search-control > i {
+  position: absolute;
+  left: 17px;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 2;
+  color: #6282a7;
+  font-size: 15px;
+  pointer-events: none;
+}
+
+body.officer-app-shell .directory-search-control #userSearchInput {
+  width: 100%;
+  min-height: 52px;
+  padding: 12px 16px 12px 46px !important;
+  border: 1px solid #c7d9ea;
+  border-radius: 15px;
+  background: #fff;
+  color: #173d69;
+  font-size: 14px;
+  box-shadow: 0 6px 16px rgba(36, 82, 122, .05);
+}
+
+body.officer-app-shell .directory-search-control #userSearchInput::placeholder {
+  color: #8c9aad;
+}
+
+body.officer-app-shell .directory-search-counts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: flex-end;
+  padding-bottom: 23px;
+}
+
+body.officer-app-shell .directory-search-actions {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid #e2eaf2;
+}
+
+body.officer-app-shell .directory-sort-field {
+  width: min(220px, 100%);
+}
+
+body.officer-app-shell .directory-sort-field label {
+  color: #526d8c;
+  font-size:14px;
+}
+
+body.officer-app-shell .directory-sort-field select {
+  min-height: 40px;
+}
+
+@media (max-width: 760px) {
+  body.officer-app-shell .directory-search-row {
+    grid-template-columns: 1fr;
+  }
+
+  body.officer-app-shell .directory-search-counts {
+    justify-content: flex-start;
+    padding-bottom: 0;
+  }
+
+  body.officer-app-shell .directory-search-actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  body.officer-app-shell .directory-sort-field {
+    width: 100%;
+  }
+
+  body.officer-app-shell .directory-search-actions .toolbar {
+    width: 100%;
+  }
+
+  body.officer-app-shell .directory-search-actions .toolbar .btn {
+    flex: 1 1 180px;
+  }
+}
+
+
+/* =========================================================
+   USER DIRECTORY FLOATING ACCOUNT EDITOR - 2026-09-06
+   ========================================================= */
+body.user-editor-modal-open {
+  overflow: hidden;
+}
+
+body.officer-app-shell .user-directory-workspace {
+  grid-template-columns: minmax(0, 1fr) !important;
+}
+
+body.officer-app-shell .user-editor-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 2200;
+  display: grid;
+  place-items: center;
+  padding: 22px;
+}
+
+body.officer-app-shell .user-editor-modal.hidden {
+  display: none !important;
+}
+
+body.officer-app-shell .user-editor-modal-backdrop {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border: 0;
+  background: rgba(12, 30, 54, 0.58);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  cursor: default;
+}
+
+body.officer-app-shell .user-editor-modal-dialog {
+  position: relative;
+  z-index: 1;
+  width: min(1080px, calc(100vw - 44px));
+  max-height: min(88vh, 880px);
+}
+
+body.officer-app-shell .user-directory-editor-modal-card {
+  position: relative !important;
+  width: 100% !important;
+  max-height: min(88vh, 880px) !important;
+  overflow-y: auto !important;
+  overscroll-behavior: contain;
+  padding: 26px !important;
+  border-radius: 26px !important;
+  border: 1px solid #d6e3ef !important;
+  background: linear-gradient(180deg, #ffffff 0%, #f8fbff 100%) !important;
+  box-shadow: 0 32px 90px rgba(10, 35, 66, 0.30) !important;
+}
+
+body.officer-app-shell .user-editor-modal-close {
+  position: sticky;
+  top: 0;
+  z-index: 12;
+  float: right;
+  width: 46px;
+  height: 46px;
+  margin: -4px -4px 8px 14px;
+  border: 1px solid #d6e3ef;
+  border-radius: 15px;
+  display: grid;
+  place-items: center;
+  background: rgba(248, 251, 255, 0.96);
+  color: #3f5d7c;
+  font-size: 18px;
+  cursor: pointer;
+  box-shadow: 0 8px 20px rgba(31, 78, 120, 0.08);
+}
+
+body.officer-app-shell .user-editor-modal-close:hover,
+body.officer-app-shell .user-editor-modal-close:focus-visible {
+  background: #eef7fd;
+  color: #165b99;
+  outline: none;
+  border-color: #b9d9ed;
+}
+
+body.officer-app-shell .user-directory-editor-modal-card .selected-user-head {
+  padding-right: 58px;
+  margin-bottom: 16px;
+}
+
+body.officer-app-shell .user-directory-editor-modal-card .user-summary {
+  clear: both;
+}
+
+body.officer-app-shell .user-directory-editor-modal-card .detail-grid {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+body.officer-app-shell .user-directory-editor-modal-card .user-editor-fields-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+body.officer-app-shell .user-directory-editor-modal-card .toggle-row {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+body.officer-app-shell .user-directory-table-card .table-wrap {
+  max-height: 680px;
+}
+
+@media (max-width: 900px) {
+  body.officer-app-shell .user-editor-modal {
+    padding: 12px;
+  }
+
+  body.officer-app-shell .user-editor-modal-dialog,
+  body.officer-app-shell .user-directory-editor-modal-card {
+    width: 100% !important;
+    max-height: 92vh !important;
+  }
+
+  body.officer-app-shell .user-directory-editor-modal-card {
+    padding: 20px !important;
+    border-radius: 22px !important;
+  }
+
+  body.officer-app-shell .user-directory-editor-modal-card .detail-grid,
+  body.officer-app-shell .user-directory-editor-modal-card .user-editor-fields-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 620px) {
+  body.officer-app-shell .user-directory-editor-modal-card {
+    padding: 16px !important;
+    border-radius: 18px !important;
+  }
+
+  body.officer-app-shell .user-directory-editor-modal-card .detail-grid,
+  body.officer-app-shell .user-directory-editor-modal-card .user-editor-fields-grid,
+  body.officer-app-shell .user-directory-editor-modal-card .toggle-row {
+    grid-template-columns: 1fr;
+  }
+
+  body.officer-app-shell .user-editor-modal-close {
+    width: 42px;
+    height: 42px;
+    border-radius: 13px;
+  }
+}
+
+/* =========================================================
+   ADMIN TEMPORARY PASSWORD RESET - 2026-09-06
+   ========================================================= */
+body.officer-app-shell .password-reset-btn {
+  background: #fff7df;
+  color: #946100;
+  border: 1px solid #f0d89a;
+}
+body.officer-app-shell .password-reset-btn:hover,
+body.officer-app-shell .password-reset-btn:focus-visible {
+  background: #ffefbd;
+  color: #744a00;
+}
+body.officer-app-shell .password-reset-result-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 2450;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+}
+body.officer-app-shell .password-reset-result-modal.hidden { display: none !important; }
+body.officer-app-shell .password-reset-result-backdrop {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border: 0;
+  background: rgba(10, 27, 50, .68);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+}
+body.officer-app-shell .password-reset-result-card {
+  position: relative;
+  z-index: 1;
+  width: min(620px, calc(100vw - 36px));
+  max-height: 90vh;
+  overflow-y: auto;
+  padding: 30px;
+  border: 1px solid #d6e4ef;
+  border-radius: 26px;
+  background: linear-gradient(180deg,#fff 0%,#f7fbff 100%);
+  box-shadow: 0 32px 90px rgba(7,31,61,.34);
+}
+body.officer-app-shell .password-reset-result-close {
+  position: absolute;
+  right: 20px;
+  top: 20px;
+  width: 44px;
+  height: 44px;
+  border: 1px solid #d9e4ee;
+  border-radius: 14px;
+  background: #f8fbfe;
+  color: #45627f;
+  cursor: pointer;
+  font-size: 18px;
+}
+body.officer-app-shell .password-reset-result-icon {
+  width: 64px;
+  height: 64px;
+  border-radius: 20px;
+  display: grid;
+  place-items: center;
+  background: #fff4ce;
+  border: 1px solid #f2d986;
+  color: #a86d00;
+  font-size: 26px;
+  margin-bottom: 16px;
+}
+body.officer-app-shell .password-reset-result-head { padding-right: 54px; }
+body.officer-app-shell .password-reset-result-head > span {
+  color: #178cc1;
+  font-size: .72rem;
+  font-weight: 900;
+  letter-spacing: .11em;
+}
+body.officer-app-shell .password-reset-result-head h2 {
+  margin: 4px 0 6px;
+  color: #163f76;
+  font-size: 1.65rem;
+}
+body.officer-app-shell .password-reset-result-head p {
+  margin: 0;
+  color: #66788b;
+  line-height: 1.5;
+}
+body.officer-app-shell .password-reset-credential-grid {
+  margin-top: 20px;
+  display: grid;
+  grid-template-columns: repeat(2,minmax(0,1fr));
+  gap: 10px;
+}
+body.officer-app-shell .password-reset-credential-grid > div {
+  padding: 13px 15px;
+  border: 1px solid #dce7ef;
+  border-radius: 15px;
+  background: #fff;
+  min-width: 0;
+}
+body.officer-app-shell .password-reset-credential-grid span,
+body.officer-app-shell .password-reset-temp-box > span {
+  display: block;
+  color: #72849a;
+  font-size: .68rem;
+  font-weight: 900;
+  letter-spacing: .055em;
+  text-transform: uppercase;
+  margin-bottom: 5px;
+}
+body.officer-app-shell .password-reset-credential-grid strong {
+  display: block;
+  color: #173d6d;
+  font-size: .92rem;
+  overflow-wrap: anywhere;
+}
+body.officer-app-shell .password-reset-email-row { grid-column: 1 / -1; }
+body.officer-app-shell .password-reset-temp-box {
+  margin-top: 12px;
+  padding: 16px;
+  border: 1px solid #bedbf0;
+  border-radius: 18px;
+  background: linear-gradient(135deg,#eef8ff,#f9fcff);
+}
+body.officer-app-shell .password-reset-temp-box > div {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+body.officer-app-shell .password-reset-temp-box code {
+  flex: 1;
+  min-width: 0;
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: #fff;
+  border: 1px solid #d6e5ef;
+  color: #123f78;
+  font-family: Consolas, Monaco, monospace;
+  font-size: 1.15rem;
+  font-weight: 900;
+  letter-spacing: .055em;
+  overflow-wrap: anywhere;
+}
+body.officer-app-shell .password-reset-temp-box button {
+  border: 0;
+  border-radius: 12px;
+  padding: 12px 14px;
+  background: #1e69b5;
+  color: #fff;
+  font-weight: 800;
+  cursor: pointer;
+  white-space: nowrap;
+}
+body.officer-app-shell .password-reset-security-note {
+  margin-top: 14px;
+  padding: 13px 14px;
+  display: grid;
+  grid-template-columns: 26px minmax(0,1fr);
+  gap: 10px;
+  border-radius: 15px;
+  background: #eef8f1;
+  border: 1px solid #cfe8d6;
+  color: #39704a;
+}
+body.officer-app-shell .password-reset-security-note i { margin-top: 3px; }
+body.officer-app-shell .password-reset-security-note p { margin: 0; font-size: .82rem; line-height: 1.5; }
+body.officer-app-shell .password-reset-result-actions {
+  margin-top: 18px;
+  display: flex;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+@media(max-width:620px) {
+  body.officer-app-shell .password-reset-result-card { padding: 22px 17px 18px; border-radius: 20px; }
+  body.officer-app-shell .password-reset-credential-grid { grid-template-columns: 1fr; }
+  body.officer-app-shell .password-reset-email-row { grid-column: auto; }
+  body.officer-app-shell .password-reset-temp-box > div { align-items: stretch; flex-direction: column; }
+  body.officer-app-shell .password-reset-temp-box button { width: 100%; }
+  body.officer-app-shell .password-reset-result-actions .btn { flex: 1 1 140px; }
+}
+
+/* Mobile admin dashboard module bar alignment fix */
+@media (max-width: 700px){
+  .layout{display:block!important;}
+  .sidebar{
+    display:flex!important;
+    flex-direction:row!important;
+    align-items:center!important;
+    gap:8px!important;
+    padding:10px!important;
+    overflow-x:auto!important;
+    white-space:nowrap!important;
+    position:relative!important;
+  }
+  .sidebar h2,.sidebar .note-box,.sidebar .admin-summary{display:none!important;}
+  .sidebar-group{
+    display:flex!important;
+    gap:8px!important;
+    margin:0!important;
+  }
+  .sidebar .nav-btn{
+    width:auto!important;
+    min-width:max-content!important;
+    padding:10px 14px!important;
+    border-radius:14px!important;
+  }
+  .officer-sidebar-mark{
+    flex:0 0 auto!important;
+  }
+  .main{
+    width:100%!important;
+  }
+}
+
+
+/* ===== MOBILE ADMIN SIDEBAR DRAWER FIX ===== */
+.admin-mobile-menu-btn{
+  display:none;
+}
+@media(max-width:900px){
+  .admin-mobile-menu-btn{
+    display:flex!important;
+    width:38px;
+    height:38px;
+    align-items:center;
+    justify-content:center;
+    border-radius:12px;
+    border:1px solid rgba(30,64,175,.18);
+    background:#fff;
+    color:#123b6d;
+    cursor:pointer;
+    z-index:2001;
+  }
+
+  .sidebar{
+    position:fixed!important;
+    top:0;
+    left:0;
+    bottom:0;
+    width:290px!important;
+    max-width:85vw;
+    z-index:2000;
+    transform:translateX(-110%);
+    transition:transform .28s ease;
+    overflow-y:auto;
+    background:#fff;
+    box-shadow:18px 0 45px rgba(0,0,0,.18);
+    padding-top:22px;
+  }
+
+  .sidebar.mobile-open{
+    transform:translateX(0);
+  }
+
+  .sidebar-backdrop{
+    display:none;
+    position:fixed;
+    inset:0;
+    background:rgba(8,24,45,.45);
+    z-index:1999;
+    backdrop-filter:blur(3px);
+  }
+  .sidebar-backdrop.active{display:block}
+
+  .top-nav{
+    flex-direction:row!important;
+    align-items:center!important;
+    justify-content:space-between;
+  }
+
+  .nav-left{
+    display:flex;
+    align-items:center;
+    gap:10px;
+  }
+}
+
+/* ===== ADMIN OVERVIEW MOBILE PREVIEW ===== */
+.admin-preview-grid{
+ display:grid;
+ grid-template-columns:repeat(3,minmax(0,1fr));
+ gap:12px;
+ margin-top:18px;
+}
+.admin-preview-card{
+ padding:18px;
+ border-radius:22px;
+ background:linear-gradient(135deg,#eff8ff,#d9f2ff);
+ border:1px solid rgba(14,116,144,.12);
+}
+@media(max-width:700px){
+ .admin-preview-grid{grid-template-columns:1fr;}
+}

@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="referrer" content="no-referrer">
+  <title>Verify Gmail | SSU USC Portal</title>
+  <link rel="stylesheet" href="css/email-action.css?v=verify-page-1">
+</head>
+<body>
+  <main class="email-action-shell">
+    <div class="email-action-brand"><img src="../index/assets/USClogo.webp" alt="USC logo"><span>SSU University Student Council</span></div>
+    <section class="email-action-card" aria-labelledby="verifyTitle">
+      <header class="email-action-head">
+        <div class="email-action-icon" aria-hidden="true">✓</div>
+        <h1 id="verifyTitle">Confirm your Gmail</h1>
+        <p>This verifies the personal Gmail you added to your Student or Officer Profile for the notification and recovery options you selected.</p>
+      </header>
+      <div class="email-action-body">
+        <div id="verifyStatus" class="email-action-status">
+          <span class="status-icon" aria-hidden="true">i</span>
+          <div><strong>Ready to verify</strong><p id="verifyStatusText">Only continue if you personally requested this Gmail connection from your SSU USC portal profile.</p></div>
+        </div>
+        <p class="email-action-note">For security, opening this page alone does not verify the account. Press the confirmation button below. The one-time verification link expires after 24 hours.</p>
+        <div class="email-action-actions">
+          <button id="verifyButton" class="email-action-btn primary" type="button">Confirm my Gmail</button>
+          <a id="returnButton" class="email-action-btn secondary" href="../index/index.html">Return to portal</a>
+        </div>
+        <p class="email-action-foot">Never forward your Gmail verification link to another person.</p>
+      </div>
+    </section>
+  </main>
+  <script src="../shared/app-config.js"></script>
+  <script type="module" src="js/verify-gmail.js?v=verify-page-1"></script>
+</body>
+</html>

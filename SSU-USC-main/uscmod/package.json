@@ -1,0 +1,37 @@
+{
+  "name": "usc-election-system",
+  "private": true,
+  "scripts": {
+    "test": "npm run test:signin-analytics && npm run test:syntax && npm run test:landing-ui && npm run test:static && npm run test:lifecycle && npm run test:admin-auth && npm run test:verify && npm run test:school-login && npm run test:complaints && npm run test:complaint-tracklist && npm run test:capstone && npm run test:navigation-profile && npm run test:complaint-delete && npm run test:rbac && npm run test:no-backend",
+    "test:signin-analytics": "node --test tests/officer-signin-analytics.test.mjs",
+    "test:rules": "firebase emulators:exec --only firestore \"node --test tests/firestore.rules.test.mjs\"",
+    "test:lifecycle": "node --test tests/election-lifecycle.test.mjs",
+    "deploy:rules": "firebase deploy --only firestore:rules,firestore:indexes",
+    "deploy:functions": "echo Not used in browser provisioning mode.",
+    "deploy": "firebase deploy --only firestore:rules,firestore:indexes",
+    "test:static": "node --test tests/static-project.test.mjs",
+    "test:syntax": "node --test tests/js-syntax.test.mjs",
+    "test:admin-auth": "node --test tests/mfa-enrollment.test.mjs",
+    "test:verify": "node --test tests/admin-verification.test.mjs",
+    "test:school-login": "node --test tests/school-login.test.mjs",
+    "test:complaints": "node --test tests/complaint-stress.test.mjs",
+    "test:capstone": "node --test tests/capstone-browser-mode.test.mjs",
+    "test:navigation-profile": "node --test tests/navigation-profile-scroll.test.mjs",
+    "test:complaint-delete": "node --test tests/complaint-deletion.test.mjs",
+    "test:no-backend": "node --test tests/browser-backend-sweep.test.mjs",
+    "test:complaint-tracklist": "node --test tests/complaint-tracklist.test.mjs",
+    "test:landing-ui": "node --test tests/landing-ui.test.mjs",
+    "test:complaint-classification": "node --test tests/complaint-classification-workflow.test.mjs",
+    "backfill:signin-analytics": "node scripts/backfill-student-signin-analytics.mjs",
+    "test:rbac": "node --test tests/officer-rbac.test.mjs tests/officer-position-presets.test.mjs tests/officer-rbac-ui.test.mjs tests/account-provisioning-rbac-regression.test.mjs",
+    "test:email": "node --test tests/email-service.test.mjs",
+    "test:email-rules": "firebase emulators:exec --only firestore \"node --test tests/email-settings.rules.test.mjs\"",
+    "test:event-participation": "node --test tests/event-participation.test.mjs"
+  },
+  "devDependencies": {
+    "@firebase/rules-unit-testing": "^4.0.1",
+    "firebase-admin": "^13.4.0",
+    "firebase-tools": "^14.12.0",
+    "firebase": "^11.0.0"
+  }
+}

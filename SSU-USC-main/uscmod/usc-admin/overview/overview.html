@@ -1,0 +1,1052 @@
+<!DOCTYPE html>
+<html lang="en" class="usc-officer-access-pending">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>USC Officer Dashboard</title>
+    <link rel="stylesheet" href="../shared/css/usc-theme.css?v=officer-readable-1" />
+    <link rel="stylesheet" href="css/overview.css?v=donut-label-1" />
+    <link rel="stylesheet" href="../shared/css/officer-ui.css?v=instant-shell-2" />
+    <link
+    rel="stylesheet"
+    href="../shared/css/officer-responsive.css?v=officer-readable-1"
+/>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" />
+<link rel="stylesheet" href="../../shared/profile-manager.css" />
+    <style>
+/* FINAL authoritative mobile officer toolbar */
+@media (max-width: 820px) {
+
+  body.officer-reference-dashboard .reference-dashboard-toolbar {
+    position: relative !important;
+
+    display: flex !important;
+    align-items: center !important;
+    flex-wrap: nowrap !important;
+
+    width: 100% !important;
+    height: 56px !important;
+    min-height: 56px !important;
+
+    /* Leave room on the right for bell + avatar */
+    padding: 7px 92px 7px 8px !important;
+
+    margin: 0 0 10px !important;
+
+    overflow: visible !important;
+
+    background: #fff !important;
+    border: 1px solid #dce8ef !important;
+    border-radius: 14px !important;
+
+    box-shadow: 0 5px 16px rgba(18, 66, 98, .07) !important;
+
+    z-index: 900 !important;
+  }
+
+
+  /* LEFT: menu + search */
+  body.officer-reference-dashboard .reference-search-wrap {
+    display: flex !important;
+    align-items: center !important;
+
+    flex: 1 1 auto !important;
+
+    width: auto !important;
+    max-width: none !important;
+    min-width: 0 !important;
+
+    gap: 8px !important;
+
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+
+  body.officer-reference-dashboard .sidebar-toggle {
+    display: grid !important;
+    place-items: center !important;
+
+    flex: 0 0 40px !important;
+
+    width: 40px !important;
+    height: 40px !important;
+    min-width: 40px !important;
+
+    margin: 0 !important;
+
+    transform: none !important;
+  }
+
+
+  body.officer-reference-dashboard .officer-search-box {
+    display: block !important;
+
+    flex: 1 1 auto !important;
+
+    width: auto !important;
+    max-width: none !important;
+    min-width: 0 !important;
+
+    margin: 0 !important;
+  }
+
+
+  body.officer-reference-dashboard .officer-search {
+    display: flex !important;
+    align-items: center !important;
+
+    width: 100% !important;
+    height: 40px !important;
+
+    max-width: none !important;
+    min-width: 0 !important;
+
+    margin: 0 !important;
+  }
+
+
+  body.officer-reference-dashboard .officer-search input {
+    flex: 1 1 auto !important;
+
+    width: 100% !important;
+    min-width: 0 !important;
+  }
+
+
+  /* RIGHT: bell + profile
+     Force them INTO the white toolbar */
+  body.officer-reference-dashboard .reference-dashboard-toolbar > .nav-right {
+    position: absolute !important;
+
+    top: 50% !important;
+    right: 8px !important;
+
+    transform: translateY(-50%) !important;
+
+    display: flex !important;
+    align-items: center !important;
+    justify-content: flex-end !important;
+
+    flex-wrap: nowrap !important;
+
+    width: auto !important;
+    height: 42px !important;
+
+    gap: 5px !important;
+
+    margin: 0 !important;
+    padding: 0 !important;
+
+    background: transparent !important;
+
+    z-index: 20 !important;
+  }
+
+
+  /* Bell */
+  body.officer-reference-dashboard .officer-bell {
+    position: static !important;
+
+    display: grid !important;
+    place-items: center !important;
+
+    flex: 0 0 38px !important;
+
+    width: 38px !important;
+    height: 38px !important;
+    min-width: 38px !important;
+    min-height: 38px !important;
+
+    margin: 0 !important;
+    padding: 0 !important;
+
+    transform: none !important;
+
+    border: 0 !important;
+    border-radius: 50% !important;
+
+    background: transparent !important;
+
+    visibility: visible !important;
+    opacity: 1 !important;
+  }
+
+
+  body.officer-reference-dashboard .officer-bell::before {
+    display: none !important;
+  }
+
+
+  body.officer-reference-dashboard .officer-bell i {
+    display: block !important;
+
+    font-size: 18px !important;
+    line-height: 1 !important;
+
+    color: #15293b !important;
+  }
+
+
+  /* Profile */
+  body.officer-reference-dashboard .officer-profile-trigger {
+    position: static !important;
+
+    display: grid !important;
+    place-items: center !important;
+
+    flex: 0 0 38px !important;
+
+    width: 38px !important;
+    height: 38px !important;
+    min-width: 38px !important;
+    min-height: 38px !important;
+
+    margin: 0 !important;
+    padding: 2px !important;
+
+    transform: none !important;
+
+    border: 0 !important;
+    border-radius: 50% !important;
+
+    background: transparent !important;
+  }
+
+
+  body.officer-reference-dashboard .officer-profile-trigger-copy,
+  body.officer-reference-dashboard .officer-profile-chevron {
+    display: none !important;
+  }
+
+
+  body.officer-reference-dashboard
+  .officer-profile-trigger .avatar {
+    display: block !important;
+
+    width: 34px !important;
+    height: 34px !important;
+    min-width: 34px !important;
+
+    margin: 0 !important;
+
+    border-radius: 50% !important;
+
+    overflow: hidden !important;
+  }
+}
+
+
+/* Smaller phones */
+@media (max-width: 560px) {
+
+  body.officer-reference-dashboard .reference-dashboard-toolbar {
+    height: 52px !important;
+    min-height: 52px !important;
+
+    padding:
+      6px 82px
+      6px 6px !important;
+  }
+
+
+  body.officer-reference-dashboard
+  .reference-dashboard-toolbar > .nav-right {
+    right: 5px !important;
+
+    height: 38px !important;
+
+    gap: 2px !important;
+  }
+
+
+  body.officer-reference-dashboard .sidebar-toggle {
+    flex-basis: 36px !important;
+
+    width: 36px !important;
+    height: 36px !important;
+    min-width: 36px !important;
+  }
+
+
+  body.officer-reference-dashboard .officer-search {
+    height: 36px !important;
+  }
+
+
+  body.officer-reference-dashboard .officer-bell {
+    display: grid !important;
+
+    flex-basis: 34px !important;
+
+    width: 34px !important;
+    height: 34px !important;
+    min-width: 34px !important;
+    min-height: 34px !important;
+  }
+
+
+  body.officer-reference-dashboard .officer-profile-trigger {
+    flex-basis: 34px !important;
+
+    width: 34px !important;
+    height: 34px !important;
+    min-width: 34px !important;
+    min-height: 34px !important;
+  }
+
+
+  body.officer-reference-dashboard
+  .officer-profile-trigger .avatar {
+    width: 30px !important;
+    height: 30px !important;
+    min-width: 30px !important;
+  }
+    /* =========================================================
+   MOBILE NOTIFICATION POPUP FIX
+   ========================================================= */
+
+@media (max-width: 820px) {
+
+  /* Do NOT transform this parent.
+     A transformed parent breaks the notification popup
+     positioning on mobile browsers. */
+  body.officer-reference-dashboard
+  .reference-dashboard-toolbar > .nav-right {
+
+    top: 7px !important;
+    right: 8px !important;
+
+    transform: none !important;
+  }
+
+
+  /* Proper notification dropdown */
+  body.officer-reference-dashboard
+  .nav-right .officer-notification-panel {
+
+    position: absolute !important;
+
+    top: calc(100% + 8px) !important;
+    right: 0 !important;
+    left: auto !important;
+
+    width: min(340px, calc(100vw - 20px)) !important;
+    max-width: calc(100vw - 20px) !important;
+    min-width: 0 !important;
+
+    height: auto !important;
+    max-height: 70vh !important;
+
+    overflow-x: hidden !important;
+    overflow-y: auto !important;
+
+    box-sizing: border-box !important;
+
+    border-radius: 16px !important;
+
+    background: #ffffff !important;
+
+    box-shadow:
+      0 16px 40px
+      rgba(12, 39, 67, .20) !important;
+
+    z-index: 5000 !important;
+  }
+
+
+  body.officer-reference-dashboard
+  .officer-notification-header {
+
+    width: 100% !important;
+
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+
+    padding: 13px 15px !important;
+  }
+
+
+  body.officer-reference-dashboard
+  .officer-notification-header strong {
+
+    white-space: nowrap !important;
+
+    font-size: 14px !important;
+  }
+
+
+  body.officer-reference-dashboard
+  .officer-notification-content {
+
+    width: 100% !important;
+
+    padding: 22px 18px !important;
+
+    text-align: center !important;
+
+    white-space: normal !important;
+    word-break: normal !important;
+    overflow-wrap: normal !important;
+
+    font-size:14px !important;
+    line-height: 1.55 !important;
+  }
+
+
+  body.officer-reference-dashboard
+  .officer-notification-content strong {
+
+    display: block !important;
+
+    margin-bottom: 5px !important;
+
+    white-space: normal !important;
+    word-break: normal !important;
+
+    font-size: 14px !important;
+    line-height: 1.3 !important;
+  }
+
+
+  body.officer-reference-dashboard
+  .officer-notification-icon {
+
+    margin-bottom: 10px !important;
+
+    font-size: 28px !important;
+  }
+}
+
+
+/* Small phones */
+@media (max-width: 560px) {
+
+  body.officer-reference-dashboard
+  .reference-dashboard-toolbar > .nav-right {
+
+    top: 7px !important;
+    right: 5px !important;
+
+    transform: none !important;
+  }
+
+
+  body.officer-reference-dashboard
+  .nav-right .officer-notification-panel {
+
+    position: absolute !important;
+
+    top: calc(100% + 8px) !important;
+
+    right: 0 !important;
+    left: auto !important;
+
+    width: min(320px, calc(100vw - 16px)) !important;
+    max-width: calc(100vw - 16px) !important;
+
+    max-height: 65vh !important;
+  }
+}
+
+
+/* Very narrow phones */
+@media (max-width: 360px) {
+
+  body.officer-reference-dashboard
+  .nav-right .officer-notification-panel {
+
+    width: calc(100vw - 12px) !important;
+    max-width: calc(100vw - 12px) !important;
+
+    right: -2px !important;
+  }
+}
+
+    /* =========================================================
+   FINAL OFFICER MOBILE HEADER FIX
+   Normal scrolling + remove old fixed-header spacing
+   ========================================================= */
+
+@media (max-width: 820px) {
+
+    /* Remove space that was reserved for the old fixed header */
+    body.officer-reference-dashboard .app-shell {
+        margin-top: 0 !important;
+        margin-bottom: 0 !important;
+
+        width: 100% !important;
+        min-height: 0 !important;
+    }
+
+    /* Remove excessive outer top spacing */
+    body.officer-reference-dashboard .page {
+        padding-top: 0 !important;
+    }
+
+    /* Blue USC header scrolls normally */
+    body.officer-reference-dashboard .top-banner {
+        position: relative !important;
+
+        top: auto !important;
+        right: auto !important;
+        bottom: auto !important;
+        left: auto !important;
+
+        width: 100% !important;
+
+        margin: 0 !important;
+
+        z-index: 10 !important;
+    }
+
+    /* White search toolbar also scrolls normally */
+    body.officer-reference-dashboard .top-nav,
+    body.officer-reference-dashboard
+    .reference-dashboard-toolbar {
+
+        position: relative !important;
+
+        top: auto !important;
+        right: auto !important;
+        bottom: auto !important;
+        left: auto !important;
+
+        transform: none !important;
+
+        z-index: 20 !important;
+    }
+
+    body.officer-reference-dashboard
+    .reference-dashboard-toolbar {
+
+        width: 100% !important;
+
+        margin:
+            8px
+            0
+            10px !important;
+    }
+
+    /* Bell + profile stay inside the toolbar */
+    body.officer-reference-dashboard
+    .reference-dashboard-toolbar > .nav-right {
+
+        position: absolute !important;
+
+        top: 7px !important;
+        right: 8px !important;
+
+        transform: none !important;
+    }
+}
+
+
+/* Smaller phones */
+@media (max-width: 560px) {
+
+    body.officer-reference-dashboard .app-shell {
+        margin-top: 0 !important;
+    }
+
+    body.officer-reference-dashboard
+    .reference-dashboard-toolbar > .nav-right {
+
+        top: 7px !important;
+        right: 5px !important;
+    }
+}
+
+    /* =========================================================
+   FINAL MAIN DASHBOARD SEARCH FIX
+   ========================================================= */
+
+@media (max-width: 820px) {
+
+  body.officer-reference-dashboard
+  .reference-dashboard-toolbar
+  .officer-search {
+    position: relative !important;
+
+    display: block !important;
+
+    width: 100% !important;
+    height: 40px !important;
+
+    padding: 0 !important;
+
+    overflow: hidden !important;
+  }
+
+
+  /* Magnifying glass */
+  body.officer-reference-dashboard
+  .reference-dashboard-toolbar
+  .officer-search > .fa-magnifying-glass {
+
+    position: absolute !important;
+
+    top: 50% !important;
+    left: 13px !important;
+
+    transform: translateY(-50%) !important;
+
+    width: 18px !important;
+
+    margin: 0 !important;
+
+    font-size: 16px !important;
+
+    z-index: 3 !important;
+
+    pointer-events: none !important;
+  }
+
+
+  /* Search text */
+  body.officer-reference-dashboard
+  .reference-dashboard-toolbar
+  .officer-search
+  input#officerQuickSearch {
+
+    position: relative !important;
+
+    display: block !important;
+
+    width: 100% !important;
+    height: 40px !important;
+
+    margin: 0 !important;
+
+    /* THIS keeps text away from icon */
+    padding:
+      0
+      38px
+      0
+      42px !important;
+
+    border: 0 !important;
+
+    background: transparent !important;
+
+    line-height: normal !important;
+
+    z-index: 2 !important;
+  }
+
+
+  body.officer-reference-dashboard
+  .reference-dashboard-toolbar
+  #officerQuickSearch::placeholder {
+
+    color: #8596a4 !important;
+
+    opacity: 1 !important;
+  }
+
+
+  /* X clear button */
+  body.officer-reference-dashboard
+  .reference-dashboard-toolbar
+  .officer-search-clear {
+
+    position: absolute !important;
+
+    top: 50% !important;
+    right: 6px !important;
+
+    transform: translateY(-50%) !important;
+
+    z-index: 4 !important;
+  }
+}
+
+
+/* Smaller phones */
+@media (max-width: 560px) {
+
+  body.officer-reference-dashboard
+  .reference-dashboard-toolbar
+  .officer-search {
+    height: 36px !important;
+  }
+
+
+  body.officer-reference-dashboard
+  .reference-dashboard-toolbar
+  .officer-search
+  input#officerQuickSearch {
+
+    height: 36px !important;
+
+    padding-left: 39px !important;
+
+    font-size:14px !important;
+  }
+
+
+  body.officer-reference-dashboard
+  .reference-dashboard-toolbar
+  .officer-search > .fa-magnifying-glass {
+
+    left: 12px !important;
+
+    font-size: 15px !important;
+  }
+}
+
+}
+</style>
+  <script src="../../shared/app-config.js"></script>
+  <script type="module" src="../../shared/auth-guard.js?v=rbac7"></script>
+<link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet" />
+</head>
+<body class="officer-app-shell officer-reference-dashboard overview-module-polish">
+<div class="page"><div class="app-shell">
+<header class="top-banner">
+    <div class="brand-logos"><img src="../shared/assets/SSUlogo.webp" alt="SSU Logo" class="brand-logo"/><img src="../shared/assets/USClogo.webp" alt="USC Logo" class="brand-logo"/></div>
+    <div class="brand"><h1>SSU UNIVERSITY STUDENT COUNCIL</h1><p>LEADERSHIP&nbsp;&nbsp;|&nbsp;&nbsp;EXCELLENCE&nbsp;&nbsp;|&nbsp;&nbsp;DISCIPLINE&nbsp;&nbsp;|&nbsp;&nbsp;SERVICE</p></div>
+</header>
+<nav class="top-nav reference-dashboard-toolbar">
+    <div class="nav-left reference-search-wrap">
+        <button class="sidebar-toggle" type="button" data-sidebar-toggle aria-label="Open sidebar" aria-expanded="false"><span class="grid-icon"></span></button>
+        <div class="officer-search-box" id="officerSearchBox">
+            <div class="officer-search">
+                <i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i>
+                <input id="officerQuickSearch" type="search" aria-label="Search officer modules" placeholder="Search modules" autocomplete="off" />
+                <button class="officer-search-clear" id="officerSearchClear" type="button" aria-label="Clear search" hidden><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div class="officer-search-results" id="officerSearchResults" role="listbox" aria-label="Officer module search results" hidden></div>
+        </div>
+    </div>
+    <div class="nav-right">
+        <button class="bell officer-bell" type="button" aria-label="Notifications"><i class="fa-regular fa-bell"></i></button>
+        <button class="officer-profile-trigger" id="officerProfileTrigger" type="button" aria-label="Open officer profile" aria-expanded="false" aria-controls="officerProfileDrawer">
+            <span class="avatar" aria-hidden="true"></span>
+            <span class="officer-profile-trigger-copy"><strong data-admin-name>USC Officer</strong><small data-admin-role>Officer</small></span>
+            <i class="fa-solid fa-chevron-down officer-profile-chevron" aria-hidden="true"></i>
+        </button>
+    </div>
+</nav>
+<div class="sidebar-overlay" data-sidebar-overlay></div>
+<main class="layout">
+    <aside class="sidebar officer-reference-sidebar">
+                    <div class="officer-sidebar-mark"><i class="fa-solid fa-user-tie"></i></div>
+                    <nav class="officer-module-nav" aria-label="Officer modules">
+                        <a class="nav-btn" href="../overview/overview.html"><span class="icon"><i class="fa-solid fa-table-columns"></i></span><span>Dashboard</span></a>
+                        <a class="nav-btn" href="../announcements/announcements.html"><span class="icon"><i class="fa-solid fa-note-sticky"></i></span><span>Bulletin Board Center</span></a>
+                        <a class="nav-btn" href="../elections/elections.html"><span class="icon"><i class="fa-regular fa-rectangle-list"></i></span><span>Election Management</span></a>
+                        <a class="nav-btn" href="../events/events.html"><span class="icon"><i class="fa-regular fa-calendar"></i></span><span>Events</span></a>
+                        <a class="nav-btn" href="../programs/programs.html"><span class="icon"><i class="fa-solid fa-earth-americas"></i></span><span>Programs</span></a>
+                        <a class="nav-btn" href="../organizational-chart/organizational-chart.html"><span class="icon"><i class="fa-solid fa-users"></i></span><span>Organizational Chart</span></a>
+                        <a class="nav-btn" href="../complaints/complaints.html"><span class="icon"><i class="fa-solid fa-message"></i></span><span>Complaints Management</span></a>
+                    </nav>
+                    <button class="nav-btn logout-btn" type="button" onclick="logoutOfficer()"><span class="icon"><i class="fa-solid fa-right-from-bracket"></i></span><span>Logout</span></button>
+                </aside>
+    <section class="main reference-overview-main">
+        <section class="officer-welcome-card">
+            <div class="officer-welcome-copy"><small id="officerTodayLabel">Today</small><h1>Welcome back,<br><span class="officer-welcome-identity"><span data-usc-welcome-role>USC Officer</span> <span data-usc-welcome-name data-admin-name>Officer</span>!</span></h1><p>Always stay updated!</p></div>
+            <img src="../shared/assets/officer-duo.png" alt="Officer dashboard illustration" class="officer-welcome-art" />
+        </section>
+
+        <section class="officer-analytics-summary" id="officerAnalyticsSummary" aria-labelledby="officerAnalyticsTitle">
+            <div class="officer-analytics-head">
+                <div>
+                    <span class="officer-analytics-kicker">LIVE USC OVERVIEW</span>
+                    <h2 id="officerAnalyticsTitle">Student Participation &amp; Operations Analytics</h2>
+                    <p>A live summary of event and external program registrations, complaint workload, and election participation for USC officers.</p>
+                </div>
+                <span class="officer-analytics-live"><i></i> Live data</span>
+            </div>
+
+            <div class="analytics-launch-grid" role="list" aria-label="Dashboard analytics modules">
+                <button class="analytics-launcher event" type="button" data-analytics-open="event" role="listitem" aria-label="Open Events analytics">
+                    <span class="analytics-launcher-icon"><i class="fa-solid fa-calendar-check"></i></span>
+                    <strong data-analytics-event-registrations>0</strong>
+                    <span class="analytics-launcher-caption">registrations</span>
+                    <span class="analytics-launcher-tooltip"><i class="fa-solid fa-calendar-days"></i> Events Analytics</span>
+                </button>
+                <button class="analytics-launcher program" type="button" data-analytics-open="program" role="listitem" aria-label="Open Programs analytics">
+                    <span class="analytics-launcher-icon"><i class="fa-solid fa-earth-americas"></i></span>
+                    <strong data-analytics-program-registrations>0</strong>
+                    <span class="analytics-launcher-caption">registrations</span>
+                    <span class="analytics-launcher-tooltip"><i class="fa-solid fa-people-group"></i> Programs Analytics</span>
+                </button>
+                <button class="analytics-launcher complaint" type="button" data-analytics-open="complaint" role="listitem" aria-label="Open Complaints analytics">
+                    <span class="analytics-launcher-icon"><i class="fa-solid fa-comments"></i></span>
+                    <strong data-analytics-complaint-active>0</strong>
+                    <span class="analytics-launcher-caption">active cases</span>
+                    <span class="analytics-launcher-tooltip"><i class="fa-solid fa-inbox"></i> Complaints Analytics</span>
+                </button>
+                <button class="analytics-launcher election" type="button" data-analytics-open="election" role="listitem" aria-label="Open Election analytics">
+                    <span class="analytics-launcher-icon"><i class="fa-solid fa-check-to-slot"></i></span>
+                    <strong data-analytics-election-turnout>0.0%</strong>
+                    <span class="analytics-launcher-caption">turnout</span>
+                    <span class="analytics-launcher-tooltip"><i class="fa-solid fa-chart-pie"></i> Election Analytics</span>
+                </button>
+            </div>
+            <div class="analytics-launch-hint"><i class="fa-regular fa-hand-pointer"></i><span>Hover to identify a module. Click or tap an icon to open its full analytics.</span></div>
+
+            <div class="analytics-detail-modal" id="officerAnalyticsModal" hidden aria-hidden="true">
+                <button class="analytics-detail-backdrop" type="button" data-analytics-close aria-label="Close analytics"></button>
+                <section class="analytics-detail-dialog" role="dialog" aria-modal="true" aria-labelledby="analyticsDetailTitle">
+                    <header class="analytics-detail-modal-head">
+                        <div>
+                            <span>LIVE MODULE ANALYTICS</span>
+                            <h3 id="analyticsDetailTitle">Analytics</h3>
+                            <p id="analyticsDetailSubtitle">Detailed dashboard analytics.</p>
+                        </div>
+                        <button class="analytics-detail-close" type="button" data-analytics-close aria-label="Close analytics"><i class="fa-solid fa-xmark"></i></button>
+                    </header>
+                    <div class="analytics-detail-body">
+                        <article class="officer-analytics-card event-analytics-card" data-analytics-panel="event" hidden>
+                            <div class="analytics-card-head">
+                                <div class="analytics-card-icon"><i class="fa-solid fa-calendar-check"></i></div>
+                                <div><span>EVENT PARTICIPATION</span><h3>Student Registrations</h3></div>
+                                <a href="../events/events.html" aria-label="Open Events module"><i class="fa-solid fa-arrow-up-right-from-square"></i></a>
+                            </div>
+                            <div class="analytics-metric-row">
+                                <div><strong data-analytics-event-registrations>0</strong><span>Portal registrations</span></div>
+                                <div><strong data-analytics-event-students>0</strong><span>Unique students</span></div>
+                                <div><strong data-analytics-event-open>0</strong><span>Open event forms</span></div>
+                            </div>
+                            <div class="analytics-breakdown-head"><strong>Registrations by program (academic)</strong><span>Events only</span></div>
+                            <div class="analytics-bars" id="eventProgramAnalytics"><div class="analytics-empty">No event registrations yet.</div></div>
+                            <div class="analytics-secondary" id="eventRegistrationHighlights"><span>No event participation data yet.</span></div>
+                            <div class="analytics-registrants-head"><strong><i class="fa-solid fa-user-check"></i> Recent event registrants</strong><span>Events only</span></div>
+                            <div class="analytics-registrants" id="eventRecentRegistrants"><div class="analytics-registrants-empty">No students have registered for an event yet.</div></div>
+                        </article>
+
+                        <article class="officer-analytics-card program-analytics-card" data-analytics-panel="program" hidden>
+                            <div class="analytics-card-head">
+                                <div class="analytics-card-icon"><i class="fa-solid fa-earth-americas"></i></div>
+                                <div><span>PROGRAM PARTICIPATION</span><h3>External Program Registrations</h3></div>
+                                <a href="../programs/programs.html" aria-label="Open Programs module"><i class="fa-solid fa-arrow-up-right-from-square"></i></a>
+                            </div>
+                            <div class="analytics-metric-row">
+                                <div><strong data-analytics-program-registrations>0</strong><span>Portal registrations</span></div>
+                                <div><strong data-analytics-program-students>0</strong><span>Unique students</span></div>
+                                <div><strong data-analytics-program-open>0</strong><span>Open program forms</span></div>
+                            </div>
+                            <div class="analytics-breakdown-head"><strong>Registrations by program (academic)</strong><span>Programs only</span></div>
+                            <div class="analytics-bars" id="programStudentAnalytics"><div class="analytics-empty">No program registrations yet.</div></div>
+                            <div class="analytics-secondary" id="programRegistrationHighlights"><span>No program participation data yet.</span></div>
+                            <div class="analytics-registrants-head"><strong><i class="fa-solid fa-user-check"></i> Recent program registrants</strong><span>Programs only</span></div>
+                            <div class="analytics-registrants" id="programRecentRegistrants"><div class="analytics-registrants-empty">No students have registered for a program yet.</div></div>
+                        </article>
+
+                        <article class="officer-analytics-card complaint-analytics-card" data-analytics-panel="complaint" hidden>
+                            <div class="analytics-card-head">
+                                <div class="analytics-card-icon"><i class="fa-solid fa-comments"></i></div>
+                                <div><span>COMPLAINTS</span><h3>Case Workload</h3></div>
+                                <a href="../complaints/complaints.html" aria-label="Open Complaints module"><i class="fa-solid fa-arrow-up-right-from-square"></i></a>
+                            </div>
+                            <div class="analytics-metric-row">
+                                <div><strong data-analytics-complaint-total>0</strong><span>Total cases</span></div>
+                                <div><strong data-analytics-complaint-active>0</strong><span>Active</span></div>
+                                <div><strong data-analytics-complaint-resolved>0</strong><span>Resolved</span></div>
+                            </div>
+                            <div class="analytics-breakdown-head"><strong>Case status summary</strong><span>Current workload</span></div>
+                            <div class="analytics-bars" id="complaintStatusAnalytics"><div class="analytics-empty">No complaint data yet.</div></div>
+                            <div class="analytics-secondary">
+                                <span><b data-analytics-complaint-student>0</b> Student Level</span>
+                                <span><b data-analytics-complaint-administrative>0</b> Administrative</span>
+                                <span><b data-analytics-complaint-crisis>0</b> Crisis</span>
+                            </div>
+                        </article>
+
+                        <article class="officer-analytics-card election-analytics-card" data-analytics-panel="election" hidden>
+                            <div class="analytics-card-head">
+                                <div class="analytics-card-icon"><i class="fa-solid fa-check-to-slot"></i></div>
+                                <div><span>ELECTION</span><h3>Participation Summary</h3></div>
+                                <a href="../elections/elections.html" aria-label="Open Election module"><i class="fa-solid fa-arrow-up-right-from-square"></i></a>
+                            </div>
+                            <div class="analytics-metric-row">
+                                <div><strong data-analytics-election-turnout>0.0%</strong><span>Turnout</span></div>
+                                <div><strong data-analytics-election-votes>0</strong><span>Votes cast</span></div>
+                                <div><strong data-analytics-election-eligible>0</strong><span>Eligible</span></div>
+                            </div>
+                            <div class="analytics-breakdown-head"><strong>Votes by department</strong><span id="analyticsElectionPhase">Phase unavailable</span></div>
+                            <div class="analytics-bars" id="electionDepartmentAnalytics"><div class="analytics-empty">No election participation yet.</div></div>
+                            <div class="analytics-secondary" id="electionAnalyticsNote"><span>Election turnout will appear when voting activity is recorded.</span></div>
+                        </article>
+                    </div>
+                </section>
+            </div>
+        </section>
+
+        <section class="reference-dashboard-grid">
+            <div class="reference-left-column">
+                <div class="reference-pair">
+                    <section class="reference-block">
+                        <div class="reference-heading tracklist-reference-heading"><h2>Officers’ Tracklist</h2><a href="../complaints/complaints.html">View cases <i class="fa-solid fa-arrow-up-right-from-square"></i></a></div>
+                        <article class="officer-track-card complaint-summary-card">
+                            <span>Complaint Breakdown</span>
+                            <strong data-overview-total-complaints>0</strong>
+                            <p>Total complaints</p>
+                            <div class="complaint-breakdown-mini" aria-label="Complaint classification summary">
+                                <span><i class="student"></i>Student <b data-overview-complaint-student>0</b></span>
+                                <span><i class="administrative"></i>Administrative <b data-overview-complaint-administrative>0</b></span>
+                                <span><i class="crisis"></i>Crisis <b data-overview-complaint-crisis>0</b></span>
+                            </div>
+                        </article>
+                    </section>
+                    <section class="reference-block">
+                        <div class="reference-heading election-reference-heading"><h2>Election</h2><a href="../elections/elections.html">Open election <i class="fa-solid fa-arrow-up-right-from-square"></i></a></div>
+                        <article class="officer-election-card">
+                            <div><span>Turnout Rate</span><strong data-overview-election-turnout>0%</strong><small>Registered <em data-overview-election-registered>0</em></small><small>Voted</small><b data-overview-election-votes-cast>0</b></div>
+                            <div class="clean-chart" aria-hidden="true"><div class="chart-bars"><i></i><i></i><i></i></div><div class="chart-line"></div><div class="chart-arrow"><span></span><i class="fa-solid fa-arrow-trend-up"></i></div></div>
+                        </article>
+                    </section>
+                </div>
+
+                <section class="reference-block signin-analytics-block" id="studentSignInAnalytics">
+                    <div class="reference-heading signin-analytics-heading signin-reference-heading">
+                        <h2>Student Sign-in Analytics</h2>
+                        <button class="signin-analytics-heading-action" id="signinAnalyticsHeadingToggle" type="button" aria-expanded="false" aria-controls="signinAnalyticsDetail">View details <i class="fa-solid fa-chevron-down" aria-hidden="true"></i></button>
+                    </div>
+                    <button class="signin-analytics-summary" id="signinAnalyticsSummary" type="button" aria-expanded="false" aria-controls="signinAnalyticsDetail">
+                        <div class="signin-analytics-mini-chart" id="signinAnalyticsMiniDonut" aria-hidden="true">
+                            <div class="signin-analytics-donut-hole"><strong data-signin-unique>0</strong><span>students</span></div>
+                        </div>
+                        <div class="signin-analytics-summary-copy">
+                            <span class="signin-analytics-kicker">DEPARTMENT ACTIVITY</span>
+                            <h3>Student sign-ins by college / department</h3>
+                            <p>See how many students from each department have signed in, including accounts that existed before analytics tracking was added.</p>
+                            <div class="signin-analytics-mini-legend" id="signinAnalyticsMiniLegend"><span>No sign-in data yet.</span></div>
+                        </div>
+                        <span class="signin-analytics-open-cue"><span>Open analytics</span><i class="fa-solid fa-arrow-right" aria-hidden="true"></i></span>
+                    </button>
+
+                    <section class="signin-analytics-detail" id="signinAnalyticsDetail" hidden aria-labelledby="signinAnalyticsDetailTitle">
+                        <div class="signin-analytics-detail-head">
+                            <div>
+                                <span>STUDENT WEBSITE ACTIVITY</span>
+                                <h3 id="signinAnalyticsDetailTitle">Department Sign-in Analytics</h3>
+                                <p>Unique signed-in students are counted once per department. Total sign-ins includes repeat sessions, while known accounts includes students created before analytics tracking existed.</p>
+                                <p class="signin-analytics-history-note" id="signinAnalyticsHistoryNote">Checking pre-feature account history...</p>
+                            </div>
+                            <button class="signin-analytics-close" id="signinAnalyticsClose" type="button" aria-label="Close sign-in analytics"><i class="fa-solid fa-xmark"></i></button>
+                        </div>
+
+                        <div class="signin-analytics-metrics">
+                            <article><span>Known accounts</span><strong data-signin-known-accounts>0</strong><small>current + pre-feature students</small></article>
+                            <article><span>Unique students</span><strong data-signin-unique>0</strong><small>have signed in</small></article>
+                            <article><span>Total sign-ins</span><strong data-signin-sessions>0</strong><small>login sessions recorded</small></article>
+                            <article><span>Active today</span><strong data-signin-today>0</strong><small>students signed in today</small></article>
+                            <article><span>Departments</span><strong data-signin-departments>0</strong><small>represented in activity</small></article>
+                        </div>
+
+                        <div class="signin-analytics-detail-grid">
+                            <article class="signin-analytics-chart-card">
+                                <div class="signin-analytics-large-donut" id="signinAnalyticsLargeDonut" aria-label="Department sign-in distribution">
+                                    <div class="signin-analytics-large-hole"><strong data-signin-unique>0</strong><span>unique students</span></div>
+                                </div>
+                                <div class="signin-analytics-chart-caption">
+                                    <strong>Department share</strong>
+                                    <span id="signinAnalyticsUpdated">Waiting for sign-in activity...</span>
+                                </div>
+                            </article>
+
+                            <article class="signin-analytics-table-card">
+                                <div class="signin-analytics-table-head">
+                                    <div><span>BREAKDOWN</span><h4>Accounts & sign-ins by department</h4></div>
+                                    <span class="signin-analytics-live"><i></i> Live</span>
+                                </div>
+                                <div class="signin-analytics-table" id="signinAnalyticsTable">
+                                    <div class="signin-analytics-empty">No student sign-ins have been recorded yet.</div>
+                                </div>
+                            </article>
+                        </div>
+                    </section>
+                </section>
+
+                <section class="reference-block event-reference-block">
+                    <div class="reference-heading events-reference-heading"><h2>Events</h2><a href="../events/events.html">Open events <i class="fa-solid fa-arrow-up-right-from-square"></i></a></div>
+                    <article class="officer-event-card">
+                        <div class="mini-calendar"><div class="calendar-head"><button type="button" aria-label="Previous month">‹</button><strong id="officerCalendarMonth">Current Month</strong><button type="button" aria-label="Next month">›</button></div><div class="calendar-week"><span>S</span><span>M</span><span>T</span><span>W</span><span>T</span><span>F</span><span>S</span></div><div class="calendar-days" id="officerCalendarDays"></div></div>
+                        <div class="officer-event-list" id="officerOverviewEvents"><div class="reference-empty">No upcoming events yet.</div></div>
+                    </article>
+                </section>
+
+            </div>
+
+            <aside class="reference-bulletin-column">
+                <section class="reference-bulletin-panel">
+                    <div class="reference-heading bulletin-reference-heading"><h2>Bulletin Board</h2><a href="../announcements/announcements.html">Open bulletin <i class="fa-solid fa-arrow-up-right-from-square"></i></a></div>
+                    <article class="bulletin-preview-card" id="officerBulletinPreview"><div class="reference-empty">No announcement posted yet.</div></article>
+            
+                </section>
+
+                <section class="reference-block program-reference-block">
+                    <div class="reference-heading programs-reference-heading"><h2><i class="fa-solid fa-earth-americas"></i> Programs</h2><a href="../programs/programs.html">Open programs <i class="fa-solid fa-arrow-up-right-from-square"></i></a></div>
+                    <article class="officer-program-card" id="officerOverviewPrograms">
+                        <div class="reference-empty">No upcoming programs yet.</div>
+                    </article>
+                </section>
+
+                <section class="election-control-strip">
+                    <div><span class="control-kicker">Automatic Election Phase</span><h3 id="overviewElectionStatus">Checking election schedule...</h3><p id="overviewElectionPhaseNote">Voting and other election functions are controlled automatically by the configured schedule.</p></div>
+                    <div class="election-control-actions"><a class="control-btn open" href="../elections/elections.html"><i class="fa-regular fa-calendar-check"></i> Manage Schedule</a></div>
+                </section>
+            </aside>
+
+                <section class="officer-management-suite">
+                    <div class="management-suite-heading">
+                        <div class="management-suite-title"><span class="management-suite-icon"><i class="fa-solid fa-screwdriver-wrench"></i></span><div><span>OFFICER TOOLS</span><h2>Officer Management Center</h2><p>The front dashboard keeps the student-style layout, while these controls remain officer-only.</p></div></div>
+                    </div>
+                    <div class="management-feature-grid">
+                        <article class="management-feature-card announcements-feature">
+                            <div class="management-feature-icon"><i class="fa-solid fa-bullhorn"></i></div>
+                            <div class="management-feature-copy"><span>Bulletin Board Center</span><strong data-overview-announcement-count>0</strong><p>Published announcements</p></div>
+                            <div class="management-feature-actions"><a href="../announcements/announcements.html"><i class="fa-solid fa-arrow-up-right-from-square"></i> Create / Manage</a></div>
+                        </article>
+                        <article class="management-feature-card complaints-feature">
+                            <div class="management-feature-icon"><i class="fa-solid fa-message"></i></div>
+                            <div class="management-feature-copy"><span>Complaints Management</span><strong data-overview-pending-complaints>0</strong><p>Pending / active cases</p></div>
+                            <div class="management-feature-actions"><a href="../complaints/complaints.html"><i class="fa-solid fa-inbox"></i> Open Case Queue</a></div>
+                        </article>
+                        <article class="management-feature-card events-feature">
+                            <div class="management-feature-icon"><i class="fa-regular fa-calendar-days"></i></div>
+                            <div class="management-feature-copy"><span>Events Management</span><strong data-overview-upcoming-events>0</strong><p>Upcoming university events</p></div>
+                            <div class="management-feature-actions"><a href="../events/events.html"><i class="fa-solid fa-arrow-up-right-from-square"></i> Create / Manage</a></div>
+                        </article>
+                        <article class="management-feature-card programs-feature">
+                            <div class="management-feature-icon"><i class="fa-solid fa-earth-americas"></i></div>
+                            <div class="management-feature-copy"><span>External Programs</span><strong data-overview-upcoming-programs>0</strong><p>Upcoming outside-university programs</p></div>
+                            <div class="management-feature-actions"><a href="../programs/programs.html"><i class="fa-solid fa-arrow-up-right-from-square"></i> Create / Manage</a></div>
+                        </article>
+                        <article class="management-feature-card officers-feature">
+                            <div class="management-feature-icon"><i class="fa-solid fa-user-tie"></i></div>
+                            <div class="management-feature-copy"><span>Officer Accounts</span><strong data-overview-officer-count>0</strong><p>Active officer accounts</p></div>
+                            <div class="management-feature-actions muted-action"><span>Account access is admin-controlled</span></div>
+                        </article>
+                    </div>
+
+                    <div class="management-detail-grid">
+                        <section class="management-panel">
+                            <div class="management-panel-head"><div class="management-panel-title"><span class="management-panel-icon"><i class="fa-solid fa-inbox"></i></span><div><span>CASE WORKFLOW</span><h3>Recent Complaint Queue</h3></div></div><a href="../complaints/complaints.html"><i class="fa-solid fa-list-check"></i> Manage all</a></div>
+                            <div class="management-list" id="officerRecentComplaints"><div class="reference-empty">No complaints yet.</div></div>
+                        </section>
+                        <section class="management-panel">
+                            <div class="management-panel-head"><div class="management-panel-title"><span class="management-panel-icon"><i class="fa-solid fa-bolt"></i></span><div><span>COMMUNICATION</span><h3>Officer Quick Actions</h3></div></div></div>
+                            <div class="officer-quick-actions">
+                                <a href="../announcements/announcements.html"><i class="fa-solid fa-plus"></i><div><strong>Post Announcement</strong><small>Publish a bulletin with an optional image.</small></div></a>
+                                <a href="../events/events.html"><i class="fa-solid fa-calendar-plus"></i><div><strong>Create Event</strong><small>Post a university event and upload its background image.</small></div></a>
+                                <a href="../programs/programs.html"><i class="fa-solid fa-earth-americas"></i><div><strong>Post External Program</strong><small>Publish an outside-university opportunity or partner activity.</small></div></a>
+                                <a href="../elections/elections.html"><i class="fa-solid fa-check-to-slot"></i><div><strong>Election Management</strong><small>Review candidates and manage election settings.</small></div></a>
+                                <a href="../complaints/complaints.html"><i class="fa-solid fa-reply"></i><div><strong>Reply to Complaints</strong><small>Update status, view attachments, and respond.</small></div></a>
+                            </div>
+                        </section>
+                    </div>
+                </section>
+
+        </section>
+    </section>
+</main></div></div>
+<footer class="officer-shared-footer"><div class="officer-footer-main"><div class="officer-footer-col"><h3>ABOUT US</h3><a href="../overview/overview.html">USC Officer Portal</a><a href="../organizational-chart/organizational-chart.html">University Student Council</a><a href="../organizational-chart/organizational-chart.html">Organizational Chart</a></div><div class="officer-footer-col"><h3>CONTACT US</h3><p><strong>Samar State University</strong></p><p>Arteche Boulevard</p><p>Catbalogan, Samar 6700</p></div><div class="officer-footer-col officer-footer-links"><a href="https://ssu.edu.ph" target="_blank" rel="noopener"><i class="fa-brands fa-square-facebook"></i> ssu.edu.ph</a><a href="mailto:ssuuniversitystudentcouncil@gmail.com"><i class="fa-regular fa-envelope"></i> ssuuniversitystudentcouncil@gmail.com</a></div></div><div class="officer-footer-bottom"><img src="../shared/assets/SSUlogo.webp" alt="SSU Logo"/><img src="../shared/assets/USClogo.webp" alt="USC Logo"/><div><strong>SSU UNIVERSITY STUDENT COUNCIL</strong><span>LEADERSHIP&nbsp;&nbsp;|&nbsp;&nbsp;EXCELLENCE&nbsp;&nbsp;|&nbsp;&nbsp;DISCIPLINE&nbsp;&nbsp;|&nbsp;&nbsp;SERVICE</span></div></div></footer>
+<script src="../shared/js/nav-active.js?v=6"></script></script><script type="module" src="js/overview.js?v=balanced-dashboard-1"></script><script type="module" src="../shared/js/admin-auth.js?v=rbac4"></script>
+<script type="module" src="../../shared/profile-manager.js?v=supabase-email-1"></script>
+  <script type="module" src="../shared/js/officer-rbac.js?v=6"></script>
+</body></html>

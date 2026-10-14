@@ -1,0 +1,138 @@
+/* Shared content typography, loaded after each student module's styles. */
+body { font-family: "Roboto", Arial, sans-serif; font-size: 16px; }
+:is(.student-main, .module-shell, .student-module-column) :is(p, li, label, td, th, small, time) {
+  line-height: 1.5;
+}
+:is(.student-main, .module-shell, .student-module-column) :is(input, select, textarea) {
+  font-size: 16px;
+  line-height: 1.4;
+}
+body.student-app-shell .section-label-row {
+  flex-wrap: wrap;
+  gap: 8px 16px;
+}
+body.student-app-shell .section-label-row :is(a, button),
+body.student-app-shell .announcement-read-more {
+  font-size: 14px;
+  font-weight: 600;
+  color: #285c96;
+  min-height: 36px;
+  display: inline-flex;
+  align-items: center;
+  line-height: 1.4;
+}
+body.student-app-shell .section-label-row :is(a, button):hover {
+  color: #173d70;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+body.student-app-shell .student-sidebar .student-nav-link {
+  min-height: 44px;
+}
+body.student-app-shell .student-sidebar .student-nav-link span { font-size: 14px; }
+body.student-app-shell :is(.notification-copy p, .notification-copy small) { font-size: 14px; line-height: 1.5; }
+@media (max-width: 820px) {
+  body.student-app-shell .section-label-row :is(a, button) { min-height: 44px; }
+}
+
+/* Dashboard section rhythm and consistent secondary actions. */
+body.student-app-shell #dashboardHome .dashboard-grid {
+  gap: 16px;
+  margin-top: 16px;
+  align-items: stretch;
+}
+body.student-app-shell #dashboardHome :is(.dashboard-left-stack, .dashboard-center-stack, .dashboard-bulletin, .events-section-card) {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  gap: 6px;
+}
+body.student-app-shell #dashboardHome .section-label-row {
+  height: auto;
+  min-height: 44px;
+  margin: 0;
+  gap: 6px 12px;
+  align-items: center;
+}
+body.student-app-shell #dashboardHome .section-label-row :is(a, button) {
+  color: rgba(65, 75, 88, .85);
+  opacity: 1;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.4;
+  margin-left: auto;
+  text-align: right;
+  justify-content: flex-end;
+  white-space: nowrap;
+}
+body.student-app-shell #dashboardHome .section-label-row :is(a, button):hover {
+  color: #414b58;
+}
+@media (min-width: 821px) {
+  body.student-app-shell #dashboardHome .dashboard-left-stack { grid-column: 1; grid-row: 1; }
+  body.student-app-shell #dashboardHome .dashboard-center-stack { grid-column: 2; grid-row: 1; }
+  body.student-app-shell #dashboardHome .dashboard-bulletin { grid-column: 3; grid-row: 1 / span 2; }
+  body.student-app-shell #dashboardHome .events-section-card { grid-column: 1 / span 2; grid-row: 2; }
+  body.student-app-shell #dashboardHome .section-label-row { min-height: 28px; }
+  body.student-app-shell #dashboardHome .bulletin-card { flex: 1; min-height: 0; }
+  body.student-app-shell #dashboardHome .summary-card { flex: 1; min-height: 208px; }
+  body.student-app-shell #dashboardHome .events-board { flex: 1; min-height: 330px; }
+}
+@media (min-width: 821px) and (max-width: 1120px) {
+  body.student-app-shell #dashboardHome .dashboard-grid { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+  body.student-app-shell #dashboardHome .events-section-card { grid-column: 1; grid-row: 2; }
+  body.student-app-shell #dashboardHome .dashboard-bulletin { grid-column: 2; grid-row: 2; }
+  body.student-app-shell #dashboardHome .events-board { height: auto; grid-template-columns: 1fr; }
+  body.student-app-shell #dashboardHome .events-visual-pane { min-height: 240px; }
+}
+
+/* Keep headings close and split the bulletin into equal image/copy halves. */
+@media (min-width: 821px) {
+  body.student-app-shell #dashboardHome .section-label-row :is(a, button) { min-height: 28px; }
+}
+body.student-app-shell #dashboardHome .bulletin-card .slides-host {
+  position: absolute;
+  inset: 0;
+  height: 100%;
+}
+body.student-app-shell #dashboardHome .announcement-card-shell {
+  display: grid;
+  grid-template-rows: minmax(0, 1fr) minmax(0, 1fr);
+  height: 100%;
+}
+body.student-app-shell #dashboardHome .announcement-media-column {
+  height: auto;
+  min-height: 0;
+}
+body.student-app-shell #dashboardHome .announcement-card-body {
+  min-height: 0;
+  padding: 18px 20px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+body.student-app-shell #dashboardHome .announcement-card-body h3,
+body.student-app-shell #dashboardHome .announcement-meta { margin: 0; }
+body.student-app-shell #dashboardHome .announcement-footer {
+  position: static;
+  margin-top: auto;
+  padding-top: 6px;
+}
+body.student-app-shell #dashboardHome .slider-dots { top: calc(50% - 18px); }
+body.student-app-shell #dashboardHome .slide-nav { top: 25%; }
+/* A six-week calendar keeps its dimensions when the month changes. */
+body.student-app-shell #dashboardHome .calendar-grid {
+  grid-template-rows: 22px repeat(6, 32px);
+  gap: 4px;
+}
+body.student-app-shell #dashboardHome .day-cell {
+  aspect-ratio: auto;
+  min-height: 0;
+  height: 32px;
+}
+body.student-app-shell #dashboardHome .calendar-header strong { white-space: nowrap; }
+@media (max-width: 820px) {
+  body.student-app-shell #dashboardHome .calendar-grid { grid-template-rows: 22px repeat(6, 44px); }
+  body.student-app-shell #dashboardHome .day-cell { height: 44px; }
+}

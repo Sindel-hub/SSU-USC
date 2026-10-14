@@ -1,0 +1,471 @@
+<!DOCTYPE html>
+<html lang="en" class="usc-officer-access-pending">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>USC Election Module</title>
+  <link rel="stylesheet" href="../shared/css/usc-theme.css?v=officer-readable-1" />
+  <link rel="stylesheet" href="css/elections.css?v=officer-readable-1" />
+    <link rel="stylesheet" href="../shared/css/officer-ui.css?v=instant-shell-2" />
+  <link
+    rel="stylesheet"
+    href="../shared/css/officer-responsive.css?v=officer-readable-1"
+/>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+<link rel="stylesheet" href="../../shared/profile-manager.css" />
+  <script src="../../shared/app-config.js"></script>
+  <script type="module" src="../../shared/auth-guard.js?v=rbac7"></script>
+<link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet" />
+</head>
+
+<body class="officer-app-shell">
+  <div class="page">
+    <div class="page-label">Dashboard</div>
+
+    <div class="app-shell">
+      <header class="top-banner">
+        <div class="brand-logos">
+          <img src="../shared/assets/SSUlogo.webp" alt="Samar State University Logo" class="brand-logo"
+            onerror="this.style.display='none'" />
+          <img src="../shared/assets/USClogo.webp" alt="University Student Council Logo" class="brand-logo"
+            onerror="this.style.display='none'" />
+        </div>
+
+        <div class="brand">
+          <h1>SSU UNIVERSITY STUDENT COUNCIL</h1>
+          <p>LEADERSHIP | EXCELLENCE | DISCIPLINE | SERVICE</p>
+        </div>
+      </header>
+
+      <nav class="top-nav officer-global-toolbar">
+
+    <!-- LEFT: sidebar + module search -->
+    <div class="nav-left officer-global-search-wrap">
+
+        <button
+            class="sidebar-toggle"
+            type="button"
+            data-sidebar-toggle
+            aria-label="Open sidebar"
+            aria-expanded="false"
+        >
+            <span class="grid-icon"></span>
+        </button>
+
+
+        <div class="officer-search-box" id="officerSearchBox">
+
+            <div class="officer-search">
+
+                <i
+                    class="fa-solid fa-magnifying-glass"
+                    aria-hidden="true"
+                ></i>
+
+                <input
+                    id="officerQuickSearch"
+                    type="search"
+                    aria-label="Search officer modules"
+                    placeholder="Search modules"
+                    autocomplete="off"
+                />
+
+                <button
+                    class="officer-search-clear"
+                    id="officerSearchClear"
+                    type="button"
+                    aria-label="Clear search"
+                    hidden
+                >
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+
+            </div>
+
+
+            <div
+                class="officer-search-results"
+                id="officerSearchResults"
+                role="listbox"
+                aria-label="Officer module search results"
+                hidden
+            ></div>
+
+        </div>
+
+    </div>
+
+
+    <!-- RIGHT: notifications + profile -->
+    <div class="nav-right">
+
+        <button
+            class="bell officer-bell"
+            type="button"
+            aria-label="Notifications"
+        >
+            <i class="fa-regular fa-bell"></i>
+        </button>
+
+        <div
+            class="avatar"
+            aria-label="Officer profile"
+        ></div>
+
+    </div>
+
+</nav>
+
+      <div class="sidebar-overlay" data-sidebar-overlay></div>
+
+      <main class="layout">
+        <aside class="sidebar officer-reference-sidebar">
+                    <div class="officer-sidebar-mark"><i class="fa-solid fa-user-tie"></i></div>
+                    <nav class="officer-module-nav" aria-label="Officer modules">
+                        <a class="nav-btn" href="../overview/overview.html"><span class="icon"><i class="fa-solid fa-table-columns"></i></span><span>Dashboard</span></a>
+                        <a class="nav-btn" href="../announcements/announcements.html"><span class="icon"><i class="fa-solid fa-note-sticky"></i></span><span>Bulletin Board Center</span></a>
+                        <a class="nav-btn" href="../elections/elections.html"><span class="icon"><i class="fa-regular fa-rectangle-list"></i></span><span>Election Management</span></a>
+                        <a class="nav-btn" href="../events/events.html"><span class="icon"><i class="fa-regular fa-calendar"></i></span><span>Events</span></a>
+                        <a class="nav-btn" href="../programs/programs.html"><span class="icon"><i class="fa-solid fa-earth-americas"></i></span><span>Programs</span></a>
+                        <a class="nav-btn" href="../organizational-chart/organizational-chart.html"><span class="icon"><i class="fa-solid fa-users"></i></span><span>Organizational Chart</span></a>
+                        <a class="nav-btn" href="../complaints/complaints.html"><span class="icon"><i class="fa-solid fa-message"></i></span><span>Complaints Management</span></a>
+                    </nav>
+                    <button class="nav-btn logout-btn" type="button" onclick="logoutOfficer()"><span class="icon"><i class="fa-solid fa-right-from-bracket"></i></span><span>Logout</span></button>
+                </aside>
+
+        <section class="main">
+          <section class="hero">
+            <div class="hero-left">
+              <div class="hero-title">
+                <div>
+                  <h1>Election Management Module</h1>
+                  <p>Configure the full election schedule, review candidate applications, monitor turnout, and publish official election information from one control center.</p>
+                </div>
+                <div class="hero-tag">Schedule-driven phases</div>
+              </div>
+
+              <div class="stats">
+                <div class="stat-card">
+                  <div class="stat-label">Active Election</div>
+                  <div class="stat-value" id="activeElectionCount">01</div>
+                  <div class="stat-sub">Current cycle</div>
+                </div>
+
+                <div class="stat-card">
+                  <div class="stat-label">Candidates</div>
+                  <div class="stat-value blue" id="candidateCount">0</div>
+                  <div class="stat-sub">Validated list</div>
+                </div>
+
+                <div class="stat-card">
+                  <div class="stat-label">Votes Cast</div>
+                  <div class="stat-value" id="votesCastCount">0</div>
+                  <div class="stat-sub">Current submissions</div>
+                </div>
+
+                <div class="stat-card">
+                  <div class="stat-label">Turnout</div>
+                  <div class="stat-value green" id="turnoutPercent">0%</div>
+                  <div class="stat-sub">Participation rate</div>
+                </div>
+              </div>
+
+              <div class="hero-actions">
+                <button class="btn primary" id="openScheduleManagerBtn" type="button">Configure Election Schedule</button>
+                <button class="btn light" data-nav="../overview/overview.html">Back to Dashboard</button>
+              </div>
+            </div>
+
+            <div class="side-panel">
+              <div class="panel-head">
+                <h3>Election Status</h3>
+                <span class="panel-link">Live monitoring</span>
+              </div>
+
+              <div class="progress-wrap">
+                <div class="progress-label">
+                  <span id="electionStatusTitle">USC General Election</span>
+                  <span id="turnoutProgressLabel">0 / 0</span>
+                </div>
+                <div class="bar">
+                  <div class="bar-fill" id="turnoutBar" style="width:0%;">0%</div>
+                </div>
+              </div>
+
+              <section class="department-turnout-panel" aria-labelledby="departmentTurnoutTitle">
+                <div class="department-turnout-head">
+                  <div>
+                    <small>Participation by department</small>
+                    <strong id="departmentTurnoutTitle">Department Voting Participation</strong>
+                  </div>
+                  <span id="departmentTurnoutTotal">0 voted</span>
+                </div>
+                <div class="department-turnout-list" id="departmentTurnoutList">
+                  <div class="department-turnout-empty">No department voting activity yet.</div>
+                </div>
+                <p class="department-turnout-privacy"><i class="fa-solid fa-shield-halved" aria-hidden="true"></i> Aggregate counts only. Individual ballots and candidate choices remain private.</p>
+              </section>
+
+              <div class="note-box election-phase-note" style="margin-top:0;">
+                <strong>Automatic phase enforcement</strong>
+                <p>The current date and time determine which election functions are available. Students can always view election information, while registration, review, voting, and result publication follow the configured schedule.</p>
+              </div>
+            </div>
+          </section>
+
+          <section class="election-schedule-workspace" id="scheduleWorkspace">
+            <article class="card schedule-management-card saved-schedule-card" id="scheduleManagementCard">
+              <div class="card-head schedule-card-head">
+                <div>
+                  <h3>Election Schedule Management</h3>
+                  <span>Saved schedules are locked. Use Edit Schedule to preview and replace the current schedule.</span>
+                </div>
+                <span class="phase-status-pill" id="activePhaseBadge">Checking schedule...</span>
+              </div>
+
+              <div class="card-body">
+                <div class="saved-schedule-meta">
+                  <div class="saved-field"><span>Election Title</span><strong id="savedElectionTitle">USC Election</strong></div>
+                  <div class="saved-field"><span>Election ID</span><strong id="savedElectionId">Not configured</strong></div>
+                  <div class="saved-field"><span>Active Phase</span><strong id="savedElectionPhase">Not configured</strong></div>
+                </div>
+
+                <div class="saved-schedule-status-row">
+                  <span class="saved-schedule-ready" id="savedScheduleState"><i class="fa-solid fa-circle-check"></i> Saved schedule</span>
+                  <span id="savedScheduleUpdated">Dates are stored in Firebase and shown in local time.</span>
+                </div>
+
+                <div class="saved-phase-list" id="savedPhaseList" aria-label="Saved election schedule">
+                  <article class="saved-phase-row" data-phase-summary="registration">
+                    <span class="phase-number">1</span><span class="phase-icon"><i class="fa-solid fa-user-plus"></i></span>
+                    <div class="saved-phase-copy"><strong>Candidate Registration</strong><small>Students may submit candidacy applications.</small></div>
+                    <div class="saved-phase-time"><span>From</span><strong id="savedRegistrationFrom">Not set</strong></div>
+                    <div class="saved-phase-time"><span>Until</span><strong id="savedRegistrationUntil">Not set</strong></div>
+                  </article>
+                  <article class="saved-phase-row" data-phase-summary="review">
+                    <span class="phase-number">2</span><span class="phase-icon"><i class="fa-regular fa-clipboard"></i></span>
+                    <div class="saved-phase-copy"><strong>Application Review</strong><small>Review and assess received candidacy applications.</small></div>
+                    <div class="saved-phase-time"><span>From</span><strong id="savedReviewFrom">Not set</strong></div>
+                    <div class="saved-phase-time"><span>Until</span><strong id="savedReviewUntil">Not set</strong></div>
+                  </article>
+                  <article class="saved-phase-row" data-phase-summary="publication">
+                    <span class="phase-number">3</span><span class="phase-icon"><i class="fa-solid fa-bullhorn"></i></span>
+                    <div class="saved-phase-copy"><strong>Candidate Publication</strong><small>Approved candidates are published to students.</small></div>
+                    <div class="saved-phase-time"><span>From</span><strong id="savedPublicationFrom">Not set</strong></div>
+                    <div class="saved-phase-time"><span>Until</span><strong id="savedPublicationUntil">Not set</strong></div>
+                  </article>
+                  <article class="saved-phase-row" data-phase-summary="voting">
+                    <span class="phase-number">4</span><span class="phase-icon"><i class="fa-solid fa-check-to-slot"></i></span>
+                    <div class="saved-phase-copy"><strong>Voting</strong><small>The official ballot is available during this window.</small></div>
+                    <div class="saved-phase-time"><span>From</span><strong id="savedVotingFrom">Not set</strong></div>
+                    <div class="saved-phase-time"><span>Until</span><strong id="savedVotingUntil">Not set</strong></div>
+                  </article>
+                  <article class="saved-phase-row" data-phase-summary="results">
+                    <span class="phase-number">5</span><span class="phase-icon"><i class="fa-solid fa-chart-column"></i></span>
+                    <div class="saved-phase-copy"><strong>Result Publication</strong><small>Official results become visible to students.</small></div>
+                    <div class="saved-phase-time"><span>From</span><strong id="savedResultsFrom">Not set</strong></div>
+                    <div class="saved-phase-time"><span>Until</span><strong id="savedResultsUntil">Not set</strong></div>
+                  </article>
+                </div>
+
+                <div class="schedule-lock-note"><i class="fa-solid fa-shield-halved"></i><span>Saved schedule fields are locked. Changes are made through the replacement preview so every change can be audited.</span></div>
+
+                <div class="row-actions schedule-primary-actions">
+                  <button class="mini-btn primary" id="editScheduleBtn" type="button" data-rbac-permission="elections.view"><i class="fa-solid fa-pen"></i> Edit Schedule</button>
+                  <button class="mini-btn light" id="scrollToCandidateReviewBtn" type="button">Review Candidate Applications</button>
+                </div>
+              </div>
+            </article>
+
+            <aside class="card schedule-control-card" id="scheduleControlCard">
+              <div class="card-head">
+                <div><h3>Schedule Management</h3><span>Preview or replace the current election schedule.</span></div>
+              </div>
+              <div class="card-body">
+                <div class="current-schedule-box">
+                  <span class="current-schedule-icon"><i class="fa-regular fa-calendar-days"></i></span>
+                  <div><small>Current schedule status</small><strong id="currentScheduleStatus">Not configured</strong><p id="currentScheduleDescription">Create an election schedule to begin.</p></div>
+                </div>
+
+                <div class="schedule-control-actions">
+                  <button class="schedule-action danger" id="deleteCurrentScheduleBtn" type="button" data-rbac-permission="elections.view"><i class="fa-regular fa-trash-can"></i><span><strong>Delete Schedule</strong><small>Remove the active schedule pointer.</small></span></button>
+                  <button class="schedule-action create" id="createNewScheduleBtn" type="button" data-rbac-permission="elections.view"><i class="fa-solid fa-plus"></i><span><strong>Create New Schedule</strong><small>Create or replace the election schedule.</small></span></button>
+                </div>
+
+                <div class="schedule-reminders">
+                  <strong><i class="fa-regular fa-circle-question"></i> Important reminders</strong>
+                  <ul>
+                    <li>Editing no longer requires separate administrator approval.</li>
+                    <li>Officers assigned to Election Management may replace the saved schedule.</li>
+                    <li>Voting must end before Result Publication begins.</li>
+                    <li>Every saved or deleted schedule change is recorded in the audit trail.</li>
+                  </ul>
+                </div>
+
+                <div class="schedule-summary-panel">
+                  <h4>Schedule Summary</h4>
+                  <div id="scheduleSummaryList" class="schedule-summary-list"></div>
+                </div>
+              </div>
+            </aside>
+          </section>
+
+          <section class="card candidate-review-card" id="candidateReviewCard" data-rbac-permission="elections.review">
+            <div class="card-head">
+              <div>
+                <h3>Candidate Application Review</h3>
+                <span>Monitor, review, and evaluate submitted applications. Review actions remain controlled by the scheduled review window.</span>
+              </div>
+              <span class="phase-status-pill" id="candidateReviewPhaseBadge">Review locked</span>
+            </div>
+            <div class="card-body">
+              <div class="candidate-review-summary">
+                <span><strong id="candidateApplicationTotal">0</strong> Total</span>
+                <span><strong id="candidateApprovedTotal">0</strong> Approved</span>
+                <span><strong id="candidatePendingTotal">0</strong> Under Review</span>
+                <span><strong id="candidateRejectedTotal">0</strong> Rejected</span>
+              </div>
+              <div class="candidate-review-list" id="candidateReviewList">
+                <div class="review-empty-state">No candidate applications have been submitted yet.</div>
+              </div>
+            </div>
+          </section>
+
+          <section class="grid-2 election-bottom-grid">
+            <article class="card secure-lifecycle-card" id="secureElectionLifecycle">
+              <div class="card-head">
+                <div><h3>Secure Election Lifecycle</h3><span>Election integrity and closeout controls remain separated from schedule editing.</span></div>
+                <span class="phase-status-pill" id="secureLifecycleBadge">Checking...</span>
+              </div>
+              <div class="card-body">
+                <div class="note-box lifecycle-note"><strong>Lifecycle</strong><p id="secureLifecycleDescription">Loading server state...</p></div>
+                <div class="row-actions lifecycle-actions">
+                  <button class="mini-btn primary" id="finalizeElectionBtn" type="button" data-rbac-permission="elections.results">Finalize Election</button>
+                  <button class="mini-btn primary" id="publishResultsBtn" type="button" data-rbac-permission="elections.results">Publish Official Results</button>
+                  <button class="mini-btn light" id="archiveElectionBtn" type="button">Archive Election</button>
+                </div>
+                <p id="lifecycleActionMessage" class="lifecycle-message"></p>
+              </div>
+            </article>
+
+            <article class="card turnout-result-card">
+              <div class="card-head">
+                <div><h3>Turnout & Result Snapshot</h3><span>Real-time overview of participation and performance.</span></div>
+              </div>
+              <div class="card-body">
+                <div class="turnout-snapshot-top">
+                  <div><small>Participation</small><strong id="turnoutSnapshotText">0 of 0 ballots cast</strong><span>Combine live turnout and published results by phase.</span></div>
+                  <div><small>Leadership candidates</small><strong id="candidateSnapshotText">0 validated</strong><span>Candidate records remain protected until qualified phases.</span></div>
+                </div>
+                <div class="row-actions" style="margin-top:14px;">
+                  <button class="mini-btn primary" id="viewFullTallyBtn" type="button" data-rbac-permission="elections.results">View Full Tally</button>
+                  <button class="mini-btn light" id="exportSummaryBtn" type="button" data-rbac-permission="reports.generate">Export Summary</button>
+                </div>
+                <div class="snapshot-analytics-grid">
+                  <article class="snapshot-analytics-card"><strong>President Analytics</strong><div id="presidentAnalytics"></div></article>
+                  <article class="snapshot-analytics-card"><strong>Vice President Analytics</strong><div id="viceAnalytics"></div></article>
+                </div>
+                <table class="table snapshot-table" hidden aria-hidden="true"><tbody id="electionResultsBody"><tr><td colspan="3">No votes yet.</td></tr></tbody></table>
+              </div>
+            </article>
+          </section>
+        </section>
+      </main>
+    </div>
+  </div>
+
+
+  <dialog class="candidate-photo-dialog" id="candidatePhotoDialog" aria-label="Candidate campaign photo preview">
+    <section class="candidate-photo-dialog-shell">
+      <button class="candidate-photo-dialog-close" id="candidatePhotoDialogCloseBtn" type="button" aria-label="Close campaign photo preview">
+        <i class="fa-solid fa-xmark" aria-hidden="true"></i>
+      </button>
+      <div class="candidate-photo-dialog-body" id="candidatePhotoDialogBody"></div>
+    </section>
+  </dialog>
+
+
+  <dialog class="candidate-preview-dialog" id="candidatePreviewDialog" aria-labelledby="candidatePreviewTitle">
+    <section class="candidate-preview-shell">
+      <header class="candidate-preview-head">
+        <div>
+          <span class="candidate-preview-kicker">Application review</span>
+          <h2 id="candidatePreviewTitle">Candidate Preview</h2>
+          <p>Review the candidate's information, campaign photo, platform, and attached documents before recording a decision.</p>
+        </div>
+        <button class="candidate-preview-close" id="candidatePreviewCloseBtn" type="button" aria-label="Close candidate preview"><i class="fa-solid fa-xmark"></i></button>
+      </header>
+      <div class="candidate-preview-body" id="candidatePreviewBody"></div>
+      <footer class="candidate-preview-footer" id="candidatePreviewFooter"></footer>
+    </section>
+  </dialog>
+
+
+  <dialog class="schedule-editor-dialog" id="scheduleEditorDialog" aria-labelledby="scheduleEditorTitle">
+    <form method="dialog" class="schedule-editor-shell" id="scheduleEditorForm">
+      <div class="schedule-editor-head">
+        <div>
+          <span class="schedule-editor-kicker">Schedule preview</span>
+          <h2 id="scheduleEditorTitle">Edit Election Schedule</h2>
+          <p id="scheduleEditorDescription">Preview the saved dates and create a replacement schedule. The saved schedule remains unchanged until you save.</p>
+        </div>
+        <button class="schedule-editor-close" id="closeScheduleEditorBtn" type="button" aria-label="Close schedule preview"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+      <div class="schedule-editor-body">
+        <div class="schedule-editor-meta-grid">
+          <div class="field"><label>Election Title</label><input id="electionTitleInput" type="text" value="USC General Election" /></div>
+          <div class="field"><label>Election ID <small>(permanent key)</small></label><input id="electionIdInput" type="text" placeholder="usc-2026-general" pattern="[a-z0-9-]+" /></div>
+          <div class="field"><label>Current Phase <small>(automatic)</small></label><input id="electionStatusInput" class="read-only-field" type="text" value="Not configured" readonly aria-readonly="true" /></div>
+        </div>
+        <div class="phase-schedule-grid schedule-editor-phase-grid">
+          <section class="phase-schedule-item" data-phase-card="registration"><div class="phase-schedule-heading"><span>1</span><div><strong>Candidate Registration</strong><small>Students may submit candidacy applications.</small></div></div><div class="grid-2"><div class="field"><label>From</label><input id="registrationStartInput" type="datetime-local" /></div><div class="field"><label>Until</label><input id="registrationEndInput" type="datetime-local" /></div></div></section>
+          <section class="phase-schedule-item" data-phase-card="review"><div class="phase-schedule-heading"><span>2</span><div><strong>Application Review</strong><small>Review and assess received candidacy applications.</small></div></div><div class="grid-2"><div class="field"><label>From</label><input id="applicationReviewStartInput" type="datetime-local" /></div><div class="field"><label>Until</label><input id="applicationReviewEndInput" type="datetime-local" /></div></div></section>
+          <section class="phase-schedule-item" data-phase-card="publication"><div class="phase-schedule-heading"><span>3</span><div><strong>Candidate Publication</strong><small>Approved candidates become visible to students.</small></div></div><div class="grid-2"><div class="field"><label>From</label><input id="candidatePublicationStartInput" type="datetime-local" /></div><div class="field"><label>Until</label><input id="candidatePublicationEndInput" type="datetime-local" /></div></div></section>
+          <section class="phase-schedule-item" data-phase-card="voting"><div class="phase-schedule-heading"><span>4</span><div><strong>Voting</strong><small>The official ballot is enabled during this window.</small></div></div><div class="grid-2"><div class="field"><label>From</label><input id="votingStartInput" type="datetime-local" /></div><div class="field"><label>Until</label><input id="votingEndInput" type="datetime-local" /></div></div></section>
+          <section class="phase-schedule-item" data-phase-card="results"><div class="phase-schedule-heading"><span>5</span><div><strong>Result Publication</strong><small>Official results become visible to students.</small></div></div><div class="grid-2"><div class="field"><label>From</label><input id="resultPublicationStartInput" type="datetime-local" /></div><div class="field"><label>Until</label><input id="resultPublicationEndInput" type="datetime-local" /></div></div></section>
+        </div>
+        <div class="schedule-validation-message" id="scheduleValidationMessage" aria-live="polite"></div>
+      </div>
+      <div class="schedule-editor-actions">
+        <button class="mini-btn danger" id="deleteScheduleFromEditorBtn" type="button" data-rbac-permission="elections.view"><i class="fa-regular fa-trash-can"></i> Delete Current Schedule</button>
+        <div class="schedule-editor-actions-right"><button class="mini-btn light" id="cancelScheduleEditorBtn" type="button">Cancel</button><button class="mini-btn primary" id="saveElectionSettingsBtn" type="button" data-rbac-permission="elections.view">Create Replacement Schedule</button></div>
+      </div>
+    </form>
+  </dialog>
+
+  
+<footer class="officer-shared-footer">
+  <div class="officer-footer-main">
+    <div class="officer-footer-col">
+      <h3>ABOUT US</h3>
+      <a href="../overview/overview.html">USC Officer Portal</a>
+      <a href="../organizational-chart/organizational-chart.html">University Student Council</a>
+      <a href="../organizational-chart/organizational-chart.html">Organizational Chart</a>
+    </div>
+    <div class="officer-footer-col">
+      <h3>CONTACT US</h3>
+      <p><strong>Samar State University</strong></p>
+      <p>Arteche Boulevard</p>
+      <p>Catbalogan, Samar 6700</p>
+    </div>
+    <div class="officer-footer-col officer-footer-links">
+      <a href="https://ssu.edu.ph" target="_blank" rel="noopener"><i class="fa-brands fa-square-facebook"></i> ssu.edu.ph</a>
+      <a href="mailto:ssuuniversitystudentcouncil@gmail.com"><i class="fa-regular fa-envelope"></i> ssuuniversitystudentcouncil@gmail.com</a>
+    </div>
+  </div>
+  <div class="officer-footer-bottom">
+    <img src="../shared/assets/SSUlogo.webp" alt="SSU Logo" />
+    <img src="../shared/assets/USClogo.webp" alt="USC Logo" />
+    <div><strong>SSU UNIVERSITY STUDENT COUNCIL</strong><span>LEADERSHIP&nbsp;&nbsp;|&nbsp;&nbsp;EXCELLENCE&nbsp;&nbsp;|&nbsp;&nbsp;DISCIPLINE&nbsp;&nbsp;|&nbsp;&nbsp;SERVICE</span></div>
+  </div>
+</footer>
+
+    <script src="../shared/js/nav-active.js?v=6"></script>
+  <script type="module" src="js/elections.js?v=candidate-photo-viewer-polish-2"></script>
+  <script type="module" src="../shared/js/admin-auth.js?v=rbac4"></script>
+<script type="module" src="../../shared/profile-manager.js?v=supabase-email-1"></script>
+  <script type="module" src="../shared/js/officer-rbac.js?v=6"></script>
+</body>
+
+</html>

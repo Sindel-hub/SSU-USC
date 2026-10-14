@@ -1,0 +1,630 @@
+.timeline {
+  display: grid;
+  gap: 10px;
+}
+
+.timeline-step {
+  position: relative;
+  display: flex;
+  align-items: center;
+  min-height: 42px;
+  padding: 0 14px;
+  border-radius: 999px;
+  border: 1px solid #dbe4f4;
+  background: #f8fbff;
+  color: #607086;
+  font-size:14px;
+  font-weight: 800;
+  transition: 0.18s ease;
+}
+
+.timeline-step.active {
+  background: #eef4ff;
+  border-color: #5d84e8;
+  color: #163f8c;
+  box-shadow: 0 0 0 3px rgba(93, 132, 232, 0.12);
+}
+
+.timeline-step.completed {
+  background: #edf9f3;
+  border-color: #bfe4cf;
+  color: #158a53;
+}
+
+.timeline-step.completed::after {
+  content: "✓";
+  margin-left: auto;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.complaint-list-item {
+  width: 100%;
+  text-align: left;
+  cursor: pointer;
+}
+
+.complaint-list-item.is-selected {
+  border-color: #5d84e8;
+  box-shadow: 0 0 0 3px rgba(93, 132, 232, 0.12);
+  background: #f5f9ff;
+}
+
+.case-meta-inline {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 12px;
+  color: #667791;
+  font-size:14px;
+}
+
+.thread,
+.thread-list,
+.message-thread {
+  display: grid;
+  gap: 12px;
+}
+
+.msg,
+.message-bubble,
+.thread-message {
+  border-radius: 16px;
+  padding: 14px;
+  white-space: pre-wrap;
+  border: 1px solid #dfe7f4;
+}
+
+.msg.student {
+  background: #f7fafc;
+}
+
+.msg.officer {
+  background: #eef4ff;
+  border-color: #cddcf7;
+}
+
+.msg.system {
+  background: #fffaf0;
+  border-color: #f2ddae;
+}
+
+.msg-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+
+.msg-head strong {
+  color: #163f8c;
+}
+
+.msg-head small {
+  color: #738098;
+  font-size:14px;
+}
+
+.msg-body {
+  color: #3e4c65;
+  font-size:14px;
+  line-height: 1.65;
+}
+
+.admin-attachment-preview{min-height:74px;border:1px solid #dfe7f4;border-radius:14px;background:#f8fbff;padding:10px}
+.admin-attachment-card{display:flex;align-items:center;gap:12px;color:#294778;text-decoration:none}.admin-attachment-card img{width:150px;height:96px;object-fit:cover;border-radius:9px;border:1px solid #cbd7e5;background:#fff}.admin-attachment-card span{display:flex;flex-direction:column;gap:4px}.admin-attachment-card strong{font-size:14px;overflow-wrap:anywhere}.admin-attachment-card small{font-size:14px;color:#738098}.admin-attachment-file{display:flex;align-items:center;gap:10px;color:#2e67ad;text-decoration:none}.admin-attachment-file i{font-size:26px}.attachment-empty{color:#7b8798;font-size:14px;padding:14px}
+
+
+/* Complaint attachment: show complainant image directly in officer details */
+.admin-attachment-card.admin-image-display{display:block;color:#294778;text-decoration:none}
+.admin-attachment-card.admin-image-display img{display:block;width:100%;height:auto;max-height:320px;object-fit:contain;border-radius:10px;border:1px solid #cbd7e5;background:#fff;margin-bottom:10px}
+.admin-attachment-card.admin-image-display span{display:flex;flex-direction:column;gap:3px}
+
+
+/* ===== Officer Complaints dashboard cleanup ===== */
+body{background:#eef3f8}
+.page{max-width:1500px;padding:0 14px 28px}.page-label{display:none}.app-shell{border:0;border-radius:0 0 18px 18px;box-shadow:0 16px 38px rgba(20,51,87,.10);background:#f8fafc}
+.top-banner{height:74px;background:linear-gradient(rgba(13,39,79,.72),rgba(13,39,79,.72)),url('../../shared/assets/HomeLogo.webp') center/cover no-repeat;position:sticky;top:0;z-index:40}.top-nav{position:sticky;top:74px;z-index:39;border-bottom:1px solid #d9e2ee;box-shadow:0 4px 14px rgba(31,67,104,.06)}
+.layout{grid-template-columns:220px minmax(0,1fr);gap:16px;padding:16px}.sidebar{min-height:calc(100vh - 180px);background:linear-gradient(180deg,#c3f2fb,#25b3e7);border-radius:18px;padding:18px 14px;position:sticky;top:148px;height:fit-content}.sidebar h2{color:#154b7d}.nav-btn{border:0;background:rgba(255,255,255,.42);box-shadow:none;color:#185a8c;border-radius:10px;margin-bottom:8px;padding:11px 12px}.nav-btn.active{background:#fff;color:#154b7d;box-shadow:0 8px 18px rgba(24,90,140,.12)}.sidebar .note-box{background:rgba(255,255,255,.58);border-color:rgba(255,255,255,.7)}
+.main{gap:14px}.hero{grid-template-columns:1fr auto;padding:16px 18px;border:1px solid #dae5f3;border-radius:18px;background:#fff}.hero-title h1{font-size:24px}.hero-title p{max-width:700px}.hero-tag{background:#e9f3ff}.stats{gap:10px}.stat-card{min-height:95px;padding:12px}.hero-actions{display:none}.side-panel{min-width:230px;border-radius:14px}.grid-2{grid-template-columns:minmax(310px,.72fr) minmax(480px,1.28fr);gap:14px}.card{border:1px solid #dbe5f0;border-radius:16px;box-shadow:0 8px 22px rgba(16,61,104,.06);overflow:hidden}.card-head{padding:14px 16px;background:#f6f9fd;border-bottom:1px solid #e1e9f3}.card-head h3{font-size:17px}.card-body{padding:15px}.complaint-list-item{border-radius:12px;margin-bottom:10px;padding:12px}.complaint-list-item.is-selected{background:#edf6ff}
+#complaintDetailPanel{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px 14px}.field{margin-bottom:0}.field:has(#detailComplaintText),.field:has(#detailAttachmentPreview),.field:has(#detailReply),.row-actions,#complaintThread{grid-column:1/-1}.field label{font-size:14px;color:#425d7e;margin-bottom:6px}.field input,.field select,.field textarea{border:1px solid #cfdbea;border-radius:10px;background:#fff}.field textarea{min-height:120px}.admin-attachment-preview{padding:12px;background:#f5f9fe;border-radius:12px}.admin-attachment-card.admin-image-display{margin:0}.admin-attachment-card.admin-image-display img{width:100%;height:auto;max-height:420px;min-height:220px;object-fit:contain;background:#fff;border:1px solid #cbd8e6;border-radius:10px}.admin-attachment-card.admin-image-display figcaption{display:flex;flex-direction:column;gap:4px;padding-top:8px}.admin-attachment-card.admin-image-display figcaption a{color:#2b6cbf;font-size:14px;font-weight:700}.admin-attachment-card.admin-image-display.image-missing::before{content:"Image preview unavailable for this older record";display:grid;place-items:center;min-height:180px;border:1px dashed #aebccc;border-radius:10px;background:#fff;color:#718096;font-size:12px}.thread{max-height:330px;overflow:auto;padding-right:4px}.row-actions{display:flex;justify-content:flex-end;gap:10px}
+@media(max-width:1100px){.layout{grid-template-columns:1fr}.sidebar{position:static;min-height:auto;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}.sidebar h2,.sidebar .note-box{grid-column:1/-1}.grid-2{grid-template-columns:1fr}.hero{grid-template-columns:1fr}.side-panel{display:none}}
+@media(max-width:760px){.sidebar{grid-template-columns:1fr 1fr}.nav-right .user-badge,.breadcrumb{display:none}#complaintDetailPanel{grid-template-columns:1fr}.field{grid-column:1/-1}}
+
+/* Scalable complaint inbox pagination */
+.complaint-inbox-footer{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:12px;padding-top:10px;border-top:1px solid #e7eef4}
+.complaint-inbox-footer span{color:#73879a;font-size:14px}
+.complaint-inbox-footer button{flex:0 0 auto}
+@media(max-width:560px){.complaint-inbox-footer{align-items:stretch;flex-direction:column}.complaint-inbox-footer button{width:100%}}
+
+/* Browser-only private complaint attachment preview */
+.attachment-loading{display:flex;align-items:center;justify-content:center;gap:9px;min-height:110px;color:#55708f;font-size:14px}
+.attachment-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
+.attachment-unavailable{color:#7a4c00;background:#fffaf0;border:1px solid #f4d89a;border-radius:10px;padding:12px}
+.attachment-unavailable i{font-size:22px;color:#c98200}
+.admin-attachment-card .mini-btn{width:max-content;margin-top:8px}
+@media(max-width:600px){.attachment-actions{flex-direction:column}.attachment-actions .mini-btn,.admin-attachment-card .mini-btn{width:100%;text-align:center;justify-content:center}}
+/* Resolved/closed complaint deletion */
+.mini-btn.danger{background:#b42318;color:#fff;border:1px solid #b42318;box-shadow:0 5px 12px rgba(180,35,24,.18)}
+.mini-btn.danger:hover{background:#912018;border-color:#912018}
+.mini-btn.danger:disabled{opacity:.58;cursor:not-allowed;box-shadow:none}
+@media(max-width:640px){#complaintDetailPanel .row-actions{align-items:stretch;flex-direction:column-reverse}#complaintDetailPanel .row-actions .mini-btn{width:100%}}
+
+
+/* =========================================================
+   COMPLAINT CLASSIFICATION REVIEW WORKFLOW - 2026-09-04
+   ========================================================= */
+.review-fields-grid{grid-column:1/-1;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px 14px}
+.classification-help,.feedback-help{display:block;margin-top:6px;color:#718198;font-size:14px;line-height:1.35}
+.classification-field select[data-level="student"]{border-color:#7bc39a;background:#f2fbf6}
+.classification-field select[data-level="administrative"]{border-color:#7ca7df;background:#f3f8ff}
+.classification-field select[data-level="crisis"]{border-color:#df8a86;background:#fff5f4;color:#9e2824;font-weight:700}
+.complaint-classification-badge{display:inline-flex;align-items:center;width:max-content;margin-top:6px;padding:4px 8px;border-radius:999px;font-size:14px;font-weight:800;letter-spacing:.2px;background:#eef2f7;color:#5f6d80}
+.complaint-classification-badge.student{background:#e7f7ee;color:#277b4d}
+.complaint-classification-badge.administrative{background:#e8f1ff;color:#2c65aa}
+.complaint-classification-badge.crisis{background:#ffebe9;color:#a52e29}
+.review-sequence-hint{grid-column:1/-1;padding:9px 11px;border:1px solid #dbe7f3;border-radius:10px;background:#f7fbff;color:#58708c;font-size:14px;line-height:1.45}
+@media(max-width:900px){.review-fields-grid{grid-template-columns:1fr 1fr}.review-fields-grid .field:last-child{grid-column:1/-1}}
+@media(max-width:620px){.review-fields-grid{grid-template-columns:1fr}.review-fields-grid .field:last-child{grid-column:auto}}
+
+
+/* =========================================================
+   OFFICER SUMMARY CARDS POLISH PASS - 2026-09-04
+   ========================================================= */
+body.officer-app-shell .module-summary-stats {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 14px;
+}
+
+body.officer-app-shell .module-stat-card {
+  position: relative;
+  min-height: 128px;
+  padding: 16px 18px;
+  display: grid;
+  grid-template-columns: 56px 1fr;
+  align-items: center;
+  gap: 14px;
+  border-radius: 22px;
+  overflow: hidden;
+  border: 1px solid rgba(143, 208, 231, 0.65);
+  background: linear-gradient(180deg, #75cde8 0%, #63c3e3 100%);
+  box-shadow: 0 16px 32px rgba(20, 73, 115, 0.10);
+  transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
+}
+
+body.officer-app-shell .module-stat-card::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at top right, rgba(255,255,255,0.22), transparent 38%);
+  pointer-events: none;
+}
+
+body.officer-app-shell .module-stat-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 20px 38px rgba(20, 73, 115, 0.14);
+  border-color: rgba(118, 186, 218, 0.88);
+}
+
+body.officer-app-shell .module-stat-icon {
+  position: relative;
+  z-index: 1;
+  width: 56px;
+  height: 56px;
+  border-radius: 18px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.84);
+  border: 1px solid rgba(255,255,255,0.58);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.50), 0 10px 18px rgba(21, 77, 121, 0.12);
+  color: #1a56a1;
+  font-size: 22px;
+}
+
+body.officer-app-shell .module-stat-copy {
+  position: relative;
+  z-index: 1;
+  min-width: 0;
+  display: grid;
+  gap: 6px;
+}
+
+body.officer-app-shell .module-stat-card .stat-label {
+  margin: 0;
+  color: rgba(255,255,255,0.96);
+  font-size: 14px;
+  line-height: 1.2;
+  font-weight: 800;
+}
+
+body.officer-app-shell .module-stat-card .stat-value {
+  margin: 0;
+  color: #17479e;
+  font-size: clamp(34px, 2.6vw, 44px);
+  line-height: 0.95;
+  font-weight: 900;
+  letter-spacing: -0.03em;
+}
+
+body.officer-app-shell .module-stat-card .stat-sub {
+  margin: 0;
+  color: rgba(255,255,255,0.92);
+  font-size: 14px;
+  line-height: 1.3;
+  font-weight: 600;
+}
+
+@media (max-width: 1180px) {
+  body.officer-app-shell .module-summary-stats {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 680px) {
+  body.officer-app-shell .module-summary-stats {
+    grid-template-columns: 1fr;
+  }
+
+  body.officer-app-shell .module-stat-card {
+    min-height: 116px;
+    padding: 14px 16px;
+    grid-template-columns: 50px 1fr;
+    gap: 12px;
+    border-radius: 20px;
+  }
+
+  body.officer-app-shell .module-stat-icon {
+    width: 50px;
+    height: 50px;
+    border-radius: 16px;
+    font-size: 20px;
+  }
+
+  body.officer-app-shell .module-stat-card .stat-label {
+    font-size:14px;
+  }
+
+  body.officer-app-shell .module-stat-card .stat-value {
+    font-size: 34px;
+  }
+
+  body.officer-app-shell .module-stat-card .stat-sub {
+    font-size:14px;
+  }
+}
+
+
+/* =========================================================
+   COMPLAINT ANALYTICS - 2026-09-06
+   ========================================================= */
+body.officer-app-shell .complaint-analytics-card {
+  border: 1px solid #d8e6f1;
+  border-radius: 20px;
+  background: linear-gradient(145deg, #ffffff 0%, #f8fcff 58%, #f0f9fd 100%);
+  box-shadow: 0 12px 30px rgba(20, 73, 115, 0.07);
+  padding: 20px;
+  overflow: hidden;
+}
+
+body.officer-app-shell .complaint-analytics-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 18px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid #e4edf5;
+}
+
+body.officer-app-shell .complaint-analytics-kicker,
+body.officer-app-shell .complaint-program-head > div > span {
+  display: block;
+  color: #1592c6;
+  font-size:14px;
+  line-height: 1;
+  font-weight: 900;
+  letter-spacing: .09em;
+}
+
+body.officer-app-shell .complaint-analytics-head h2 {
+  margin: 5px 0 4px;
+  color: #174f98;
+  font-size: 22px;
+  line-height: 1.1;
+}
+
+body.officer-app-shell .complaint-analytics-head p,
+body.officer-app-shell .complaint-program-head p {
+  margin: 0;
+  color: #708196;
+  font-size:14px;
+  line-height: 1.45;
+}
+
+body.officer-app-shell .complaint-analytics-total {
+  min-width: 155px;
+  padding: 12px 15px;
+  border: 1px solid #d6e8f2;
+  border-radius: 16px;
+  background: #fff;
+  text-align: right;
+  box-shadow: 0 7px 18px rgba(20, 73, 115, 0.05);
+}
+
+body.officer-app-shell .complaint-analytics-total strong {
+  display: block;
+  color: #174f98;
+  font-size: 30px;
+  line-height: 1;
+}
+
+body.officer-app-shell .complaint-analytics-total span,
+body.officer-app-shell .complaint-analytics-total small {
+  display: block;
+  margin-top: 4px;
+  color: #63788e;
+  font-size:14px;
+  font-weight: 800;
+}
+
+body.officer-app-shell .complaint-classification-analytics {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 16px;
+}
+
+body.officer-app-shell .classification-analytics-card {
+  min-width: 0;
+  min-height: 132px;
+  display: grid;
+  grid-template-columns: 48px minmax(0, 1fr);
+  align-items: center;
+  gap: 12px;
+  padding: 15px;
+  border: 1px solid #dbe8f1;
+  border-radius: 17px;
+  background: #fff;
+  box-shadow: 0 7px 18px rgba(20, 73, 115, 0.045);
+}
+
+body.officer-app-shell .classification-analytics-icon {
+  width: 48px;
+  height: 48px;
+  display: grid;
+  place-items: center;
+  border-radius: 15px;
+  font-size: 18px;
+}
+
+body.officer-app-shell .student-level .classification-analytics-icon { background: #e8f8ef; color: #238051; }
+body.officer-app-shell .administrative-level .classification-analytics-icon { background: #eaf2ff; color: #2c65aa; }
+body.officer-app-shell .crisis-level .classification-analytics-icon { background: #ffefed; color: #b23a35; }
+
+body.officer-app-shell .classification-analytics-copy { min-width: 0; }
+body.officer-app-shell .classification-analytics-copy > span {
+  display: block;
+  color: #425d79;
+  font-size:14px;
+  line-height: 1.25;
+  font-weight: 900;
+}
+body.officer-app-shell .classification-analytics-copy strong {
+  display: inline-block;
+  margin-top: 5px;
+  color: #174f98;
+  font-size: 32px;
+  line-height: 1;
+}
+body.officer-app-shell .classification-analytics-copy p {
+  display: inline;
+  margin: 0 0 0 5px;
+  color: #667b91;
+  font-size:14px;
+  font-weight: 700;
+}
+body.officer-app-shell .classification-analytics-copy small {
+  display: block;
+  margin-top: 6px;
+  color: #7b8b9d;
+  font-size:14px;
+  font-weight: 700;
+}
+
+body.officer-app-shell .complaint-program-analytics {
+  margin-top: 14px;
+  padding: 16px;
+  border: 1px solid #dce9f2;
+  border-radius: 17px;
+  background: rgba(255,255,255,.88);
+}
+
+body.officer-app-shell .complaint-program-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 13px;
+}
+
+body.officer-app-shell .complaint-program-head h3 {
+  margin: 4px 0 3px;
+  color: #174f98;
+  font-size: 16px;
+}
+
+body.officer-app-shell .program-analytics-pending {
+  flex: 0 0 auto;
+  padding: 6px 9px;
+  border-radius: 999px;
+  background: #f2f5f8;
+  color: #65788c;
+  font-size:14px;
+  font-weight: 800;
+}
+
+body.officer-app-shell .program-analytics-list {
+  display: grid;
+  gap: 8px;
+  max-height: 360px;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+body.officer-app-shell .program-analytics-row {
+  display: grid;
+  grid-template-columns: 28px minmax(0, 1fr) 38px;
+  gap: 10px;
+  align-items: center;
+  padding: 9px 10px;
+  border: 1px solid #e6eef5;
+  border-radius: 12px;
+  background: #fbfdff;
+}
+
+body.officer-app-shell .program-analytics-rank {
+  width: 28px;
+  height: 28px;
+  display: grid;
+  place-items: center;
+  border-radius: 9px;
+  background: #e7f5fb;
+  color: #147ba8;
+  font-size:14px;
+  font-weight: 900;
+}
+
+body.officer-app-shell .program-analytics-main { min-width: 0; }
+body.officer-app-shell .program-analytics-label {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 6px;
+}
+body.officer-app-shell .program-analytics-label strong {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: #284d75;
+  font-size:14px;
+}
+body.officer-app-shell .program-analytics-label span {
+  flex: 0 0 auto;
+  color: #7d8c9e;
+  font-size:14px;
+}
+body.officer-app-shell .program-analytics-track {
+  height: 6px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: #e7eef5;
+}
+body.officer-app-shell .program-analytics-track i {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #2f7cc1 0%, #55c5e5 100%);
+}
+body.officer-app-shell .program-analytics-count {
+  color: #174f98;
+  font-size: 15px;
+  text-align: right;
+}
+body.officer-app-shell .program-analytics-empty {
+  padding: 24px;
+  text-align: center;
+  color: #718198;
+  font-size:14px;
+}
+
+@media (max-width: 900px) {
+  body.officer-app-shell .complaint-classification-analytics { grid-template-columns: 1fr; }
+}
+
+@media (max-width: 620px) {
+  body.officer-app-shell .complaint-analytics-card { padding: 14px; border-radius: 16px; }
+  body.officer-app-shell .complaint-analytics-head,
+  body.officer-app-shell .complaint-program-head { flex-direction: column; align-items: stretch; }
+  body.officer-app-shell .complaint-analytics-total { text-align: left; min-width: 0; }
+  body.officer-app-shell .program-analytics-pending { width: max-content; }
+  body.officer-app-shell .program-analytics-row { grid-template-columns: 26px minmax(0,1fr) 30px; gap: 8px; padding: 8px; }
+  body.officer-app-shell .program-analytics-label { display: grid; gap: 2px; }
+  body.officer-app-shell .program-analytics-label strong { white-space: normal; }
+}
+
+/* =========================================================
+   COMPLAINTS MANAGEMENT — ELECTION-STYLE UI POLISH
+   ========================================================= */
+body.complaint-management-page{
+  --module-accent:#225ca8;
+  --module-accent-2:#24a9d8;
+  --module-soft:#eef7ff;
+  --module-border:#d7e6f2;
+}
+body.complaint-management-page .module-hero-heading{display:grid;grid-template-columns:48px minmax(0,1fr);gap:12px;align-items:start}
+body.complaint-management-page .module-hero-icon{width:48px;height:48px;border-radius:15px;display:grid;place-items:center;background:linear-gradient(145deg,var(--module-accent),var(--module-accent-2));color:#fff;font-size:19px;box-shadow:0 10px 22px rgba(34,92,168,.2)}
+body.complaint-management-page .module-hero-kicker{display:block;margin:1px 0 5px;color:#2f73ae;font-size:14px;font-weight:950;letter-spacing:.15em}
+body.complaint-management-page .hero-tag{display:inline-flex;align-items:center;gap:6px}
+body.complaint-management-page .hero-actions .btn,body.complaint-management-page .mini-btn{display:inline-flex;align-items:center;justify-content:center;gap:7px}
+body.complaint-management-page .module-card-title{display:flex;align-items:center;gap:10px;min-width:0}
+body.complaint-management-page .module-card-title>div{min-width:0}
+body.complaint-management-page .module-card-title h3{margin:0}
+body.complaint-management-page .module-card-title small{display:block;margin-top:2px;color:#8393a2;font-size:14px;line-height:1.35}
+body.complaint-management-page .module-card-icon{width:36px;height:36px;min-width:36px;border-radius:12px;display:grid;place-items:center;background:#edf6ff;color:var(--module-accent);border:1px solid #d7e8f6;font-size:14px}
+body.complaint-management-page .module-panel-head{align-items:flex-start}
+body.complaint-management-page .panel-link{display:inline-flex;align-items:center;gap:6px}
+body.complaint-management-page .timeline-step{display:flex;align-items:center;gap:7px}
+body.complaint-management-page .timeline-step i{width:14px;text-align:center;color:#6c8aaa;font-size:10px}
+body.complaint-management-page .timeline-step.active i{color:#fff}
+body.complaint-management-page .module-workflow-strip{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin:0 0 14px}
+body.complaint-management-page .module-workflow-step{display:grid;grid-template-columns:22px 36px minmax(0,1fr);gap:9px;align-items:center;padding:11px 12px;border:1px solid var(--module-border);border-radius:16px;background:linear-gradient(180deg,#fff,#f8fbfe);box-shadow:0 6px 16px rgba(24,72,110,.045)}
+body.complaint-management-page .workflow-number{width:22px;height:22px;border-radius:50%;display:grid;place-items:center;background:var(--module-accent);color:#fff;font-size:14px;font-weight:900}
+body.complaint-management-page .workflow-icon{width:35px;height:35px;border-radius:50%;display:grid;place-items:center;background:#eef6ff;color:var(--module-accent);font-size:14px}
+body.complaint-management-page .module-workflow-step strong{display:block;color:#24466a;font-size:14px}
+body.complaint-management-page .module-workflow-step small{display:block;margin-top:3px;color:#7d8c9a;font-size:14px;line-height:1.4}
+body.complaint-management-page .complaint-analytics-title-wrap{display:flex;align-items:flex-start;gap:11px}
+body.complaint-management-page .analytics-title-icon{width:40px;height:40px;min-width:40px;border-radius:13px;display:grid;place-items:center;background:#edf6ff;color:var(--module-accent);border:1px solid #d7e8f6;font-size:14px}
+body.complaint-management-page .module-card-head{align-items:center}
+body.complaint-management-page .module-card-badge{display:inline-flex;align-items:center;gap:5px;padding:6px 9px;border-radius:999px;background:#edf5ff;color:#2269aa;font-size:14px;font-weight:900;white-space:nowrap}
+body.complaint-management-page .module-card-badge.review{background:#fff6df;color:#916300}
+body.complaint-management-page .grid-2>.card{border-color:#dce8f1;box-shadow:0 9px 24px rgba(26,67,104,.055)}
+body.complaint-management-page .field>label,body.complaint-management-page .field label{display:flex;align-items:center;gap:6px}
+body.complaint-management-page .field label i{width:14px;text-align:center;color:#4d8fc2;font-size:10px}
+body.complaint-management-page .complaint-list-item{position:relative;display:grid;grid-template-columns:38px minmax(0,1fr) 12px;gap:10px;align-items:start;text-align:left}
+body.complaint-management-page .complaint-item-icon{width:36px;height:36px;border-radius:11px;display:grid;place-items:center;background:#edf6ff;color:#2770ad;border:1px solid #d7e8f6;font-size:14px}
+body.complaint-management-page .complaint-item-content{min-width:0}
+body.complaint-management-page .complaint-item-chevron{align-self:center;color:#9baebd;font-size:14px}
+body.complaint-management-page .complaint-list-item.is-selected .complaint-item-icon{background:linear-gradient(145deg,#1b6bb8,#24abd9);color:#fff;border-color:transparent;box-shadow:0 6px 13px rgba(29,104,172,.18)}
+body.complaint-management-page .case-meta-inline span{display:inline-flex;align-items:center;gap:5px}
+body.complaint-management-page .review-sequence-hint{border-radius:13px;border:1px solid #d9e7f1;background:#f5faff;padding:10px 12px}
+body.complaint-management-page .row-actions .mini-btn{gap:6px}
+body.complaint-management-page .admin-attachment-card .mini-btn{display:inline-flex;align-items:center;gap:6px}
+@media(max-width:900px){body.complaint-management-page .module-workflow-strip{grid-template-columns:1fr}}
+@media(max-width:620px){body.complaint-management-page .module-hero-heading{grid-template-columns:42px minmax(0,1fr)}body.complaint-management-page .module-hero-icon{width:42px;height:42px;border-radius:13px;font-size:16px}body.complaint-management-page .module-workflow-step{grid-template-columns:22px 34px minmax(0,1fr);padding:10px}body.complaint-management-page .complaint-list-item{grid-template-columns:34px minmax(0,1fr) 10px}body.complaint-management-page .complaint-item-icon{width:32px;height:32px}}
+
+/* Reserve the same two-line label area so review controls share a baseline. */
+body.officer-app-shell .review-fields-grid { align-items: start; gap: 16px; }
+body.officer-app-shell .review-fields-grid > .field { min-width: 0; }
+body.officer-app-shell .review-fields-grid > .field > label {
+  display: block !important;
+  min-height: 2.8em;
+  margin: 0 0 8px !important;
+  font-size: 14px !important;
+  line-height: 1.4 !important;
+}
+body.officer-app-shell .review-fields-grid > .field > :is(input, select) {
+  width: 100% !important;
+  min-width: 0;
+  height: 44px !important;
+  box-sizing: border-box;
+  font-size: 16px !important;
+}
+body.officer-app-shell .review-fields-grid .classification-help {
+  margin-top: 8px;
+  line-height: 1.5;
+  color: #52657a;
+}
+@media (max-width: 620px) {
+  body.officer-app-shell .review-fields-grid > .field > label { min-height: 0; }
+}
