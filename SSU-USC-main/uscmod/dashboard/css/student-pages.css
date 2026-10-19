@@ -360,7 +360,24 @@ body.modal-open{overflow:hidden}
 
 
 /* ===== Events: one content scroller, two navigable sections ===== */
-body.student-app-shell.events-module-shell { height:100dvh; overflow:hidden; }
+body.student-app-shell.events-module-shell {
+  height:100dvh;
+  overflow:hidden;
+  display:flex;
+  flex-direction:column;
+}
+body.student-app-shell.events-module-shell .dashboard-header { position:relative; flex:0 0 auto; }
+body.student-app-shell.events-module-shell .dashboard-layout {
+  flex:1;
+  min-height:0;
+  height:auto;
+  margin:0 auto;
+}
+body.student-app-shell.events-module-shell > .shared-student-footer {
+  position:relative;
+  flex:0 0 auto;
+  margin:0;
+}
 body.events-module-shell .events-page-main {
   --events-frame-height:100%;
   padding:0 !important;
@@ -368,7 +385,7 @@ body.events-module-shell .events-page-main {
   position:relative;
   background:#17283a !important;
   overscroll-behavior-y:contain;
-  scroll-snap-type:y proximity;
+  scroll-behavior:smooth;
   touch-action:pan-y pinch-zoom;
 }
 .events-snap-viewport, .events-snap-track {
@@ -382,14 +399,12 @@ body.events-module-shell .events-page-main {
   position:relative;
   width:100%;
   min-height:var(--events-frame-height);
-  scroll-snap-align:start;
-  scroll-snap-stop:always;
   overflow:clip;
 }
 body.events-module-shell :is(.events-highlight-section,.events-highlight-module,.events-highlight-content) {
   box-sizing:border-box;
-  height:var(--events-frame-height) !important;
-  min-height:var(--events-frame-height) !important;
+  height:max(320px,var(--events-frame-height)) !important;
+  min-height:max(320px,var(--events-frame-height)) !important;
   padding:0;
   border:0;
   border-radius:0 !important;
@@ -413,11 +428,11 @@ body.events-module-shell .events-upcoming-content {
   align-items:start;
 }
 body.events-module-shell .events-upcoming-calendar { min-width:0; }
-body.events-module-shell .shared-student-footer { height:auto; overflow:visible; }
+
 .events-highlight-background, .events-highlight-shade,
 .events-upcoming-background, .events-upcoming-shade { pointer-events:none; }
 @media (prefers-reduced-motion:reduce) {
-  body.events-module-shell .events-page-main { scroll-behavior:auto; scroll-snap-type:none; }
+  body.events-module-shell .events-page-main { scroll-behavior:auto; }
 }
 
 .events-highlight-module {
@@ -1373,10 +1388,11 @@ body:has(.candidate-focus-overlay.open) .candidate-vote-zone{opacity:0;visibilit
 .election-reference-landing {
   position: relative;
   isolation: isolate;
-  min-height: 660px;
-  overflow: hidden;
-  border-radius: 0 0 18px 18px;
-  background: #2f6ca1;
+  min-height:100%;
+  display:flex;
+  padding:clamp(16px,2vw,28px);
+  overflow:visible;
+  background:#122b40;
 }
 
 .election-reference-landing-bg {
@@ -1392,23 +1408,12 @@ body:has(.candidate-focus-overlay.open) .candidate-vote-zone{opacity:0;visibilit
   position: absolute;
   inset: 0;
   z-index: -2;
-  background:
-    linear-gradient(90deg, rgba(41, 122, 181, .84) 0%, rgba(59, 137, 194, .64) 42%, rgba(69, 139, 188, .38) 100%),
-    linear-gradient(180deg, rgba(15, 40, 73, .10), rgba(21, 39, 59, .28));
-}
-
-.election-reference-landing-content {
-  min-height: 660px;
-  padding: 70px 95px 70px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  color: #fff;
+  background:linear-gradient(135deg,rgba(8,24,38,.60),rgba(10,31,47,.46));
 }
 
 .election-reference-logo {
-  width: 160px;
-  height: 160px;
+  width:56px;
+  height:56px;
   object-fit: contain;
   background: rgba(255,255,255,.02);
   filter: drop-shadow(0 8px 18px rgba(8, 36, 58, .22));
@@ -1456,8 +1461,9 @@ body:has(.candidate-focus-overlay.open) .candidate-vote-zone{opacity:0;visibilit
 
 .election-reference-actions {
   width: min(780px, 100%);
-  margin: 28px auto 0;
-  display: flex;
+  margin:18px auto 0;
+  justify-content:center;
+  display:flex;
   flex-wrap: wrap;
   gap: 10px;
 }
@@ -4318,463 +4324,170 @@ body.events-modal-open{overflow:hidden}
   }
 }
 
-/* =========================================================
-   STUDENT ELECTION CLOSED / INACTIVE STATE POLISH - 2026-09-09
-   ========================================================= */
+/* ===== Election: centered public status and compact transparent schedule ===== */
 #electionApp.election-ineligible-active,
-#electionApp:has(> .election-reference-landing){
+#electionApp:has(> .election-reference-landing) {
   padding:0 !important;
   display:flex;
   flex-direction:column;
   overflow:hidden auto !important;
   background:#122b40;
 }
-#electionApp > .election-reference-landing{ flex:1 0 auto; border-radius:0; }
-#electionApp.election-ineligible-active > .election-page-ineligible{
+#electionApp > .election-reference-landing { flex:1 0 auto; border-radius:0; }
+#electionApp.election-ineligible-active > .election-page-ineligible {
   flex:1 0 auto;
   display:flex;
   min-height:100%;
-}
-
-
-.election-page-ineligible{
-  min-height:100%;
   padding:0;
 }
-
-.election-page-ineligible .election-ineligible-hero{
+.election-page-ineligible .election-ineligible-hero {
   position:relative;
   isolation:isolate;
   flex:1;
   min-width:0;
   min-height:inherit;
+  display:flex;
   border:0;
   border-radius:0;
-  padding:24px;
-  overflow:hidden;
+  padding:clamp(16px,2vw,28px);
+  overflow:visible;
   background-size:cover;
   background-position:center;
-  box-shadow:0 18px 45px rgba(26,68,101,.12);
 }
-
-.election-page-ineligible .election-ineligible-hero::before{
+.election-page-ineligible .election-ineligible-hero::before {
   z-index:0;
   background:linear-gradient(135deg,rgba(8,24,38,.60),rgba(10,31,47,.46));
   backdrop-filter:blur(5px);
   -webkit-backdrop-filter:blur(5px);
 }
-
-.election-page-ineligible .election-ineligible-hero::after{
-  content:"";
-  position:absolute;
-  inset:0;
-  z-index:0;
-  pointer-events:none;
-  background:
-    radial-gradient(circle at 50% 44%,rgba(102,204,238,.15),transparent 36%),
-    linear-gradient(to bottom,rgba(255,255,255,.03),rgba(2,15,27,.12));
-}
-
-.election-ineligible-overlay-message.election-ineligible-polish{
+.election-ineligible-stack {
   position:relative;
   z-index:2;
-  width:min(610px,calc(100% - 18px));
+  width:min(860px,100%);
+  max-width:860px;
+  min-width:0;
+  flex:0 1 860px;
+  align-self:stretch;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  gap:16px;
+  margin:0 auto;
+}
+
+.election-ineligible-overlay-message.election-ineligible-polish,
+.election-reference-landing-content {
+  position:relative;
+  z-index:2;
+  width:min(580px,100%);
   min-height:0;
-  padding:22px 28px;
+  padding:18px 24px;
   display:flex;
   flex-direction:column;
   align-items:center;
   justify-content:center;
   gap:0;
-  overflow:hidden;
-  border:1px solid rgba(255,255,255,.68);
-  border-radius:28px;
-  background:linear-gradient(145deg,rgba(255,255,255,.97),rgba(242,248,253,.92));
-  color:#183f68;
-  box-shadow:0 24px 58px rgba(1,18,34,.28),inset 0 1px 0 rgba(255,255,255,.95);
-  backdrop-filter:blur(18px);
-  -webkit-backdrop-filter:blur(18px);
+  border:1px solid rgba(220,242,255,.30);
+  border-radius:22px;
+  background:rgba(8,29,48,.56);
+  color:#f4faff;
+  text-align:center;
+  box-shadow:0 16px 36px rgba(1,14,27,.20),inset 0 1px 0 rgba(255,255,255,.10);
+  backdrop-filter:blur(14px);
+  -webkit-backdrop-filter:blur(14px);
 }
-
-.election-ineligible-overlay-message.election-ineligible-polish::before{
-  content:"";
-  position:absolute;
-  top:0;
-  left:12%;
-  right:12%;
-  height:4px;
-  border-radius:0 0 999px 999px;
-  background:linear-gradient(90deg,#1d5aa5,#3cc6e8,#1d5aa5);
-  opacity:.9;
-}
-
-.election-ineligible-status{
+.election-ineligible-status {
   display:inline-flex;
   align-items:center;
-  gap:8px;
-  min-height:30px;
-  padding:6px 12px;
-  margin-bottom:12px;
-  border:1px solid #d8e6f1;
-  border-radius:999px;
-  background:#f7fbfe;
-  color:#58728a;
-  font-size: 14px;
-  line-height:1;
-  font-weight:800;
-  letter-spacing:.09em;
-  text-transform:uppercase;
-}
-
-.election-ineligible-status-dot{
-  width:7px;
-  height:7px;
-  flex:0 0 7px;
-  border-radius:50%;
-  background:#91a4b5;
-  box-shadow:0 0 0 4px rgba(145,164,181,.12);
-}
-
-.election-ineligible-icon{
-  width:64px;
-  height:64px;
-  display:grid;
-  place-items:center;
-  margin-bottom:14px;
-  border:1px solid #cfe4f2;
-  border-radius:20px;
-  background:linear-gradient(145deg,#eaf7ff,#f8fcff);
-  color:#1e75ae;
-  font-size:24px;
-  box-shadow:0 10px 24px rgba(38,112,158,.12);
-}
-
-.election-ineligible-kicker{
-  display:block;
-  margin-bottom:7px;
-  color:#688198;
-  font-size: 14px;
-  line-height:1.2;
-  font-weight:800;
-  letter-spacing:.12em;
-  text-transform:uppercase;
-}
-
-.election-ineligible-overlay-message.election-ineligible-polish h2{
-  margin:0;
-  color:#174f83;
-  font-family: "Roboto", Arial, sans-serif;
-  font-size:clamp(24px,2.25vw,32px);
-  line-height:1.15;
-  font-weight:900;
-  letter-spacing:-.025em;
-}
-
-.election-ineligible-overlay-message.election-ineligible-polish p{
-  max-width:475px;
-  margin:12px auto 0;
-  color:#60758a;
-  font-family: "Roboto", Arial, sans-serif;
-  font-size:14px;
-  line-height:1.55;
-  font-weight:500;
-}
-
-.election-ineligible-note{
-  width:100%;
-  margin-top:16px;
-  padding-top:12px;
-  display:flex;
-  align-items:center;
   justify-content:center;
-  gap:9px;
-  border-top:1px solid #dce7ef;
-  color:#526c83;
-  font-family: "Roboto", Arial, sans-serif;
-  font-size: 14px;
-  line-height:1.4;
+  gap:8px;
+  padding:5px 10px;
+  margin-bottom:8px;
+  border:1px solid rgba(166,219,250,.28);
+  border-radius:999px;
+  background:rgba(255,255,255,.08);
+  color:#d2ebfb;
+  font-size:12px;
+  line-height:1.2;
   font-weight:700;
-}
-
-.election-ineligible-note i{
-  color:#2a8dc2;
-  font-size:14px;
-}
-
-@media(max-width:700px){
-  .election-page-ineligible{padding:0;}
-  .election-page-ineligible .election-ineligible-hero{
-    min-height:inherit;
-    padding:20px 14px;
-    border-radius:0;
-  }
-  .election-ineligible-overlay-message.election-ineligible-polish{
-    width:100%;
-    padding:26px 20px 23px;
-    border-radius:22px;
-  }
-  .election-ineligible-icon{
-    width:58px;
-    height:58px;
-    border-radius:18px;
-    font-size:21px;
-  }
-  .election-ineligible-overlay-message.election-ineligible-polish h2{
-    font-size:24px;
-  }
-  .election-ineligible-overlay-message.election-ineligible-polish p{
-    font-size: 14px;
-  }
-  .election-ineligible-note{
-    align-items:flex-start;
-    font-size: 14px;
-  }
-}
-
-
-/* =========================================================
-   STUDENT ELECTION OFFICER-CONFIGURED SCHEDULE PANEL - 2026-09-09
-   The closed/inactive state now surfaces the live schedule saved by
-   Election Management directly below the status card.
-   ========================================================= */
-#electionApp.election-ineligible-active .election-ineligible-hero{
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  min-height:inherit;
-  padding:clamp(16px,2vw,28px);
-  overflow:hidden;
-}
-
-.election-ineligible-stack{
-  position:relative;
-  z-index:2;
-  width:min(860px,100%);
-  display:flex;
-  flex-direction:column;
-  align-items:center;
-  gap:16px;
-  margin:auto;
-}
-
-.election-ineligible-stack .election-ineligible-overlay-message.election-ineligible-polish{
-  width:min(600px,100%);
-  flex:0 0 auto;
-}
-
-.election-public-schedule{
-  width:100%;
-  padding:14px;
-  border:1px solid rgba(255,255,255,.55);
-  border-radius:18px;
-  background:linear-gradient(145deg,rgba(248,252,255,.95),rgba(233,244,252,.90));
-  color:#173f67;
-  box-shadow:0 20px 48px rgba(1,18,34,.22),inset 0 1px 0 rgba(255,255,255,.92);
-  backdrop-filter:blur(18px);
-  -webkit-backdrop-filter:blur(18px);
-}
-
-.election-public-schedule-head{
-  display:grid;
-  grid-template-columns:auto minmax(0,1fr) auto;
-  align-items:center;
-  gap:10px;
-  padding:0 0 10px;
-  border-bottom:1px solid #d8e6ef;
-}
-
-.election-public-schedule-head-icon{
-  width:34px;
-  height:34px;
-  display:grid;
-  place-items:center;
-  border:1px solid #c8e1f0;
-  border-radius:14px;
-  background:linear-gradient(145deg,#e7f7ff,#f7fcff);
-  color:#1977b2;
-  font-size:18px;
-}
-
-.election-public-schedule-head span:not(.election-public-schedule-live){
-  display:block;
-  color:#4780a8;
-  font-size: 14px;
-  line-height:1.2;
-  font-weight:900;
-  letter-spacing:.12em;
+  letter-spacing:.08em;
   text-transform:uppercase;
 }
-
-.election-public-schedule-head h3{
-  margin:3px 0 2px;
-  color:#174f83;
-  font-family: "Roboto", Arial, sans-serif;
-  font-size:16px;
-  line-height:1.2;
-  font-weight:900;
-}
-
-.election-public-schedule-head p{
-  margin:0;
-  color:#6b7f91;
-  font-family: "Roboto", Arial, sans-serif;
-  font-size: 14px;
-  line-height:1.4;
-}
-
-.election-public-schedule-live{
-  display:inline-flex;
-  align-items:center;
-  gap:7px;
-  padding:7px 10px;
-  border:1px solid #cce8da;
-  border-radius:999px;
-  background:#f2fbf6;
-  color:#2d7750;
-  font-size: 14px;
-  font-weight:800;
-  white-space:normal;
-}
-
-.election-public-schedule-live>span{
-  width:7px;
-  height:7px;
-  border-radius:50%;
-  background:#35a76b;
-  box-shadow:0 0 0 4px rgba(53,167,107,.12);
-}
-
-.election-public-schedule-grid{
+.election-ineligible-status-dot { width:7px; height:7px; border-radius:50%; background:#8ad9fa; }
+.election-ineligible-icon {
+  width:40px;
+  height:40px;
   display:grid;
-  grid-template-columns:repeat(5,minmax(0,1fr));
-  gap:8px;
-  margin-top:10px;
+  place-items:center;
+  margin-bottom:8px;
+  border:1px solid rgba(167,224,252,.25);
+  border-radius:14px;
+  background:rgba(151,217,249,.10);
 }
-
-.election-public-schedule-phase{
+.election-ineligible-overlay-message .election-ineligible-icon i { color:#a7e3ff; font-size:21px; }
+.election-ineligible-kicker { margin:6px 0; color:#c1d8ea; font-size:12px; font-weight:700; letter-spacing:.09em; text-transform:uppercase; }
+.election-ineligible-overlay-message.election-ineligible-polish h2,
+.election-reference-landing-content > h2 { margin:0; color:#f4faff; font-size:clamp(23px,2.1vw,30px); line-height:1.2; letter-spacing:-.02em; }
+.election-ineligible-overlay-message.election-ineligible-polish p,
+.election-reference-landing-content > p { max-width:460px; margin:8px 0 0; color:#d5e3ef; font-size:14px; line-height:1.5; font-weight:400; }
+.election-ineligible-note { width:100%; margin-top:12px; padding-top:10px; display:flex; justify-content:center; align-items:center; gap:8px; border-top:1px solid rgba(220,242,255,.18); color:#d5e3ef; font-size:13px; line-height:1.4; }
+.election-ineligible-note i { color:#a7e3ff; font-size:14px; }
+.election-public-schedule {
+  width:100%;
   min-width:0;
   padding:10px;
-  border:1px solid #d8e5ee;
-  border-radius:12px;
-  background:rgba(255,255,255,.78);
-  box-shadow:0 7px 18px rgba(38,78,108,.05);
-  transition:border-color .2s ease,transform .2s ease,background .2s ease;
+  border:1px solid rgba(220,242,255,.26);
+  border-radius:18px;
+  background:rgba(8,29,48,.46);
+  color:#eff8ff;
+  box-shadow:0 12px 28px rgba(1,14,27,.14);
+  backdrop-filter:blur(12px);
+  -webkit-backdrop-filter:blur(12px);
 }
-
-.election-public-schedule-phase-top{
-  display:flex;
-  align-items:center;
-  justify-content:space-between;
-  gap:8px;
-  margin-bottom:8px;
-}
-
-.election-public-schedule-number{
-  width:27px;
-  height:27px;
-  display:grid;
-  place-items:center;
-  flex:0 0 27px;
-  border-radius:9px;
-  background:#edf5fa;
-  color:#48708f;
-  font-size: 14px;
-  font-weight:900;
-}
-
-.election-public-schedule-state{
-  overflow:hidden;
-  text-overflow:ellipsis;
-  color:#7b8e9e;
-  font-size:11px;
-  line-height:1.3;
-  font-weight:900;
-  letter-spacing:.06em;
-  text-transform:uppercase;
-  white-space:normal;
-}
-
-.election-public-schedule-phase>strong{
-  display:block;
-  margin-bottom:9px;
-  color:#214f76;
-  font-family: "Roboto", Arial, sans-serif;
-  font-size: 14px;
-  line-height:1.25;
-  font-weight:900;
-}
-
-.election-public-schedule-date{
-  display:flex;
-  align-items:flex-start;
-  gap:6px;
-  margin-top:5px;
-  color:#6f8292;
-  font-family: "Roboto", Arial, sans-serif;
-  font-size: 14px;
-  line-height:1.35;
-  font-weight:600;
-}
-
-.election-public-schedule-date i{
-  width:11px;
-  margin-top:1px;
-  flex:0 0 11px;
-  color:#4b94bd;
-  font-size:9px;
-}
-
-.election-public-schedule-phase.is-next{
-  border-color:#7cc5e7;
-  background:linear-gradient(145deg,#f8fdff,#eaf8ff);
-  box-shadow:0 8px 22px rgba(53,139,185,.10);
-}
-
-.election-public-schedule-phase.is-next .election-public-schedule-number{
-  background:#dff4ff;
-  color:#187ab1;
-}
-
-.election-public-schedule-phase.is-next .election-public-schedule-state{
-  color:#187ab1;
-}
-
-.election-public-schedule-phase.is-active{
-  border-color:#68c994;
-  background:linear-gradient(145deg,#f5fff9,#e8f9ef);
-  box-shadow:0 8px 22px rgba(54,152,99,.10);
-}
-
-.election-public-schedule-phase.is-active .election-public-schedule-number{
-  background:#dbf5e6;
-  color:#28784e;
-}
-
-.election-public-schedule-phase.is-active .election-public-schedule-state{
-  color:#28784e;
-}
-
-.election-public-schedule-phase.is-complete{
-  opacity:.72;
-}
-
-@media(max-width:1120px){
-  .election-public-schedule-grid{
-    grid-template-columns:repeat(5,minmax(148px,1fr));
-    overflow-x:auto;
-    padding-bottom:6px;
-    overscroll-behavior-x:contain;
+.election-public-schedule-head { display:grid; grid-template-columns:auto minmax(0,1fr) auto; align-items:center; gap:10px; padding-bottom:8px; border-bottom:1px solid rgba(220,242,255,.18); }
+.election-public-schedule-head-icon { width:26px; height:26px; display:grid; place-items:center; border-radius:10px; background:rgba(151,217,249,.12); color:#a7e3ff; }
+.election-public-schedule-head > div > span { display:block; color:#c1d8ea; font-size:11px; line-height:1.2; font-weight:700; letter-spacing:.08em; text-transform:uppercase; }
+.election-public-schedule-head h3 { margin:3px 0 0; color:#f4faff; font-size:15px; line-height:1.3; }
+.election-public-schedule-live { display:inline-flex; align-items:center; gap:7px; padding:5px 8px; border:1px solid rgba(153,237,194,.25); border-radius:999px; background:rgba(53,167,107,.12); color:#b6f2d1; font-size:12px; white-space:nowrap; }
+.election-public-schedule-live > span { width:6px; height:6px; border-radius:50%; background:#80dfad; }
+.election-public-schedule-grid { display:grid; grid-template-columns:repeat(5,minmax(0,1fr)); gap:8px; margin-top:8px; }
+.election-public-schedule-phase { min-width:0; padding:8px; border:1px solid rgba(220,242,255,.18); border-radius:12px; background:rgba(255,255,255,.06); transition:border-color .2s ease,background .2s ease; }
+.election-public-schedule-phase-top { display:flex; align-items:center; justify-content:space-between; gap:6px; margin-bottom:6px; }
+.election-public-schedule-number { width:20px; height:20px; flex:0 0 20px; display:grid; place-items:center; border-radius:8px; background:rgba(151,217,249,.12); color:#d6eeff; font-size:12px; font-weight:700; }
+.election-public-schedule-state { color:#c1d8ea; font-size:10px; line-height:1.3; font-weight:700; text-transform:uppercase; }
+.election-public-schedule-phase > strong { display:block; margin-bottom:4px; color:#f4faff; font-size:13px; line-height:1.3; }
+.election-public-schedule-date { display:flex; align-items:flex-start; gap:5px; margin-top:4px; color:#cbdde9; font-size:12px; line-height:1.35; }
+.election-public-schedule-date i { flex:0 0 10px; width:10px; margin-top:2px; color:#a7d9f3; font-size:10px; }
+.election-public-schedule-phase.is-next { border-color:rgba(120,212,250,.65); background:rgba(38,149,200,.14); }
+.election-public-schedule-phase.is-next .election-public-schedule-state { color:#a7e3ff; }
+.election-public-schedule-phase.is-active { border-color:rgba(128,223,173,.65); background:rgba(53,167,107,.14); }
+.election-public-schedule-phase.is-active .election-public-schedule-state { color:#b6f2d1; }
+@media (min-width:821px) and (min-height:800px) {
+  #electionApp.election-ineligible-active > .election-page-ineligible { height:100%; flex:0 0 auto; }
+  #electionApp > .election-reference-landing { height:100%; flex:0 0 auto; }
+  .election-ineligible-stack {
+    height:100%;
+    display:grid;
+    grid-template-columns:minmax(0,1fr);
+    grid-template-rows:minmax(0,1fr) auto minmax(0,1fr);
+    justify-items:center;
+    align-items:stretch;
   }
+  .election-ineligible-stack > :is(.election-ineligible-overlay-message,.election-reference-landing-content) { grid-row:2; }
+  .election-ineligible-stack > .election-public-schedule { grid-row:3; align-self:start; }
 }
-@media(max-width:700px){
-  #electionApp.election-ineligible-active .election-ineligible-hero{
-    min-height:inherit;
-    padding:18px 12px;
-  }
-  .election-ineligible-stack{ gap:14px; }
-  .election-public-schedule{ padding:12px; }
-  .election-public-schedule-head{ grid-template-columns:auto minmax(0,1fr); }
-  .election-public-schedule-live{ grid-column:2; justify-self:start; padding:5px 8px; }
+@media (max-width:1120px) {
+  .election-public-schedule-grid { grid-template-columns:repeat(5,minmax(144px,1fr)); overflow-x:auto; padding-bottom:5px; overscroll-behavior-x:contain; }
+}
+@media (max-width:700px) {
+  .election-page-ineligible .election-ineligible-hero,
+  .election-reference-landing { padding:16px 12px; border-radius:0; }
+  .election-ineligible-stack { gap:14px; }
+  .election-ineligible-overlay-message.election-ineligible-polish,
+  .election-reference-landing-content { padding:20px 16px; }
+  .election-public-schedule-head { grid-template-columns:auto minmax(0,1fr); }
+  .election-public-schedule-live { grid-column:2; justify-self:start; }
 }
 
 /* =========================================================

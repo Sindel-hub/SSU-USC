@@ -16,13 +16,15 @@
   // Measure the actual content frame, never the document or a scrolled section.
   // Keep a settled Upcoming chapter in place when device orientation changes.
   let previousHeight = 0;
+  let previousUpcomingTop = 0;
   const resize = () => {
-    const atUpcoming = previousHeight && Math.abs(frame.scrollTop - previousHeight) < 3;
+    const atUpcoming = previousHeight && Math.abs(frame.scrollTop - previousUpcomingTop) < 3;
     const height = frame.clientHeight;
     if (!height || height === previousHeight) return;
     previousHeight = height;
     frame.style.setProperty('--events-frame-height', `${height}px`);
-    if (atUpcoming) frame.scrollTop = sectionTop(upcoming);
+    previousUpcomingTop = sectionTop(upcoming);
+    if (atUpcoming) frame.scrollTo({ top: previousUpcomingTop, behavior: 'instant' });
   };
   new ResizeObserver(resize).observe(frame);
   resize();

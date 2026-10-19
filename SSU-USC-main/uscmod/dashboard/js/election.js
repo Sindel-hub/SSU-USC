@@ -331,18 +331,19 @@ function renderLanding() {
   app.innerHTML = `<section class="election-reference-landing">
     <div class="election-reference-landing-bg" aria-hidden="true"></div>
     <div class="election-reference-landing-shade" aria-hidden="true"></div>
-    <div class="election-reference-landing-content">
-      <img class="election-reference-logo" src="assets/USClogo.webp" alt="University Student Council seal">
-      <h2>SSU UNIVERSITY STUDENT COUNCIL</h2>
-      <div class="election-reference-motto">LEADERSHIP&nbsp;&nbsp; | &nbsp;&nbsp;EXCELLENCE&nbsp;&nbsp; | &nbsp;&nbsp;DISCIPLINE&nbsp;&nbsp; | &nbsp;&nbsp;SERVICE</div>
-      <div class="election-reference-legacy">
-        <strong>A Legacy of Student Leadership</strong>
-        <p>The University Student Council elections are the heartbeat of student representation at Samar State University. Participating in these elections is more than just a democratic exercise; it is a commitment to continuing a long-standing tradition of proactive leadership. By choosing our representatives, we ensure that student welfare, campus initiatives, and academic excellence remain at the forefront of SSU's growth.</p>
+    <div class="election-ineligible-stack">
+      <div class="election-reference-landing-content">
+        <div class="election-ineligible-status"><span class="election-ineligible-status-dot"></span>${esc(context?.lifecycle || "Election open")}</div>
+        <img class="election-reference-logo" src="assets/USClogo.webp" alt="University Student Council seal">
+        <span class="election-ineligible-kicker">SSU University Student Council</span>
+        <h2>${esc(context?.title || "USC Election")}</h2>
+        <p>${esc(phaseMessage())}</p>
+        <div class="election-reference-actions">
+          ${applicationAction}
+          ${secondaryActions.join("")}
+        </div>
       </div>
-      <div class="election-reference-actions">
-        ${applicationAction}
-        ${secondaryActions.join("")}
-      </div>
+      ${electionSchedulePreview()}
     </div>
   </section>`;
 

@@ -15,7 +15,7 @@ function page({ height = 640, reducedMotion = false, missing = false } = {}) {
   const nodes = {
     eventsPageMain: frame,
     eventsHighlightSection: { getBoundingClientRect: () => ({ top: 191 - frame.scrollTop }) },
-    eventsUpcomingSection: { getBoundingClientRect: () => ({ top: 191 + parseInt(properties['--events-frame-height'] || height) - frame.scrollTop }) },
+    eventsUpcomingSection: { getBoundingClientRect: () => ({ top: 191 + Math.max(320, parseInt(properties['--events-frame-height'] || height)) - frame.scrollTop }) },
     eventsScrollDown: { addEventListener: (_, handler) => { listeners.down = handler; } },
     eventsScrollUp: { addEventListener: (_, handler) => { listeners.up = handler; } }
   };
@@ -66,4 +66,14 @@ test('reduced motion disables animated shortcut scrolling', () => {
 
 test('missing Events markup does not install navigation or throw', () => {
   assert.deepEqual(page({ missing: true }).calls, []);
+});
+
+// Short viewports retain enough room for the full highlight content.
+test('chapter destinations use actual geometry when the highlight is taller than the viewport', () => {
+  const { frame, listeners, resize } = page({ height: 180 });
+  listeners.down();
+  assert.equal(frame.scrollTop, 320);
+  frame.clientHeight = 400;
+  resize();
+  assert.equal(frame.scrollTop, 400);
 });

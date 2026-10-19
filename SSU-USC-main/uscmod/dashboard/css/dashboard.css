@@ -512,8 +512,8 @@ body { background: #fff; }
   }
 
   body.student-app-shell .student-sidebar {
-    margin-top:var(--student-module-toolbar-h);
-    height:calc(100% - var(--student-module-toolbar-h));
+    margin-top:0;
+    height:100%;
     min-height:0;
     overflow:hidden auto;
   }
@@ -523,7 +523,7 @@ body { background: #fff; }
     min-height: 0;
     height: 100%;
     display: grid;
-    grid-template-rows: var(--student-module-toolbar-h) minmax(0, 1fr);
+    grid-template-rows:minmax(var(--student-module-toolbar-h),auto) minmax(0,1fr);
   }
 
   body.student-app-shell .student-module-toolbar {
