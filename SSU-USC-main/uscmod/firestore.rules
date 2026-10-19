@@ -433,8 +433,10 @@ service cloud.firestore {
           || (("classification" in request.resource.data)
             && validComplaintClassification(request.resource.data.classification)
             && request.resource.data.thread is list
-            && resource.data.thread is list
-            && request.resource.data.thread.size() == resource.data.thread.size() + 1
+            // Older complaint records may predate the thread field. Treat only
+            // a missing thread as empty; malformed existing values still fail.
+            && resource.data.get("thread", []) is list
+            && request.resource.data.thread.size() == resource.data.get("thread", []).size() + 1
             && request.resource.data.thread.size() <= 200));
       // A complaint becomes deletable only after it has reached a terminal workflow state.
       allow delete: if officerHasPermission("complaints.status") && resource.data.status in ["Resolved", "Closed"];

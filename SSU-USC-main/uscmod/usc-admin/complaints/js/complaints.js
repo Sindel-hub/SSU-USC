@@ -1,6 +1,6 @@
 import { departmentName, departmentSummary, sortComplaints } from "./complaint-inbox-model.mjs";
 import { db } from "../../../firebase/firebase-config.js";
-import { callSecure } from "../../../shared/security-client.js?v=classification-permission-2";
+import { callSecure } from "../../../shared/security-client.js?v=complaint-review-compat-3";
 import { complaintAttachmentMeta, downloadBlob, isImageAttachment, loadComplaintAttachmentBlob } from "../../../shared/complaint-attachments.js";
 import {
   collection,
