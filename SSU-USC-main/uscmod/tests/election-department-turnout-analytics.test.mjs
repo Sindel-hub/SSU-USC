@@ -50,5 +50,5 @@ test("turnout rules constrain a student's department aggregate increment", () =>
 
 test("election assets are cache-busted for department analytics", () => {
   assert.match(html, /elections-modern\.css\?v=1/);
-  assert.match(html, /elections\.js\?v=candidate-photo-viewer-polish-2/);
+  assert.match(html, /elections\.js\?v=status-analytics-1/);
 });

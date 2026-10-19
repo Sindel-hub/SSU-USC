@@ -1,0 +1,24 @@
+/* Same compact container and cards as Events/Programs, scoped to Elections. */
+body.officer-app-shell.election-management-page .hero {
+  display:block !important; min-height:0 !important; height:auto !important;
+  padding:18px !important; border:1px solid #dbeaf3 !important; border-radius:20px !important;
+  background:linear-gradient(135deg,#eafaff,#f6fcff) !important; box-shadow:0 8px 24px rgba(20,73,115,.045) !important;
+}
+body.officer-app-shell.election-management-page .hero-title { margin-bottom:16px !important; }
+.election-summary-heading { display:flex; align-items:center; gap:12px; }
+.election-summary-icon { width:48px; height:48px; flex:0 0 48px; display:grid; place-items:center; border-radius:15px; background:linear-gradient(145deg,#225ca8,#24a9d8); color:#fff; box-shadow:0 10px 22px rgba(34,92,168,.2); font-size:20px; }
+.election-summary-phase { margin:16px 0 0; overflow-wrap:anywhere; }
+#electionSummary .engagement-legend button { grid-template-columns:10px minmax(0,1fr) auto; min-height:44px; }
+#electionSummary .engagement-status-card { cursor:default; }
+#electionSummary .engagement-status-card:hover { filter:none; }
+.election-summary-dialog .side-panel { border:0 !important; padding:18px 0 0 !important; }
+.election-summary-dialog .engagement-report-body { padding-bottom:22px; }
+@media(max-width:600px) {
+ body.officer-app-shell.election-management-page .hero { padding:16px !important; }
+ .election-summary-dialog .side-panel { grid-template-columns:minmax(0,1fr) !important; }
+ .election-summary-dialog .department-turnout-panel { grid-column:1 !important; grid-row:auto !important; padding:16px 0 0 !important; border-left:0; border-top:1px solid #e5ecf3; }
+}
+/* Keep percentage text on one row without increasing all four card heights. */
+#electionSummary .engagement-status-card:last-child .engagement-count-row { flex-wrap:nowrap; gap:6px; }
+#electionSummary .engagement-status-card:last-child .engagement-count-row i { width:36px; height:36px; flex-basis:36px; }
+#electionSummary #turnoutPercent { font-size:20px; }
