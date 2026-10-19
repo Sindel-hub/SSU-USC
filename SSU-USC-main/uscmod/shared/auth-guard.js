@@ -180,6 +180,12 @@ async function verifyProtectedPage() {
         }
         if (profileRole !== role) { resolve(await fail("Your account role is being updated. Sign in again after the administrator completes the change.")); return; }
 
+        if (role === "student" && (profile.mustChangePassword === true || token.claims.mustChangePassword === true)) {
+          settle(false);
+          location.replace(new URL("./required-password.html", import.meta.url).href);
+          resolve(false); return;
+        }
+
         if (role === "student") {
           if (status !== "approved" || profile.schoolProvisioned !== true) {
             resolve(await fail("This is not an active school-provisioned student account. Contact the system administrator.")); return;

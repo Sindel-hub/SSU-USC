@@ -8,12 +8,16 @@ service cloud.firestore {
     function activeSchoolStanding(data) {
       return !("studentStanding" in data) || data.studentStanding == "active";
     }
+    function initialPasswordChanged() {
+      return (!("mustChangePassword" in request.auth.token) || request.auth.token.mustChangePassword != true)
+        && (!("mustChangePassword" in ownProfile()) || ownProfile().mustChangePassword != true);
+    }
     function activeProfileRole(expected) {
       return signedIn()
         && ownProfile().role == expected
         && ownProfile().isActive != false
         && ownProfile().accountStatus == "approved"
-        && (expected == "admin" || activeSchoolStanding(ownProfile()));
+        && (expected == "admin" || (activeSchoolStanding(ownProfile()) && initialPasswordChanged()));
     }
     // Administrator writes require the trusted custom claim plus an approved/active
     // administrator profile. The school-provisioned account model does not use
@@ -81,7 +85,7 @@ service cloud.firestore {
     }
     function safeOwnProfileUpdate() {
       return request.resource.data.diff(resource.data).affectedKeys().hasOnly([
-          "fullName", "profilePhoto", "profileUpdatedAt", "updatedAt", "updatedAtMs", "mustChangePassword"
+          "fullName", "profilePhoto", "profileUpdatedAt", "updatedAt", "updatedAtMs"
         ])
         && request.resource.data.fullName is string
         && request.resource.data.fullName.size() >= 2
