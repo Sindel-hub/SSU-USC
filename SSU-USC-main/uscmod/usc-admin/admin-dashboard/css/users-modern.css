@@ -112,3 +112,14 @@ body.officer-app-shell.admin-users-page .directory-simple-search { border:0 !imp
 body.officer-app-shell.admin-users-page .directory-search-actions { margin:0; padding:0; border:0; }
 body.officer-app-shell.admin-users-page .directory-search-control #userSearchInput { min-height:44px !important; height:44px; }
 body.officer-app-shell.admin-users-page .user-editor-modal-close:focus-visible { outline:3px solid #4285c5; outline-offset:3px; }
+/* Native top-layer dialog keeps a chosen password confined to its short-lived editor. */
+body.officer-app-shell.admin-users-page .admin-password-dialog { width:min(460px,calc(100% - 32px)); max-height:calc(100dvh - 32px); overflow:auto; box-sizing:border-box; padding:24px; border:1px solid #dce6f0; border-radius:16px; color:#23496d; background:#fff; box-shadow:0 20px 60px #163f6b33; }
+body.officer-app-shell.admin-users-page .admin-password-dialog::backdrop { background:#102b4c99; }
+body.officer-app-shell.admin-users-page #adminPasswordForm { display:grid; gap:14px; }
+body.officer-app-shell.admin-users-page #adminPasswordForm h2 { margin:0; }
+body.officer-app-shell.admin-users-page #adminPasswordForm p { margin:0; font-size:12px; line-height:1.6; overflow-wrap:anywhere; color:#60758b; }
+body.officer-app-shell.admin-users-page .admin-password-actions { display:flex; justify-content:flex-end; flex-wrap:wrap; gap:10px; margin-top:4px; }
+body.officer-app-shell.admin-users-page .admin-password-show { justify-self:start; min-height:44px; padding:8px 0; border:0; background:none; color:#245fa6; font:inherit; font-size:13px; cursor:pointer; }
+body.officer-app-shell.admin-users-page #adminPasswordFeedback.is-error { color:#a6384b; }
+body.officer-app-shell.admin-users-page #adminPasswordForm [aria-invalid=true] { border-color:#b74a5a !important; }
+@media(max-width:600px) { body.officer-app-shell.admin-users-page .admin-password-dialog { padding:20px; } body.officer-app-shell.admin-users-page .admin-password-actions .btn { flex:1; } }

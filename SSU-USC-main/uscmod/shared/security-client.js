@@ -1410,6 +1410,16 @@ export async function callSecure(name, data = {}) {
     const result = await callable(name)(data);
     return result.data;
   } catch (error) {
+    if (name === "adminSetUserPassword") {
+      const code = String(error?.code || "").replace(/^functions\//, "");
+      const generic = /^(internal|not[-_ ]?found|unavailable)$/i.test(String(error?.message || "").trim());
+      const message = generic || code === "unavailable"
+        ? "The password service is unavailable. The change could not be confirmed. Contact the system maintainer."
+        : cleanError(error, "The password change could not be confirmed.");
+      const wrapped = new Error(message);
+      wrapped.code = error?.code || "unknown";
+      throw wrapped;
+    }
     if (name === "adminResetUserPassword" && globalThis.USC_FREE_SPARK_MODE === true) {
       try {
         return await browserSendAdminPasswordResetEmail(data);
