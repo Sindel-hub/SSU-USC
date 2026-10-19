@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import fs from "node:fs";
 
 const html = fs.readFileSync(new URL("../usc-admin/admin-dashboard/audit.html", import.meta.url), "utf8");
-const css = fs.readFileSync(new URL("../usc-admin/admin-dashboard/css/admin-dashboard.css", import.meta.url), "utf8");
+const css = fs.readFileSync(new URL("../usc-admin/admin-dashboard/css/audit-modern.css", import.meta.url), "utf8");
 const js = fs.readFileSync(new URL("../usc-admin/admin-dashboard/js/admin-audit.js", import.meta.url), "utf8");
 
 test("audit page uses a compact history summary with an in-page records viewer", () => {
@@ -27,8 +27,7 @@ test("audit records dialog is wired for open, close, backdrop close and counts",
 });
 
 test("audit records viewer has a dedicated polished modal layout", () => {
-  assert.match(css, /ADMIN AUDIT RECORDS MODAL - 2026-09-04/);
-  assert.match(css, /\.audit-records-dialog\s*\{[\s\S]*?max-width:\s*1080px;/);
-  assert.match(css, /\.audit-records-list-wrap\s*\{[\s\S]*?overflow:\s*auto;/);
-  assert.match(css, /\.audit-history-summary-card\s*\{[\s\S]*?background:/);
+  assert.match(css, /audit-records-dialog[^}]*width:min\(980px/);
+  assert.match(css, /audit-records-list-wrap[^}]*overflow:auto/);
+  assert.match(css, /audit-records-dialog:not\(\[open\]\)[^}]*display:none/);
 });
