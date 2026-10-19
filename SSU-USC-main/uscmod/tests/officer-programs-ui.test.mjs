@@ -1,3 +1,4 @@
+import { classifyEngagement } from '../shared/engagement-report-model.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
@@ -6,6 +7,7 @@ import vm from 'node:vm';
 const source = fs.readFileSync(new URL('../usc-admin/programs/js/programs.js', import.meta.url), 'utf8');
 function renderer() {
   const context = {
+    classifyEngagement,
     recentEventsList: { innerHTML: '' }, programSearch: { value: '' },
     programStatusFilter: { value: 'all' }, programResultsCount: { textContent: '' },
     registrationCounts: new Map([['future', 3]]),

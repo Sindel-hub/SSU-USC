@@ -1,3 +1,6 @@
+import { classifyEngagement } from "../../../shared/engagement-report-model.mjs";
+import { mountEngagementAnalytics } from "../../../shared/engagement-analytics.js?v=1";
+import { hasOfficerPermission } from "../../shared/js/officer-rbac.js?v=programs-1";
 import { db, auth } from "../../../firebase/firebase-config.js";
 import { secureUpload, hydrateMediaImages } from "../../../shared/security-client.js?v=program-media-1";
 import {
@@ -15,6 +18,10 @@ import {
 
 const uscAuthAllowed = await (globalThis.USC_AUTH_READY || Promise.resolve(false));
 if (uscAuthAllowed !== true) await new Promise(() => {});
+
+const engagementAnalytics = mountEngagementAnalytics(document.getElementById("engagementAnalytics"), { kind: "programs", canGenerate: () => hasOfficerPermission("reports.generate") });
+const reportRegistrations = new Map();
+let eventsFeedReady = false;
 
 const eventsCollection = collection(db, "programs");
 
@@ -116,15 +123,11 @@ function formatRegistrationDeadline(eventItem) {
 }
 
 function isUpcomingEvent(eventItem) {
-  const eventDate = parseEventDate(eventItem.eventDate);
-  if (!eventDate) return false;
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  return eventDate >= today;
+  return classifyEngagement(eventItem) === "Upcoming";
 }
 
 function getEventStatus(eventItem) {
-  return isUpcomingEvent(eventItem) ? "Upcoming" : "Completed";
+  return classifyEngagement(eventItem);
 }
 
 function registrationModeLabel(mode) {
@@ -251,6 +254,7 @@ function updateStats(events) {
   if (publishedEventCountEl) publishedEventCountEl.textContent = String(events.length);
   if (reminderEnabledCountEl) reminderEnabledCountEl.textContent = String(remindersEnabled.length);
   if (confirmedAttendanceCountEl) confirmedAttendanceCountEl.textContent = String(totalWebsiteRegistrations());
+  if (eventsFeedReady) engagementAnalytics.update(events, reportRegistrations);
 }
 
 function renderEvents(events) {
@@ -298,7 +302,7 @@ function renderEvents(events) {
               </div>
             </div>
             <div class="event-item-controls">
-              <div class="badge ${badgeClass}"><i class="fa-solid fa-circle" aria-hidden="true"></i>${status}</div>
+              <div class="badge ${badgeClass}" data-engagement-status="${status}"><i class="fa-solid fa-circle" aria-hidden="true"></i>${status}</div>
 
             </div>
           </div>
@@ -332,6 +336,7 @@ function subscribeToEvents() {
   onSnapshot(
     eventsQuery,
     (snapshot) => {
+      eventsFeedReady = true;
       lastEvents = snapshot.docs.map((docSnap) => ({ id: docSnap.id, ...docSnap.data() }));
       bindRegistrationCountListeners(lastEvents);
       updateStats(lastEvents);
@@ -339,8 +344,11 @@ function subscribeToEvents() {
     },
     (error) => {
       console.error("Unable to read programs:", error);
+      eventsFeedReady = false;
       lastEvents = [];
+      bindRegistrationCountListeners([]);
       updateStats([]);
+      engagementAnalytics.setError("Unable to load programs. Reload this page to reconnect.");
       if (programResultsCount) programResultsCount.textContent = "";
       recentEventsList.innerHTML = '<div class="empty-state" role="alert">Unable to load programs. Check your connection and reload the page.</div>';
     }
@@ -359,20 +367,26 @@ function bindRegistrationCountListeners(events) {
       unsubscribe();
       registrationCountUnsubs.delete(eventId);
       registrationCounts.delete(eventId);
+      reportRegistrations.delete(eventId);
     }
   });
 
   liveInternalIds.forEach((eventId) => {
     if (registrationCountUnsubs.has(eventId)) return;
+    reportRegistrations.set(eventId, { state: "loading", records: [] });
     const unsubscribe = onSnapshot(
       collection(db, "programs", eventId, "registrations"),
       (snapshot) => {
+        if (!eventsFeedReady) return;
+        reportRegistrations.set(eventId, { state: "ready", records: snapshot.docs.map(row => row.data()) });
         registrationCounts.set(eventId, snapshot.size);
         updateStats(lastEvents);
         renderEvents(lastEvents);
       },
       (error) => {
         console.warn(`Registration count unavailable for ${eventId}:`, error);
+        if (!eventsFeedReady) return;
+        reportRegistrations.set(eventId, { state: "unavailable", records: [] });
         registrationCounts.set(eventId, 0);
         updateStats(lastEvents);
         renderEvents(lastEvents);
@@ -643,4 +657,7 @@ programSearch?.addEventListener("input", () => renderEvents(lastEvents));
 programStatusFilter?.addEventListener("change", () => renderEvents(lastEvents));
 resetEventForm();
 subscribeToEvents();
+setInterval(() => {
+  if (eventsFeedReady) { updateStats(lastEvents); renderEvents(lastEvents); }
+}, 30000);
 
