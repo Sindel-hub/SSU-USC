@@ -1,0 +1,114 @@
+/* Scoped to User Directory; account data, access rules, and workflows remain unchanged. */
+body.officer-app-shell.admin-users-page .main { display:flex !important; flex-direction:column; gap:24px !important; padding:24px !important; min-width:0; color:#23496d; }
+body.officer-app-shell.admin-users-page :is(.directory-page-heading,.directory-title,.directory-create-actions) { display:flex; align-items:center; gap:12px; }
+body.officer-app-shell.admin-users-page .directory-page-heading { justify-content:space-between; flex-wrap:wrap; gap:16px; }
+body.officer-app-shell.admin-users-page .directory-title h1 { margin:0; color:#1754a6; font-size:28px; line-height:1.3; letter-spacing:-.5px; }
+body.officer-app-shell.admin-users-page .directory-heading-icon { display:grid; place-items:center; width:46px; height:46px; border-radius:14px; background:#edf5fd; color:#2866a5; font-size:20px; }
+body.officer-app-shell.admin-users-page .directory-create-actions { flex-wrap:wrap; }
+body.officer-app-shell.admin-users-page .user-directory-workspace { display:block !important; min-width:0; margin:0; }
+body.officer-app-shell.admin-users-page .main .card { padding:20px !important; min-width:0; border:1px solid #dce6f0; border-radius:16px; background:#fff; box-shadow:0 5px 18px rgba(30,65,100,.035); }
+body.officer-app-shell.admin-users-page .user-directory-card-head { display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; margin:0 0 20px; padding:0 !important; border:0; background:none !important; }
+body.officer-app-shell.admin-users-page .main h2 { margin:0; font-size:18px; line-height:1.5; color:#23496d; }
+body.officer-app-shell.admin-users-page .quick-badge { padding:5px 9px; border:0; border-radius:6px; background:#eff5fa; color:#52657a; font-size:11px; line-height:1.5; white-space:normal; }
+body.officer-app-shell.admin-users-page h2 .quick-badge { display:inline-block; margin-left:8px; font-weight:500; vertical-align:middle; }
+body.officer-app-shell.admin-users-page .directory-simple-search { display:grid; grid-template-columns:minmax(220px,1fr) minmax(0,1.3fr); align-items:end; gap:16px; margin:0 0 18px; padding:0; border:0; background:none; box-shadow:none; }
+body.officer-app-shell.admin-users-page :is(.directory-search-row,.directory-search-field) { display:block; min-width:0; }
+body.officer-app-shell.admin-users-page .directory-search-actions { display:flex; align-items:end; justify-content:flex-end; gap:12px; flex-wrap:wrap; }
+body.officer-app-shell.admin-users-page .directory-sort-field { flex:1; min-width:140px; }
+body.officer-app-shell.admin-users-page :is(.field,.field-stack) { display:grid; gap:7px; min-width:0; }
+body.officer-app-shell.admin-users-page :is(.field label,.directory-search-field > label,.field-stack > label) { display:block; margin:0 0 6px; color:#52657a; font-size:12px; font-weight:600; }
+body.officer-app-shell.admin-users-page .main :is(input,select,textarea) { box-sizing:border-box; width:100%; min-width:0; padding:11px 12px !important; border:1px solid #cbdbe8 !important; border-radius:9px !important; color:#23496d !important; background:#fff !important; font:inherit; font-size:14px !important; line-height:1.5; }
+body.officer-app-shell.admin-users-page .main :is(input,select) { min-height:44px !important; }
+body.officer-app-shell.admin-users-page .main input[type=checkbox] { width:18px !important; height:18px !important; min-height:18px !important; padding:0 !important; flex:none; accent-color:#245fa6; }
+body.officer-app-shell.admin-users-page .main textarea { min-height:88px; resize:vertical; }
+body.officer-app-shell.admin-users-page .directory-search-control { position:relative; display:block; padding:0; border:0; border-radius:0; box-shadow:none; background:none; }
+body.officer-app-shell.admin-users-page .directory-search-control i { position:absolute; left:13px; top:16px; color:#60758b; }
+body.officer-app-shell.admin-users-page .directory-search-control #userSearchInput { padding-left:38px !important; }
+body.officer-app-shell.admin-users-page :is(.toolbar,.action-group) { display:flex; gap:8px; flex-wrap:wrap; }
+body.officer-app-shell.admin-users-page .main :is(.btn,.open-btn) { display:inline-flex !important; justify-content:center; align-items:center; gap:8px; min-height:44px !important; height:auto !important; padding:10px 13px !important; border:1px solid #cbdbe8 !important; border-radius:9px !important; background:#f5f9fd !important; color:#315b83 !important; box-shadow:none !important; font-size:13px !important; line-height:1.4; text-decoration:none; cursor:pointer; white-space:normal; }
+body.officer-app-shell.admin-users-page .main :is(.btn.primary,.open-btn.selected) { border-color:#245fa6 !important; background:#245fa6 !important; color:#fff !important; }
+body.officer-app-shell.admin-users-page .main .btn.danger-light { border-color:#efd3d9 !important; background:#fdf1f3 !important; color:#ac4459 !important; }
+body.officer-app-shell.admin-users-page .main details { padding:0; box-shadow:none; grid-area:auto; border:1px solid #dce6f0; border-radius:10px; margin:0 0 18px; background:#fff; min-width:0; }
+body.officer-app-shell.admin-users-page .main summary { padding:14px; min-height:44px; box-sizing:border-box; cursor:pointer; color:#315575; font-size:13px; font-weight:600; }
+body.officer-app-shell.admin-users-page summary .quick-badge { margin-left:10px; }
+body.officer-app-shell.admin-users-page .directory-bulk-content { padding:0 16px 16px; }
+body.officer-app-shell.admin-users-page .bulk-action-grid { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:14px; }
+body.officer-app-shell.admin-users-page .table-wrap { max-width:100%; max-height:700px; overflow:auto; border:1px solid #e3ebf3; border-radius:10px; }
+body.officer-app-shell.admin-users-page .user-directory-table-card table { width:100% !important; min-width:1130px !important; border-collapse:collapse; margin:0; }
+body.officer-app-shell.admin-users-page .user-directory-table-card thead th { position:sticky; top:0; z-index:1; padding:13px 12px; background:#f4f8fc; color:#52657a; font-size:11px; font-weight:600; text-align:left; border-bottom:1px solid #e3ebf3; }
+body.officer-app-shell.admin-users-page .user-directory-table-card tbody td { padding:14px 12px; border-bottom:1px solid #edf2f7; font-size:12px; color:#52657a; vertical-align:middle; }
+body.officer-app-shell.admin-users-page .directory-row:last-child td { border-bottom:0; }
+body.officer-app-shell.admin-users-page .directory-row:hover { background:#f8fbfe; }
+body.officer-app-shell.admin-users-page .directory-row.is-open { background:#f0f7fd; }
+body.officer-app-shell.admin-users-page .directory-user-cell { display:flex; align-items:center; gap:10px; min-width:220px; max-width:280px; }
+body.officer-app-shell.admin-users-page .directory-user-avatar { display:grid; place-items:center; width:36px; height:36px; flex:none; border-radius:10px; background:#edf5fd; color:#2866a5; font-size:12px; }
+body.officer-app-shell.admin-users-page .table-name { display:grid; gap:4px; min-width:0; overflow-wrap:anywhere; }
+body.officer-app-shell.admin-users-page .table-name strong { font-size:13px; color:#23496d; }
+body.officer-app-shell.admin-users-page .table-name small { font-size:11px; color:#60758b; }
+body.officer-app-shell.admin-users-page :is(.role-badge,.status-badge,.verify-badge,.active-badge) { display:inline-flex; padding:4px 7px; font-size:10px; line-height:1.5; border-radius:5px; white-space:nowrap; }
+body.officer-app-shell.admin-users-page .table-actions { display:grid; gap:6px; }
+body.officer-app-shell.admin-users-page .table-actions .mono { font-size:10px; text-align:center; }
+body.officer-app-shell.admin-users-page .user-editor-modal-dialog { width:min(920px,100%); min-width:0; }
+body.officer-app-shell.admin-users-page .user-directory-editor-modal-card { max-height:calc(100dvh - 48px) !important; overflow-y:auto !important; position:relative !important; padding:24px !important; }
+body.officer-app-shell.admin-users-page .selected-user-head { padding-right:42px !important; }
+body.officer-app-shell.admin-users-page .user-editor-modal-close { width:36px; height:36px; top:18px; right:18px; border:1px solid #dce6f0; border-radius:9px; background:#f5f9fd; color:#315b83; }
+body.officer-app-shell.admin-users-page .user-summary { padding:0; margin:0; border:0; background:none; box-shadow:none; }
+body.officer-app-shell.admin-users-page .user-summary-top { display:grid; grid-template-columns:48px minmax(0,1fr); align-items:start; gap:14px; margin:0 0 20px; }
+body.officer-app-shell.admin-users-page .profile-avatar { width:48px; height:48px; border-radius:13px; background:#edf5fd; color:#2866a5; font-size:20px; }
+body.officer-app-shell.admin-users-page .user-header-row { display:flex; flex-wrap:wrap; gap:7px; }
+body.officer-app-shell.admin-users-page .user-name { width:100%; font-size:20px; line-height:1.4; color:#23496d; overflow-wrap:anywhere; }
+body.officer-app-shell.admin-users-page .subtext { color:#60758b; font-size:12px; line-height:1.7; overflow-wrap:anywhere; }
+body.officer-app-shell.admin-users-page .user-summary-top .subtext { margin:6px 0 0; }
+body.officer-app-shell.admin-users-page .detail-grid { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:10px; padding:0 14px 14px; margin:0; }
+body.officer-app-shell.admin-users-page .detail-chip { min-width:0; padding:12px; border:0; border-radius:8px; background:#f5f9fc; box-shadow:none; overflow-wrap:anywhere; }
+body.officer-app-shell.admin-users-page .detail-chip strong { display:block; font-size:10px; color:#60758b; margin-bottom:5px; }
+body.officer-app-shell.admin-users-page .detail-chip span { font-size:12px; line-height:1.6; }
+body.officer-app-shell.admin-users-page #roleEditorForm { gap:16px; }
+body.officer-app-shell.admin-users-page .user-editor-fields-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:14px; }
+body.officer-app-shell.admin-users-page .toggle-row { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:10px; }
+body.officer-app-shell.admin-users-page .toggle-box { display:flex !important; align-items:center; justify-content:space-between; gap:10px; padding:12px; border:1px solid #dce6f0; border-radius:9px; background:#f8fbfe; font-size:12px; line-height:1.5; }
+body.officer-app-shell.admin-users-page .officer-rbac-editor { padding:16px; border:1px solid #dce6f0; border-radius:10px; background:#f8fbfe; }
+body.officer-app-shell.admin-users-page .officer-rbac-editor-head { display:flex; align-items:start; gap:12px; justify-content:space-between; }
+body.officer-app-shell.admin-users-page .officer-rbac-editor-head strong { font-size:14px; }
+body.officer-app-shell.admin-users-page .officer-rbac-editor-head span:not(.quick-badge) { display:block; margin-top:6px; color:#60758b; font-size:12px; line-height:1.7; }
+body.officer-app-shell.admin-users-page .officer-rbac-quick-actions { display:flex; flex-wrap:wrap; gap:8px; margin:14px 0; }
+body.officer-app-shell.admin-users-page .officer-rbac-permission-grid { grid-template-columns:repeat(2,minmax(0,1fr)); padding:0 12px 12px; }
+body.officer-app-shell.admin-users-page .officer-rbac-group { min-width:0; }
+body.officer-app-shell.admin-users-page .officer-rbac-permission { min-width:0; }
+body.officer-app-shell.admin-users-page .editor-actions { display:flex; flex-wrap:wrap; gap:8px; padding-top:16px; border-top:1px solid #e3ebf3; }
+body.officer-app-shell.admin-users-page .restriction-banner { padding:12px; margin-bottom:16px; border:1px solid #edcfb3; border-radius:9px; background:#fff7ec; color:#8c5b26; font-size:12px; line-height:1.7; }
+body.officer-app-shell.admin-users-page .password-reset-result-card { max-height:calc(100dvh - 32px); overflow:auto; border:1px solid #dce6f0; border-radius:16px; }
+body.officer-app-shell.admin-users-page .empty-state { padding:24px; background:#f8fbfe; border:0; box-shadow:none; }
+body.officer-app-shell.admin-users-page .directory-sr-only { position:absolute; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden; clip-path:inset(50%); white-space:nowrap; }
+body.officer-app-shell.admin-users-page :is(button,input,select,textarea,a,summary,[tabindex]):focus-visible { outline:3px solid #4285c5; outline-offset:3px; }
+body.officer-app-shell.admin-users-page button:disabled { opacity:.5; cursor:not-allowed !important; }
+body.officer-app-shell.admin-users-page :is(button,a) { transition:background-color .15s,border-color .15s; }
+body.officer-app-shell.admin-users-page .main button:hover:not(:disabled) { filter:brightness(.97); }
+body.officer-app-shell.admin-users-page .main :is([hidden],.hidden) { display:none !important; }
+@media(max-width:1200px) { body.officer-app-shell.admin-users-page .directory-simple-search { grid-template-columns:minmax(0,1fr); } body.officer-app-shell.admin-users-page .directory-search-actions { justify-content:space-between; } }
+@media(max-width:900px) { body.officer-app-shell.admin-users-page :is(.top-banner,.top-nav) { position:relative !important; top:auto !important; } }
+@media(max-width:600px) {
+ body.officer-app-shell.admin-users-page .main { padding:16px !important; gap:20px !important; }
+ body.officer-app-shell.admin-users-page .directory-title h1 { font-size:24px; }
+ body.officer-app-shell.admin-users-page .directory-heading-icon { display:none; }
+ body.officer-app-shell.admin-users-page .main .card { padding:16px !important; }
+ body.officer-app-shell.admin-users-page .directory-create-actions { width:100%; }
+ body.officer-app-shell.admin-users-page .directory-create-actions .btn { flex:1; }
+ body.officer-app-shell.admin-users-page .directory-search-actions { display:grid; grid-template-columns:minmax(0,1fr); }
+ body.officer-app-shell.admin-users-page .directory-search-actions .toolbar { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); }
+ body.officer-app-shell.admin-users-page .bulk-action-grid,body.officer-app-shell.admin-users-page .user-editor-fields-grid,body.officer-app-shell.admin-users-page .toggle-row { grid-template-columns:minmax(0,1fr); }
+ body.officer-app-shell.admin-users-page .main :is(input,select,textarea) { font-size:16px !important; }
+ body.officer-app-shell.admin-users-page .user-directory-editor-modal-card { padding:18px !important; max-height:calc(100dvh - 24px) !important; }
+ body.officer-app-shell.admin-users-page .user-editor-modal { padding:12px; }
+ body.officer-app-shell.admin-users-page .detail-grid,body.officer-app-shell.admin-users-page .officer-rbac-permission-grid { grid-template-columns:minmax(0,1fr); }
+ body.officer-app-shell.admin-users-page .officer-rbac-editor-head { flex-wrap:wrap; }
+ body.officer-app-shell.admin-users-page .selected-user-head { padding-right:40px !important; }
+ body.officer-app-shell.admin-users-page .user-summary-top { grid-template-columns:minmax(0,1fr); }
+ body.officer-app-shell.admin-users-page .editor-actions .btn { flex:1 1 130px; }
+}
+@media(prefers-reduced-motion:reduce) { body.officer-app-shell.admin-users-page :is(button,a) { transition:none; } }
+/* Override the shared card treatment for the inline search toolbar. */
+body.officer-app-shell.admin-users-page .directory-simple-search { border:0 !important; border-radius:0 !important; background:none !important; box-shadow:none !important; }
+body.officer-app-shell.admin-users-page .directory-search-actions { margin:0; padding:0; border:0; }
+body.officer-app-shell.admin-users-page .directory-search-control #userSearchInput { min-height:44px !important; height:44px; }
+body.officer-app-shell.admin-users-page .user-editor-modal-close:focus-visible { outline:3px solid #4285c5; outline-offset:3px; }

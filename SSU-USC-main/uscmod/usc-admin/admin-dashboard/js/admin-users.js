@@ -248,7 +248,7 @@ function renderTable() {
     const complaintSummary = complaintSummaryFor(user, complaintSummaryByUid);
     return `
       <tr class="directory-row ${selectedUserId === user.uid ? 'is-open' : ''}">
-        <td><input type="checkbox" class="row-selector" data-user-id="${escapeHtml(user.uid)}" ${selected ? 'checked' : ''} ${isProtectedAdmin(user) ? 'disabled' : ''} /></td>
+        <td><input type="checkbox" class="row-selector" aria-label="Select ${escapeHtml(user.fullName || 'Unnamed user')}" data-user-id="${escapeHtml(user.uid)}" ${selected ? 'checked' : ''} ${isProtectedAdmin(user) ? 'disabled' : ''} /></td>
         <td><div class="directory-user-cell"><span class="directory-user-avatar" aria-hidden="true">${escapeHtml(getInitials(user.fullName, user.email))}</span><div class="table-name"><strong>${escapeHtml(user.fullName || 'Unnamed user')}</strong><small>${escapeHtml(user.email || 'No email')}</small></div></div></td>
         <td class="mono">${escapeHtml(user.studentId || 'N/A')}</td>
         <td><span class="role-badge ${roleClass(user.role)}">${escapeHtml(user.role)}</span></td>
@@ -257,7 +257,7 @@ function renderTable() {
         <td><span class="active-badge ${user.isActive ? 'active-yes' : 'active-no'}">${user.isActive ? 'Active' : 'Inactive'}</span></td>
         <td>${escapeHtml(user.officePosition || '—')}</td>
         <td>${escapeHtml(formatDateTime(user.lastLoginAtMs))}</td>
-        <td><div class="table-actions"><button type="button" class="open-btn ${selectedUserId === user.uid ? 'selected' : ''}" data-open-user="${escapeHtml(user.uid)}">Open</button><span class="mono">${complaintSummary.total} complaints</span></div></td>
+        <td><div class="table-actions"><button type="button" class="open-btn ${selectedUserId === user.uid ? 'selected' : ''}" aria-haspopup="dialog" aria-label="Open account for ${escapeHtml(user.fullName || 'Unnamed user')}" data-open-user="${escapeHtml(user.uid)}">Open</button><span class="mono">${complaintSummary.total} complaints</span></div></td>
       </tr>
     `;
   }).join("");

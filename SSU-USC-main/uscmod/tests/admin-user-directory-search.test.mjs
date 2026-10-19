@@ -9,7 +9,7 @@ const coreJs = fs.readFileSync(new URL("../usc-admin/admin-dashboard/js/admin-co
 
 test("directory exposes one prominent name or student ID search", () => {
   assert.match(html, /id="userSearchInput"[^>]*placeholder="Search by student ID or name"/);
-  assert.match(html, /Enter a full or partial student ID, first name, or last name/);
+  assert.match(html, /<label for="userSearchInput">Search accounts<\/label>/);
   assert.doesNotMatch(html, /id="roleFilterSelect"/);
   assert.doesNotMatch(html, /id="statusFilterSelect"/);
   assert.doesNotMatch(html, /id="verifiedFilterSelect"/);
@@ -33,8 +33,8 @@ test("removed filter controls default to all while search and sort remain live",
 });
 
 test("simple search receives dedicated responsive styling and cache version", () => {
-  assert.match(html, /admin-dashboard\.css\?v=directory-search-1/);
-  assert.match(html, /admin-users\.js\?v=directory-search-1/);
+  assert.match(html, /users-modern\.css\?v=1/);
+  assert.match(html, /admin-users\.js\?v=directory-modern-1/);
   assert.match(css, /USER DIRECTORY SIMPLE NAME \/ STUDENT ID SEARCH - 2026-09-06/);
   assert.match(css, /\.directory-search-control #userSearchInput/);
 });
