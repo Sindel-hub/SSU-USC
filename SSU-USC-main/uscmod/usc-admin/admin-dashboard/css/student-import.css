@@ -1,0 +1,36 @@
+body.admin-users-page .student-import-dialog { position:fixed; inset:0; margin:auto !important; box-sizing:border-box; width:min(1040px,calc(100% - 32px)); max-height:calc(100dvh - 32px); overflow:auto; border:1px solid #dce6f0; border-radius:20px; padding:0; background:#fff; color:#23496d; box-shadow:0 24px 80px #102b4c33; }
+.student-import-dialog::backdrop { background:#102b4c99; }
+.student-import-dialog .import-header { display:flex; align-items:center; justify-content:space-between; gap:16px; padding:22px 26px; border-bottom:1px solid #e5edf5; }
+.student-import-dialog h2,.student-import-dialog h3,.student-import-dialog p { margin:0; }
+.student-import-dialog h2 { font-size:22px; }.student-import-dialog h3 { font-size:16px; }
+.student-import-dialog .import-body { display:grid; grid-template-columns:minmax(0,1fr); gap:20px; padding:24px 26px; }
+.student-import-dialog .import-upload { border:1.5px dashed #a6c7e5; border-radius:14px; padding:24px; background:#f7fbff; display:grid; gap:10px; text-align:center; }
+.student-import-dialog .import-upload.is-over { border-color:#1e68ac; background:#e8f3ff; }
+.student-import-dialog .import-upload input { width:100%; min-height:44px; box-sizing:border-box; }
+.student-import-dialog .import-mapping { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:14px; }
+.student-import-dialog .import-field { display:grid; gap:7px; min-width:0; font-size:13px; font-weight:600; }
+.student-import-dialog select { width:100%; min-width:0; min-height:44px; border:1px solid #ccdeed; border-radius:10px; padding:10px; background:#fff; color:#23496d; font:inherit; }
+.student-import-dialog .import-stats { display:flex; flex-wrap:wrap; gap:8px; }
+.student-import-dialog .import-stat { background:#f1f6fb; padding:9px 12px; border-radius:9px; font-size:13px; }
+.student-import-dialog .import-stat strong { color:#185da0; margin-right:5px; }
+.student-import-dialog .import-table-wrap { overflow:auto; max-height:350px; border:1px solid #e1eaf3; border-radius:12px; }
+.student-import-dialog table { width:100%; border-collapse:collapse; font-size:13px; text-align:left; }
+.student-import-dialog th { position:sticky; top:0; z-index:1; background:#f1f6fb; white-space:nowrap; }
+.student-import-dialog th,.student-import-dialog td { padding:12px; border-bottom:1px solid #e8eef5; vertical-align:top; min-width:80px; max-width:230px; overflow-wrap:anywhere; }
+.student-import-dialog .import-status { display:inline-block; border-radius:6px; background:#edf3fa; color:#34536e; padding:4px 8px; font-weight:600; white-space:nowrap; }
+.student-import-dialog .import-status.created,.student-import-dialog .import-status.ready { background:#e6f6ee; color:#146542; }
+.student-import-dialog .import-status.invalid,.student-import-dialog .import-status.failed { background:#fcecef; color:#a12e43; }
+.student-import-dialog .import-footer { display:flex; flex-wrap:wrap; gap:10px; align-items:center; }
+.student-import-dialog .import-note { color:#60758b; font-size:13px; line-height:1.6; }
+.student-import-dialog .import-warning { border:1px solid #efdca2; background:#fffbef; border-radius:10px; padding:12px; color:#735516; font-size:13px; line-height:1.5; }
+.student-import-dialog .import-feedback { font-size:14px; line-height:1.6; overflow-wrap:anywhere; }
+.student-import-dialog .import-feedback[data-error=true] { color:#a12e43; }
+.student-import-dialog progress { width:100%; height:10px; accent-color:#1e68ac; }
+.student-import-dialog [hidden] { display:none !important; }
+.student-import-dialog button:focus-visible,.student-import-dialog select:focus-visible,.student-import-dialog input:focus-visible { outline:3px solid #4285c5; outline-offset:3px; }
+.student-import-dialog .btn { min-height:44px; }
+@media(max-width:650px) { .student-import-dialog .import-header { padding:18px; }.student-import-dialog .import-body { padding:18px; }.student-import-dialog .import-mapping { grid-template-columns:1fr; }.student-import-dialog .import-footer .btn { flex:1 1 140px; } }
+
+.student-import-dialog .import-body > *, .student-import-dialog .import-table-wrap { min-width:0; }
+.student-import-dialog .import-header h2 { min-width:0; }
+.student-import-dialog .import-header .btn { flex:none; }

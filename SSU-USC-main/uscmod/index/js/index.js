@@ -233,6 +233,12 @@ function bindSignin() {
         return;
       }
 
+      if (role === "student" && (profile.mustChangePassword === true || token.claims.mustChangePassword === true)) {
+        dom.signinForm.reset();
+        location.replace("../shared/required-password.html");
+        return;
+      }
+
       const session = buildSession({ ...profile, role }, token.claims);
       if (session.role === "student") await recordStudentSignIn({ ...profile, role }, user);
       dom.signinForm.reset();

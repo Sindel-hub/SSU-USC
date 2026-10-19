@@ -13,6 +13,7 @@
   <script type="module" src="../../shared/auth-guard.js?v=rbac7"></script>
 <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="css/users-modern.css?v=1" />
+    <link rel="stylesheet" href="css/student-import.css?v=1" />
 </head>
 <body class="officer-app-shell admin-users-page">
     <div class="sidebar-backdrop" onclick="document.querySelector('.sidebar').classList.remove('mobile-open');this.classList.remove('active');document.getElementById('usersMenuButton').setAttribute('aria-expanded','false')"></div>
@@ -66,7 +67,8 @@
 
 <header class="directory-page-heading">
     <div class="directory-title"><span class="directory-heading-icon" aria-hidden="true"><i class="fa-solid fa-users"></i></span><h1>User Directory</h1></div>
-    <nav class="directory-create-actions" id="schoolAccountProvisionCard" aria-label="Create school account">
+    <nav class="directory-create-actions" id="schoolAccountProvisionCard" aria-label="Create or import school accounts">
+        <button type="button" class="btn light" id="openStudentImportButton"><i class="fa-solid fa-file-import" aria-hidden="true"></i> Import students</button>
         <a class="btn light" href="../student-registration/student-registration.html"><i class="fa-solid fa-user-plus" aria-hidden="true"></i> Create student</a>
         <a class="btn primary" href="../student-registration/officer-registration.html"><i class="fa-solid fa-user-tie" aria-hidden="true"></i> Create officer</a>
     </nav>
@@ -244,6 +246,25 @@
   </div>
 </footer>
 
+    <dialog id="studentImportDialog" class="student-import-dialog" aria-labelledby="studentImportTitle">
+      <header class="import-header"><h2 id="studentImportTitle">Import student accounts</h2><button type="button" id="closeStudentImportButton" class="btn light" aria-label="Close student import">✕</button></header>
+      <div class="import-body">
+        <div id="importSetup">
+          <div id="importDropzone" class="import-upload"><strong>Choose or drop a registration file</strong><label for="studentImportFile">Excel (.xlsx, .xls) or CSV · up to 5 MB / 1,000 students</label><input id="studentImportFile" type="file" accept=".xlsx,.xls,.csv" /><p class="import-note">Use a header row. Student name, ID, email, college, program and year are required.</p><button type="button" class="btn light" id="downloadStudentImportTemplate">Download CSV template</button></div>
+          <div id="importMappingSection" hidden>
+            <div class="import-field"><label for="importSheet">Worksheet</label><select id="importSheet"></select></div>
+            <h3 style="margin:18px 0 12px">Match columns</h3><div id="importMapping" class="import-mapping"></div>
+            <details style="margin-top:16px"><summary>Defaults for missing college, program or year</summary><div class="import-mapping" style="margin-top:12px"><label class="import-field">College / campus<select id="importDefaultCollege"><option value="">No default</option></select></label><label class="import-field">Program<select id="importDefaultProgram"><option value="">No default</option></select></label><label class="import-field">Year level<select id="importDefaultYear"><option value="">No default</option><option>1st Year</option><option>2nd Year</option><option>3rd Year</option><option>4th Year</option><option>5th Year</option></select></label></div></details>
+          </div>
+        </div>
+        <p id="importFeedback" class="import-feedback" role="status" aria-live="polite"></p>
+        <progress id="studentImportProgress" hidden max="100" value="0" aria-label="Import progress"></progress>
+        <section id="importReview" hidden aria-label="Import preview and results"><div id="importSummary" class="import-stats" style="margin-bottom:14px"></div><div class="import-table-wrap" tabindex="0" role="region" aria-label="Student import records, scroll for all columns"><table><thead id="importTableHead"></thead><tbody id="importTableBody"></tbody></table></div></section>
+        <p id="importCredentialWarning" class="import-warning" hidden>Temporary passwords are shown only in this session. Download and distribute them securely before closing. Closing clears them; they cannot be retrieved again. Protect the exported credentials file.</p>
+        <div class="import-footer"><button type="button" class="btn primary" id="previewStudentImport" disabled>Preview accounts</button><button type="button" class="btn primary" id="confirmStudentImport" hidden>Create eligible accounts</button><button type="button" class="btn light" id="exportStudentCredentials" hidden>Download credentials CSV</button><button type="button" class="btn light" id="exportStudentImportReport" hidden>Download import report</button><button type="button" class="btn light" id="restartStudentImport" hidden>Import another file</button></div>
+      </div>
+    </dialog>
+    <script type="module" src="js/student-import.js?v=1"></script>
     <script type="module" src="js/admin-users.js?v=directory-modern-1"></script>
     <script type="module" src="../shared/js/admin-only-auth.js"></script>
 <script type="module" src="../../shared/profile-manager.js?v=supabase-email-1"></script>

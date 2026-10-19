@@ -52,6 +52,7 @@ function callableOptions(extra = {}) {
 }
 
 function requireAuth(request) {
+  if (request.auth?.token?.mustChangePassword === true) throw new HttpsError("failed-precondition", "Change your temporary password before continuing.");
   if (!request.auth?.uid) throw new HttpsError("unauthenticated", "Please sign in first.");
   return request.auth;
 }
@@ -1806,3 +1807,13 @@ exports.syncElectionLifecycle = onSchedule({ region: REGION, schedule: "every 5 
 
 // Exported only for unit tests that run without Firebase deployment.
 exports.__test = { electionLifecycle, validateSchedule };
+
+// Bulk imports are privileged callables even when browser provisioning is enabled.
+const { createStudentImportService } = require('./student-import');
+const studentImportService = createStudentImportService({
+  db, adminAuth, FieldValue, HttpsError, requireActiveRole, requireRecentAuth,
+  generateTemporaryPassword, auditData
+});
+exports.previewStudentAccountImport = onCall(callableOptions({timeoutSeconds:540,memory:'512MiB',maxInstances:3,concurrency:4}), studentImportService.preview);
+exports.importStudentAccounts = onCall(callableOptions({timeoutSeconds:540,memory:'512MiB',maxInstances:3,concurrency:4}), studentImportService.create);
+exports.completeImportedStudentPasswordChange = onCall(callableOptions(), studentImportService.completePasswordChange);

@@ -27,12 +27,16 @@
     "test:rbac": "node --test tests/officer-rbac.test.mjs tests/officer-position-presets.test.mjs tests/officer-rbac-ui.test.mjs tests/account-provisioning-rbac-regression.test.mjs",
     "test:email": "node --test tests/email-service.test.mjs",
     "test:email-rules": "firebase emulators:exec --only firestore \"node --test tests/email-settings.rules.test.mjs\"",
-    "test:event-participation": "node --test tests/event-participation.test.mjs"
+    "test:event-participation": "node --test tests/event-participation.test.mjs",
+    "test:student-import": "node --test tests/student-import.test.mjs",
+    "test:student-import-integration": "firebase emulators:exec --project demo-ssu-student-import --only auth,firestore \"node --test tests/student-import.integration.test.mjs tests/student-import.rules.test.mjs\"",
+    "deploy:student-import": "firebase deploy --only functions:previewStudentAccountImport,functions:importStudentAccounts,functions:completeImportedStudentPasswordChange,firestore:rules"
   },
   "devDependencies": {
+    "@e965/xlsx": "0.20.3",
     "@firebase/rules-unit-testing": "^4.0.1",
+    "firebase": "^11.0.0",
     "firebase-admin": "^13.4.0",
-    "firebase-tools": "^14.12.0",
-    "firebase": "^11.0.0"
+    "firebase-tools": "^14.12.0"
   }
 }

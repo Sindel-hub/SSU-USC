@@ -1,0 +1,12 @@
+import test,{before,after} from 'node:test';
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import {initializeTestEnvironment,assertFails,assertSucceeds} from '@firebase/rules-unit-testing';
+import {doc,getDoc,updateDoc,setDoc} from 'firebase/firestore';
+assert.ok(process.env.FIRESTORE_EMULATOR_HOST,'Run only against the emulator.');
+let env;
+before(async()=>{env=await initializeTestEnvironment({projectId:'demo-ssu-student-import',firestore:{rules:fs.readFileSync(new URL('../firestore.rules',import.meta.url),'utf8')}});await env.withSecurityRulesDisabled(async c=>{await setDoc(doc(c.firestore(),'users/rules-imported'),{uid:'rules-imported',studentId:'987650',role:'student',fullName:'Rules Student',isActive:true,accountStatus:'approved',schoolProvisioned:true,isVerifiedStudent:true,mustChangePassword:true,bulkImportOperationId:'rules-operation'});await setDoc(doc(c.firestore(),'elections/current/voterRoster/987650'),{studentId:'987650'});await setDoc(doc(c.firestore(),'student_import_password_checks/rules-imported'),{salt:'not-a-real-salt',digest:'not-a-real-digest'});});});
+after(async()=>{await env?.cleanup();});
+const student=flag=>env.authenticatedContext('rules-imported',{role:'student',verifiedStudent:true,mustChangePassword:flag}).firestore();
+test('imported student can read own profile but cannot clear the password requirement or read private verifier',async()=>{const db=student(true);await assertSucceeds(getDoc(doc(db,'users/rules-imported')));await assertFails(updateDoc(doc(db,'users/rules-imported'),{mustChangePassword:false}));await assertFails(getDoc(doc(db,'student_import_password_checks/rules-imported')));await assertFails(setDoc(doc(db,'student_import_email_claims/fake'),{uid:'rules-imported'}));});
+test('both profile and trusted token enforce initial password change before student access',async()=>{await assertFails(getDoc(doc(student(false),'elections/current/voterRoster/987650')));await env.withSecurityRulesDisabled(c=>updateDoc(doc(c.firestore(),'users/rules-imported'),{mustChangePassword:false}));await assertFails(getDoc(doc(student(true),'elections/current/voterRoster/987650')));await assertSucceeds(getDoc(doc(student(false),'elections/current/voterRoster/987650')));});
