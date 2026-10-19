@@ -14,11 +14,36 @@ const slipSection = document.getElementById("officerSlipSection");
 const slip = document.getElementById("officerSlip");
 const resetBtn = document.getElementById("officerResetBtn");
 const resetIdentifier = document.getElementById("officerResetIdentifier");
+const officerSubmissionFeedback = document.getElementById("officerSubmissionFeedback");
+const resetFeedback = document.getElementById("officerResetFeedback");
+function showSubmissionFeedback(message, tone) {
+  if (!officerSubmissionFeedback) return;
+  officerSubmissionFeedback.textContent = message;
+  officerSubmissionFeedback.className = `submission-feedback ${tone}`;
+  officerSubmissionFeedback.hidden = !message;
+}
+function showFieldFeedback(field) {
+  const error = document.getElementById(`${field.id}Error`);
+  if (!error) return;
+  const invalid = !field.validity.valid;
+  field.setAttribute("aria-invalid", String(invalid));
+  error.textContent = invalid ? field.validationMessage : "";
+  error.hidden = !invalid;
+}
+form?.addEventListener("invalid", (event) => showFieldFeedback(event.target), true);
+form?.addEventListener("input", (event) => {
+  if (event.target.getAttribute("aria-invalid") === "true") showFieldFeedback(event.target);
+});
+form?.addEventListener("change", (event) => {
+  if (event.target.getAttribute("aria-invalid") === "true") showFieldFeedback(event.target);
+});
+
 let currentCredential = null;
 
 function openSlipModal(){
   if (!slipSection) return;
   slipSection.hidden = false;
+  requestAnimationFrame(() => document.getElementById("closeOfficerSlipModalBtn")?.focus({ preventScroll: true }));
   slipSection.setAttribute("aria-hidden", "false");
   document.body.classList.add("modal-open");
   slipSection.querySelector(".slip-modal-body")?.scrollTo({ top: 0, behavior: "instant" in window ? "instant" : "auto" });
@@ -33,6 +58,7 @@ function closeSlipModal({ clear = true } = {}){
   slipSection.setAttribute("aria-hidden", "true");
   document.body.classList.remove("modal-open");
   if (clear) clearSlipState();
+  createBtn?.focus({ preventScroll: true });
 }
 function printSlip(){
   if (!currentCredential) return alert("Create an officer account first.");
@@ -102,6 +128,8 @@ form?.addEventListener("submit",async(e)=>{
   e.preventDefault();
   const college=collegeSelect.value, program=programSelect.value;
   if(!isValidSsuProgram(college,program))return alert("Select a valid Samar State University college/campus and program.");
+  showSubmissionFeedback("Creating officer account…", "pending");
+  form.setAttribute("aria-busy", "true");
   createBtn.disabled=true; createBtn.textContent="Creating Officer...";
   try{
     const result=await provisionOfficerAccount({
@@ -117,14 +145,16 @@ form?.addEventListener("submit",async(e)=>{
       roleEffectiveDate:effectiveDate.value
     });
     renderSlip(result.credential);
+    showSubmissionFeedback("Officer account created. The login slip is ready.", "success");
     if(!result.verificationEmailSent) console.info("Officer account created. Optional email verification message was not sent.");
-  }catch(err){alert(err.message||"Officer account creation failed.");}
-  finally{createBtn.disabled=false;createBtn.textContent="Create Officer Account";}
+  }catch(err){showSubmissionFeedback(err.message||"Officer account creation failed.", "error");alert(err.message||"Officer account creation failed.");}
+  finally{form.setAttribute("aria-busy", "false");createBtn.disabled=false;createBtn.textContent="Create Officer Account";}
 });
 resetBtn?.addEventListener("click",async()=>{
   const identifier=resetIdentifier.value.trim(); if(!identifier)return alert("Enter a Student ID or institutional email.");
+  resetFeedback.hidden=false; resetFeedback.className="submission-feedback pending"; resetFeedback.textContent="Sending password-reset link…";
   resetBtn.disabled=true; resetBtn.textContent="Sending...";
-  try{const result=await sendSchoolPasswordReset(identifier);alert(`A password-reset link was sent to ${result.email}.`);}catch(err){alert(err.message||"Password reset failed.");}
+  try{const result=await sendSchoolPasswordReset(identifier);resetFeedback.className="submission-feedback success";resetFeedback.textContent=`A password-reset link was sent to ${result.email}.`;alert(`A password-reset link was sent to ${result.email}.`);}catch(err){resetFeedback.className="submission-feedback error";resetFeedback.textContent=err.message||"Password reset failed.";alert(err.message||"Password reset failed.");}
   finally{resetBtn.disabled=false;resetBtn.textContent="Send Password Reset Link";}
 });
 document.getElementById("printOfficerSlipBtn")?.addEventListener("click", printSlip);
@@ -132,12 +162,26 @@ document.getElementById("downloadOfficerSlipBtn")?.addEventListener("click",down
 document.getElementById("clearOfficerSlipBtn")?.addEventListener("click",()=>closeSlipModal());
 document.getElementById("closeOfficerSlipModalBtn")?.addEventListener("click",()=>closeSlipModal());
 slipSection?.addEventListener("click",(event)=>{ if (event.target?.dataset?.closeSlip === "true") closeSlipModal(); });
-document.addEventListener("keydown",(event)=>{ if (event.key === "Escape" && !slipSection?.hidden) closeSlipModal(); });
+document.addEventListener("keydown",(event)=>{
+  if (slipSection?.hidden) return;
+  if (event.key === "Escape") closeSlipModal();
+  if (event.key === "Tab") {
+    const controls = [...slipSection.querySelectorAll('button:not(:disabled), a[href], [tabindex="0"]')].filter(el => el.getClientRects().length);
+    const first = controls[0], last = controls.at(-1);
+    if (event.shiftKey && (document.activeElement === first || !slipSection.contains(document.activeElement))) {
+      event.preventDefault(); last?.focus();
+    } else if (!event.shiftKey && (document.activeElement === last || !slipSection.contains(document.activeElement))) {
+      event.preventDefault(); first?.focus();
+    }
+  }
+});
 document.getElementById("officerStudentId")?.addEventListener("input",e=>{e.target.value=e.target.value.replace(/\D/g,"").slice(0,6);});
 collegeSelect?.addEventListener("change",populatePrograms);
 standingSelect?.addEventListener("change",()=>{
   const active=isActiveStudentStanding(standingSelect.value);
-
+  document.getElementById("officerStandingHint").textContent = active
+    ? "Active standing permits portal access, subject to account status and assigned permissions."
+    : `${studentStandingLabel(standingSelect.value)} accounts are inactive: portal access and voting are disabled.`;
 });
 populateColleges(); populatePrograms(); effectiveDate.value=new Date().toISOString().slice(0,10);
 standingSelect?.dispatchEvent(new Event("change"));
