@@ -13,6 +13,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="css/bulletin-showcase.css?v=1" />
 </head>
 <body class="student-app-shell">
 <header class="dashboard-header">
@@ -24,12 +25,13 @@
 
 <div class="student-module-column"><div class="student-module-toolbar"><h1 id="studentModuleTitle">Bulletin Board</h1><div class="dashboard-user-area"><div class="notification-wrap"><button aria-label="Notifications" class="header-icon-btn" id="notificationButton" type="button"><i class="fa-solid fa-bell"></i><span class="notification-dot hidden" id="notificationDot"></span></button><div class="notification-panel hidden" id="notificationPanel"><div class="notification-panel-head"><strong>Notifications</strong><button id="markNotificationsRead" type="button">Mark all as read</button></div><div class="notification-list" id="notificationList"></div></div></div><div class="header-avatar" id="dashboardUserInitials">ST</div><span class="header-user-name" id="dashboardUserName">Student</span></div></div><main class="student-page-main bulletin-page-main">
 
-<section aria-label="USC announcements" class="bulletin-carousel">
-<button aria-label="Previous announcements" class="bulletin-carousel-arrow bulletin-carousel-prev" id="bulletinPrev" type="button"><i class="fa-solid fa-chevron-left"></i></button>
-<div class="bulletin-carousel-viewport" id="bulletinViewport">
+<section aria-label="USC announcements" class="bulletin-carousel" aria-roledescription="carousel">
+<button aria-label="Previous announcements" class="bulletin-carousel-arrow bulletin-carousel-prev" id="bulletinPrev" type="button" hidden><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m14 6-6 6 6 6"/></svg></button>
+<div class="bulletin-carousel-viewport" id="bulletinViewport" tabindex="0" role="group" aria-label="Announcement cards">
 <div class="bulletin-page-feed" id="bulletinFeed"><div class="page-loading">Loading announcements...</div></div>
 </div>
-<button aria-label="Next announcements" class="bulletin-carousel-arrow bulletin-carousel-next" id="bulletinNext" type="button"><i class="fa-solid fa-chevron-right"></i></button>
+<button aria-label="Next announcements" class="bulletin-carousel-arrow bulletin-carousel-next" id="bulletinNext" type="button" hidden><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m10 6 6 6-6 6"/></svg></button>
+<p class="bulletin-carousel-status" id="bulletinPosition" role="status" aria-live="polite"></p>
 <div aria-label="Announcement pages" class="bulletin-carousel-dots" id="bulletinDots"></div>
 </section>
 </main></div></div><footer class="site-footer shared-student-footer" id="contactSection">
@@ -60,8 +62,8 @@
 </div>
 </div>
 </footer>
-<div class="announcement-modal hidden" id="bulletinModal"><div class="announcement-modal-backdrop" data-close=""></div><div class="announcement-modal-dialog"><button class="modal-close" data-close="" type="button">×</button><img alt="Announcement" class="modal-image hidden" id="bulletinModalImage"/><div class="modal-meta"><span class="badge live" id="bulletinModalCategory">Official Notice</span><span id="bulletinModalDate">—</span></div><h3 id="bulletinModalTitle"></h3><p class="modal-audience" id="bulletinModalAudience"></p><p id="bulletinModalContent"></p></div></div>
-<script src="js/notifications.js?v=panel-polish-1" type="module"></script><script src="js/bulletin.js?v=2" type="module"></script>
+<div class="announcement-modal hidden" id="bulletinModal" role="dialog" aria-modal="true" aria-labelledby="bulletinModalTitle"><div class="announcement-modal-backdrop" data-close=""></div><div class="announcement-modal-dialog"><button class="modal-close" data-close="" type="button" aria-label="Close announcement">×</button><img alt="Announcement" class="modal-image hidden" id="bulletinModalImage"/><div class="modal-meta"><span class="badge live" id="bulletinModalCategory">Official Notice</span><span id="bulletinModalDate">—</span></div><h3 id="bulletinModalTitle"></h3><p class="modal-audience" id="bulletinModalAudience"></p><p id="bulletinModalContent"></p></div></div>
+<script src="js/notifications.js?v=panel-polish-1" type="module"></script><script src="js/bulletin.js?v=2-glass-showcase-1" type="module"></script>
 <script type="module" src="../shared/profile-manager.js?v=supabase-email-1"></script>
 <script src="../shared/student-sidebar-navigation.js"></script>
 </body></html>
