@@ -13,6 +13,8 @@ const SESSION_KEY = "activeSession";
 let announcements = [];
 let carouselIndex = 0;
 let touchStartX = 0;
+let touchStartY = 0;
+let modalReturnFocus = null;
 
 const feed = document.getElementById("bulletinFeed");
 const viewport = document.getElementById("bulletinViewport");
@@ -89,9 +91,14 @@ function renderDots() {
     return;
   }
 
-  dotsHost.innerHTML = Array.from({ length: pages }, (_, index) => (
+  if (dotsHost.children.length !== pages) dotsHost.innerHTML = Array.from({ length: pages }, (_, index) => (
     `<button class="bulletin-carousel-dot${index === carouselIndex ? " active" : ""}" type="button" data-carousel-index="${index}" aria-label="Show announcement set ${index + 1}"></button>`
   )).join("");
+  dotsHost.querySelectorAll("button").forEach((button, index) => {
+    button.classList.toggle("active", index === carouselIndex);
+    if (index === carouselIndex) button.setAttribute("aria-current", "true");
+    else button.removeAttribute("aria-current");
+  });
 }
 
 function applyCarouselPosition({ animate = true } = {}) {
@@ -114,8 +121,17 @@ function applyCarouselPosition({ animate = true } = {}) {
     });
   }
 
-  if (prevButton) prevButton.disabled = announcements.length <= visibleCards();
-  if (nextButton) nextButton.disabled = announcements.length <= visibleCards();
+  const isStatic = announcements.length <= visibleCards();
+  carousel?.classList.toggle("is-static", isStatic);
+  carousel?.classList.toggle("is-single", announcements.length === 1);
+  for (const button of [prevButton, nextButton]) if (button) { button.disabled = isStatic; button.hidden = isStatic; }
+  feed.querySelectorAll(".bulletin-page-card").forEach((card, index) => {
+    const offscreen = index < carouselIndex || index >= carouselIndex + visibleCards();
+    card.inert = offscreen;
+    card.setAttribute("aria-hidden", String(offscreen));
+  });
+  const position = document.getElementById("bulletinPosition");
+  if (position) position.textContent = announcements.length ? `Announcements ${carouselIndex + 1} to ${Math.min(carouselIndex + visibleCards(), announcements.length)} of ${announcements.length}` : "No announcements";
   renderDots();
 }
 
@@ -152,7 +168,7 @@ function renderAnnouncements() {
           <div class="bulletin-page-date">${escapeHtml(formatDate(announcement.createdAt || announcement.createdAtMs))}</div>
           <h2>${escapeHtml(announcement.title || "USC Announcement")}</h2>
           <p>${escapeHtml(excerpt)}</p>
-          <button class="bulletin-read-more" type="button" data-id="${announcement.id}" aria-label="Read full announcement: ${escapeHtml(announcement.title || "USC Announcement")}">
+          <button class="bulletin-read-more" type="button" data-id="${escapeHtml(announcement.id)}" aria-label="Read full announcement: ${escapeHtml(announcement.title || "USC Announcement")}">
             <span>Read more</span>
             <span class="bulletin-read-more-icon" aria-hidden="true"><i class="fa-solid fa-arrow-right"></i></span>
           </button>
@@ -187,13 +203,19 @@ function openAnnouncement(announcement) {
     image.classList.add("hidden");
   }
 
+  modalReturnFocus = document.activeElement;
   modal.classList.remove("hidden");
+  modal.querySelector(".modal-close")?.focus();
   document.body.classList.add("modal-open");
 }
 
 function closeModal() {
-  document.getElementById("bulletinModal")?.classList.add("hidden");
+  const modal = document.getElementById("bulletinModal");
+  if (!modal || modal.classList.contains("hidden")) return;
+  modal.classList.add("hidden");
   document.body.classList.remove("modal-open");
+  if (modalReturnFocus?.isConnected && !modalReturnFocus.closest("[inert]")) modalReturnFocus.focus({ preventScroll: true });
+  else viewport?.focus({ preventScroll: true });
 }
 
 guardStudent();
@@ -225,14 +247,23 @@ dotsHost?.addEventListener("click", (event) => {
 
 viewport?.addEventListener("touchstart", (event) => {
   touchStartX = event.changedTouches[0]?.clientX || 0;
+  touchStartY = event.changedTouches[0]?.clientY || 0;
 }, { passive: true });
 
 viewport?.addEventListener("touchend", (event) => {
-  const endX = event.changedTouches[0]?.clientX || touchStartX;
+  const endX = event.changedTouches[0]?.clientX ?? touchStartX;
   const distance = endX - touchStartX;
-  if (Math.abs(distance) < 45) return;
+  const verticalDistance = (event.changedTouches[0]?.clientY ?? touchStartY) - touchStartY;
+  if (Math.abs(distance) < 45 || Math.abs(verticalDistance) > Math.abs(distance)) return;
   moveCarousel(distance < 0 ? 1 : -1);
 }, { passive: true });
+
+viewport?.addEventListener("keydown", (event) => {
+  if (event.altKey || event.ctrlKey || event.metaKey || !["ArrowLeft", "ArrowRight"].includes(event.key)) return;
+  event.preventDefault();
+  moveCarousel(event.key === "ArrowRight" ? 1 : -1);
+  viewport.focus({ preventScroll: true });
+});
 
 if (typeof ResizeObserver !== "undefined" && viewport) {
   new ResizeObserver(() => applyCarouselPosition({ animate: false })).observe(viewport);
@@ -243,6 +274,10 @@ if (typeof ResizeObserver !== "undefined" && viewport) {
 document.querySelectorAll("[data-close]").forEach((button) => button.addEventListener("click", closeModal));
 document.addEventListener("keydown", (event) => {
   if (event.key === "Escape") closeModal();
+  const modal = document.getElementById("bulletinModal");
+  if (event.key === "Tab" && modal && !modal.classList.contains("hidden")) {
+    event.preventDefault(); modal.querySelector(".modal-close")?.focus();
+  }
 });
 
 document.getElementById("studentLogout")?.addEventListener("click", async () => {
