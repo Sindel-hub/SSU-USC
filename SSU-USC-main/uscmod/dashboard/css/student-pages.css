@@ -413,8 +413,10 @@ body.events-module-shell .events-upcoming-calendar { min-width:0; }
 }
 .events-highlight-background {
   position:absolute;
-  inset:0;
+  inset:-24px;
   z-index:-3;
+  filter:blur(12px);
+  transform:scale(1.04);
   background:url("../assets/HomeLogo.webp") center / cover no-repeat;
   transition:background-image .35s ease;
 }
@@ -422,7 +424,7 @@ body.events-module-shell .events-upcoming-calendar { min-width:0; }
   position:absolute;
   inset:0;
   z-index:-2;
-  background:linear-gradient(180deg,rgba(5,20,35,.46),rgba(5,20,35,.30) 40%,rgba(5,20,35,.72));
+  background:linear-gradient(180deg,rgba(20,39,65,.22),rgba(7,23,38,.38) 45%,rgba(4,16,28,.62));
 }
 .events-highlight-content {
   position:relative;
@@ -439,12 +441,12 @@ body.events-module-shell .events-upcoming-calendar { min-width:0; }
   grid-row:1;
   justify-self:start;
   max-width:100%;
-  padding:7px 11px;
-  border:1px solid rgba(224,243,255,.24);
-  border-radius:999px;
-  background:rgba(7,25,43,.78);
+  padding:0;
+  border:0;
+  background:transparent;
   color:#e8f7ff;
-  font-size:12px;
+  text-shadow:0 1px 4px rgba(0,12,24,.65);
+  font-size:11px;
   line-height:1.4;
   font-weight:700;
   letter-spacing:.06em;
@@ -456,13 +458,10 @@ body.events-module-shell .events-upcoming-calendar { min-width:0; }
   justify-self:center;
   width:min(100%,640px);
   min-width:0;
-  padding:24px 28px;
-  border:1px solid rgba(224,243,255,.28);
-  border-radius:20px;
-  background:rgba(7,25,43,.82);
-  backdrop-filter:blur(12px);
-  -webkit-backdrop-filter:blur(12px);
-  box-shadow:0 16px 36px rgba(0,12,24,.20);
+  padding:12px 0;
+  border:0;
+  background:transparent;
+  text-shadow:0 2px 12px rgba(0,10,24,.4);
   color:#fff;
   text-align:center;
   overflow-wrap:anywhere;
@@ -476,16 +475,18 @@ body.events-module-shell .events-upcoming-calendar { min-width:0; }
   font-weight:600;
 }
 .events-highlight-center h2 {
-  margin:0;
+  max-width:16ch;
+  margin:0 auto;
   color:#fff;
-  font-size:clamp(25px,3vw,40px);
-  line-height:1.15;
-  font-weight:800;
+  font-family:Georgia,"Times New Roman",serif;
+  font-size:clamp(32px,3.8vw,52px);
+  line-height:1.06;
+  font-weight:700;
   letter-spacing:-.025em;
   text-wrap:balance;
 }
-.events-highlight-venue { margin:12px 0 0; color:#edf7ff; font-size:14px; line-height:1.5; }
-.events-highlight-date { display:block; margin-top:14px; color:#c9e9fc; font-size:13px; line-height:1.5; letter-spacing:.04em; }
+.events-highlight-venue { margin:12px 0 0; color:#e1edf5; font-size:13px; line-height:1.5; }
+.events-highlight-date { display:block; margin-top:14px; color:#c9e9fc; font-size:13px; line-height:1.5; letter-spacing:.34em; text-transform:uppercase; }
 .events-highlight-nav {
   grid-row:2;
   align-self:center;
@@ -496,17 +497,19 @@ body.events-module-shell .events-upcoming-calendar { min-width:0; }
   width:44px;
   height:48px;
   padding:0;
-  border:1px solid rgba(224,243,255,.30);
-  border-radius:12px;
-  background:rgba(7,25,43,.82);
+  border:0;
+  border-radius:8px;
+  background:transparent;
+  opacity:.55;
   color:#fff;
   font-size:19px;
   cursor:pointer;
-  transition:background .18s ease,border-color .18s ease;
+  transition:opacity .18s ease;
 }
 .events-highlight-prev { grid-column:1; }
 .events-highlight-next { grid-column:3; }
-.events-highlight-nav:hover:not(:disabled) { background:#24597c; border-color:#a7dcfa; }
+.events-highlight-nav:hover:not(:disabled),
+.events-highlight-nav:focus-visible { opacity:1; }
 .events-highlight-nav:disabled { opacity:.45; cursor:default; }
 .events-highlight-nav:focus-visible,
 .events-section-jump:focus-visible,
@@ -521,28 +524,30 @@ body.events-module-shell .events-upcoming-calendar { min-width:0; }
   width:100%;
   min-width:0;
 }
-.events-highlight-dots { display:flex; gap:6px; max-width:min(100%,320px); overflow-x:auto; padding:4px 0 8px; }
-.events-highlight-dot { position:relative; flex:0 0 18px; width:18px; height:20px; padding:0; border:0; border-radius:8px; background:transparent; cursor:pointer; }
+.events-highlight-dots { display:flex; gap:4px; max-width:min(100%,320px); overflow-x:auto; padding:4px 0 8px; }
+.events-highlight-dot { position:relative; flex:0 0 12px; width:12px; height:20px; padding:0; border:0; border-radius:8px; background:transparent; cursor:pointer; }
 .events-highlight-dot::before { content:""; position:absolute; inset:7px 0; border-radius:999px; background:rgba(235,248,255,.65); }
-.events-highlight-dot.active { flex-basis:32px; width:32px; }
-.events-highlight-dot.active::before { background:#73dcff; }
+.events-highlight-dot.active { flex-basis:28px; width:28px; }
+.events-highlight-dot.active::before { background:#8ea9d8; }
 .events-section-jump {
-  display:inline-flex;
+  display:flex;
+  flex-direction:column;
   align-items:center;
   justify-content:center;
-  gap:8px;
+  gap:2px;
+  min-width:44px;
   min-height:44px;
-  padding:10px 16px;
-  border:1px solid rgba(224,243,255,.35);
-  border-radius:999px;
-  background:rgba(7,25,43,.82);
-  color:#f1faff;
-  font-size:14px;
+  padding:4px 8px;
+  border:0;
+  background:transparent;
+  color:rgba(241,250,255,.7);
+  font-size:10px;
   line-height:1.4;
   cursor:pointer;
-  transition:background .18s ease;
+  transition:color .18s ease;
 }
-.events-section-jump:hover { background:#24597c; }
+.events-section-jump:hover { color:#fff; }
+.events-section-jump svg { width:14px; height:14px; }
 .events-section-jump i { font-size:16px; }
 
 /* Upcoming Events section */
@@ -2056,34 +2061,28 @@ body:has(.candidate-focus-overlay.open) .candidate-vote-zone{opacity:0;visibilit
    STUDENT EVENT PARTICIPATION MODULE - 2026-09-07
    ========================================================= */
 .events-highlight-action{
-  margin-top:18px;
-  min-height:44px;
-  max-width:100%;
-  padding:10px 18px;
-  border:1px solid #6bdbf5;
-  border-radius:999px;
-  background:#66d5ef;
-  color:#0a2b45;
   display:inline-flex;
   align-items:center;
   justify-content:center;
-  gap:9px;
+  gap:8px;
+  min-height:44px;
+  max-width:100%;
+  margin-top:10px;
+  padding:8px 6px;
+  border:0;
+  border-radius:4px;
+  background:transparent;
+  color:#eef8ff;
   font:inherit;
-  font-size: 14px;
-  font-weight:800;
+  font-size:13px;
+  font-weight:500;
+  text-decoration:underline;
+  text-underline-offset:4px;
   cursor:pointer;
-  box-shadow:0 12px 28px rgba(0,0,0,.18);
-  backdrop-filter:blur(8px);
-  transition:transform .18s ease,background .18s ease,border-color .18s ease;
 }
-.events-highlight-action:hover,
-.events-highlight-action:focus-visible{
-  background:#a2edff;
-  border-color:#d5f7ff;
-  outline:2px solid #8be7ff;
-  outline-offset:3px;
-}
-.events-highlight-action:disabled{opacity:.55;cursor:not-allowed;transform:none}
+.events-highlight-action:hover{color:#fff}
+.events-highlight-action:focus-visible{outline:2px solid #b9e8ff;outline-offset:3px}
+.events-highlight-action:disabled{opacity:.5;cursor:not-allowed}
 
 .events-upcoming-card{
   padding:0 !important;
@@ -3988,12 +3987,7 @@ body.events-modal-open{overflow:hidden}
   font-weight: 800;
   letter-spacing: .035em;
 }
-.events-highlight-module[data-source-type="program"] .events-highlight-kicker::after {
-  content: "  ·  EXTERNAL PROGRAM";
-  font-size: .78em;
-  letter-spacing: .12em;
-  opacity: .9;
-}
+
 .events-detail-facts {
   grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
 }
