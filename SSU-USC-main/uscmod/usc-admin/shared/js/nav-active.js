@@ -61,6 +61,9 @@ const OFFICER_MODULES = [
   }
 ];
 const MOBILE_BREAKPOINT = 820;
+const OFFICER_NAV_SCRIPT_URL = document.currentScript?.src || new URL('../shared/js/nav-active.js', location.href).href;
+let sidebarReturnFocus = null;
+let sidebarOverflow = null;
 
 function normalizePath(pathname) {
   return String(pathname || "")
@@ -105,7 +108,10 @@ function setActiveSidebarLink() {
       const linkUrl = new URL(link.getAttribute("href"), window.location.href);
       const linkPath = normalizePath(linkUrl.pathname);
 
-      link.classList.toggle("active", currentPath === linkPath);
+      const active = currentPath === linkPath;
+      link.classList.toggle("active", active);
+      if (active) link.setAttribute('aria-current', 'page');
+      else link.removeAttribute('aria-current');
     } catch (error) {
       console.warn("Unable to resolve sidebar link:", error);
     }
@@ -140,101 +146,126 @@ function getSidebarElements() {
   };
 }
 
-function openSidebar() {
-  if (!isMobileViewport()) return;
-
-  const { toggle, sidebar, overlay } = getSidebarElements();
-
+function updateSidebarAccessibility() {
+  const { sidebar, toggle } = getSidebarElements();
   if (!sidebar) return;
-
-  sidebar.classList.add("open");
-  overlay?.classList.add("open");
-
-  document.body.classList.add("sidebar-open");
-
-  toggle?.setAttribute("aria-expanded", "true");
-  toggle?.setAttribute("aria-label", "Close sidebar");
-
-  document.body.style.overflow = "hidden";
+  const mobile = isMobileViewport(), open = sidebar.classList.contains('open');
+  sidebar.inert = mobile && !open;
+  sidebar.setAttribute('aria-hidden', String(mobile && !open));
+  if (mobile) {
+    sidebar.setAttribute('role', 'dialog');
+    sidebar.setAttribute('aria-modal', 'true');
+    sidebar.setAttribute('aria-labelledby', 'officerMobileNavTitle');
+  } else {
+    sidebar.removeAttribute('role');
+    sidebar.removeAttribute('aria-modal');
+    sidebar.removeAttribute('aria-labelledby');
+  }
+  if (toggle && sidebar.id) toggle.setAttribute('aria-controls', sidebar.id);
 }
 
-function closeSidebar() {
+function openSidebar() {
+  if (!isMobileViewport()) return;
   const { toggle, sidebar, overlay } = getSidebarElements();
+  if (!sidebar || sidebar.classList.contains('open')) return;
+  sidebarReturnFocus = document.activeElement;
+  sidebarOverflow = document.body.style.overflow;
+  sidebar.classList.add('open', 'mobile-open');
+  overlay?.classList.add('open');
+  document.body.classList.add('sidebar-open');
+  document.documentElement.classList.add('officer-mobile-nav-open');
+  toggle?.setAttribute('aria-expanded', 'true');
+  toggle?.setAttribute('aria-label', 'Close sidebar');
+  document.body.style.overflow = 'hidden';
+  updateSidebarAccessibility();
+  sidebar.querySelector('.officer-mobile-nav-close')?.focus();
+}
 
-  sidebar?.classList.remove("open");
-  overlay?.classList.remove("open");
-
-  document.body.classList.remove("sidebar-open");
-
-  toggle?.setAttribute("aria-expanded", "false");
-  toggle?.setAttribute("aria-label", "Open sidebar");
-
-  document.body.style.overflow = "";
+function closeSidebar({ restoreFocus = true } = {}) {
+  const { toggle, sidebar, overlay } = getSidebarElements();
+  const wasOpen = sidebar?.classList.contains('open');
+  sidebar?.classList.remove('open', 'mobile-open');
+  overlay?.classList.remove('open');
+  document.body.classList.remove('sidebar-open');
+  document.documentElement.classList.remove('officer-mobile-nav-open');
+  toggle?.setAttribute('aria-expanded', 'false');
+  toggle?.setAttribute('aria-label', 'Open sidebar');
+  if (wasOpen && sidebarOverflow !== null) document.body.style.overflow = sidebarOverflow;
+  sidebarOverflow = null;
+  updateSidebarAccessibility();
+  if (wasOpen && restoreFocus) {
+    if (isMobileViewport()) (sidebarReturnFocus?.isConnected ? sidebarReturnFocus : toggle)?.focus();
+    else sidebar?.querySelector('a[href]')?.focus();
+  }
+  sidebarReturnFocus = null;
 }
 
 function toggleSidebar() {
   const { sidebar } = getSidebarElements();
-
-  if (!sidebar) return;
-
-  if (sidebar.classList.contains("open")) {
-    closeSidebar();
-  } else {
-    openSidebar();
-  }
+  if (sidebar?.classList.contains('open')) closeSidebar();
+  else openSidebar();
 }
 
 function bindResponsiveSidebar() {
-  const toggle = document.querySelector("[data-sidebar-toggle]");
-  const sidebar = document.querySelector(".sidebar");
-  const overlay = document.querySelector("[data-sidebar-overlay]");
-
-  if (!toggle || !sidebar) {
-    console.warn("Sidebar toggle or sidebar was not found.");
-    return;
+  const { toggle, sidebar, overlay } = getSidebarElements();
+  if (!toggle || !sidebar || sidebar.dataset.mobileNavigationBound) return;
+  sidebar.dataset.mobileNavigationBound = 'true';
+  document.body.classList.add('officer-mobile-navigation');
+  if (!sidebar.id) sidebar.id = 'officerModuleSidebar';
+  const style = document.createElement('link');
+  style.rel = 'stylesheet';
+  style.href = new URL('../css/officer-mobile-navigation.css?v=1', OFFICER_NAV_SCRIPT_URL).href;
+  document.head.append(style);
+  const header = document.createElement('header');
+  header.className = 'officer-mobile-nav-header';
+  const identity = document.createElement('div');
+  identity.className = 'officer-mobile-nav-brand';
+  const seal = document.createElement('img');
+  seal.src = new URL('../assets/USClogo.webp', OFFICER_NAV_SCRIPT_URL).href;
+  seal.alt = '';
+  const title = document.createElement('div');
+  title.innerHTML = '<small>SSU UNIVERSITY STUDENT COUNCIL</small><h2 id="officerMobileNavTitle">Officer Portal</h2>';
+  identity.append(seal, title);
+  const closeButton = document.createElement('button');
+  closeButton.type = 'button';
+  closeButton.className = 'officer-mobile-nav-close';
+  closeButton.setAttribute('aria-label', 'Close officer navigation');
+  closeButton.textContent = '×';
+  header.append(identity, closeButton);
+  sidebar.prepend(header);
+  const navigation = sidebar.querySelector('.officer-module-nav, .sidebar-group');
+  if (navigation) {
+    navigation.classList.add('officer-mobile-nav-links');
+    const label = document.createElement('p');
+    label.className = 'officer-mobile-nav-label';
+    label.textContent = 'Workspace';
+    navigation.before(label);
   }
-
-  function handleToggle(event) {
-    event.preventDefault();
-    event.stopPropagation();
-
-    if (sidebar.classList.contains("open")) {
-      closeSidebar();
-    } else {
-      openSidebar();
-    }
-  }
-
-  /* Standard tap/click */
-  toggle.addEventListener("click", handleToggle);
-
-  /* Overlay closes sidebar */
-  if (overlay) {
-    overlay.addEventListener("click", closeSidebar);
-  }
-
-  /* Close after selecting a menu item on mobile */
-  document.querySelectorAll(".sidebar .nav-btn").forEach((link) => {
-    link.addEventListener("click", () => {
-      if (isMobileViewport()) {
-        closeSidebar();
-      }
+  toggle.addEventListener('click', event => {
+    event.preventDefault(); event.stopPropagation(); toggleSidebar();
+  });
+  closeButton.addEventListener('click', () => closeSidebar());
+  overlay?.addEventListener('click', () => closeSidebar());
+  sidebar.querySelectorAll('.nav-btn').forEach(link => {
+    link.addEventListener('click', () => {
+      if (isMobileViewport()) closeSidebar({ restoreFocus: false });
     });
   });
-
-  /* Escape key */
-  document.addEventListener("keydown", (event) => {
-    if (event.key === "Escape") {
-      closeSidebar();
-    }
+  document.addEventListener('usc:settings-open', () => closeSidebar({ restoreFocus: false }));
+  document.addEventListener('keydown', event => {
+    if (!sidebar.classList.contains('open')) return;
+    if (event.key === 'Escape') { event.preventDefault(); closeSidebar(); return; }
+    if (event.key !== 'Tab') return;
+    const controls = [...sidebar.querySelectorAll('a[href], button:not(:disabled)')].filter(element => element.getClientRects().length);
+    const first = controls[0], last = controls.at(-1);
+    if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last?.focus(); }
+    else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first?.focus(); }
   });
-
-  /* Reset when returning to desktop */
-  window.addEventListener("resize", () => {
-    if (!isMobileViewport()) {
-      closeSidebar();
-    }
+  window.addEventListener('resize', () => {
+    if (!isMobileViewport()) closeSidebar();
+    updateSidebarAccessibility();
   });
+  updateSidebarAccessibility();
 }
 
 /* =========================================================
