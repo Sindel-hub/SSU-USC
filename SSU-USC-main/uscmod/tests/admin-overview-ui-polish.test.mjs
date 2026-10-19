@@ -25,5 +25,5 @@ test("admin overview keeps the existing metric element ids", () => {
 });
 
 test("admin overview cache-busts the polished stylesheet", () => {
-  assert.match(html, /admin-dashboard\.css\?v=overview-polish-2/);
+  assert.match(html, /overview-modern\.css\?v=1/);
 });
