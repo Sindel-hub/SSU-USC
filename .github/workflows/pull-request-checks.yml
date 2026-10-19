@@ -1,0 +1,26 @@
+name: Pull request checks
+on:
+  pull_request:
+    branches: [main]
+permissions:
+  contents: read
+concurrency:
+  group: pr-checks-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+jobs:
+  website:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: SSU-USC-main/uscmod
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Install dependencies without generating a lockfile
+        run: npm install --package-lock=false --no-audit --no-fund
+      - name: Check JavaScript syntax
+        run: npm run test:syntax
+      - name: Run standard tests
+        run: npm test
