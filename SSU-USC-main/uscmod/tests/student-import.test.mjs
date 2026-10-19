@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import vm from 'node:vm';
 import {createRequire} from 'node:module';
-import {IMPORT_FIELDS,detectColumns,mapRows,csvContent,importSummary} from '../usc-admin/admin-dashboard/js/student-import-model.mjs';
+import {IMPORT_FIELDS,detectColumns,mapRows,csvContent,importSummary,accountImportRow} from '../usc-admin/admin-dashboard/js/student-import-model.mjs';
 import {SSU_PROGRAMS} from '../usc-admin/student-registration/js/ssu-programs.js';
 const require=createRequire(import.meta.url),{validateRow}=require('../functions/student-import.js'),XLSX=require('@e965/xlsx');
 const valid={fullName:'Ana Student',studentId:'123456',institutionalEmail:'ANA@EXAMPLE.EDU',college:'College of Education',program:'Bachelor of Elementary Education',yearLevel:'1'};
@@ -12,14 +12,24 @@ test('backend reuses the manual program catalog, canonicalizes identities and va
  const {row}=validateRow(valid);assert.equal(row.yearLevel,'1st Year');assert.equal(row.institutionalEmail,'ana@example.edu');assert.equal(validateRow({...valid,studentId:'123-456'}).row.studentId,'123456');
  for(const [key,value] of [['fullName',''],['studentId','1234567'],['institutionalEmail','not-email'],['program','Invented program'],['college','Other'],['yearLevel','6'],['fullName','x'.repeat(121)]])assert.ok(validateRow({...valid,[key]:value}).error,key);
 });
-test('Google Forms column detection and manual/default mappings preserve values and source rows',()=>{
- const headers=['Timestamp','Full Name','Student ID Number','Email Address','Course','Year Level','College'];const mapping=detectColumns(headers);
- assert.equal(mapping.studentId,'2');assert.equal(mapping.institutionalEmail,'3');
- const rows=mapRows([headers,['','Ana','001234','ANA@EXAMPLE.EDU','Program','1','College'],['','Ben','001-234','ben@example.edu','Program','1','College'],['','Cat','567890','ana@example.edu','Program','1','College']],mapping);
- assert.equal(rows[0].studentId,'001234');assert.equal(rows[0].sourceRow,2);assert.equal(rows[1].status,'duplicate');assert.equal(rows[2].status,'duplicate');
- assert.throws(()=>mapRows([headers,['a']],{...mapping,fullName:'2'}),/only one field/);
- const defaults=mapRows([['Student ID','Full name','Email'],['001234','Ana Student','a@example.edu']],{studentId:'0',fullName:'1',institutionalEmail:'2',college:'',program:'',yearLevel:''},{college:valid.college,program:valid.program,yearLevel:'1st Year'});assert.equal(defaults[0].program,valid.program);
- assert.throws(()=>mapRows([headers,...Array.from({length:1001},()=>['','Ana','123456'])],mapping),/1,000|1000/);
+test('separate name columns detect Google Forms headers, compose the account name and preserve duplicates/source rows',()=>{
+ const headers=['Timestamp','5. LAST NAME','6. FIRST NAME','7. MIDDLE NAME','Student ID Number','Email Address','Course','Year Level','College'];const mapping=detectColumns(headers);
+ assert.equal(mapping.lastName,'1');assert.equal(mapping.firstName,'2');assert.equal(mapping.middleName,'3');assert.equal(mapping.studentId,'4');assert.equal(mapping.institutionalEmail,'5');assert.equal(mapping.fullName,undefined);
+ assert.deepEqual(IMPORT_FIELDS.slice(0,3).map(([,label])=>label),['Last Name','First Name','Middle Name']);
+ const rows=mapRows([headers,['',' Cruz ',' Ana ',' Santos ','001234','ANA@EXAMPLE.EDU','Program','1','College'],['','Other','Ben','','001-234','ben@example.edu','Program','1','College'],['','Student','Cat','','567890','ana@example.edu','Program','1','College']],mapping);
+ assert.equal(rows[0].fullName,'Ana Santos Cruz');assert.equal(rows[0].studentId,'001234');assert.equal(rows[0].sourceRow,2);assert.equal(rows[1].status,'duplicate');assert.equal(rows[2].status,'duplicate');
+ assert.equal(accountImportRow(rows[0]).fullName,'Ana Santos Cruz');assert.equal(accountImportRow(rows[0]).firstName,undefined);
+ assert.throws(()=>mapRows([headers,['a']],{...mapping,lastName:'2'}),/only one field/);
+ assert.throws(()=>mapRows([headers,...Array.from({length:1001},()=>['','Cruz','Ana','','123456'])],mapping),/1,000|1000/);
+});
+test('middle names can be omitted or blank; first and last names remain required',()=>{
+ const headers=['Student ID','Surname','Given Name','Email'];const mapping=detectColumns(headers),defaults={college:valid.college,program:valid.program,yearLevel:'1st Year'};
+ const rows=mapRows([headers,['001234','Cruz','Ana','a@example.edu']],mapping,defaults);
+ assert.equal(rows[0].fullName,'Ana Cruz');assert.equal(rows[0].middleName,'');assert.equal(validateRow(accountImportRow(rows[0])).row.fullName,'Ana Cruz');
+ assert.throws(()=>mapRows([headers,['001234','Cruz','Ana','a@example.edu']],{...mapping,firstName:''},defaults),/Map all required/);
+ for(const values of [['001234','','Ana','a@example.edu'],['001234','Cruz','','a@example.edu']]){
+  const [row]=mapRows([headers,values],mapping,defaults);assert.match(row.nameError,/Last Name and First Name/);assert.ok(validateRow(accountImportRow(row)).error);
+ }
 });
 test('CSV exports escape quotes, newlines and spreadsheet formulas; summaries count actual states',()=>{
  const csv=csvContent(['Name','Message'],[['=HYPERLINK("bad")','a,\nb'],[' +SUM(1)','"quoted"']]);

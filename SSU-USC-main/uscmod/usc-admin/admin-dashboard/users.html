@@ -250,7 +250,7 @@
       <header class="import-header"><h2 id="studentImportTitle">Import student accounts</h2><button type="button" id="closeStudentImportButton" class="btn light" aria-label="Close student import">✕</button></header>
       <div class="import-body">
         <div id="importSetup">
-          <div id="importDropzone" class="import-upload"><strong>Choose or drop a registration file</strong><label for="studentImportFile">Excel (.xlsx, .xls) or CSV · up to 5 MB / 1,000 students</label><input id="studentImportFile" type="file" accept=".xlsx,.xls,.csv" /><p class="import-note">Use a header row. Student name, ID, email, college, program and year are required.</p><button type="button" class="btn light" id="downloadStudentImportTemplate">Download CSV template</button></div>
+          <div id="importDropzone" class="import-upload"><strong>Choose or drop a registration file</strong><label for="studentImportFile">Excel (.xlsx, .xls) or CSV · up to 5 MB / 1,000 students</label><input id="studentImportFile" type="file" accept=".xlsx,.xls,.csv" /><p class="import-note">Use a header row. Last name, first name, ID, email, college, program and year are required. Middle name is optional.</p><button type="button" class="btn light" id="downloadStudentImportTemplate">Download CSV template</button></div>
           <div id="importMappingSection" hidden>
             <div class="import-field"><label for="importSheet">Worksheet</label><select id="importSheet"></select></div>
             <h3 style="margin:18px 0 12px">Match columns</h3><div id="importMapping" class="import-mapping"></div>
@@ -264,7 +264,7 @@
         <div class="import-footer"><button type="button" class="btn primary" id="previewStudentImport" disabled>Preview accounts</button><button type="button" class="btn primary" id="confirmStudentImport" hidden>Create eligible accounts</button><button type="button" class="btn light" id="exportStudentCredentials" hidden>Download credentials CSV</button><button type="button" class="btn light" id="exportStudentImportReport" hidden>Download import report</button><button type="button" class="btn light" id="restartStudentImport" hidden>Import another file</button></div>
       </div>
     </dialog>
-    <script type="module" src="js/student-import.js?v=1"></script>
+    <script type="module" src="js/student-import.js?v=split-names-1"></script>
     <script type="module" src="js/admin-users.js?v=directory-modern-1"></script>
     <script type="module" src="../shared/js/admin-only-auth.js"></script>
 <script type="module" src="../../shared/profile-manager.js?v=supabase-email-1"></script>

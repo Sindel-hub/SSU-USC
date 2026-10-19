@@ -2,7 +2,7 @@ import { auth, functions } from '../../../firebase/firebase-config.js';
 import { onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/12.12.0/firebase-auth.js';
 import { httpsCallable } from 'https://www.gstatic.com/firebasejs/12.12.0/firebase-functions.js';
 import { SSU_PROGRAMS } from '../../student-registration/js/ssu-programs.js';
-import { IMPORT_FIELDS, detectColumns, mapRows, csvContent, importSummary } from './student-import-model.mjs';
+import { IMPORT_FIELDS, detectColumns, mapRows, csvContent, importSummary, accountImportRow } from './student-import-model.mjs?v=split-names-1';
 const el=id=>document.getElementById(id), dialog=el('studentImportDialog');
 let matrix=[],rows=[],file=null,busy=false,worker=null,generation=0,resultsMode=false,returnFocus=null;
 const controls=['studentImportFile','importSheet','previewStudentImport','confirmStudentImport','closeStudentImportButton','restartStudentImport','downloadStudentImportTemplate','importDefaultCollege','importDefaultProgram','importDefaultYear'];
@@ -30,7 +30,7 @@ async function parse(sheet){
     if(ticket!==generation)return;matrix=parsed.matrix;rows=[];
     el('importSheet').replaceChildren(...parsed.names.map(name=>new Option(name,name)));el('importSheet').value=parsed.name;
     const headers=matrix[0]||[],mapping=detectColumns(headers);el('importMapping').replaceChildren();
-    for(const [field,label] of IMPORT_FIELDS){const wrapper=document.createElement('label');wrapper.className='import-field';wrapper.append(document.createTextNode(label));const select=document.createElement('select');select.dataset.map=field;select.add(new Option('Choose column / use default',''));headers.forEach((h,i)=>select.add(new Option(`${i+1}. ${String(h||'Unnamed column')}`,String(i))));select.value=mapping[field];select.addEventListener('change',invalidatePreview);wrapper.append(select);el('importMapping').append(wrapper);}
+    for(const [field,label,,required] of IMPORT_FIELDS){const wrapper=document.createElement('label');wrapper.className='import-field';wrapper.append(document.createTextNode(label));const select=document.createElement('select');select.dataset.map=field;select.add(new Option(required===false?'No middle name column':'Choose column / use default',''));if(required===false)select.setAttribute('aria-label',label+' (optional)');headers.forEach((h,i)=>select.add(new Option(`${i+1}. ${String(h||'Unnamed column')}`,String(i))));select.value=mapping[field];select.addEventListener('change',invalidatePreview);wrapper.append(select);el('importMapping').append(wrapper);}
     el('importMappingSection').hidden=false;feedback(`${Math.max(0,matrix.length-1)} rows detected. Review column matches, then preview.`);
   }catch(error){matrix=[];el('importMappingSection').hidden=true;feedback(error.message,true);}finally{if(ticket===generation)setBusy(false);}
 }
@@ -49,11 +49,17 @@ function render(){
   el('importReview').hidden=false;
   if(rows.some(row=>row.temporaryPassword)){el('importCredentialWarning').hidden=false;el('exportStudentCredentials').hidden=false;}
 }
-async function call(name,batch){try{return (await httpsCallable(functions,name)({rows:batch.map(row=>Object.fromEntries(IMPORT_FIELDS.map(([key])=>[key,row[key]])))})).data;}catch(error){if(['functions/internal','functions/not-found','functions/unavailable'].includes(error?.code))throw Error('The import service could not be reached. A maintainer must verify the Firebase import functions deployment.');throw Error(error?.message||'The import request failed.');}}
+async function call(name,batch){
+  try { return (await httpsCallable(functions,name)({rows:batch.map(accountImportRow)})).data; }
+  catch(error){
+    if(['functions/internal','functions/not-found','functions/unavailable'].includes(error?.code)) throw Error('The import service could not be reached. A maintainer must verify the Firebase import functions deployment.');
+    throw Error(error?.message||'The import request failed.');
+  }
+}
 el('previewStudentImport').addEventListener('click',async()=>{
   if(busy)return;try{const mapping=Object.fromEntries([...dialog.querySelectorAll('[data-map]')].map(e=>[e.dataset.map,e.value]));rows=mapRows(matrix,mapping,{college:el('importDefaultCollege').value,program:el('importDefaultProgram').value,yearLevel:el('importDefaultYear').value});}catch(error){feedback(error.message,true);return;}
   setBusy(true);const ticket=generation;el('studentImportProgress').hidden=false;el('studentImportProgress').value=0;feedback('Checking existing accounts…');
-  try{for(let start=0;start<rows.length;start+=25){const batch=rows.slice(start,start+25),response=await call('previewStudentAccountImport',batch);if(ticket!==generation)return;if(!Array.isArray(response.results)||response.results.length!==batch.length)throw Error('Incomplete preview response. Run the preview again.');response.results.forEach((result,index)=>{const existing=batch[index];if(result.index!==index)throw Error('Invalid preview response.');rows[start+index]={...existing,...result.row,status:existing.status==='duplicate' && result.status!=='invalid'?'duplicate':result.status,message:existing.status==='duplicate' && result.status!=='invalid'?existing.message:result.message,valid:result.status!=='invalid'};});el('studentImportProgress').value=Math.round(Math.min(start+25,rows.length)/rows.length*100);}
+  try{for(let start=0;start<rows.length;start+=25){const batch=rows.slice(start,start+25),response=await call('previewStudentAccountImport',batch);if(ticket!==generation)return;if(!Array.isArray(response.results)||response.results.length!==batch.length)throw Error('Incomplete preview response. Run the preview again.');response.results.forEach((result,index)=>{const existing=batch[index];if(result.index!==index)throw Error('Invalid preview response.');rows[start+index]={...existing,...result.row,status:existing.status==='duplicate' && result.status!=='invalid'?'duplicate':result.status,message:existing.nameError || (existing.status==='duplicate' && result.status!=='invalid'?existing.message:result.message),valid:result.status!=='invalid'};});el('studentImportProgress').value=Math.round(Math.min(start+25,rows.length)/rows.length*100);}
     render();const eligible=rows.filter(r=>r.status==='ready').length;el('confirmStudentImport').hidden=!eligible;el('confirmStudentImport').textContent=`Create ${eligible} student account${eligible===1?'':'s'}`;el('exportStudentImportReport').hidden=false;feedback(eligible?'Preview complete. Review the records before creating accounts.':'No eligible accounts. Correct invalid rows or choose another file.');
   }catch(error){rows.forEach(row=>{if(row.status==='ready'||row.status==='unchecked')row.status='unconfirmed';});render();el('confirmStudentImport').hidden=true;feedback(error.message,true);}finally{if(ticket===generation){setBusy(false);el('studentImportProgress').hidden=true;}}
 });
