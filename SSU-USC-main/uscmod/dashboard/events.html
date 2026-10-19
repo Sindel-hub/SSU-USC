@@ -14,6 +14,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="css/events-mobile.css?v=1" />
 </head>
 <body class="student-app-shell events-document-scroll">
 <header class="dashboard-header">
@@ -31,16 +32,16 @@
   <aside class="student-sidebar page-sidebar">
     <div class="sidebar-student-mark"><i class="fa-solid fa-user-graduate"></i></div>
     <nav class="student-nav">
-      <a class="student-nav-link" href="dashboard.html"><i class="fa-solid fa-briefcase"></i><span>Dashboard</span></a>
-      <a class="student-nav-link" href="bulletin.html"><i class="fa-solid fa-note-sticky"></i><span>Bulletin Board</span></a>
-      <a class="student-nav-link" href="election.html"><i class="fa-regular fa-building"></i><span>Election</span></a>
-      <a class="student-nav-link active" href="events.html"><i class="fa-regular fa-calendar"></i><span>Events / Programs</span></a>
-      <a class="student-nav-link" href="organizational-chart.html"><i class="fa-solid fa-users"></i><span>Organizational Chart</span></a>
-      <a class="student-nav-link" href="../complaint/complaint.html"><i class="fa-solid fa-hand-holding-heart"></i><span>Student Complaint</span></a>
-      <a class="student-nav-link" href="https://drive.google.com/file/d/1SFp-SHhVKCHcHlWLwMxSQe1bdbLRuLMG/preview" target="_blank" rel="noopener noreferrer"><i class="fa-solid fa-book-open"></i><span>Student Handbook</span></a>
-      <a class="student-nav-link" href="tracklist.html"><i class="fa-solid fa-list"></i><span>Student Tracklist</span></a>
+      <a aria-label="Dashboard" title="Dashboard" class="student-nav-link" href="dashboard.html"><i class="fa-solid fa-briefcase"></i><span>Dashboard</span></a>
+      <a aria-label="Bulletin Board" title="Bulletin Board" class="student-nav-link" href="bulletin.html"><i class="fa-solid fa-note-sticky"></i><span>Bulletin Board</span></a>
+      <a aria-label="Election" title="Election" class="student-nav-link" href="election.html"><i class="fa-regular fa-building"></i><span>Election</span></a>
+      <a aria-current="page" aria-label="Events / Programs" title="Events / Programs" class="student-nav-link active" href="events.html"><i class="fa-regular fa-calendar"></i><span>Events / Programs</span></a>
+      <a aria-label="Organizational Chart" title="Organizational Chart" class="student-nav-link" href="organizational-chart.html"><i class="fa-solid fa-users"></i><span>Organizational Chart</span></a>
+      <a aria-label="Student Complaint" title="Student Complaint" class="student-nav-link" href="../complaint/complaint.html"><i class="fa-solid fa-hand-holding-heart"></i><span>Student Complaint</span></a>
+      <a aria-label="Student Handbook" title="Student Handbook" class="student-nav-link" href="https://drive.google.com/file/d/1SFp-SHhVKCHcHlWLwMxSQe1bdbLRuLMG/preview" target="_blank" rel="noopener noreferrer"><i class="fa-solid fa-book-open"></i><span>Student Handbook</span></a>
+      <a aria-label="Student Tracklist" title="Student Tracklist" class="student-nav-link" href="tracklist.html"><i class="fa-solid fa-list"></i><span>Student Tracklist</span></a>
     </nav>
-    <button class="sidebar-logout" id="studentLogout" type="button"><i class="fa-solid fa-right-from-bracket"></i><span>Logout</span></button>
+    <button class="sidebar-logout" id="studentLogout" type="button" aria-label="Logout"><i class="fa-solid fa-right-from-bracket"></i><span>Logout</span></button>
   </aside>
 
   <div class="student-module-column">
