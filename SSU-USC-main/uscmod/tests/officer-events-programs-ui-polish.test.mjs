@@ -35,11 +35,14 @@ test('officer Programs uses the matching icon-driven external-program UI', async
   ]);
 
   assert.match(html, /program-management-page/);
-  assert.match(html, /module-workflow-strip/);
+  assert.doesNotMatch(html, /module-workflow-strip/);
+  assert.match(html, /<details[^>]+id="programFormCard"/);
+  assert.match(html, /id="programSearch"/);
+  assert.match(html, /id="programStatusFilter"/);
   assert.match(html, /fa-earth-americas/);
   assert.match(html, /fa-handshake/);
   assert.match(html, /fa-paper-plane/);
-  assert.match(html, /officer-clean-ui-1/);
+  assert.match(html, /css\/programs-modern\.css/);
   assert.match(css, /OFFICER PROGRAMS CLEAN CONTROL-CENTER UI/);
   assert.match(js, /fa-user-group/);
   assert.match(js, /fa-trash-can/);

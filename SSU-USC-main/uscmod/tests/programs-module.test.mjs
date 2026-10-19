@@ -7,7 +7,7 @@ const read = (path) => fs.readFileSync(new URL(`../${path}`, import.meta.url), '
 test('officer Programs module exists and publishes outside-university programs separately', () => {
   const html = read('usc-admin/programs/programs.html');
   const js = read('usc-admin/programs/js/programs.js');
-  assert.match(html, /External Programs & Participation Module/);
+  assert.match(html, /<h1>Programs<\/h1>/);
   assert.match(html, /Host \/ Partner Organization/);
   assert.match(html, /data-rbac-permission="programs\.manage"/);
   assert.match(js, /collection\(db, "programs"\)/);
