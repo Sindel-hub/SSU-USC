@@ -51,11 +51,6 @@ body.officer-reference-dashboard .overview-content-grid .bulletin-preview-card >
 @media(prefers-reduced-motion:reduce) { .general-analytics-item { transition:none; } }
 /* Reset the previous dashboard's named grid areas for this structure. */
 body.officer-reference-dashboard .overview-content-grid :is(.event-reference-block,.program-reference-block,.reference-bulletin-panel) { grid-area:auto !important; align-self:stretch !important; }
-body.officer-reference-dashboard .officer-welcome-card { min-height:108px !important; padding:20px 24px !important; margin:0 !important; }
-body.officer-reference-dashboard .officer-welcome-card h1 { margin:8px 0 0 !important; font-size:24px !important; line-height:1.2 !important; }
-body.officer-reference-dashboard .officer-welcome-card h1 br { display:none; }
-body.officer-reference-dashboard .officer-welcome-card p { display:none; }
-body.officer-reference-dashboard .officer-welcome-art { height:110px !important; width:auto !important; }
 .overview-record-row { display:grid; gap:4px; padding:12px 0; border-bottom:1px solid #e6eef4; color:#23496d; text-decoration:none; }
 .overview-record-row:last-child { border-bottom:0; }
 .overview-record-row:hover strong { text-decoration:underline; }
@@ -65,7 +60,7 @@ body.officer-reference-dashboard .officer-welcome-art { height:110px !important;
 .overview-record-row span { font-size:13px; line-height:1.5; color:#52657a; }
 .overview-record-empty { padding:18px; font-size:14px; color:#60758b; background:#f5f9fc; border-radius:10px; }
 .overview-content-grid .calendar-days > span { min-height:28px !important; height:28px !important; }
-@media(max-width:600px) { body.officer-reference-dashboard .officer-welcome-art { display:none; } }
+
 
 body.officer-reference-dashboard > .student-analytics-page { width:min(1200px,calc(100% - 32px)); margin:24px auto; box-sizing:border-box; }
 .student-analytics-page .signin-analytics-large-hole { display:none; }
@@ -80,3 +75,36 @@ body.officer-reference-dashboard .student-analytics-page .signin-analytics-detai
  body.officer-reference-dashboard .student-analytics-page .signin-analytics-stat small { font-size:10px; }
  body.officer-reference-dashboard .student-analytics-page .signin-analytics-share { grid-column:1/-1; justify-self:end; }
 }
+
+/* Restore the date-and-illustration greeting from the original reference. */
+body.officer-reference-dashboard .officer-welcome-card { min-height:160px !important; height:160px; padding:0 !important; margin:0 !important; border-radius:20px; background:linear-gradient(115deg,#12aee4 0%,#35c5ea 55%,#a7edf6 100%); }
+body.officer-reference-dashboard .officer-welcome-copy { height:100%; display:flex; align-items:center; max-width:70%; padding:24px clamp(24px,6vw,72px); }
+body.officer-reference-dashboard .officer-welcome-copy small { margin:0; font-size:18px; color:#fff; }
+body.officer-reference-dashboard .officer-welcome-copy :is(h1,p) { position:absolute; width:1px; height:1px; padding:0; margin:-1px !important; overflow:hidden; clip-path:inset(50%); white-space:nowrap; }
+body.officer-reference-dashboard .officer-welcome-art { display:block; height:154px !important; width:auto !important; max-width:40%; right:12px; bottom:0; opacity:1; }
+/* Student-style content area: calendar and image on the left, tall bulletin on the right. */
+body.officer-reference-dashboard .overview-content-grid { grid-template-columns:minmax(0,2.4fr) minmax(270px,1fr); }
+body.officer-reference-dashboard .overview-content-grid :is(.reference-block,.reference-bulletin-panel) { padding:0 !important; border:0; background:transparent; box-shadow:none; border-radius:0; }
+body.officer-reference-dashboard .overview-content-grid .reference-heading { margin-bottom:12px !important; }
+body.officer-reference-dashboard .overview-content-grid .reference-heading::before { display:none; }
+body.officer-reference-dashboard .overview-content-grid .officer-event-card { grid-template-columns:minmax(0,.9fr) minmax(0,1.1fr); gap:0; border-radius:20px; overflow:hidden; box-shadow:0 7px 22px rgba(20,73,115,.06) !important; }
+body.officer-reference-dashboard .overview-content-grid .mini-calendar { padding:16px !important; border:0; border-radius:0; background:#fff; }
+body.officer-reference-dashboard .overview-content-grid .calendar-days > span { height:34px !important; min-height:34px !important; }
+body.officer-reference-dashboard .overview-content-grid .officer-event-list { position:relative; isolation:isolate; display:flex; flex-direction:column; justify-content:center; gap:10px; padding:20px !important; border-radius:0; background:linear-gradient(#0d304b30,#0d304b66),url('../../../dashboard/assets/HomeLogo.webp') center/cover !important; }
+.overview-event-cover { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; z-index:-1; }
+body.officer-reference-dashboard .overview-content-grid .officer-event-list .overview-record-row { padding:12px 14px; border:0; border-radius:14px; color:#fff; background:#152c43d9; backdrop-filter:blur(6px); }
+body.officer-reference-dashboard .overview-content-grid .officer-event-list .overview-record-row :is(time,span,small) { color:#e6eff6; }
+body.officer-reference-dashboard .overview-content-grid .officer-program-card { padding:18px !important; border-radius:20px; background:#5fc9e9; box-shadow:0 7px 22px rgba(20,73,115,.06) !important; }
+body.officer-reference-dashboard .overview-content-grid .officer-program-card .overview-record-row { color:#174f98; border-bottom-color:#ffffff66; }
+body.officer-reference-dashboard .overview-content-grid .officer-program-card .overview-record-row :is(time,span,small) { color:#163f66; }
+body.officer-reference-dashboard .overview-content-grid .bulletin-preview-card { background:#fff; border-radius:20px; box-shadow:0 7px 22px rgba(20,73,115,.06) !important; }
+body.officer-reference-dashboard .overview-content-grid .bulletin-preview-card > img { height:290px !important; object-fit:cover; }
+.overview-content-grid .bulletin-copy { display:flex; flex-direction:column; flex:1; padding:20px; }
+.overview-content-grid .bulletin-copy time { color:#77889b; font-size:13px; }
+.overview-content-grid .bulletin-copy h3 { font-size:18px; margin:12px 0 0; }
+.overview-content-grid .bulletin-copy a { display:block; margin-top:auto; padding:10px 12px; border:1px solid #276a8d; border-radius:14px; background:#5fc9e9; color:#174f98; text-decoration:none; font-weight:700; }
+.overview-content-grid .bulletin-copy p { margin-bottom:24px; }
+@media(max-width:1100px) { body.officer-reference-dashboard .overview-content-grid { grid-template-columns:minmax(0,1.6fr) minmax(240px,1fr); } body.officer-reference-dashboard .overview-content-grid .officer-event-card { grid-template-columns:minmax(0,1fr); } }
+@media(max-width:760px) { body.officer-reference-dashboard .overview-content-grid { grid-template-columns:minmax(0,1fr); } body.officer-reference-dashboard .officer-welcome-copy { max-width:65%; padding:24px; } body.officer-reference-dashboard .officer-welcome-copy small { font-size:15px; } body.officer-reference-dashboard .officer-welcome-art { max-width:34%; height:140px !important; } }
+body.officer-reference-dashboard .overview-content-grid .reference-heading h2::before { display:none; }
+body.officer-reference-dashboard .overview-content-grid .bulletin-copy a { display:flex; align-items:center; justify-content:flex-start; height:auto; min-height:44px; line-height:1.3; text-align:left; box-sizing:border-box; }

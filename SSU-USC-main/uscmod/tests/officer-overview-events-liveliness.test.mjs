@@ -7,8 +7,8 @@ const css = fs.readFileSync(new URL("../usc-admin/overview/css/overview.css", im
 const js = fs.readFileSync(new URL("../usc-admin/overview/js/overview.js", import.meta.url), "utf8");
 
 test("officer overview cache-busts lively events assets", () => {
-  assert.match(html, /overview-unified\.css\?v=1/);
-  assert.match(html, /overview\.js\?v=unified-analytics-1/);
+  assert.match(html, /overview-unified\.css\?v=2/);
+  assert.match(html, /overview\.js\?v=unified-analytics-2/);
 });
 
 test("officer overview includes lively event card styles and rendering", () => {

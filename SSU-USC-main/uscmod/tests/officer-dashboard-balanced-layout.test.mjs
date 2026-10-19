@@ -11,7 +11,7 @@ test('calendar and programs precede a bulletin spanning the left stack',()=>{
 });
 test('content, general analytics and quick access follow the required order',()=>{
  const content=html.indexOf('class="overview-content-grid"'),analytics=html.indexOf('class="general-analytics"'),quick=html.indexOf('class="overview-quick-access"');
- assert.ok(content<analytics && analytics<quick);
+ assert.ok(analytics<content && content<quick);
  assert.doesNotMatch(html,/Officers’ Tracklist|election-control-strip|officer-management-suite|Case Workflow/);
 });
 test('empty bulletin keeps a real empty state in its aligned panel',()=>{

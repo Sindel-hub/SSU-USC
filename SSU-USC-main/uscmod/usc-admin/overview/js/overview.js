@@ -204,7 +204,7 @@ function syncDashboardLayout() {
   // Keep the bulletin column visible, including its genuine empty state.
 }
 
-function renderBulletin(){ const host=document.getElementById("officerBulletinPreview"); if(!host)return; const item=state.announcements[0]; if(!item){host.innerHTML='<div class="reference-empty">No announcement posted yet.</div>'; syncDashboardLayout(false); return;} const image=announcementImage(item); host.innerHTML=`${image?`<img src="${escapeHtml(image)}" alt="${escapeHtml(clean(item.title,'Announcement'))}" onerror="this.style.display='none'">`:''}<div class="bulletin-copy"><time>${escapeHtml(formatDate(item.createdAt||item.publishedAt||item.date))}</time><h3>${escapeHtml(clean(item.title,'USC Announcement'))}</h3><p>${escapeHtml(clean(item.content||item.description,'Official USC bulletin update.').slice(0,180))}</p><a href="../announcements/announcements.html">Open Bulletin Board Center</a></div>`; syncDashboardLayout(true); }
+function renderBulletin(){ const host=document.getElementById("officerBulletinPreview"); if(!host)return; const item=state.announcements[0]; if(!item){host.innerHTML='<div class="reference-empty">No announcement posted yet.</div>'; syncDashboardLayout(false); return;} const image=announcementImage(item); host.innerHTML=`${image?`<img src="${escapeHtml(image)}" alt="${escapeHtml(clean(item.title,'Announcement'))}" onerror="this.style.display='none'">`:''}<div class="bulletin-copy"><time>${escapeHtml(formatDate(item.createdAt||item.publishedAt||item.date))}</time><h3>${escapeHtml(clean(item.title,'USC Announcement'))}</h3><p>${escapeHtml(clean(item.content||item.description,'Official USC bulletin update.').slice(0,180))}</p><a href="../announcements/announcements.html">Read more</a></div>`; syncDashboardLayout(true); }
 function bindAnnouncements(){ onSnapshot(collection(db,"announcements"), snap => { state.announcements=snap.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>(toDate(b.createdAt||b.publishedAt)?.getTime()||0)-(toDate(a.createdAt||a.publishedAt)?.getTime()||0)); setText("[data-overview-announcement-count]",state.announcements.length); renderBulletin(); },()=>renderBulletin()); }
 
 let calendarOffset = 0;
@@ -242,7 +242,16 @@ function overviewRecordRows(records, counts, kind) {
 }
 function renderEvents(){
   const host=document.getElementById('officerOverviewEvents');
-  if (host) host.innerHTML=overviewRecordRows(state.events,eventRegistrationCounts(),'events');
+  if (host) {
+    host.innerHTML=overviewRecordRows(state.events,eventRegistrationCounts(),'events');
+    const today=new Date();today.setHours(0,0,0,0);
+    const featured=state.events.find(item=>{const date=getEventDate(item);return date && date>=today;});
+    const image=featured && clean(featured.backgroundImageUrl || featured.imageUrl || featured.eventImageUrl || featured.posterUrl);
+    if (image) {
+      const cover=document.createElement('img');cover.className='overview-event-cover';cover.src=image;cover.alt='';
+      cover.addEventListener('error',()=>cover.remove(),{once:true});host.prepend(cover);
+    }
+  }
   renderCalendar();
 }
 function renderPrograms(){
