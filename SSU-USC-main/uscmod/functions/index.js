@@ -1569,6 +1569,11 @@ exports.adminUpdateUser = onCall(callableOptions(), async (request) => {
 
 
 
+const { createAdminSetUserPassword } = require("./admin-set-user-password");
+exports.adminSetUserPassword = onCall(callableOptions(), createAdminSetUserPassword({
+  requireActiveRole, requireRecentAuth, db, adminAuth, audit, FieldValue, HttpsError
+}));
+
 exports.adminResetUserPassword = onCall(callableOptions(), async (request) => {
   await requireActiveRole(request, ["admin"]);
   requireRecentAuth(request);

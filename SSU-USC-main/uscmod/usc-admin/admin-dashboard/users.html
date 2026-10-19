@@ -12,7 +12,7 @@
   <script src="../../shared/app-config.js"></script>
   <script type="module" src="../../shared/auth-guard.js?v=rbac7"></script>
 <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet" />
-    <link rel="stylesheet" href="css/users-modern.css?v=1" />
+    <link rel="stylesheet" href="css/users-modern.css?v=3" />
 </head>
 <body class="officer-app-shell admin-users-page">
     <div class="sidebar-backdrop" onclick="document.querySelector('.sidebar').classList.remove('mobile-open');this.classList.remove('active');document.getElementById('usersMenuButton').setAttribute('aria-expanded','false')"></div>
@@ -179,7 +179,7 @@
                     <div class="field"><label for="adminNotesInput">Admin notes</label><textarea id="adminNotesInput" placeholder="Internal admin notes for this account."></textarea></div>
                     <div class="field"><label for="roleChangeNote">Change reason</label><textarea id="roleChangeNote" placeholder="Required when changing role, status, or active access."></textarea></div>
                     <div class="subtext" id="roleRoutePreview">Route after next login: Student dashboard</div>
-                    <div class="editor-actions"><button type="submit" class="btn primary" id="saveRoleButton">Save user updates</button><button type="button" class="btn light" id="approveUserButton">Approve</button><button type="button" class="btn danger-light" id="suspendUserButton">Suspend</button><button type="button" class="btn light" id="reactivateUserButton">Reactivate</button><button type="button" class="btn light" id="demoteToStudentButton">Return to student</button><button type="button" class="btn password-reset-btn" id="resetUserPasswordButton"><i class="fa-solid fa-key" aria-hidden="true"></i> Reset password</button></div>
+                    <div class="editor-actions"><button type="submit" class="btn primary" id="saveRoleButton">Save user updates</button><button type="button" class="btn light" id="approveUserButton">Approve</button><button type="button" class="btn danger-light" id="suspendUserButton">Suspend</button><button type="button" class="btn light" id="reactivateUserButton">Reactivate</button><button type="button" class="btn light" id="demoteToStudentButton">Return to student</button><button type="button" class="btn light" id="setUserPasswordButton"><i class="fa-solid fa-lock" aria-hidden="true"></i> Set password</button><button type="button" class="btn password-reset-btn" id="resetUserPasswordButton"><i class="fa-solid fa-key" aria-hidden="true"></i> Reset password</button></div>
                     <div class="subtext" id="saveFeedbackText" role="status">Ready for admin updates.</div>
                     <div class="subtext" id="lastActionSummary" aria-live="polite">Select a user to begin.</div>
                 </form>
@@ -188,6 +188,19 @@
     </article>
     </div>
 </div>
+
+<dialog id="adminPasswordDialog" class="admin-password-dialog" aria-labelledby="adminPasswordTitle" aria-describedby="adminPasswordTarget">
+  <form id="adminPasswordForm" autocomplete="off">
+    <h2 id="adminPasswordTitle">Set user password</h2>
+    <p id="adminPasswordTarget"></p>
+    <div class="field"><label for="adminChosenPassword">New password</label><input id="adminChosenPassword" type="password" autocomplete="new-password" minlength="10" maxlength="64" required aria-describedby="adminPasswordRules adminPasswordFeedback" /></div>
+    <p id="adminPasswordRules">10–64 characters with uppercase, lowercase, a number, and a symbol.</p>
+    <div class="field"><label for="adminConfirmPassword">Confirm password</label><input id="adminConfirmPassword" type="password" autocomplete="new-password" minlength="10" maxlength="64" required aria-describedby="adminPasswordFeedback" /></div>
+    <button id="showAdminPasswordsButton" type="button" class="admin-password-show" aria-pressed="false">Show passwords</button>
+    <p id="adminPasswordFeedback" role="status" aria-live="polite"></p>
+    <div class="admin-password-actions"><button type="button" class="btn light" id="cancelAdminPasswordButton">Cancel</button><button type="submit" class="btn primary" id="saveAdminPasswordButton">Save password</button></div>
+  </form>
+</dialog>
 
 <div class="password-reset-result-modal hidden" id="passwordResetResultModal" aria-hidden="true">
   <button type="button" class="password-reset-result-backdrop" id="passwordResetResultBackdrop" aria-label="Close temporary password card"></button>
@@ -244,7 +257,7 @@
   </div>
 </footer>
 
-    <script type="module" src="js/admin-users.js?v=directory-modern-1"></script>
+    <script type="module" src="js/admin-users.js?v=directory-manual-password-2"></script>
     <script type="module" src="../shared/js/admin-only-auth.js"></script>
 <script type="module" src="../../shared/profile-manager.js?v=supabase-email-1"></script>
 </body>

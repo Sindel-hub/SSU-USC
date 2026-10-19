@@ -1,4 +1,5 @@
-import { callSecure, auth } from "../../../shared/security-client.js?v=password-reset-fallback-1";
+import { createAdminPasswordEditor } from "./admin-password-editor.js?v=1";
+import { callSecure, auth } from "../../../shared/security-client.js?v=admin-chosen-password-2";
 import { OFFICER_PERMISSION_DEFINITIONS, ALL_OFFICER_PERMISSIONS, DEFAULT_OFFICER_PERMISSIONS, hasKnownOfficerPositionPreset, isBaselineOfficerPermissionList, normalizeOfficerPermissions, permissionsForOfficerPosition } from "../../../shared/officer-permissions.js?v=programs-1";
 
 import {
@@ -113,6 +114,7 @@ const dom = {
   reactivateUserButton: document.getElementById("reactivateUserButton"),
   demoteToStudentButton: document.getElementById("demoteToStudentButton"),
   resetUserPasswordButton: document.getElementById("resetUserPasswordButton"),
+  setUserPasswordButton: document.getElementById("setUserPasswordButton"),
   passwordResetResultModal: document.getElementById("passwordResetResultModal"),
   passwordResetResultBackdrop: document.getElementById("passwordResetResultBackdrop"),
   passwordResetResultClose: document.getElementById("passwordResetResultClose"),
@@ -363,6 +365,7 @@ function fillEditor(user) {
   dom.suspendUserButton.disabled = protectedAdmin;
   dom.reactivateUserButton.disabled = protectedAdmin || inactiveStanding;
   dom.demoteToStudentButton.disabled = protectedAdmin;
+  if (dom.setUserPasswordButton) dom.setUserPasswordButton.disabled = protectedAdmin || !['student', 'officer'].includes(user.role);
   if (dom.resetUserPasswordButton) dom.resetUserPasswordButton.disabled = protectedAdmin || !['student', 'officer'].includes(user.role);
   updateRolePreview(protectedAdmin ? 'student' : user.role);
 }
@@ -657,6 +660,10 @@ function bind() {
   });
 
   dom.resetUserPasswordButton?.addEventListener('click', resetSelectedUserPassword);
+  dom.setUserPasswordButton?.addEventListener('click', () => {
+    const user = getSelectedUser();
+    if (user && !isProtectedAdmin(user)) passwordEditor.open(user);
+  });
 
   dom.applyBulkButton.addEventListener('click', async () => handleBulk());
   dom.approveSelectedButton.addEventListener('click', async () => handleBulk({ accountStatus: 'approved', activeState: 'active', changeReason: dom.bulkReasonInput.value.trim() || 'Approved in bulk by admin.' }));
@@ -691,6 +698,11 @@ function bind() {
 }
 
 
+const passwordEditor = createAdminPasswordEditor({ callSecure, onSaved(message) {
+  dom.saveFeedbackText.textContent = 'Password changed.';
+  dom.lastActionSummary.textContent = message;
+} });
+
 dom.userEditorModalClose?.addEventListener('click', closeUserEditorModal);
 dom.userEditorModalBackdrop?.addEventListener('click', closeUserEditorModal);
 dom.passwordResetResultClose?.addEventListener('click', closePasswordResetResult);
@@ -699,6 +711,7 @@ dom.doneTemporaryPasswordButton?.addEventListener('click', closePasswordResetRes
 dom.copyTemporaryPasswordButton?.addEventListener('click', copyTemporaryPassword);
 dom.printTemporaryPasswordButton?.addEventListener('click', printTemporaryPasswordSlip);
 document.addEventListener('keydown', (event) => {
+  if (document.getElementById('adminPasswordDialog')?.open) return;
   if (event.key === 'Escape') {
     if (!dom.passwordResetResultModal?.classList.contains('hidden')) return closePasswordResetResult();
     if (!dom.userEditorModal?.classList.contains('hidden')) closeUserEditorModal();
