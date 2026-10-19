@@ -47,35 +47,31 @@ test("pre-feature student accounts are automatically backfilled from the admin u
   assert.match(backfillScript, /2 \* 60 \* 1000/);
 });
 
-test("officer dashboard exposes inline department analytics without navigating modules", () => {
-  assert.match(overviewHtml, /id="studentSignInAnalytics"/);
-  assert.match(overviewHtml, /id="signinAnalyticsSummary"/);
-  assert.match(overviewHtml, /id="signinAnalyticsDetail" hidden/);
-  assert.doesNotMatch(overviewHtml, /id="signinAnalyticsSummary"[^>]*href=/);
-  assert.match(overviewHtml, /Student sign-ins by college \/ department/);
-  assert.match(overviewHtml, /Known accounts/);
-  assert.match(overviewHtml, /Unique students/);
-  assert.match(overviewHtml, /Total sign-ins/);
-  assert.match(overviewHtml, /Accounts & sign-ins by department/);
+test("student pie opens a read-only detailed student analytics page", () => {
+  const detail=read('usc-admin/overview/student-analytics.html');
+  assert.match(overviewHtml, /href="student-analytics.html\?analytics=student"/);
+  assert.match(overviewHtml, /data-summary="student"/);
+  assert.match(detail, /id="signinAnalyticsDetail" aria-labelledby/);
+  assert.match(detail, /Known accounts/);
+  assert.match(detail, /Total sign-ins/);
+  assert.match(detail, /Accounts & sign-ins by department/);
 });
 
-test("officer analytics distinguishes pre-feature accounts from actually signed-in students", () => {
-  assert.match(overviewJs, /knownAccounts:\s*state\.signInStats\.length/);
-  assert.match(overviewJs, /const hasSignedIn = signInCount > 0/);
-  assert.match(overviewJs, /accountCount/);
-  assert.match(overviewJs, /restoredHistorical/);
-  assert.match(overviewJs, /data-signin-known-accounts/);
-  assert.match(overviewJs, /No tracked sign-in yet/);
+test("student analytics distinguishes pre-feature accounts from actually signed-in students", () => {
+  const model=read('usc-admin/overview/js/student-signin-model.mjs');
+  assert.match(model, /knownAccounts:\s*records.length/);
+  assert.match(model, /const hasSignedIn = signInCount > 0/);
+  assert.match(model, /restoredHistorical/);
+  assert.match(read('usc-admin/overview/js/student-analytics.js'), /data-signin-known-accounts/);
 });
-
-test("officer analytics renders a donut and detailed department breakdown", () => {
+test("student analytics uses a pie and retains the detailed department breakdown", () => {
+  const detail=read('usc-admin/overview/student-analytics.html');
+  const renderer=read('usc-admin/overview/js/student-analytics.js');
+  const charts=read('usc-admin/overview/js/overview-charts.js');
   assert.match(overviewJs, /collection\(db, "student_signin_stats"\)/);
-  assert.match(overviewJs, /conic-gradient/);
-  assert.match(overviewJs, /uniqueStudents/);
-  assert.match(overviewJs, /activeToday/);
-  assert.match(overviewJs, /setSignInAnalyticsExpanded/);
-  assert.match(overviewCss, /\.signin-analytics-mini-chart/);
-  assert.match(overviewCss, /\.signin-analytics-large-donut/);
-  assert.match(overviewCss, /\.signin-analytics-detail-grid/);
-  assert.match(overviewCss, /repeat\(5,minmax\(0,1fr\)\)/);
+  assert.match(charts,/conic-gradient/);
+  assert.match(detail,/signinAnalyticsLargeDonut/);
+  assert.match(renderer,/uniqueStudents/);
+  assert.match(renderer,/activeToday/);
+  assert.match(read('usc-admin/overview/css/overview-unified.css'),/signin-analytics-large-hole \{ display:none/);
 });

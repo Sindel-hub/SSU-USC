@@ -33,6 +33,8 @@ export function mountEngagementAnalytics(root, { kind, canGenerate }) {
     if(!dialog.open)dialog.showModal();
     dialog.querySelector('.engagement-close').focus();
   }
+  const requestedAnalytics = new URLSearchParams(location.search).get('analytics');
+  if (requestedAnalytics) queueMicrotask(() => open(STATUS_DEFINITIONS.some(s => s.name === requestedAnalytics) ? requestedAnalytics : 'all'));
   function close() { dialog.close();if(returnFocus?.isConnected)returnFocus.focus(); }
   function renderReport() {
     const nextSignature=JSON.stringify(records.map(r=>[r.id,r.title]));

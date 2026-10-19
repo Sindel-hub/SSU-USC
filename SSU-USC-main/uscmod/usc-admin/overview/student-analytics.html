@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="en" class="usc-officer-access-pending"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Student Analytics | USC</title>
+<link rel="stylesheet" href="../shared/css/usc-theme.css?v=officer-readable-1">
+<link rel="stylesheet" href="css/overview.css?v=donut-label-1">
+<link rel="stylesheet" href="css/overview-unified.css?v=1">
+<script src="../../shared/app-config.js"></script>
+<script type="module" src="../../shared/auth-guard.js?v=rbac7"></script>
+</head><body class="officer-app-shell officer-reference-dashboard">
+<main class="student-analytics-page"><header><h1>Student Analytics</h1><a href="overview.html">Back to Overview</a></header>
+<section class="signin-analytics-detail" id="signinAnalyticsDetail" aria-labelledby="signinAnalyticsDetailTitle">
+                        <div class="signin-analytics-detail-head">
+                            <div>
+                                <span>STUDENT WEBSITE ACTIVITY</span>
+                                <h3 id="signinAnalyticsDetailTitle">Detailed Student Analytics</h3>
+                                <p>Unique signed-in students are counted once per department. Total sign-ins includes repeat sessions, while known accounts includes students created before analytics tracking existed.</p>
+                                <p class="signin-analytics-history-note" id="signinAnalyticsHistoryNote">Checking pre-feature account history...</p>
+                            </div>
+
+                        </div>
+
+                        <div class="signin-analytics-metrics">
+                            <article><span>Known accounts</span><strong data-signin-known-accounts>0</strong><small>current + pre-feature students</small></article>
+                            <article><span>Unique students</span><strong data-signin-unique>0</strong><small>have signed in</small></article>
+                            <article><span>Total sign-ins</span><strong data-signin-sessions>0</strong><small>login sessions recorded</small></article>
+                            <article><span>Active today</span><strong data-signin-today>0</strong><small>students signed in today</small></article>
+                            <article><span>Departments</span><strong data-signin-departments>0</strong><small>represented in activity</small></article>
+                        </div>
+
+                        <div class="signin-analytics-detail-grid">
+                            <article class="signin-analytics-chart-card">
+                                <div class="signin-analytics-large-donut" id="signinAnalyticsLargeDonut" aria-label="Department sign-in distribution">
+                                    <div class="signin-analytics-large-hole"><strong data-signin-unique>0</strong><span>unique students</span></div>
+                                </div>
+                                <div class="signin-analytics-chart-caption">
+                                    <strong>Department share</strong>
+                                    <span id="signinAnalyticsUpdated">Waiting for sign-in activity...</span>
+                                </div>
+                            </article>
+
+                            <article class="signin-analytics-table-card">
+                                <div class="signin-analytics-table-head">
+                                    <div><span>BREAKDOWN</span><h4>Accounts & sign-ins by department</h4></div>
+                                    <span class="signin-analytics-live"><i></i> Live</span>
+                                </div>
+                                <div class="signin-analytics-table" id="signinAnalyticsTable">
+                                    <div class="signin-analytics-empty">No student sign-ins have been recorded yet.</div>
+                                </div>
+                            </article>
+                        </div>
+                    </section>
+</main><script type="module" src="js/student-analytics.js?v=1"></script>
+<script type="module" src="../shared/js/admin-auth.js?v=rbac4"></script>
+</body></html>

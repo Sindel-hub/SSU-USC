@@ -701,6 +701,7 @@
   <script src="../../shared/app-config.js"></script>
   <script type="module" src="../../shared/auth-guard.js?v=rbac7"></script>
 <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="css/overview-unified.css?v=1" />
 </head>
 <body class="officer-app-shell officer-reference-dashboard overview-module-polish">
 <div class="page"><div class="app-shell">
@@ -750,303 +751,27 @@
             <img src="../shared/assets/officer-duo.png" alt="Officer dashboard illustration" class="officer-welcome-art" />
         </section>
 
-        <section class="officer-analytics-summary" id="officerAnalyticsSummary" aria-labelledby="officerAnalyticsTitle">
-            <div class="officer-analytics-head">
-                <div>
-                    <span class="officer-analytics-kicker">LIVE USC OVERVIEW</span>
-                    <h2 id="officerAnalyticsTitle">Student Participation &amp; Operations Analytics</h2>
-                    <p>A live summary of event and external program registrations, complaint workload, and election participation for USC officers.</p>
-                </div>
-                <span class="officer-analytics-live"><i></i> Live data</span>
-            </div>
-
-            <div class="analytics-launch-grid" role="list" aria-label="Dashboard analytics modules">
-                <button class="analytics-launcher event" type="button" data-analytics-open="event" role="listitem" aria-label="Open Events analytics">
-                    <span class="analytics-launcher-icon"><i class="fa-solid fa-calendar-check"></i></span>
-                    <strong data-analytics-event-registrations>0</strong>
-                    <span class="analytics-launcher-caption">registrations</span>
-                    <span class="analytics-launcher-tooltip"><i class="fa-solid fa-calendar-days"></i> Events Analytics</span>
-                </button>
-                <button class="analytics-launcher program" type="button" data-analytics-open="program" role="listitem" aria-label="Open Programs analytics">
-                    <span class="analytics-launcher-icon"><i class="fa-solid fa-earth-americas"></i></span>
-                    <strong data-analytics-program-registrations>0</strong>
-                    <span class="analytics-launcher-caption">registrations</span>
-                    <span class="analytics-launcher-tooltip"><i class="fa-solid fa-people-group"></i> Programs Analytics</span>
-                </button>
-                <button class="analytics-launcher complaint" type="button" data-analytics-open="complaint" role="listitem" aria-label="Open Complaints analytics">
-                    <span class="analytics-launcher-icon"><i class="fa-solid fa-comments"></i></span>
-                    <strong data-analytics-complaint-active>0</strong>
-                    <span class="analytics-launcher-caption">active cases</span>
-                    <span class="analytics-launcher-tooltip"><i class="fa-solid fa-inbox"></i> Complaints Analytics</span>
-                </button>
-                <button class="analytics-launcher election" type="button" data-analytics-open="election" role="listitem" aria-label="Open Election analytics">
-                    <span class="analytics-launcher-icon"><i class="fa-solid fa-check-to-slot"></i></span>
-                    <strong data-analytics-election-turnout>0.0%</strong>
-                    <span class="analytics-launcher-caption">turnout</span>
-                    <span class="analytics-launcher-tooltip"><i class="fa-solid fa-chart-pie"></i> Election Analytics</span>
-                </button>
-            </div>
-            <div class="analytics-launch-hint"><i class="fa-regular fa-hand-pointer"></i><span>Hover to identify a module. Click or tap an icon to open its full analytics.</span></div>
-
-            <div class="analytics-detail-modal" id="officerAnalyticsModal" hidden aria-hidden="true">
-                <button class="analytics-detail-backdrop" type="button" data-analytics-close aria-label="Close analytics"></button>
-                <section class="analytics-detail-dialog" role="dialog" aria-modal="true" aria-labelledby="analyticsDetailTitle">
-                    <header class="analytics-detail-modal-head">
-                        <div>
-                            <span>LIVE MODULE ANALYTICS</span>
-                            <h3 id="analyticsDetailTitle">Analytics</h3>
-                            <p id="analyticsDetailSubtitle">Detailed dashboard analytics.</p>
-                        </div>
-                        <button class="analytics-detail-close" type="button" data-analytics-close aria-label="Close analytics"><i class="fa-solid fa-xmark"></i></button>
-                    </header>
-                    <div class="analytics-detail-body">
-                        <article class="officer-analytics-card event-analytics-card" data-analytics-panel="event" hidden>
-                            <div class="analytics-card-head">
-                                <div class="analytics-card-icon"><i class="fa-solid fa-calendar-check"></i></div>
-                                <div><span>EVENT PARTICIPATION</span><h3>Student Registrations</h3></div>
-                                <a href="../events/events.html" aria-label="Open Events module"><i class="fa-solid fa-arrow-up-right-from-square"></i></a>
-                            </div>
-                            <div class="analytics-metric-row">
-                                <div><strong data-analytics-event-registrations>0</strong><span>Portal registrations</span></div>
-                                <div><strong data-analytics-event-students>0</strong><span>Unique students</span></div>
-                                <div><strong data-analytics-event-open>0</strong><span>Open event forms</span></div>
-                            </div>
-                            <div class="analytics-breakdown-head"><strong>Registrations by program (academic)</strong><span>Events only</span></div>
-                            <div class="analytics-bars" id="eventProgramAnalytics"><div class="analytics-empty">No event registrations yet.</div></div>
-                            <div class="analytics-secondary" id="eventRegistrationHighlights"><span>No event participation data yet.</span></div>
-                            <div class="analytics-registrants-head"><strong><i class="fa-solid fa-user-check"></i> Recent event registrants</strong><span>Events only</span></div>
-                            <div class="analytics-registrants" id="eventRecentRegistrants"><div class="analytics-registrants-empty">No students have registered for an event yet.</div></div>
-                        </article>
-
-                        <article class="officer-analytics-card program-analytics-card" data-analytics-panel="program" hidden>
-                            <div class="analytics-card-head">
-                                <div class="analytics-card-icon"><i class="fa-solid fa-earth-americas"></i></div>
-                                <div><span>PROGRAM PARTICIPATION</span><h3>External Program Registrations</h3></div>
-                                <a href="../programs/programs.html" aria-label="Open Programs module"><i class="fa-solid fa-arrow-up-right-from-square"></i></a>
-                            </div>
-                            <div class="analytics-metric-row">
-                                <div><strong data-analytics-program-registrations>0</strong><span>Portal registrations</span></div>
-                                <div><strong data-analytics-program-students>0</strong><span>Unique students</span></div>
-                                <div><strong data-analytics-program-open>0</strong><span>Open program forms</span></div>
-                            </div>
-                            <div class="analytics-breakdown-head"><strong>Registrations by program (academic)</strong><span>Programs only</span></div>
-                            <div class="analytics-bars" id="programStudentAnalytics"><div class="analytics-empty">No program registrations yet.</div></div>
-                            <div class="analytics-secondary" id="programRegistrationHighlights"><span>No program participation data yet.</span></div>
-                            <div class="analytics-registrants-head"><strong><i class="fa-solid fa-user-check"></i> Recent program registrants</strong><span>Programs only</span></div>
-                            <div class="analytics-registrants" id="programRecentRegistrants"><div class="analytics-registrants-empty">No students have registered for a program yet.</div></div>
-                        </article>
-
-                        <article class="officer-analytics-card complaint-analytics-card" data-analytics-panel="complaint" hidden>
-                            <div class="analytics-card-head">
-                                <div class="analytics-card-icon"><i class="fa-solid fa-comments"></i></div>
-                                <div><span>COMPLAINTS</span><h3>Case Workload</h3></div>
-                                <a href="../complaints/complaints.html" aria-label="Open Complaints module"><i class="fa-solid fa-arrow-up-right-from-square"></i></a>
-                            </div>
-                            <div class="analytics-metric-row">
-                                <div><strong data-analytics-complaint-total>0</strong><span>Total cases</span></div>
-                                <div><strong data-analytics-complaint-active>0</strong><span>Active</span></div>
-                                <div><strong data-analytics-complaint-resolved>0</strong><span>Resolved</span></div>
-                            </div>
-                            <div class="analytics-breakdown-head"><strong>Case status summary</strong><span>Current workload</span></div>
-                            <div class="analytics-bars" id="complaintStatusAnalytics"><div class="analytics-empty">No complaint data yet.</div></div>
-                            <div class="analytics-secondary">
-                                <span><b data-analytics-complaint-student>0</b> Student Level</span>
-                                <span><b data-analytics-complaint-administrative>0</b> Administrative</span>
-                                <span><b data-analytics-complaint-crisis>0</b> Crisis</span>
-                            </div>
-                        </article>
-
-                        <article class="officer-analytics-card election-analytics-card" data-analytics-panel="election" hidden>
-                            <div class="analytics-card-head">
-                                <div class="analytics-card-icon"><i class="fa-solid fa-check-to-slot"></i></div>
-                                <div><span>ELECTION</span><h3>Participation Summary</h3></div>
-                                <a href="../elections/elections.html" aria-label="Open Election module"><i class="fa-solid fa-arrow-up-right-from-square"></i></a>
-                            </div>
-                            <div class="analytics-metric-row">
-                                <div><strong data-analytics-election-turnout>0.0%</strong><span>Turnout</span></div>
-                                <div><strong data-analytics-election-votes>0</strong><span>Votes cast</span></div>
-                                <div><strong data-analytics-election-eligible>0</strong><span>Eligible</span></div>
-                            </div>
-                            <div class="analytics-breakdown-head"><strong>Votes by department</strong><span id="analyticsElectionPhase">Phase unavailable</span></div>
-                            <div class="analytics-bars" id="electionDepartmentAnalytics"><div class="analytics-empty">No election participation yet.</div></div>
-                            <div class="analytics-secondary" id="electionAnalyticsNote"><span>Election turnout will appear when voting activity is recorded.</span></div>
-                        </article>
-                    </div>
-                </section>
-            </div>
-        </section>
-
-        <section class="reference-dashboard-grid">
-            <div class="reference-left-column">
-                <div class="reference-pair">
-                    <section class="reference-block">
-                        <div class="reference-heading tracklist-reference-heading"><h2>Officers’ Tracklist</h2><a href="../complaints/complaints.html">View cases <i class="fa-solid fa-arrow-up-right-from-square"></i></a></div>
-                        <article class="officer-track-card complaint-summary-card">
-                            <span>Complaint Breakdown</span>
-                            <strong data-overview-total-complaints>0</strong>
-                            <p>Total complaints</p>
-                            <div class="complaint-breakdown-mini" aria-label="Complaint classification summary">
-                                <span><i class="student"></i>Student <b data-overview-complaint-student>0</b></span>
-                                <span><i class="administrative"></i>Administrative <b data-overview-complaint-administrative>0</b></span>
-                                <span><i class="crisis"></i>Crisis <b data-overview-complaint-crisis>0</b></span>
-                            </div>
-                        </article>
-                    </section>
-                    <section class="reference-block">
-                        <div class="reference-heading election-reference-heading"><h2>Election</h2><a href="../elections/elections.html">Open election <i class="fa-solid fa-arrow-up-right-from-square"></i></a></div>
-                        <article class="officer-election-card">
-                            <div><span>Turnout Rate</span><strong data-overview-election-turnout>0%</strong><small>Registered <em data-overview-election-registered>0</em></small><small>Voted</small><b data-overview-election-votes-cast>0</b></div>
-                            <div class="clean-chart" aria-hidden="true"><div class="chart-bars"><i></i><i></i><i></i></div><div class="chart-line"></div><div class="chart-arrow"><span></span><i class="fa-solid fa-arrow-trend-up"></i></div></div>
-                        </article>
-                    </section>
-                </div>
-
-                <section class="reference-block signin-analytics-block" id="studentSignInAnalytics">
-                    <div class="reference-heading signin-analytics-heading signin-reference-heading">
-                        <h2>Student Sign-in Analytics</h2>
-                        <button class="signin-analytics-heading-action" id="signinAnalyticsHeadingToggle" type="button" aria-expanded="false" aria-controls="signinAnalyticsDetail">View details <i class="fa-solid fa-chevron-down" aria-hidden="true"></i></button>
-                    </div>
-                    <button class="signin-analytics-summary" id="signinAnalyticsSummary" type="button" aria-expanded="false" aria-controls="signinAnalyticsDetail">
-                        <div class="signin-analytics-mini-chart" id="signinAnalyticsMiniDonut" aria-hidden="true">
-                            <div class="signin-analytics-donut-hole"><strong data-signin-unique>0</strong><span>students</span></div>
-                        </div>
-                        <div class="signin-analytics-summary-copy">
-                            <span class="signin-analytics-kicker">DEPARTMENT ACTIVITY</span>
-                            <h3>Student sign-ins by college / department</h3>
-                            <p>See how many students from each department have signed in, including accounts that existed before analytics tracking was added.</p>
-                            <div class="signin-analytics-mini-legend" id="signinAnalyticsMiniLegend"><span>No sign-in data yet.</span></div>
-                        </div>
-                        <span class="signin-analytics-open-cue"><span>Open analytics</span><i class="fa-solid fa-arrow-right" aria-hidden="true"></i></span>
-                    </button>
-
-                    <section class="signin-analytics-detail" id="signinAnalyticsDetail" hidden aria-labelledby="signinAnalyticsDetailTitle">
-                        <div class="signin-analytics-detail-head">
-                            <div>
-                                <span>STUDENT WEBSITE ACTIVITY</span>
-                                <h3 id="signinAnalyticsDetailTitle">Department Sign-in Analytics</h3>
-                                <p>Unique signed-in students are counted once per department. Total sign-ins includes repeat sessions, while known accounts includes students created before analytics tracking existed.</p>
-                                <p class="signin-analytics-history-note" id="signinAnalyticsHistoryNote">Checking pre-feature account history...</p>
-                            </div>
-                            <button class="signin-analytics-close" id="signinAnalyticsClose" type="button" aria-label="Close sign-in analytics"><i class="fa-solid fa-xmark"></i></button>
-                        </div>
-
-                        <div class="signin-analytics-metrics">
-                            <article><span>Known accounts</span><strong data-signin-known-accounts>0</strong><small>current + pre-feature students</small></article>
-                            <article><span>Unique students</span><strong data-signin-unique>0</strong><small>have signed in</small></article>
-                            <article><span>Total sign-ins</span><strong data-signin-sessions>0</strong><small>login sessions recorded</small></article>
-                            <article><span>Active today</span><strong data-signin-today>0</strong><small>students signed in today</small></article>
-                            <article><span>Departments</span><strong data-signin-departments>0</strong><small>represented in activity</small></article>
-                        </div>
-
-                        <div class="signin-analytics-detail-grid">
-                            <article class="signin-analytics-chart-card">
-                                <div class="signin-analytics-large-donut" id="signinAnalyticsLargeDonut" aria-label="Department sign-in distribution">
-                                    <div class="signin-analytics-large-hole"><strong data-signin-unique>0</strong><span>unique students</span></div>
-                                </div>
-                                <div class="signin-analytics-chart-caption">
-                                    <strong>Department share</strong>
-                                    <span id="signinAnalyticsUpdated">Waiting for sign-in activity...</span>
-                                </div>
-                            </article>
-
-                            <article class="signin-analytics-table-card">
-                                <div class="signin-analytics-table-head">
-                                    <div><span>BREAKDOWN</span><h4>Accounts & sign-ins by department</h4></div>
-                                    <span class="signin-analytics-live"><i></i> Live</span>
-                                </div>
-                                <div class="signin-analytics-table" id="signinAnalyticsTable">
-                                    <div class="signin-analytics-empty">No student sign-ins have been recorded yet.</div>
-                                </div>
-                            </article>
-                        </div>
-                    </section>
-                </section>
-
-                <section class="reference-block event-reference-block">
-                    <div class="reference-heading events-reference-heading"><h2>Events</h2><a href="../events/events.html">Open events <i class="fa-solid fa-arrow-up-right-from-square"></i></a></div>
+<section class="overview-content-grid" aria-label="Calendar, programs and bulletin"><div class="overview-content-left"><section class="reference-block event-reference-block">
+                    <div class="reference-heading events-reference-heading"><h2>Event Calendar</h2><a href="../events/events.html">Open events <i class="fa-solid fa-arrow-up-right-from-square"></i></a></div>
                     <article class="officer-event-card">
                         <div class="mini-calendar"><div class="calendar-head"><button type="button" aria-label="Previous month">‹</button><strong id="officerCalendarMonth">Current Month</strong><button type="button" aria-label="Next month">›</button></div><div class="calendar-week"><span>S</span><span>M</span><span>T</span><span>W</span><span>T</span><span>F</span><span>S</span></div><div class="calendar-days" id="officerCalendarDays"></div></div>
                         <div class="officer-event-list" id="officerOverviewEvents"><div class="reference-empty">No upcoming events yet.</div></div>
                     </article>
-                </section>
-
-            </div>
-
-            <aside class="reference-bulletin-column">
-                <section class="reference-bulletin-panel">
-                    <div class="reference-heading bulletin-reference-heading"><h2>Bulletin Board</h2><a href="../announcements/announcements.html">Open bulletin <i class="fa-solid fa-arrow-up-right-from-square"></i></a></div>
-                    <article class="bulletin-preview-card" id="officerBulletinPreview"><div class="reference-empty">No announcement posted yet.</div></article>
-            
-                </section>
-
-                <section class="reference-block program-reference-block">
+                </section><section class="reference-block program-reference-block">
                     <div class="reference-heading programs-reference-heading"><h2><i class="fa-solid fa-earth-americas"></i> Programs</h2><a href="../programs/programs.html">Open programs <i class="fa-solid fa-arrow-up-right-from-square"></i></a></div>
                     <article class="officer-program-card" id="officerOverviewPrograms">
                         <div class="reference-empty">No upcoming programs yet.</div>
                     </article>
-                </section>
+                </section></div><section class="reference-bulletin-panel">
+                    <div class="reference-heading bulletin-reference-heading"><h2>Bulletin Board</h2><a href="../announcements/announcements.html">Open bulletin <i class="fa-solid fa-arrow-up-right-from-square"></i></a></div>
+                    <article class="bulletin-preview-card" id="officerBulletinPreview"><div class="reference-empty">No announcement posted yet.</div></article>
 
-                <section class="election-control-strip">
-                    <div><span class="control-kicker">Automatic Election Phase</span><h3 id="overviewElectionStatus">Checking election schedule...</h3><p id="overviewElectionPhaseNote">Voting and other election functions are controlled automatically by the configured schedule.</p></div>
-                    <div class="election-control-actions"><a class="control-btn open" href="../elections/elections.html"><i class="fa-regular fa-calendar-check"></i> Manage Schedule</a></div>
-                </section>
-            </aside>
-
-                <section class="officer-management-suite">
-                    <div class="management-suite-heading">
-                        <div class="management-suite-title"><span class="management-suite-icon"><i class="fa-solid fa-screwdriver-wrench"></i></span><div><span>OFFICER TOOLS</span><h2>Officer Management Center</h2><p>The front dashboard keeps the student-style layout, while these controls remain officer-only.</p></div></div>
-                    </div>
-                    <div class="management-feature-grid">
-                        <article class="management-feature-card announcements-feature">
-                            <div class="management-feature-icon"><i class="fa-solid fa-bullhorn"></i></div>
-                            <div class="management-feature-copy"><span>Bulletin Board Center</span><strong data-overview-announcement-count>0</strong><p>Published announcements</p></div>
-                            <div class="management-feature-actions"><a href="../announcements/announcements.html"><i class="fa-solid fa-arrow-up-right-from-square"></i> Create / Manage</a></div>
-                        </article>
-                        <article class="management-feature-card complaints-feature">
-                            <div class="management-feature-icon"><i class="fa-solid fa-message"></i></div>
-                            <div class="management-feature-copy"><span>Complaints Management</span><strong data-overview-pending-complaints>0</strong><p>Pending / active cases</p></div>
-                            <div class="management-feature-actions"><a href="../complaints/complaints.html"><i class="fa-solid fa-inbox"></i> Open Case Queue</a></div>
-                        </article>
-                        <article class="management-feature-card events-feature">
-                            <div class="management-feature-icon"><i class="fa-regular fa-calendar-days"></i></div>
-                            <div class="management-feature-copy"><span>Events Management</span><strong data-overview-upcoming-events>0</strong><p>Upcoming university events</p></div>
-                            <div class="management-feature-actions"><a href="../events/events.html"><i class="fa-solid fa-arrow-up-right-from-square"></i> Create / Manage</a></div>
-                        </article>
-                        <article class="management-feature-card programs-feature">
-                            <div class="management-feature-icon"><i class="fa-solid fa-earth-americas"></i></div>
-                            <div class="management-feature-copy"><span>External Programs</span><strong data-overview-upcoming-programs>0</strong><p>Upcoming outside-university programs</p></div>
-                            <div class="management-feature-actions"><a href="../programs/programs.html"><i class="fa-solid fa-arrow-up-right-from-square"></i> Create / Manage</a></div>
-                        </article>
-                        <article class="management-feature-card officers-feature">
-                            <div class="management-feature-icon"><i class="fa-solid fa-user-tie"></i></div>
-                            <div class="management-feature-copy"><span>Officer Accounts</span><strong data-overview-officer-count>0</strong><p>Active officer accounts</p></div>
-                            <div class="management-feature-actions muted-action"><span>Account access is admin-controlled</span></div>
-                        </article>
-                    </div>
-
-                    <div class="management-detail-grid">
-                        <section class="management-panel">
-                            <div class="management-panel-head"><div class="management-panel-title"><span class="management-panel-icon"><i class="fa-solid fa-inbox"></i></span><div><span>CASE WORKFLOW</span><h3>Recent Complaint Queue</h3></div></div><a href="../complaints/complaints.html"><i class="fa-solid fa-list-check"></i> Manage all</a></div>
-                            <div class="management-list" id="officerRecentComplaints"><div class="reference-empty">No complaints yet.</div></div>
-                        </section>
-                        <section class="management-panel">
-                            <div class="management-panel-head"><div class="management-panel-title"><span class="management-panel-icon"><i class="fa-solid fa-bolt"></i></span><div><span>COMMUNICATION</span><h3>Officer Quick Actions</h3></div></div></div>
-                            <div class="officer-quick-actions">
-                                <a href="../announcements/announcements.html"><i class="fa-solid fa-plus"></i><div><strong>Post Announcement</strong><small>Publish a bulletin with an optional image.</small></div></a>
-                                <a href="../events/events.html"><i class="fa-solid fa-calendar-plus"></i><div><strong>Create Event</strong><small>Post a university event and upload its background image.</small></div></a>
-                                <a href="../programs/programs.html"><i class="fa-solid fa-earth-americas"></i><div><strong>Post External Program</strong><small>Publish an outside-university opportunity or partner activity.</small></div></a>
-                                <a href="../elections/elections.html"><i class="fa-solid fa-check-to-slot"></i><div><strong>Election Management</strong><small>Review candidates and manage election settings.</small></div></a>
-                                <a href="../complaints/complaints.html"><i class="fa-solid fa-reply"></i><div><strong>Reply to Complaints</strong><small>Update status, view attachments, and respond.</small></div></a>
-                            </div>
-                        </section>
-                    </div>
-                </section>
-
+                </section></section><section class="general-analytics" aria-labelledby="generalAnalyticsTitle"><h2 id="generalAnalyticsTitle">General Analytics</h2><div class="general-analytics-grid"><a class="general-analytics-item" href="student-analytics.html?analytics=student" data-summary="student" aria-label="Open detailed Student Analytics"><h3>Student Analytics</h3><span class="overview-pie empty" aria-hidden="true"></span><span class="overview-chart-state" role="status">Loading…</span><span class="overview-chart-legend"></span><span class="overview-chart-extra"></span><span class="overview-chart-link">View detailed analytics <i class="fa-solid fa-arrow-up-right-from-square" aria-hidden="true"></i></span></a><a class="general-analytics-item" href="../events/events.html?analytics=all" data-summary="event" aria-label="Open detailed Events Analytics"><h3>Events Analytics</h3><span class="overview-pie empty" aria-hidden="true"></span><span class="overview-chart-state" role="status">Loading…</span><span class="overview-chart-legend"></span><span class="overview-chart-extra"></span><span class="overview-chart-link">View detailed analytics <i class="fa-solid fa-arrow-up-right-from-square" aria-hidden="true"></i></span></a><a class="general-analytics-item" href="../programs/programs.html?analytics=all" data-summary="program" aria-label="Open detailed Programs Analytics"><h3>Programs Analytics</h3><span class="overview-pie empty" aria-hidden="true"></span><span class="overview-chart-state" role="status">Loading…</span><span class="overview-chart-legend"></span><span class="overview-chart-extra"></span><span class="overview-chart-link">View detailed analytics <i class="fa-solid fa-arrow-up-right-from-square" aria-hidden="true"></i></span></a><a class="general-analytics-item" href="../complaints/complaints.html?analytics=all" data-summary="complaint" aria-label="Open detailed Complaint Analytics"><h3>Complaint Analytics</h3><span class="overview-pie empty" aria-hidden="true"></span><span class="overview-chart-state" role="status">Loading…</span><span class="overview-chart-legend"></span><span class="overview-chart-extra"></span><span class="overview-chart-link">View detailed analytics <i class="fa-solid fa-arrow-up-right-from-square" aria-hidden="true"></i></span></a></div></section><section class="overview-quick-access" aria-labelledby="quickAccessTitle"><h2 id="quickAccessTitle">Quick Access</h2><div><a href="../announcements/announcements.html"><i class="fa-solid fa-note-sticky" aria-hidden="true"></i>Bulletin Board</a><a href="../events/events.html"><i class="fa-solid fa-calendar-days" aria-hidden="true"></i>Events</a><a href="../programs/programs.html"><i class="fa-solid fa-earth-americas" aria-hidden="true"></i>Programs</a><a href="../complaints/complaints.html"><i class="fa-solid fa-comments" aria-hidden="true"></i>Complaints</a><a href="../elections/elections.html"><i class="fa-solid fa-check-to-slot" aria-hidden="true"></i>Elections</a></div></section>
         </section>
     </section>
 </main></div></div>
 <footer class="officer-shared-footer"><div class="officer-footer-main"><div class="officer-footer-col"><h3>ABOUT US</h3><a href="../overview/overview.html">USC Officer Portal</a><a href="../organizational-chart/organizational-chart.html">University Student Council</a><a href="../organizational-chart/organizational-chart.html">Organizational Chart</a></div><div class="officer-footer-col"><h3>CONTACT US</h3><p><strong>Samar State University</strong></p><p>Arteche Boulevard</p><p>Catbalogan, Samar 6700</p></div><div class="officer-footer-col officer-footer-links"><a href="https://ssu.edu.ph" target="_blank" rel="noopener"><i class="fa-brands fa-square-facebook"></i> ssu.edu.ph</a><a href="mailto:ssuuniversitystudentcouncil@gmail.com"><i class="fa-regular fa-envelope"></i> ssuuniversitystudentcouncil@gmail.com</a></div></div><div class="officer-footer-bottom"><img src="../shared/assets/SSUlogo.webp" alt="SSU Logo"/><img src="../shared/assets/USClogo.webp" alt="USC Logo"/><div><strong>SSU UNIVERSITY STUDENT COUNCIL</strong><span>LEADERSHIP&nbsp;&nbsp;|&nbsp;&nbsp;EXCELLENCE&nbsp;&nbsp;|&nbsp;&nbsp;DISCIPLINE&nbsp;&nbsp;|&nbsp;&nbsp;SERVICE</span></div></div></footer>
-<script src="../shared/js/nav-active.js?v=6"></script></script><script type="module" src="js/overview.js?v=balanced-dashboard-1"></script><script type="module" src="../shared/js/admin-auth.js?v=rbac4"></script>
+<script src="../shared/js/nav-active.js?v=6"></script></script><script type="module" src="js/overview.js?v=unified-analytics-1"></script><script type="module" src="../shared/js/admin-auth.js?v=rbac4"></script>
 <script type="module" src="../../shared/profile-manager.js?v=supabase-email-1"></script>
   <script type="module" src="../shared/js/officer-rbac.js?v=6"></script>
 </body></html>

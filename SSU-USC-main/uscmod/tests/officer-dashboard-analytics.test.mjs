@@ -8,19 +8,18 @@ const studentEvents = fs.readFileSync(new URL("../dashboard/js/events.js", impor
 const rules = fs.readFileSync(new URL("../firestore.rules", import.meta.url), "utf8");
 
 test("officer dashboard exposes a unified analytics summary", () => {
-  assert.match(html, /Student Participation &amp; Operations Analytics/);
-  assert.match(html, /EVENT PARTICIPATION/);
-  assert.match(html, /Registrations by program/);
-  assert.match(html, /Case Workload/);
-  assert.match(html, /Participation Summary/);
+  assert.match(html, /General Analytics/);
+  for (const key of ['student','event','program','complaint']) assert.match(html, new RegExp(`data-summary="${key}"`));
+  assert.doesNotMatch(html, /data-analytics-open="election"/);
+
 });
 
-test("overview loads live event registration, complaint, and election analytics", () => {
+test("overview loads live registration and complaint analytics without election subscriptions", () => {
   assert.match(js, /collectionGroup\(db, "registrations"\)/);
   assert.match(js, /renderEventParticipationAnalytics/);
   assert.match(js, /renderComplaintAnalytics/);
-  assert.match(js, /renderElectionParticipationAnalytics/);
-  assert.match(js, /departmentVotes/);
+  assert.doesNotMatch(js, /^bindVoteSummary\(\);/m);
+  assert.match(js, /renderOverviewChart/);
 });
 
 test("event registrations preserve administrator-controlled student program for analytics", () => {
