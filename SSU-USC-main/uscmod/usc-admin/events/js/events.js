@@ -273,7 +273,7 @@ function renderEvents(events) {
     .map((eventItem) => {
       const status = getEventStatus(eventItem);
       const badgeClass = status === "Upcoming" ? "live" : "review";
-      const reminderText = eventItem.reminderEnabled ? "Reminders enabled" : "Reminders disabled";
+      const reminderText = eventItem.reminderEnabled ? "Reminders on" : "Reminders off";
       const mode = safeText(eventItem.registrationMode, "none").toLowerCase();
       const websiteRegistrations = registrationCounts.get(eventItem.id) || 0;
       const imageUrl = safeText(eventItem.imageUrl || eventItem.posterUrl);
@@ -291,7 +291,7 @@ function renderEvents(events) {
             <div class="event-published-heading">
               <span class="published-type-icon"><i class="fa-solid fa-calendar-days" aria-hidden="true"></i></span>
               <div>
-                <div class="item-title">${escapeHtml(safeText(eventItem.title, "Untitled Event"))}</div>
+                <h3 class="item-title">${escapeHtml(safeText(eventItem.title, "Untitled Event"))}</h3>
                 <span class="event-category-chip"><i class="fa-solid fa-tag"></i>${escapeHtml(safeText(eventItem.category, "USC Event"))}</span>
               </div>
             </div>
@@ -310,8 +310,7 @@ function renderEvents(events) {
             <span><i class="fa-solid fa-users"></i> ${escapeHtml(safeText(eventItem.audience, "All Students"))}</span>
             <span><i class="fa-regular fa-bell"></i> ${reminderText}</span>
             <span><i class="fa-solid fa-ticket"></i> ${escapeHtml(registrationModeLabel(mode))}</span>
-            <span><i class="fa-solid fa-hourglass-end"></i> ${escapeHtml(formatRegistrationDeadline(eventItem))}</span>
-            ${mode === "internal" ? `<span><i class="fa-solid fa-user-check"></i> ${websiteRegistrations} registered</span>` : ""}
+            ${mode !== "none" ? `<span class="event-deadline"><i class="fa-solid fa-hourglass-end" aria-hidden="true"></i> Registration closes: ${escapeHtml(formatRegistrationDeadline(eventItem))}</span>` : ""}
           </div>
           ${eventItem.participationNotes ? `<div class="event-participation-note"><i class="fa-solid fa-circle-info" aria-hidden="true"></i><div><strong>Participation instructions</strong><span>${escapeHtml(eventItem.participationNotes)}</span></div></div>` : ""}
           <div class="event-card-actions">
@@ -617,6 +616,10 @@ document.addEventListener("keydown", (event) => {
 });
 
 clearEventBtn?.addEventListener("click", resetEventForm);
+
+document.getElementById("eventFormCard")?.addEventListener("toggle", (event) => {
+  scrollToEventFormBtn?.setAttribute("aria-expanded", String(event.target.open));
+});
 
 scrollToEventFormBtn?.addEventListener("click", () => {
   document.getElementById("eventFormCard").open = true;

@@ -14,7 +14,7 @@
 />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
 <link rel="stylesheet" href="../../shared/profile-manager.css" />
-<link rel="stylesheet" href="css/events-modern.css?v=1" />
+<link rel="stylesheet" href="css/events-modern.css?v=2" />
   <script src="../../shared/app-config.js"></script>
   <script type="module" src="../../shared/auth-guard.js?v=rbac7"></script>
 <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet" />
@@ -54,7 +54,6 @@
             <span class="grid-icon"></span>
         </button>
 
-
         <div class="officer-search-box" id="officerSearchBox">
 
             <div class="officer-search">
@@ -84,7 +83,6 @@
 
             </div>
 
-
             <div
                 class="officer-search-results"
                 id="officerSearchResults"
@@ -96,7 +94,6 @@
         </div>
 
     </div>
-
 
     <!-- RIGHT: notifications + profile -->
     <div class="nav-right">
@@ -138,16 +135,15 @@
                 <section class="main">
                     <section class="hero">
                         <div class="hero-left">
-                            <div class="hero-title">
+                            <div class="hero-title event-workspace-header">
                                 <div class="module-hero-heading">
                                     <span class="module-hero-icon" aria-hidden="true"><i class="fa-solid fa-calendar-days"></i></span>
-                                    <div>
-
-                                        <h1>Events</h1>
-
-                                    </div>
+                                    <h1>Events</h1>
                                 </div>
-
+                                <div class="hero-actions">
+                                    <button class="btn primary" type="button" id="scrollToEventFormBtn" data-rbac-permission="events.manage" aria-controls="eventFormCard" aria-expanded="false"><i class="fa-solid fa-plus" aria-hidden="true"></i> Create event</button>
+                                    <button class="btn light" type="button" data-nav="../overview/overview.html" aria-label="Back to dashboard"><i class="fa-solid fa-arrow-left" aria-hidden="true"></i> Dashboard</button>
+                                </div>
                             </div>
 
                             <div class="stats module-summary-stats" aria-label="Event statistics">
@@ -184,10 +180,6 @@
                                 </article>
                             </div>
 
-                            <div class="hero-actions">
-                                <button class="btn primary" type="button" id="scrollToEventFormBtn" data-rbac-permission="events.manage"><i class="fa-solid fa-calendar-plus" aria-hidden="true"></i> Create Event</button>
-                                <button class="btn light" type="button" data-nav="../overview/overview.html"><i class="fa-solid fa-arrow-left" aria-hidden="true"></i> Back to Dashboard</button>
-                            </div>
                         </div>
 
                     </section>
@@ -197,8 +189,9 @@
                             <summary class="card-head module-card-head"><div class="module-card-title"><span class="module-card-icon" aria-hidden="true"><i class="fa-solid fa-calendar-plus"></i></span><h2>Create event</h2></div><span class="composer-indicator" aria-hidden="true">+</span></summary>
 
                             <form class="card-body" id="eventForm" data-rbac-permission="events.manage">
+                                <fieldset class="event-form-section"><legend>Event details</legend>
                                 <div class="field">
-                                    <label for="eventTitle"><i class="fa-solid fa-heading" aria-hidden="true"></i> Event Title</label>
+                                    <label for="eventTitle"><i class="fa-solid fa-heading" aria-hidden="true"></i> Title</label>
                                     <input id="eventTitle" type="text" placeholder="Enter event title" required />
                                 </div>
 
@@ -214,7 +207,6 @@
                                     </div>
                                 </div>
 
-
                                 <div class="grid-2">
                                     <div class="field">
                                         <label for="eventStartTime"><i class="fa-regular fa-clock" aria-hidden="true"></i> Start Time</label>
@@ -227,7 +219,7 @@
                                 </div>
 
                                 <div class="field">
-                                    <label for="eventCategory"><i class="fa-solid fa-tags" aria-hidden="true"></i> Event Category</label>
+                                    <label for="eventCategory"><i class="fa-solid fa-tags" aria-hidden="true"></i> Category</label>
                                     <select id="eventCategory">
                                         <option value="Assembly">Assembly</option>
                                         <option value="Seminar">Seminar</option>
@@ -245,8 +237,10 @@
                                         required></textarea>
                                 </div>
 
+                                </fieldset>
+                                <fieldset class="event-form-section event-media-section"><legend>Event image <span>Optional</span></legend>
                                 <div class="field">
-                                    <label for="eventBackgroundImage"><i class="fa-regular fa-image" aria-hidden="true"></i> Event Background Image</label>
+                                    <label for="eventBackgroundImage"><i class="fa-regular fa-image" aria-hidden="true"></i> Image</label>
                                     <div class="event-upload-box">
                                         <input id="eventBackgroundImage" type="file" accept="image/jpeg,image/png,image/webp" hidden />
                                         <button class="mini-btn primary" type="button" id="eventImagePickerBtn"><i class="fa-regular fa-image"></i> Choose Image</button>
@@ -260,9 +254,11 @@
                                     </div>
                                 </div>
 
+                                </fieldset>
+                                <fieldset class="event-form-section"><legend>Participation</legend>
                                 <div class="grid-2">
                                     <div class="field">
-                                        <label for="eventAudience"><i class="fa-solid fa-users" aria-hidden="true"></i> Participant Access</label>
+                                        <label for="eventAudience"><i class="fa-solid fa-users" aria-hidden="true"></i> Audience</label>
                                         <select id="eventAudience" required>
                                             <option value="All Students">All Students</option>
                                             <option value="Selected Group">Selected Group</option>
@@ -271,7 +267,7 @@
                                     </div>
 
                                     <div class="field">
-                                        <label for="eventReminderEnabled"><i class="fa-regular fa-bell" aria-hidden="true"></i> Send Reminder</label>
+                                        <label for="eventReminderEnabled"><i class="fa-regular fa-bell" aria-hidden="true"></i> Reminders</label>
                                         <select id="eventReminderEnabled" required>
                                             <option value="true">Enable Reminder</option>
                                             <option value="false">Disable Reminder</option>
@@ -279,12 +275,11 @@
                                     </div>
                                 </div>
 
-
                                 <div class="event-registration-config">
                                     <div class="event-registration-config-head">
                                         <div>
 
-                                            <h4>Student Registration</h4>
+                                            <h4>Registration</h4>
                                         </div>
                                         <i class="fa-solid fa-ticket"></i>
                                     </div>
@@ -313,11 +308,12 @@
                                     </div>
 
                                     <div class="field">
-                                        <label for="eventParticipationNotes"><i class="fa-solid fa-list-check" aria-hidden="true"></i> Participation Instructions</label>
+                                        <label for="eventParticipationNotes"><i class="fa-solid fa-list-check" aria-hidden="true"></i> Instructions</label>
                                         <textarea id="eventParticipationNotes" placeholder="What should participants bring or prepare?"></textarea>
                                     </div>
                                 </div>
 
+                                </fieldset>
                                 <div class="row-actions">
                                     <button class="mini-btn primary" type="submit" id="publishEventBtn"><i class="fa-solid fa-paper-plane"></i> Publish Event</button>
                                     <button class="mini-btn light" type="button" id="clearEventBtn"><i class="fa-solid fa-eraser"></i> Clear Form</button>
@@ -328,13 +324,13 @@
                         <article class="card event-library">
                             <div class="card-head module-card-head">
                                 <div class="module-card-title"><span class="module-card-icon"><i class="fa-solid fa-bullhorn"></i></span><div><h2>Published events</h2></div></div>
-                                <span class="module-card-badge live"><i class="fa-solid fa-circle"></i> Live</span>
+
                             </div>
 
                             <div class="card-body">
                                 <div class="event-list-toolbar">
-                                    <div class="field"><label for="eventSearch">Search events</label><input id="eventSearch" type="search" placeholder="Search title, venue or category" /></div>
-                                    <div class="field"><label for="eventStatusFilter">Status</label><select id="eventStatusFilter"><option value="all">All events</option><option value="Upcoming">Upcoming</option><option value="Completed">Completed</option></select></div>
+                                    <div class="field event-search-field"><label class="event-visually-hidden" for="eventSearch">Search events</label><span class="event-search-icon" aria-hidden="true"><i class="fa-solid fa-magnifying-glass"></i></span><input id="eventSearch" type="search" placeholder="Search events, venues or categories" /></div>
+                                    <div class="field"><label class="event-visually-hidden" for="eventStatusFilter">Event status</label><select id="eventStatusFilter"><option value="all">All events</option><option value="Upcoming">Upcoming</option><option value="Completed">Completed</option></select></div>
                                 </div>
                                 <p class="event-results-count" id="eventResultsCount" role="status" aria-live="polite"></p>
                                 <div class="recent-list" id="recentEventsList"><div class="empty-state" role="status">Loading events…</div></div>
@@ -345,8 +341,6 @@
             </main>
         </div>
     </div>
-
-
 
 <div class="event-participants-modal" id="eventParticipantsModal" hidden>
   <button class="event-participants-backdrop" id="eventParticipantsBackdrop" type="button" aria-label="Close participant list"></button>
@@ -391,7 +385,7 @@
 </footer>
 
     <script src="../shared/js/nav-active.js?v=6"></script>
-    <script type="module" src="js/events.js?v=modern-1"></script>
+    <script type="module" src="js/events.js?v=modern-2"></script>
     <script type="module" src="../shared/js/admin-auth.js?v=rbac4"></script>
 <script type="module" src="../../shared/profile-manager.js?v=supabase-email-1"></script>
   <script type="module" src="../shared/js/officer-rbac.js?v=6"></script>
