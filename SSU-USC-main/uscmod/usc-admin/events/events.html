@@ -14,6 +14,7 @@
 />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
 <link rel="stylesheet" href="../../shared/profile-manager.css" />
+<link rel="stylesheet" href="css/events-modern.css?v=1" />
   <script src="../../shared/app-config.js"></script>
   <script type="module" src="../../shared/auth-guard.js?v=rbac7"></script>
 <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet" />
@@ -141,49 +142,44 @@
                                 <div class="module-hero-heading">
                                     <span class="module-hero-icon" aria-hidden="true"><i class="fa-solid fa-calendar-days"></i></span>
                                     <div>
-                                        <span class="module-hero-kicker">EVENT CONTROL CENTER</span>
-                                        <h1>Event & Participation Module</h1>
-                                        <p>Create USC events, publish schedules, and keep an organized list of upcoming
-                                            activities for students.</p>
+
+                                        <h1>Events</h1>
+
                                     </div>
                                 </div>
-                                <div class="hero-tag">Engagement module</div>
+
                             </div>
 
                             <div class="stats module-summary-stats" aria-label="Event statistics">
                                 <article class="stat-card module-stat-card">
                                     <div class="module-stat-icon" aria-hidden="true"><i class="fa-regular fa-calendar-plus"></i></div>
                                     <div class="module-stat-copy">
-                                        <div class="stat-label">Upcoming Events</div>
+                                        <div class="stat-label">Upcoming</div>
                                         <div class="stat-value" id="upcomingEventCount">0</div>
-                                        <div class="stat-sub">Future schedules</div>
                                     </div>
                                 </article>
 
                                 <article class="stat-card module-stat-card">
                                     <div class="module-stat-icon" aria-hidden="true"><i class="fa-solid fa-bullhorn"></i></div>
                                     <div class="module-stat-copy">
-                                        <div class="stat-label">Published Events</div>
+                                        <div class="stat-label">Published events</div>
                                         <div class="stat-value blue" id="publishedEventCount">0</div>
-                                        <div class="stat-sub">Live event posts</div>
                                     </div>
                                 </article>
 
                                 <article class="stat-card module-stat-card">
                                     <div class="module-stat-icon" aria-hidden="true"><i class="fa-regular fa-bell"></i></div>
                                     <div class="module-stat-copy">
-                                        <div class="stat-label">Reminders Enabled</div>
+                                        <div class="stat-label">Reminders</div>
                                         <div class="stat-value" id="reminderEnabledCount">0</div>
-                                        <div class="stat-sub">Auto-reminder ready</div>
                                     </div>
                                 </article>
 
                                 <article class="stat-card module-stat-card">
                                     <div class="module-stat-icon" aria-hidden="true"><i class="fa-solid fa-user-check"></i></div>
                                     <div class="module-stat-copy">
-                                        <div class="stat-label">Website Registrations</div>
+                                        <div class="stat-label">Registrations</div>
                                         <div class="stat-value green" id="confirmedAttendanceCount">0</div>
-                                        <div class="stat-sub">Student self-registration</div>
                                     </div>
                                 </article>
                             </div>
@@ -194,53 +190,11 @@
                             </div>
                         </div>
 
-                        <div class="side-panel">
-                            <div class="panel-head module-panel-head">
-                                <div class="module-card-title"><span class="module-card-icon"><i class="fa-solid fa-circle-info"></i></span><div><h3>Publishing Notes</h3><small>Event setup guidance</small></div></div>
-                                <span class="panel-link"><i class="fa-solid fa-signal"></i> Live schedule</span>
-                            </div>
-
-                            <div class="activity">
-                                <div class="activity-item">
-                                    <div class="activity-function-icon"><i class="fa-solid fa-users"></i></div>
-                                    <div class="activity-text">
-                                        <strong>Student participation</strong>
-                                        <span>Choose portal registration, an external registration link, or no registration for each published event.</span>
-                                    </div>
-                                </div>
-
-                                <div class="activity-item">
-                                    <div class="activity-function-icon"><i class="fa-solid fa-hourglass-half"></i></div>
-                                    <div class="activity-text">
-                                        <strong>Registration deadlines</strong>
-                                        <span>Portal registrations automatically close at the deadline you set, while event reminders surface the deadline to students.</span>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </section>
-
-                    <section class="module-workflow-strip" aria-label="Event publishing workflow">
-                        <article class="module-workflow-step">
-                            <span class="workflow-number">1</span><span class="workflow-icon"><i class="fa-solid fa-pen-to-square"></i></span>
-                            <div><strong>Event Details</strong><small>Set the title, schedule, venue, category, and event description.</small></div>
-                        </article>
-                        <article class="module-workflow-step">
-                            <span class="workflow-number">2</span><span class="workflow-icon"><i class="fa-solid fa-ticket"></i></span>
-                            <div><strong>Participation Setup</strong><small>Choose the audience, reminders, registration method, and deadline.</small></div>
-                        </article>
-                        <article class="module-workflow-step">
-                            <span class="workflow-number">3</span><span class="workflow-icon"><i class="fa-solid fa-paper-plane"></i></span>
-                            <div><strong>Publish & Monitor</strong><small>Publish the event, monitor registrations, and manage the live event card.</small></div>
-                        </article>
                     </section>
 
                     <section class="grid-2 module-management-grid">
-                        <article class="card" id="eventFormCard">
-                            <div class="card-head module-card-head">
-                                <div class="module-card-title"><span class="module-card-icon"><i class="fa-solid fa-calendar-plus"></i></span><div><h3>Create Event</h3><small>Officer-side event form</small></div></div>
-                                <span class="module-card-badge"><i class="fa-solid fa-pen"></i> Create</span>
-                            </div>
+                        <details class="card event-composer" id="eventFormCard">
+                            <summary class="card-head module-card-head"><div class="module-card-title"><span class="module-card-icon" aria-hidden="true"><i class="fa-solid fa-calendar-plus"></i></span><h2>Create event</h2></div><span class="composer-indicator" aria-hidden="true">+</span></summary>
 
                             <form class="card-body" id="eventForm" data-rbac-permission="events.manage">
                                 <div class="field">
@@ -292,14 +246,14 @@
                                 </div>
 
                                 <div class="field">
-                                    <label><i class="fa-regular fa-image" aria-hidden="true"></i> Event Background Image</label>
+                                    <label for="eventBackgroundImage"><i class="fa-regular fa-image" aria-hidden="true"></i> Event Background Image</label>
                                     <div class="event-upload-box">
                                         <input id="eventBackgroundImage" type="file" accept="image/jpeg,image/png,image/webp" hidden />
                                         <button class="mini-btn primary" type="button" id="eventImagePickerBtn"><i class="fa-regular fa-image"></i> Choose Image</button>
                                         <span class="event-upload-file-name" id="eventImageFileName">No image selected</span>
                                     </div>
                                     <small class="event-upload-note">
-                                        Optional. JPG, PNG, or WEBP up to 5MB. This image becomes the full event highlight background students see first.
+                                        Optional · JPG, PNG or WEBP · Maximum 5 MB
                                     </small>
                                     <div class="event-image-preview-wrap" id="eventImagePreviewWrap" hidden>
                                         <img id="eventImagePreview" class="event-image-preview" alt="Selected event background preview" />
@@ -329,7 +283,7 @@
                                 <div class="event-registration-config">
                                     <div class="event-registration-config-head">
                                         <div>
-                                            <span class="event-registration-kicker">PARTICIPATION SETUP</span>
+
                                             <h4>Student Registration</h4>
                                         </div>
                                         <i class="fa-solid fa-ticket"></i>
@@ -360,25 +314,30 @@
 
                                     <div class="field">
                                         <label for="eventParticipationNotes"><i class="fa-solid fa-list-check" aria-hidden="true"></i> Participation Instructions</label>
-                                        <textarea id="eventParticipationNotes" placeholder="Example: Bring your school ID, arrive 15 minutes early, wear the prescribed attire, or include other participation requirements."></textarea>
+                                        <textarea id="eventParticipationNotes" placeholder="What should participants bring or prepare?"></textarea>
                                     </div>
                                 </div>
- 
+
                                 <div class="row-actions">
                                     <button class="mini-btn primary" type="submit" id="publishEventBtn"><i class="fa-solid fa-paper-plane"></i> Publish Event</button>
                                     <button class="mini-btn light" type="button" id="clearEventBtn"><i class="fa-solid fa-eraser"></i> Clear Form</button>
                                 </div>
                             </form>
-                        </article>
+                        </details>
 
-                        <article class="card">
+                        <article class="card event-library">
                             <div class="card-head module-card-head">
-                                <div class="module-card-title"><span class="module-card-icon"><i class="fa-solid fa-bullhorn"></i></span><div><h3>Published Events</h3><small>Live event feed</small></div></div>
+                                <div class="module-card-title"><span class="module-card-icon"><i class="fa-solid fa-bullhorn"></i></span><div><h2>Published events</h2></div></div>
                                 <span class="module-card-badge live"><i class="fa-solid fa-circle"></i> Live</span>
                             </div>
 
                             <div class="card-body">
-                                <div class="recent-list" id="recentEventsList"></div>
+                                <div class="event-list-toolbar">
+                                    <div class="field"><label for="eventSearch">Search events</label><input id="eventSearch" type="search" placeholder="Search title, venue or category" /></div>
+                                    <div class="field"><label for="eventStatusFilter">Status</label><select id="eventStatusFilter"><option value="all">All events</option><option value="Upcoming">Upcoming</option><option value="Completed">Completed</option></select></div>
+                                </div>
+                                <p class="event-results-count" id="eventResultsCount" role="status" aria-live="polite"></p>
+                                <div class="recent-list" id="recentEventsList"><div class="empty-state" role="status">Loading events…</div></div>
                             </div>
                         </article>
                     </section>
@@ -387,7 +346,7 @@
         </div>
     </div>
 
-    
+
 
 <div class="event-participants-modal" id="eventParticipantsModal" hidden>
   <button class="event-participants-backdrop" id="eventParticipantsBackdrop" type="button" aria-label="Close participant list"></button>
@@ -432,7 +391,7 @@
 </footer>
 
     <script src="../shared/js/nav-active.js?v=6"></script>
-    <script type="module" src="js/events.js?v=participation-1"></script>
+    <script type="module" src="js/events.js?v=modern-1"></script>
     <script type="module" src="../shared/js/admin-auth.js?v=rbac4"></script>
 <script type="module" src="../../shared/profile-manager.js?v=supabase-email-1"></script>
   <script type="module" src="../shared/js/officer-rbac.js?v=6"></script>
