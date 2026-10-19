@@ -14,12 +14,13 @@
 />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
 <link rel="stylesheet" href="../../shared/profile-manager.css" />
+<link rel="stylesheet" href="css/elections-modern.css?v=1" />
   <script src="../../shared/app-config.js"></script>
   <script type="module" src="../../shared/auth-guard.js?v=rbac7"></script>
 <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet" />
 </head>
 
-<body class="officer-app-shell">
+<body class="officer-app-shell election-management-page">
   <div class="page">
     <div class="page-label">Dashboard</div>
 
@@ -139,48 +140,44 @@
             <div class="hero-left">
               <div class="hero-title">
                 <div>
-                  <h1>Election Management Module</h1>
-                  <p>Configure the full election schedule, review candidate applications, monitor turnout, and publish official election information from one control center.</p>
+                  <h1>Elections</h1>
+
                 </div>
-                <div class="hero-tag">Schedule-driven phases</div>
+
               </div>
 
               <div class="stats">
                 <div class="stat-card">
                   <div class="stat-label">Active Election</div>
                   <div class="stat-value" id="activeElectionCount">01</div>
-                  <div class="stat-sub">Current cycle</div>
                 </div>
 
                 <div class="stat-card">
                   <div class="stat-label">Candidates</div>
                   <div class="stat-value blue" id="candidateCount">0</div>
-                  <div class="stat-sub">Validated list</div>
                 </div>
 
                 <div class="stat-card">
                   <div class="stat-label">Votes Cast</div>
                   <div class="stat-value" id="votesCastCount">0</div>
-                  <div class="stat-sub">Current submissions</div>
                 </div>
 
                 <div class="stat-card">
                   <div class="stat-label">Turnout</div>
                   <div class="stat-value green" id="turnoutPercent">0%</div>
-                  <div class="stat-sub">Participation rate</div>
                 </div>
               </div>
 
               <div class="hero-actions">
-                <button class="btn primary" id="openScheduleManagerBtn" type="button">Configure Election Schedule</button>
-                <button class="btn light" data-nav="../overview/overview.html">Back to Dashboard</button>
+                <button class="btn primary" id="openScheduleManagerBtn" type="button">Configure schedule</button>
+                <button class="btn light" data-nav="../overview/overview.html">Dashboard</button>
               </div>
             </div>
 
             <div class="side-panel">
               <div class="panel-head">
                 <h3>Election Status</h3>
-                <span class="panel-link">Live monitoring</span>
+
               </div>
 
               <div class="progress-wrap">
@@ -196,8 +193,8 @@
               <section class="department-turnout-panel" aria-labelledby="departmentTurnoutTitle">
                 <div class="department-turnout-head">
                   <div>
-                    <small>Participation by department</small>
-                    <strong id="departmentTurnoutTitle">Department Voting Participation</strong>
+
+                    <strong id="departmentTurnoutTitle">Department participation</strong>
                   </div>
                   <span id="departmentTurnoutTotal">0 voted</span>
                 </div>
@@ -335,7 +332,7 @@
           <section class="grid-2 election-bottom-grid">
             <article class="card secure-lifecycle-card" id="secureElectionLifecycle">
               <div class="card-head">
-                <div><h3>Secure Election Lifecycle</h3><span>Election integrity and closeout controls remain separated from schedule editing.</span></div>
+                <div><h3>Election lifecycle</h3><span>Election integrity and closeout controls remain separated from schedule editing.</span></div>
                 <span class="phase-status-pill" id="secureLifecycleBadge">Checking...</span>
               </div>
               <div class="card-body">
@@ -351,7 +348,7 @@
 
             <article class="card turnout-result-card">
               <div class="card-head">
-                <div><h3>Turnout & Result Snapshot</h3><span>Real-time overview of participation and performance.</span></div>
+                <div><h3>Participation &amp; results</h3></div>
               </div>
               <div class="card-body">
                 <div class="turnout-snapshot-top">
@@ -414,16 +411,16 @@
       </div>
       <div class="schedule-editor-body">
         <div class="schedule-editor-meta-grid">
-          <div class="field"><label>Election Title</label><input id="electionTitleInput" type="text" value="USC General Election" /></div>
-          <div class="field"><label>Election ID <small>(permanent key)</small></label><input id="electionIdInput" type="text" placeholder="usc-2026-general" pattern="[a-z0-9-]+" /></div>
-          <div class="field"><label>Current Phase <small>(automatic)</small></label><input id="electionStatusInput" class="read-only-field" type="text" value="Not configured" readonly aria-readonly="true" /></div>
+          <div class="field"><label for="electionTitleInput">Election Title</label><input id="electionTitleInput" type="text" value="USC General Election" /></div>
+          <div class="field"><label for="electionIdInput">Election ID <small>(permanent key)</small></label><input id="electionIdInput" type="text" placeholder="usc-2026-general" pattern="[a-z0-9-]+" /></div>
+          <div class="field"><label for="electionStatusInput">Current Phase <small>(automatic)</small></label><input id="electionStatusInput" class="read-only-field" type="text" value="Not configured" readonly aria-readonly="true" /></div>
         </div>
         <div class="phase-schedule-grid schedule-editor-phase-grid">
-          <section class="phase-schedule-item" data-phase-card="registration"><div class="phase-schedule-heading"><span>1</span><div><strong>Candidate Registration</strong><small>Students may submit candidacy applications.</small></div></div><div class="grid-2"><div class="field"><label>From</label><input id="registrationStartInput" type="datetime-local" /></div><div class="field"><label>Until</label><input id="registrationEndInput" type="datetime-local" /></div></div></section>
-          <section class="phase-schedule-item" data-phase-card="review"><div class="phase-schedule-heading"><span>2</span><div><strong>Application Review</strong><small>Review and assess received candidacy applications.</small></div></div><div class="grid-2"><div class="field"><label>From</label><input id="applicationReviewStartInput" type="datetime-local" /></div><div class="field"><label>Until</label><input id="applicationReviewEndInput" type="datetime-local" /></div></div></section>
-          <section class="phase-schedule-item" data-phase-card="publication"><div class="phase-schedule-heading"><span>3</span><div><strong>Candidate Publication</strong><small>Approved candidates become visible to students.</small></div></div><div class="grid-2"><div class="field"><label>From</label><input id="candidatePublicationStartInput" type="datetime-local" /></div><div class="field"><label>Until</label><input id="candidatePublicationEndInput" type="datetime-local" /></div></div></section>
-          <section class="phase-schedule-item" data-phase-card="voting"><div class="phase-schedule-heading"><span>4</span><div><strong>Voting</strong><small>The official ballot is enabled during this window.</small></div></div><div class="grid-2"><div class="field"><label>From</label><input id="votingStartInput" type="datetime-local" /></div><div class="field"><label>Until</label><input id="votingEndInput" type="datetime-local" /></div></div></section>
-          <section class="phase-schedule-item" data-phase-card="results"><div class="phase-schedule-heading"><span>5</span><div><strong>Result Publication</strong><small>Official results become visible to students.</small></div></div><div class="grid-2"><div class="field"><label>From</label><input id="resultPublicationStartInput" type="datetime-local" /></div><div class="field"><label>Until</label><input id="resultPublicationEndInput" type="datetime-local" /></div></div></section>
+          <section class="phase-schedule-item" data-phase-card="registration"><div class="phase-schedule-heading"><span>1</span><div><strong>Candidate Registration</strong><small>Students may submit candidacy applications.</small></div></div><div class="grid-2"><div class="field"><label for="registrationStartInput">From</label><input id="registrationStartInput" aria-label="Candidate registration from" type="datetime-local" /></div><div class="field"><label for="registrationEndInput">Until</label><input id="registrationEndInput" aria-label="Candidate registration until" type="datetime-local" /></div></div></section>
+          <section class="phase-schedule-item" data-phase-card="review"><div class="phase-schedule-heading"><span>2</span><div><strong>Application Review</strong><small>Review and assess received candidacy applications.</small></div></div><div class="grid-2"><div class="field"><label for="applicationReviewStartInput">From</label><input id="applicationReviewStartInput" aria-label="Application review from" type="datetime-local" /></div><div class="field"><label for="applicationReviewEndInput">Until</label><input id="applicationReviewEndInput" aria-label="Application review until" type="datetime-local" /></div></div></section>
+          <section class="phase-schedule-item" data-phase-card="publication"><div class="phase-schedule-heading"><span>3</span><div><strong>Candidate Publication</strong><small>Approved candidates become visible to students.</small></div></div><div class="grid-2"><div class="field"><label for="candidatePublicationStartInput">From</label><input id="candidatePublicationStartInput" aria-label="Candidate publication from" type="datetime-local" /></div><div class="field"><label for="candidatePublicationEndInput">Until</label><input id="candidatePublicationEndInput" aria-label="Candidate publication until" type="datetime-local" /></div></div></section>
+          <section class="phase-schedule-item" data-phase-card="voting"><div class="phase-schedule-heading"><span>4</span><div><strong>Voting</strong><small>The official ballot is enabled during this window.</small></div></div><div class="grid-2"><div class="field"><label for="votingStartInput">From</label><input id="votingStartInput" aria-label="Voting from" type="datetime-local" /></div><div class="field"><label for="votingEndInput">Until</label><input id="votingEndInput" aria-label="Voting until" type="datetime-local" /></div></div></section>
+          <section class="phase-schedule-item" data-phase-card="results"><div class="phase-schedule-heading"><span>5</span><div><strong>Result Publication</strong><small>Official results become visible to students.</small></div></div><div class="grid-2"><div class="field"><label for="resultPublicationStartInput">From</label><input id="resultPublicationStartInput" aria-label="Result publication from" type="datetime-local" /></div><div class="field"><label for="resultPublicationEndInput">Until</label><input id="resultPublicationEndInput" aria-label="Result publication until" type="datetime-local" /></div></div></section>
         </div>
         <div class="schedule-validation-message" id="scheduleValidationMessage" aria-live="polite"></div>
       </div>
@@ -434,7 +431,7 @@
     </form>
   </dialog>
 
-  
+
 <footer class="officer-shared-footer">
   <div class="officer-footer-main">
     <div class="officer-footer-col">

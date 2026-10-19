@@ -39,6 +39,6 @@ test("candidate application opens a floating preview dialog with review decision
 });
 
 test("election page cache-busts the candidate preview assets", () => {
-  assert.match(html, /elections\.css\?v=candidate-photo-viewer-polish-2/);
+  assert.match(html, /elections-modern\.css\?v=1/);
   assert.match(html, /elections\.js\?v=candidate-photo-viewer-polish-2/);
 });
