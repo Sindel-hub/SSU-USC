@@ -13,14 +13,41 @@ const yearLevelSelect = document.getElementById("yearLevel");
 const standingSelect = document.getElementById("studentStanding");
 const standingHint = document.getElementById("standingHint");
 const eligibilitySelect = document.getElementById("eligibility");
+const submissionFeedback = document.getElementById("submissionFeedback");
+let slipReturnFocus = null;
+
+function showSubmissionFeedback(message, tone) {
+  if (!submissionFeedback) return;
+  submissionFeedback.textContent = message;
+  submissionFeedback.className = `submission-feedback ${tone}`;
+  submissionFeedback.hidden = !message;
+}
+function showFieldFeedback(field) {
+  const error = document.getElementById(`${field.id}Error`);
+  if (!error) return;
+  const invalid = !field.validity.valid;
+  field.setAttribute("aria-invalid", String(invalid));
+  error.textContent = invalid ? field.validationMessage : "";
+  error.hidden = !invalid;
+}
+form?.addEventListener("invalid", (event) => showFieldFeedback(event.target), true);
+form?.addEventListener("input", (event) => {
+  if (event.target.getAttribute("aria-invalid") === "true") showFieldFeedback(event.target);
+});
+form?.addEventListener("change", (event) => {
+  if (event.target.getAttribute("aria-invalid") === "true") showFieldFeedback(event.target);
+});
+
 let currentCredential = null;
 let currentSlipTitle = "STUDENT ACCOUNT INFORMATION";
 
 function openSlipModal(){
   if (!slipSection) return;
+  slipReturnFocus = createBtn;
   slipSection.hidden = false;
   slipSection.setAttribute("aria-hidden", "false");
   document.body.classList.add("modal-open");
+  requestAnimationFrame(() => document.getElementById("closeSlipModalBtn")?.focus({ preventScroll: true }));
   slipSection.querySelector(".slip-modal-body")?.scrollTo({ top: 0, behavior: "instant" in window ? "instant" : "auto" });
 }
 function clearSlipState(){
@@ -33,6 +60,7 @@ function closeSlipModal({ clear = true } = {}){
   slipSection.setAttribute("aria-hidden", "true");
   document.body.classList.remove("modal-open");
   if (clear) clearSlipState();
+  slipReturnFocus?.focus({ preventScroll: true });
 }
 function printSlip(){
   if (!currentCredential) return alert("Create a student account first.");
@@ -74,7 +102,7 @@ function populatePrograms(){
 
 function showRuntimeReady(){
   if (!bridgeStatus) return;
-  bridgeStatus.textContent = "Student account provisioning is ready.";
+  bridgeStatus.textContent = "Ready to create an account.";
   bridgeStatus.className = "status-box ok";
 }
 function syncStandingControls(){
@@ -83,7 +111,7 @@ function syncStandingControls(){
 
   if (standingHint) {
     standingHint.textContent = active
-      ? "Active students may access the portal. Election eligibility is controlled separately below."
+      ? "Active students may access the portal."
       : `${studentStandingLabel(standing)} accounts are inactive: portal access and voting are automatically disabled.`;
   }
 }
@@ -150,23 +178,39 @@ form?.addEventListener("submit",async(e)=>{
     enrollmentStatus:enrollmentStatusForStanding(standingSelect.value),
     eligible:true
   };
+  showSubmissionFeedback("Creating student account…", "pending");
+  form.setAttribute("aria-busy", "true");
   createBtn.disabled=true;
   createBtn.textContent="Creating...";
   try{
     const result=await provisionStudentAccount(row);
     renderSlip(result.credential);
+    showSubmissionFeedback("Student account created. The login slip is ready.", "success");
   }catch(err){
+    showSubmissionFeedback(err.message || "Student account creation failed.", "error");
     console.error("Student account creation failed:", err);
     alert(err.message || "Student account creation failed.");
   }
-  finally{createBtn.disabled=false;createBtn.textContent="Create Student Account";}
+  finally{form.setAttribute("aria-busy", "false");createBtn.disabled=false;createBtn.textContent="Create Student Account";}
 });
 document.getElementById("printSlipBtn")?.addEventListener("click", printSlip);
 document.getElementById("downloadSlipBtn")?.addEventListener("click",downloadSlip);
 document.getElementById("clearSlipBtn")?.addEventListener("click",()=>closeSlipModal());
 document.getElementById("closeSlipModalBtn")?.addEventListener("click",()=>closeSlipModal());
 slipSection?.addEventListener("click",(event)=>{ if (event.target?.dataset?.closeSlip === "true") closeSlipModal(); });
-document.addEventListener("keydown",(event)=>{ if (event.key === "Escape" && !slipSection?.hidden) closeSlipModal(); });
+document.addEventListener("keydown",(event)=>{
+  if (slipSection?.hidden) return;
+  if (event.key === "Escape") closeSlipModal();
+  if (event.key === "Tab") {
+    const controls = [...slipSection.querySelectorAll('button:not(:disabled), a[href], [tabindex="0"]')].filter(el => el.getClientRects().length);
+    const first = controls[0], last = controls.at(-1);
+    if (event.shiftKey && (document.activeElement === first || !slipSection.contains(document.activeElement))) {
+      event.preventDefault(); last?.focus();
+    } else if (!event.shiftKey && (document.activeElement === last || !slipSection.contains(document.activeElement))) {
+      event.preventDefault(); first?.focus();
+    }
+  }
+});
 document.getElementById("studentId")?.addEventListener("input",e=>{e.target.value=e.target.value.replace(/\D/g,"").slice(0,6);});
 collegeSelect?.addEventListener("change",populatePrograms);
 standingSelect?.addEventListener("change", syncStandingControls);

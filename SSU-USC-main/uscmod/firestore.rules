@@ -788,6 +788,28 @@ service cloud.firestore {
         && request.resource.data.studentId == studentId;
       allow delete: if isAdmin();
     }
+    // Duplicate-name reservations used by student and officer provisioning.
+    // A reservation is create-only so a concurrent registration cannot replace it.
+    match /student_name_claims/{nameKey} {
+      allow read: if isAdmin();
+      allow create: if isAdmin()
+        && !exists(/databases/$(database)/documents/student_name_claims/$(nameKey))
+        && nameKey.matches("^[a-f0-9]{64}$")
+        && request.resource.data.nameKey == nameKey
+        && request.resource.data.uid is string
+        && request.resource.data.uid.size() > 0
+        && request.resource.data.studentId is string
+        && request.resource.data.studentId.matches("^[0-9]{6}$")
+        && request.resource.data.normalizedName is string
+        && request.resource.data.normalizedName.size() > 0
+        && request.resource.data.fullName is string
+        && request.resource.data.fullName.size() >= 2
+        && request.resource.data.fullName.size() <= 120
+        && request.resource.data.accountRole in ["student", "officer"]
+        && request.resource.data.createdBy == uid();
+      allow update: if false;
+      allow delete: if isAdmin();
+    }
     match /school_accounts/{studentId} {
       allow read: if isAdmin();
       allow create, update: if isAdmin()
