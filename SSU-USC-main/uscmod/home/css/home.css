@@ -3929,3 +3929,22 @@ html {
     .hero-tagline { width: 100%; text-align: center; }
     .hero-copy h1 { width: 100%; text-align: center; text-wrap: balance; }
 }
+
+/* Keep the keyboard shortcut above the fixed navigation when focused. */
+.skip-link {
+  position: fixed;
+  top: 12px;
+  left: 12px;
+  z-index: 10000;
+  padding: 12px 18px;
+  border-radius: 8px;
+  background: #ffffff;
+  color: #154f97;
+  font-weight: 700;
+  transform: translateY(calc(-100% - 24px));
+}
+.skip-link:focus {
+  transform: translateY(0);
+  outline: 3px solid #154f97;
+  outline-offset: 3px;
+}
