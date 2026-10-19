@@ -1,3 +1,5 @@
+import { isInternalAuthEmail } from "./account-email.js";
+import { callStudentEmailService } from "./supabase-email-service.js";
 import { auth, db, functions } from "../firebase/firebase-config.js";
 import { httpsCallable } from "https://www.gstatic.com/firebasejs/12.12.0/firebase-functions.js";
 import { sendPasswordResetEmail } from "https://www.gstatic.com/firebasejs/12.12.0/firebase-auth.js";
@@ -512,6 +514,9 @@ async function browserSendAdminPasswordResetEmail(data = {}) {
   const email = String(profile.authEmail || profile.institutionalEmail || profile.email || "").trim().toLowerCase();
   if (!email) throw new Error("This account has no registered authentication email for password recovery.");
 
+  if (isInternalAuthEmail(email)) {
+    return callStudentEmailService("admin_reset_password", { uid });
+  }
   await sendPasswordResetEmail(auth, email);
 
   try {

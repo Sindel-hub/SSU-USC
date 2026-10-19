@@ -1,4 +1,4 @@
-import { createClient } from "npm:@supabase/ssuuniversitystudentcouncil@gmail.com";
+import { createClient } from "npm:@supabase/supabase-js@2.55.0";
 
 
 export function errorText(error: unknown, fallback = "Unexpected error"): string {
@@ -80,7 +80,7 @@ export async function jsonBody(req: Request): Promise<Record<string, unknown>> {
 export function jsonResponse(data: unknown, status = 200): Response {
   return new Response(JSON.stringify(data), {
     status,
-    headers: { ...CORS_HEADERS, "Content-Type": "application/json; charset=utf-8" },
+    headers: { ...CORS_HEADERS, "Content-Type": "application/json; charset=utf-8", "Cache-Control": "no-store" },
   });
 }
 
@@ -107,7 +107,7 @@ export async function sendEmail(to: string, subject: string, html: string, text:
   return String(payload?.id || "");
 }
 
-export async function verifyFirebaseIdToken(idToken: string): Promise<{ uid: string; email: string; disabled: boolean }> {
+export async function verifyFirebaseIdToken(idToken: string): Promise<{ uid: string; email: string; disabled: boolean; role: string; authTime: number }> {
   if (!idToken || idToken.length < 100 || idToken.length > 10000) throw new Error("Your Firebase session is missing or expired. Sign in again.");
   const cfg = env();
   const response = await fetch(`https://identitytoolkit.googleapis.com/v1/accounts:lookup?key=${encodeURIComponent(cfg.firebaseWebApiKey)}`, {
@@ -118,7 +118,9 @@ export async function verifyFirebaseIdToken(idToken: string): Promise<{ uid: str
   const payload = await response.json().catch(() => ({}));
   const user = payload?.users?.[0];
   if (!response.ok || !user?.localId || user.disabled) throw new Error("Your Firebase session is no longer valid. Sign in again.");
-  return { uid: String(user.localId), email: String(user.email || ""), disabled: Boolean(user.disabled) };
+  const encoded = idToken.split(".")[1].replace(/-/g, "+").replace(/_/g, "/");
+  const claims = JSON.parse(atob(encoded)); // Decode only AFTER Google validates this exact token.
+  return { uid: String(user.localId), email: String(user.email || ""), disabled: Boolean(user.disabled), role: String(claims.role || ""), authTime: Number(claims.auth_time || 0) };
 }
 
 type ServiceAccount = { client_email: string; private_key: string; token_uri?: string; project_id?: string };
@@ -248,7 +250,7 @@ export function activeStudentProfile(profile: Record<string, any> | null): boole
   return String(profile?.role || "").toLowerCase() === "student" && activeEmailProfile(profile);
 }
 
-export async function firebaseUserByUid(uid: string): Promise<{ uid: string; email: string; disabled: boolean } | null> {
+export async function firebaseUserByUid(uid: string): Promise<{ uid: string; email: string; disabled: boolean; emailVerified: boolean } | null> {
   const cfg = env();
   const payload = await googleJson(`https://identitytoolkit.googleapis.com/v1/projects/${encodeURIComponent(cfg.firebaseProjectId)}/accounts:lookup`, {
     method: "POST",
@@ -256,7 +258,7 @@ export async function firebaseUserByUid(uid: string): Promise<{ uid: string; ema
   });
   const user = payload?.users?.[0];
   if (!user?.localId) return null;
-  return { uid: String(user.localId), email: String(user.email || ""), disabled: Boolean(user.disabled) };
+  return { uid: String(user.localId), email: String(user.email || ""), disabled: Boolean(user.disabled), emailVerified: user.emailVerified === true };
 }
 
 export async function generateFirebaseResetLink(authEmail: string): Promise<string> {
@@ -290,4 +292,44 @@ export async function logDelivery(args: { uid?: string; recipient: string; kind:
       error_message: args.error ? String(args.error).slice(0, 500) : null,
     });
   } catch (_) {}
+}
+
+// Versioned Firestore reads and masked atomic writes for trusted identity updates.
+// Never expose these IAM-authorized helpers or service-account credentials to browsers.
+export async function firestoreVersionedGet(path: string) {
+  const name = `projects/${env().firebaseProjectId}/databases/(default)/documents/${path}`;
+  const raw = await googleJson(`https://firestore.googleapis.com/v1/${name}`);
+  return raw ? { data: decodeFirestoreFields(raw.fields || {}), version: raw.updateTime } : null;
+}
+function encodeIdentityValue(value: unknown): any {
+  if (value === null) return { nullValue: null };
+  if (typeof value === "boolean") return { booleanValue: value };
+  if (typeof value === "number" && Number.isSafeInteger(value)) return { integerValue: String(value) };
+  if (typeof value === "string") return { stringValue: value };
+  throw new Error("Unsupported identity record field.");
+}
+export async function firestoreIdentityCommit(operations: any[]) {
+  const database = `projects/${env().firebaseProjectId}/databases/(default)`;
+  const writes = operations.map(operation => {
+    const name = `${database}/documents/${operation.path}`;
+    const currentDocument = operation.version ? { updateTime: operation.version } : { exists: false };
+    if (operation.remove) return { delete: name, currentDocument };
+    return {
+      update: { name, fields: Object.fromEntries(Object.entries(operation.data).map(([key, value]) => [key, encodeIdentityValue(value)])) },
+      updateMask: { fieldPaths: Object.keys(operation.data) }, currentDocument
+    };
+  });
+  await googleJson(`https://firestore.googleapis.com/v1/${database}/documents:commit`, { method: "POST", body: JSON.stringify({ writes }) });
+}
+export async function firebaseUserByEmail(email: string) {
+  const payload = await googleJson(`https://identitytoolkit.googleapis.com/v1/projects/${env().firebaseProjectId}/accounts:lookup`, {
+    method: "POST", body: JSON.stringify({ email: [email] })
+  });
+  const user = payload?.users?.[0];
+  return user?.localId ? { uid: String(user.localId), email: String(user.email || "") } : null;
+}
+export async function resetFirebaseAuthPassword(uid: string, password: string, timestamp: number) {
+  await googleJson(`https://identitytoolkit.googleapis.com/v1/projects/${env().firebaseProjectId}/accounts:update`, {
+    method: "POST", body: JSON.stringify({ localId: uid, password, validSince: String(Math.floor(timestamp / 1000)) })
+  });
 }

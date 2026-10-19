@@ -118,3 +118,55 @@ test('non-admin provisioning is rejected before Authentication creates an accoun
   await assert.rejects(api.provisionStudentAccount(input), /System Administrator access is required/);
   assert.equal(api.created.length, 0);
 });
+
+for (const role of ['student', 'officer']) {
+  test(`manual ${role} provisioning without email preserves all required records and never persists a password`, async () => {
+    const db = adminDb(), api = provisioner(db);
+    const row = { ...input, institutionalEmail: '', officePosition: 'Secretary' };
+    const result = await (role === 'student' ? api.provisionStudentAccount(row) : api.provisionOfficerAccount(row));
+    const uid = result.credential.uid;
+    const profile = (await firestore.getDoc(firestore.doc(db, 'users', uid))).data();
+    assert.equal(profile.institutionalEmail, null);
+    assert.equal(profile.email, '');
+    assert.equal(profile.authEmail, '123456@student.ssu-usc.local');
+    assert.equal(profile.institutionalEmailVerified, false);
+    assert.equal(profile.role, role);
+    assert.equal(api.created[0].email, profile.authEmail);
+    assert.equal((await firestore.getDoc(firestore.doc(db, 'login_aliases/id_123456'))).data().authEmail, profile.authEmail);
+    const aliases = await firestore.getDocs(firestore.collection(db, 'login_aliases'));
+    assert.equal(aliases.size, 1);
+    for (const collection of ['users','school_accounts','student_masterlist','student_id_claims','login_aliases','audit_logs']) {
+      const records = await firestore.getDocs(firestore.collection(db, collection));
+      assert.ok(!JSON.stringify(records.docs.map(doc=>doc.data())).includes(result.credential.temporaryPassword));
+    }
+    await assert.rejects(api.provisionStudentAccount(row), /Duplicate Student IDs/);
+  });
+}
+test('optional email still rejects malformed and reserved internal addresses before creating Auth accounts', async () => {
+  const api = provisioner(adminDb());
+  for (const institutionalEmail of ['bad', '123456@student.ssu-usc.local']) await assert.rejects(api.provisionStudentAccount({...input, institutionalEmail}), /valid institutional email/);
+  assert.equal(api.created.length, 0);
+});
+test('legacy Student ID records and linked email aliases prevent duplicate manual accounts', async () => {
+  const db = adminDb(), api = provisioner(db);
+  await firestore.setDoc(firestore.doc(db,'school_accounts/123456'),{studentId:'123456',uid:'legacy'});
+  await assert.rejects(api.provisionStudentAccount(input), /Duplicate Student IDs/);
+  await firestore.deleteDoc(firestore.doc(db,'school_accounts/123456'));
+  const key = createHash('sha256').update(input.institutionalEmail).digest('hex');
+  await firestore.setDoc(firestore.doc(db,'login_aliases/email_'+key),{authEmail:'old@student.ssu-usc.local',uid:'legacy',kind:'institutionalEmail'});
+  await assert.rejects(api.provisionStudentAccount(input), /institutional email already has an account/);
+  assert.equal(api.created.length, 0);
+});
+test('alias writes remain privileged, existing owners cannot be replaced, and verification tokens remain server-only', async () => {
+  const db=adminDb(), alias=firestore.doc(db,'login_aliases/id_123456');
+  await firestore.setDoc(alias,{authEmail:'123456@student.ssu-usc.local',uid:'student',kind:'studentId'});
+  await assertFails(firestore.setDoc(alias,{authEmail:'attacker@ssu.edu.ph',uid:'other',kind:'studentId'}));
+  await assertSucceeds(firestore.updateDoc(alias,{authEmail:'verified@ssu.edu.ph'}));
+  const studentDb=env.authenticatedContext('student',{role:'student',email:'student@ssu.edu.ph',email_verified:true}).firestore();
+  await assertFails(firestore.updateDoc(firestore.doc(studentDb,'login_aliases/id_123456'),{authEmail:'attacker@ssu.edu.ph'}));
+  await assertFails(firestore.setDoc(firestore.doc(studentDb,'login_aliases/email_'+'a'.repeat(64)),{authEmail:'attacker@ssu.edu.ph',kind:'institutionalEmail'}));
+  for(const contextDb of [db,studentDb,env.unauthenticatedContext().firestore()]) {
+    await assertFails(firestore.getDoc(firestore.doc(contextDb,'institutional_email_requests/student')));
+    await assertFails(firestore.setDoc(firestore.doc(contextDb,'institutional_email_requests/student'),{email:'attacker@ssu.edu.ph'}));
+  }
+});

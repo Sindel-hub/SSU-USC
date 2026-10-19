@@ -1,3 +1,4 @@
+import { institutionalEmailForDisplay } from "../../../shared/account-email.js";
 import { callSecure, auth } from "../../../shared/security-client.js?v=password-reset-fallback-1";
 import { OFFICER_PERMISSION_DEFINITIONS, ALL_OFFICER_PERMISSIONS, DEFAULT_OFFICER_PERMISSIONS, hasKnownOfficerPositionPreset, isBaselineOfficerPermissionList, normalizeOfficerPermissions, permissionsForOfficerPosition } from "../../../shared/officer-permissions.js?v=programs-1";
 
@@ -249,7 +250,7 @@ function renderTable() {
     return `
       <tr class="directory-row ${selectedUserId === user.uid ? 'is-open' : ''}">
         <td><input type="checkbox" class="row-selector" aria-label="Select ${escapeHtml(user.fullName || 'Unnamed user')}" data-user-id="${escapeHtml(user.uid)}" ${selected ? 'checked' : ''} ${isProtectedAdmin(user) ? 'disabled' : ''} /></td>
-        <td><div class="directory-user-cell"><span class="directory-user-avatar" aria-hidden="true">${escapeHtml(getInitials(user.fullName, user.email))}</span><div class="table-name"><strong>${escapeHtml(user.fullName || 'Unnamed user')}</strong><small>${escapeHtml(user.email || 'No email')}</small></div></div></td>
+        <td><div class="directory-user-cell"><span class="directory-user-avatar" aria-hidden="true">${escapeHtml(getInitials(user.fullName, user.email))}</span><div class="table-name"><strong>${escapeHtml(user.fullName || 'Unnamed user')}</strong><small>${escapeHtml(user.email || 'Not Linked')}</small></div></div></td>
         <td class="mono">${escapeHtml(user.studentId || 'N/A')}</td>
         <td><span class="role-badge ${roleClass(user.role)}">${escapeHtml(user.role)}</span></td>
         <td><span class="status-badge ${statusClass(user.accountStatus)}">${escapeHtml(user.accountStatus)}</span></td>
@@ -316,7 +317,7 @@ function fillEditor(user) {
   dom.selectedUserRestrictionBanner.classList.toggle('hidden', !protectedAdmin);
   dom.selectedUserInitials.textContent = getInitials(user.fullName, user.email);
   dom.selectedUserName.textContent = user.fullName || 'Unnamed user';
-  dom.selectedUserEmail.textContent = user.email || 'No email saved';
+  dom.selectedUserEmail.textContent = user.email || 'Not Linked';
   dom.selectedUserId.textContent = `Student ID: ${user.studentId || 'N/A'}`;
   dom.selectedUserRole.textContent = `Role: ${user.role}`;
   dom.selectedUserRole.className = `role-badge ${roleClass(user.role)}`;
@@ -378,11 +379,12 @@ function openUser(userId) {
 let latestTemporaryPassword = null;
 
 function openPasswordResetResult(result) {
+  if (result) result = { ...result, institutionalEmail: institutionalEmailForDisplay(result) };
   latestTemporaryPassword = result || null;
   if (!dom.passwordResetResultModal || !result) return;
   dom.passwordResetResultName.textContent = result.fullName || 'User';
   dom.passwordResetResultStudentId.textContent = result.studentId || 'N/A';
-  dom.passwordResetResultEmail.textContent = result.institutionalEmail || 'N/A';
+  dom.passwordResetResultEmail.textContent = result.institutionalEmail || 'Not Linked';
   dom.passwordResetResultPassword.textContent = result.temporaryPassword || '';
   dom.passwordResetResultModal.classList.remove('hidden');
   dom.passwordResetResultModal.setAttribute('aria-hidden', 'false');
@@ -423,7 +425,7 @@ function printTemporaryPasswordSlip() {
   const win = window.open('', '_blank', 'noopener,noreferrer');
   if (!win) return alert('Allow pop-ups to print the temporary password slip.');
   const esc = escapeHtml;
-  win.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>Password Reset Slip</title><style>body{font-family:Arial,sans-serif;margin:0;padding:34px;background:#f5f7fb;color:#10233f}.slip{max-width:720px;margin:auto;background:#fff;border:2px solid #183d72;padding:30px}.head{text-align:center;border-bottom:2px solid #183d72;padding-bottom:16px}.head h1{font-size:22px;margin:0 0 6px}.grid{display:grid;grid-template-columns:190px 1fr;gap:12px 16px;margin:24px 0}.value{font-weight:800;word-break:break-word}.password{font-family:Consolas,monospace;font-size:22px;letter-spacing:1px}.note{padding:14px;border:1px dashed #6b7c90;background:#f8fafc;line-height:1.5}.actions{text-align:center;margin-top:20px}.actions button{padding:10px 18px;font-weight:700}@media print{body{background:#fff;padding:0}.slip{max-width:none}.actions{display:none}}</style></head><body><article class="slip"><div class="head"><h1>SSU UNIVERSITY STUDENT COUNCIL</h1><strong>TEMPORARY PASSWORD RESET</strong></div><div class="grid"><span>User</span><span class="value">${esc(data.fullName || 'User')}</span><span>Student ID</span><span class="value">${esc(data.studentId || 'N/A')}</span><span>Institutional Email</span><span class="value">${esc(data.institutionalEmail || 'N/A')}</span><span>Temporary Password</span><span class="value password">${esc(data.temporaryPassword)}</span></div><div class="note"><strong>Important:</strong> Keep this temporary password private. Sign in using it, then open Profile → Change Password and replace it with a personal password.</div></article><div class="actions"><button onclick="window.print()">Print This Slip</button></div></body></html>`);
+  win.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>Password Reset Slip</title><style>body{font-family:Arial,sans-serif;margin:0;padding:34px;background:#f5f7fb;color:#10233f}.slip{max-width:720px;margin:auto;background:#fff;border:2px solid #183d72;padding:30px}.head{text-align:center;border-bottom:2px solid #183d72;padding-bottom:16px}.head h1{font-size:22px;margin:0 0 6px}.grid{display:grid;grid-template-columns:190px 1fr;gap:12px 16px;margin:24px 0}.value{font-weight:800;word-break:break-word}.password{font-family:Consolas,monospace;font-size:22px;letter-spacing:1px}.note{padding:14px;border:1px dashed #6b7c90;background:#f8fafc;line-height:1.5}.actions{text-align:center;margin-top:20px}.actions button{padding:10px 18px;font-weight:700}@media print{body{background:#fff;padding:0}.slip{max-width:none}.actions{display:none}}</style></head><body><article class="slip"><div class="head"><h1>SSU UNIVERSITY STUDENT COUNCIL</h1><strong>TEMPORARY PASSWORD RESET</strong></div><div class="grid"><span>User</span><span class="value">${esc(data.fullName || 'User')}</span><span>Student ID</span><span class="value">${esc(data.studentId || 'N/A')}</span><span>Institutional Email</span><span class="value">${esc(data.institutionalEmail || 'Not Linked')}</span><span>Temporary Password</span><span class="value password">${esc(data.temporaryPassword)}</span></div><div class="note"><strong>Important:</strong> Keep this temporary password private. Sign in using it, then open Profile → Change Password and replace it with a personal password.</div></article><div class="actions"><button onclick="window.print()">Print This Slip</button></div></body></html>`);
   win.document.close();
 }
 
@@ -710,7 +712,7 @@ renderAdminIdentity();
 buildPermissionEditor();
 bind();
 subscribeUsers((value, error) => {
-  users = value;
+  users = value.map(user => ({ ...user, email: institutionalEmailForDisplay(user), institutionalEmail: institutionalEmailForDisplay(user) }));
   dom.listStatusText.textContent = error ? 'Unable to load accounts' : 'Live from Firestore';
   renderTable();
   if (selectedUserId) fillEditor(getSelectedUser());

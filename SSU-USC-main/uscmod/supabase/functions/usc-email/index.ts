@@ -1,3 +1,4 @@
+import { createInstitutionalAccountService } from "./institutional-accounts.mjs";
 import {
   CORS_HEADERS,
   activeEmailProfile,
@@ -8,6 +9,10 @@ import {
   escapeHtml,
   firebaseUserByUid,
   firestoreGet,
+  firestoreVersionedGet,
+  firestoreIdentityCommit,
+  firebaseUserByEmail,
+  resetFirebaseAuthPassword,
   generateFirebaseResetLink,
   jsonBody,
   jsonResponse,
@@ -19,6 +24,17 @@ import {
 } from "../_shared/usc-email-common.ts";
 
 const supabase = adminClient();
+const institutionalAccounts = createInstitutionalAccountService({
+  get: firestoreVersionedGet, commit: firestoreIdentityCommit, activeProfile: activeEmailProfile,
+  authUser: firebaseUserByUid, authByEmail: firebaseUserByEmail,
+  sha256, randomToken, resetAuthPassword: resetFirebaseAuthPassword,
+  sendVerification: async (email: string, token: string) => {
+    const url = `${env().portalUrl}/email/verify-institutional.html?token=${encodeURIComponent(token)}`;
+    await sendEmail(email, "Verify your SSU USC institutional email",
+      `<p>Confirm the institutional email you requested in your portal profile.</p><p><a href="${escapeHtml(url)}">Verify institutional email</a></p><p>Sign in to the same portal account before confirming. This link expires after 24 hours. If you did not request this, ignore this email.</p>`,
+      `Verify your institutional email: ${url}\nSign in to the same portal account before confirming. The link expires after 24 hours. If you did not request this, ignore this email.`);
+  }
+});
 const PROFILE_SCOPE_LABEL = "Student or Officer Profile";
 
 function roleName(profile: Record<string, any> | null): string {
@@ -253,6 +269,13 @@ Deno.serve(async (req) => {
 
     const body = await jsonBody(req);
     const action = String(body.action || "").trim();
+    if (["institutional_get", "institutional_request", "institutional_verify", "admin_reset_password"].includes(action)) {
+      const user = await verifyFirebaseIdToken(String(req.headers.get("x-firebase-token") || ""));
+      if (action === "institutional_get") return jsonResponse(await institutionalAccounts.status(user));
+      if (action === "institutional_request") return jsonResponse(await institutionalAccounts.request(user, body.email));
+      if (action === "institutional_verify") return jsonResponse(await institutionalAccounts.verify(user, body.token));
+      return jsonResponse(await institutionalAccounts.resetPassword(user, String(body.uid || "")));
+    }
     if (action === "verify") return await verifyToken(String(body.token || ""));
     if (action === "recover") {
       await processRecovery(body.gmail);

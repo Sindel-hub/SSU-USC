@@ -763,11 +763,24 @@ service cloud.firestore {
     match /login_aliases/{aliasId} {
       allow get: if true;
       allow list: if isAdmin();
-      allow create, update: if isAdmin()
-        && request.resource.data.authEmail is string
-        && request.resource.data.authEmail.size() <= 200
-        && request.resource.data.kind in ["studentId", "institutionalEmail"];
+      function validAlias() {
+        return isAdmin()
+          && request.resource.data.authEmail is string
+          && request.resource.data.authEmail.size() <= 200
+          && request.resource.data.kind in ["studentId", "institutionalEmail"];
+      }
+      allow create: if validAlias();
+      // An admin may refresh an alias for its owner, never redirect another
+      // account's institutional login during concurrent manual provisioning.
+      allow update: if validAlias()
+        && (("uid" in resource.data && request.resource.data.uid == resource.data.uid)
+          || (!("uid" in resource.data) && request.resource.data.authEmail == resource.data.authEmail));
       allow delete: if isAdmin();
+    }
+
+    // Ownership tokens are hashed and consumed only by the trusted email service.
+    match /institutional_email_requests/{userId} {
+      allow read, write: if false;
     }
 
     // Identity and uniqueness records used by the school account provisioner.

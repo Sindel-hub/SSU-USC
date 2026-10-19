@@ -534,7 +534,7 @@ exports.resolveSchoolLoginIdentifier = onCall(callableOptions(), async (request)
     // detailed account-directory oracle.
     throw new HttpsError("not-found", "School account not found.");
   }
-  const loginEmail = normalizeEmail(accountSnap.get("institutionalEmail") || accountSnap.get("loginEmail"));
+  const loginEmail = normalizeEmail(accountSnap.get("authEmail") || accountSnap.get("loginEmail") || accountSnap.get("institutionalEmail"));
   if (!loginEmail) throw new HttpsError("not-found", "School account not found.");
   return { loginEmail };
 });
@@ -1646,7 +1646,7 @@ exports.adminResetUserPassword = onCall(callableOptions(), async (request) => {
     role,
     fullName: cleanText(profile.fullName || authUser.displayName || "User", 120),
     studentId: cleanText(profile.studentId, 30),
-    institutionalEmail: normalizeEmail(profile.institutionalEmail || profile.email || authUser.email),
+    institutionalEmail: /@(?:student\.)?ssu-usc\.local$/i.test(normalizeEmail(profile.institutionalEmail || profile.email || authUser.email)) ? null : normalizeEmail(profile.institutionalEmail || profile.email || authUser.email),
     temporaryPassword,
     warning: warnings.join(' ')
   };
