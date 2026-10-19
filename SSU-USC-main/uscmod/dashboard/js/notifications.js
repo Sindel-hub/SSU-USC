@@ -127,8 +127,10 @@ function render() {
   const items=buildItems();
   const unread=items.filter(n=>!reads.has(n.id)).length;
   dot.classList.toggle("hidden", unread===0);
+  const markAll=document.getElementById('markNotificationsRead');
+  if(markAll)markAll.disabled=unread===0;
   if (!items.length) { host.innerHTML='<div class="notification-empty">No new notifications yet.</div>'; return; }
-  host.innerHTML=items.map(n=>`<div class="notification-item ${reads.has(n.id)?"read":""}" data-notification-id="${n.id}" data-href="${n.href}"><div class="notification-icon ${n.type}"><i class="fa-solid ${n.icon}"></i></div><div class="notification-copy"><strong>${escapeHtml(n.title)}</strong><p>${escapeHtml(n.message)}</p><small>${escapeHtml(relativeTime(n.at))}</small></div><span class="notification-unread"></span></div>`).join("");
+  host.innerHTML=items.map(n=>`<a class="notification-item ${reads.has(n.id)?"read":""}" href="${escapeHtml(n.href)}" data-notification-id="${escapeHtml(n.id)}" data-href="${escapeHtml(n.href)}"><div class="notification-icon ${n.type}" aria-hidden="true"><i class="fa-solid ${n.icon}"></i></div><div class="notification-copy"><strong>${escapeHtml(n.title)}</strong><p>${escapeHtml(n.message)}</p><small>${escapeHtml(relativeTime(n.at))}</small></div><span class="notification-unread" aria-hidden="true"></span></a>`).join("");
 }
 function escapeHtml(v){return clean(v).replace(/[&<>'"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;","'":"&#39;",'"':"&quot;"}[c]));}
 function listen() {
@@ -159,26 +161,72 @@ function listen() {
 const btn=document.getElementById("notificationButton");
 const panel=document.getElementById("notificationPanel");
 
-// Mobile notification close button
-if (panel && !panel.querySelector("#closeNotifications")) {
-  const head = panel.querySelector(".notification-panel-head");
-  if (head) {
-    const close = document.createElement("button");
-    close.id = "closeNotifications";
-    close.type = "button";
-    close.className = "notification-close-mobile";
-    close.setAttribute("aria-label", "Close notifications");
-    close.textContent = "×";
-    head.appendChild(close);
-    close.addEventListener("click", () => {
-      panel.classList.add("hidden");
-      btn?.setAttribute("aria-expanded", "false");
-    });
+// Keep the popover appearance and dismissal consistent on every student module.
+if(panel){
+  const style=document.createElement('link');
+  style.rel='stylesheet';
+  style.href=new URL('../css/notifications.css?v=1',import.meta.url).href;
+  document.head.appendChild(style);
+  panel.setAttribute('role','dialog');
+  panel.setAttribute('aria-hidden','true');
+  const title=panel.querySelector('.notification-panel-head strong');
+  if(title){title.id='notificationPanelTitle';panel.setAttribute('aria-labelledby',title.id);}
+  const markAll=document.getElementById('markNotificationsRead');
+  if(markAll){markAll.textContent='Mark all read';markAll.setAttribute('aria-label','Mark all notifications as read');}
+  btn?.setAttribute('aria-haspopup','dialog');
+  btn?.setAttribute('aria-controls',panel.id);
+  btn?.setAttribute('aria-expanded','false');
+  if(!panel.querySelector('#closeNotifications')){
+    const close=document.createElement('button');
+    close.id='closeNotifications';close.type='button';close.className='notification-close-mobile';
+    close.setAttribute('aria-label','Close notifications');close.textContent='×';
+    panel.querySelector('.notification-panel-head')?.appendChild(close);
   }
+  panel.querySelector('#closeNotifications')?.addEventListener('click',()=>setPanelOpen(false,true));
 }
 
-btn?.addEventListener("click",e=>{e.stopPropagation();panel?.classList.toggle("hidden");btn.setAttribute("aria-expanded", String(!panel?.classList.contains("hidden")));});
-document.getElementById("markNotificationsRead")?.addEventListener("click",()=>{const set=readSet();buildItems().forEach(n=>set.add(n.id));saveRead(set);render();});
-document.getElementById("notificationList")?.addEventListener("click",e=>{const row=e.target.closest?.("[data-notification-id]"); if(!row)return; const set=readSet();set.add(row.dataset.notificationId);saveRead(set);render();const href=row.dataset.href;if(href){if(href.startsWith("#")){document.querySelector(href)?.scrollIntoView({behavior:"smooth"});panel?.classList.add("hidden");}else window.location.href=href;}});
-document.addEventListener("click",e=>{if(panel && !panel.classList.contains("hidden") && !panel.contains(e.target) && !btn?.contains(e.target)) panel.classList.add("hidden");});
+function positionPanel(){
+  if(!panel || !btn)return;
+  const rect=btn.getBoundingClientRect();
+  const top=Math.max(12,Math.min(rect.bottom+10,window.innerHeight-220));
+  const width=Math.min(420,window.innerWidth-24);
+  const right=Math.max(12,Math.min(window.innerWidth-rect.right,window.innerWidth-width-12));
+  panel.style.setProperty('--notification-top',`${top}px`);
+  panel.style.setProperty('--notification-right',`${right}px`);
+}
+function setPanelOpen(open,restoreFocus=false){
+  if(!panel)return;
+  if(open)positionPanel();
+  panel.classList.toggle('hidden',!open);
+  panel.setAttribute('aria-hidden',String(!open));
+  btn?.setAttribute('aria-expanded',String(open));
+  if(!open && restoreFocus)btn?.focus();
+}
+btn?.addEventListener('click',event=>{
+  event.stopPropagation();
+  const open=Boolean(panel?.classList.contains('hidden'));
+  setPanelOpen(open);
+  if(open && event.detail===0)panel?.querySelector('#closeNotifications')?.focus();
+});
+document.getElementById('markNotificationsRead')?.addEventListener('click',()=>{
+  const set=readSet();buildItems().forEach(n=>set.add(n.id));saveRead(set);render();
+});
+document.getElementById('notificationList')?.addEventListener('click',event=>{
+  const row=event.target.closest?.('[data-notification-id]');if(!row)return;
+  event.preventDefault();
+  const set=readSet();set.add(row.dataset.notificationId);saveRead(set);render();
+  const href=row.dataset.href;
+  if(href){
+    if(href.startsWith('#')){document.querySelector(href)?.scrollIntoView({behavior:'smooth'});setPanelOpen(false);}
+    else window.location.href=href;
+  }
+});
+document.addEventListener('click',event=>{
+  if(panel && !panel.classList.contains('hidden') && !panel.contains(event.target) && !btn?.contains(event.target))setPanelOpen(false);
+});
+document.addEventListener('keydown',event=>{
+  if(event.key==='Escape' && panel && !panel.classList.contains('hidden')){event.preventDefault();setPanelOpen(false,true);}
+});
+window.addEventListener('resize',()=>{if(panel && !panel.classList.contains('hidden'))positionPanel();});
+
 listen();

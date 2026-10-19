@@ -1,0 +1,37 @@
+/* Shared notification popover; feed content and read-state storage are unchanged. */
+#notificationPanel {
+  top:var(--notification-top,122px) !important; right:var(--notification-right,24px) !important; left:auto !important;
+  width:min(420px,calc(100vw - 24px)) !important;
+  max-height:min(560px,calc(100dvh - var(--notification-top,122px) - 16px)) !important;
+  display:flex; flex-direction:column; overflow:hidden; box-sizing:border-box;
+  border:1px solid #dce6ef; border-radius:18px !important; background:#fff; color:#233e58;
+  box-shadow:0 16px 48px #17385824,0 2px 8px #1738580a;
+}
+#notificationPanel::before { display:none; }
+#notificationPanel .notification-panel-head { display:grid; grid-template-columns:minmax(0,1fr) auto 40px; align-items:center; flex:none; gap:8px; padding:12px 14px; border-bottom:1px solid #e7edf4; background:#fff; }
+#notificationPanel .notification-panel-head strong { font:700 16px/1.4 Arial,sans-serif; color:#23496d; }
+#notificationPanel #markNotificationsRead { min-height:40px; margin:0; padding:8px 10px; border:0; border-radius:9px; background:#eff6fd; color:#2463a3; font:600 12px/1.4 Arial,sans-serif; cursor:pointer; white-space:nowrap; }
+#notificationPanel #markNotificationsRead:hover:not(:disabled) { background:#e3effb; }
+#notificationPanel #markNotificationsRead:disabled { color:#8594a4; background:#f5f7fa; cursor:default; }
+#notificationPanel #closeNotifications { display:grid; place-items:center; min-width:40px; width:40px; height:40px; margin:0; padding:0 !important; border:0 !important; border-radius:9px; background:transparent !important; color:#60768b !important; font:400 26px/1 Arial,sans-serif !important; cursor:pointer; }
+#notificationPanel #closeNotifications:hover { background:#f0f5fa !important; color:#23496d !important; }
+#notificationPanel .notification-list { flex:1 1 auto; min-height:0; max-height:none !important; overflow-y:auto; overflow-x:hidden; overscroll-behavior:contain; padding:8px !important; scrollbar-width:thin; scrollbar-color:#c8d7e6 transparent; }
+#notificationPanel .notification-item { display:grid; grid-template-columns:36px minmax(0,1fr) 6px; align-items:start; gap:12px; margin:0 0 4px; padding:14px 12px; border:1px solid transparent; border-radius:12px; background:#f3f8fe; color:inherit; text-decoration:none; cursor:pointer; transition:background-color .15s,border-color .15s; }
+#notificationPanel .notification-item:last-child { margin-bottom:0; border-bottom:1px solid transparent; }
+#notificationPanel .notification-item.read { background:#fff; }
+#notificationPanel .notification-item:hover { background:#eaf3fc; border-color:#d9e7f6; }
+#notificationPanel .notification-item.read:hover { background:#f6f9fc; }
+#notificationPanel .notification-icon { width:36px; height:36px; border-radius:11px; font-size:16px; }
+#notificationPanel .notification-copy strong { margin:0 0 4px; color:#23415d; font:600 13px/1.45 Arial,sans-serif; overflow-wrap:anywhere; }
+#notificationPanel .notification-copy p { margin:0; color:#526a80; font:400 13px/1.55 Arial,sans-serif; overflow-wrap:anywhere; }
+#notificationPanel .notification-copy small { margin-top:7px; color:#74889c; font:400 11px/1.5 Arial,sans-serif; }
+#notificationPanel .notification-unread { width:6px; height:6px; margin-top:7px; background:#2883c5; box-shadow:0 0 0 3px #e3f1fc; }
+#notificationPanel .notification-empty { display:grid; place-items:center; min-height:132px; padding:24px 16px; color:#74889c; font:400 13px/1.6 Arial,sans-serif; }
+#notificationPanel :is(button,a):focus-visible { outline:3px solid #4285c5; outline-offset:-3px; }
+@media(max-width:620px){
+  #notificationPanel { left:12px !important; right:12px !important; width:auto !important; }
+  #notificationPanel .notification-panel-head { grid-template-columns:minmax(0,1fr) auto 40px; padding:10px 12px; gap:6px; }
+  #notificationPanel .notification-panel-head strong { font-size:15px; }
+  #notificationPanel .notification-item { padding:12px 10px; gap:10px; }
+}
+@media(prefers-reduced-motion:reduce){#notificationPanel .notification-item { transition:none; }}
