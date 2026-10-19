@@ -1,5 +1,5 @@
 import { classifyEngagement } from "../../../shared/engagement-report-model.mjs";
-import { mountEngagementAnalytics } from "../../../shared/engagement-analytics.js?v=1";
+import { mountEngagementAnalytics } from "../../../shared/engagement-analytics.js?v=2";
 import { hasOfficerPermission } from "../../shared/js/officer-rbac.js?v=6";
 import { db, auth } from "../../../firebase/firebase-config.js";
 import { secureUpload, hydrateMediaImages } from "../../../shared/security-client.js?v=program-media-1";

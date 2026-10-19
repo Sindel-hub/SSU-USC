@@ -11,7 +11,7 @@ test("events module mounts Complaint-style status cards and retains summary metr
   const ui = fs.readFileSync(new URL("../shared/engagement-analytics.js", import.meta.url), "utf8");
   const css = fs.readFileSync(new URL("../shared/engagement-analytics.css", import.meta.url), "utf8");
   assert.match(eventsHtml, /id="engagementAnalytics"/);
-  assert.match(eventsHtml, /engagement-analytics\.css\?v=2/);
+  assert.match(eventsHtml, /engagement-analytics\.css\?v=3/);
   assert.match(ui, /Status Report/);
   assert.match(ui, /engagement-count-row/);
   for (const id of ["upcomingEventCount", "publishedEventCount", "reminderEnabledCount", "confirmedAttendanceCount"]) assert.ok(ui.includes(`id="${id}"`));
