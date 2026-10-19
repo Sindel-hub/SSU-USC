@@ -722,3 +722,8 @@ for (const dialog of document.querySelectorAll('.complaint-floating-dialog')) {
     if (event.target === dialog && (event.clientX < rect.left || event.clientX > rect.right || event.clientY < rect.top || event.clientY > rect.bottom)) dialog.close();
   });
 }
+
+// Overview analytics links open the existing authorized detailed report.
+if (new URLSearchParams(location.search).get('analytics')) {
+  document.getElementById('openAcademicBreakdown')?.click();
+}

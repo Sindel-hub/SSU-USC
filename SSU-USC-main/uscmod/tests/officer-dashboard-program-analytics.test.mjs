@@ -7,12 +7,12 @@ const js = fs.readFileSync(new URL("../usc-admin/overview/js/overview.js", impor
 const css = fs.readFileSync(new URL("../usc-admin/overview/css/overview.css", import.meta.url), "utf8");
 
 test("dashboard shows independent Events and Programs participation analytics", () => {
-  assert.match(html, /EVENT PARTICIPATION/);
-  assert.match(html, /PROGRAM PARTICIPATION/);
-  assert.match(html, /data-analytics-event-registrations/);
-  assert.match(html, /data-analytics-program-registrations/);
-  assert.match(html, /eventRecentRegistrants/);
-  assert.match(html, /programRecentRegistrants/);
+  assert.match(html, /data-summary="event"/);
+  assert.match(html, /data-summary="program"/);
+  assert.match(html, /events.html\?analytics=all/);
+  assert.match(html, /programs.html\?analytics=all/);
+  assert.match(js, /statusBreakdown\(state.events\)/);
+  assert.match(js, /statusBreakdown\(state.programs\)/);
 });
 
 test("registration analytics partitions event and program registrations", () => {
