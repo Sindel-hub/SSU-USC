@@ -1,5 +1,5 @@
 import { SSU_PROGRAMS, isValidSsuProgram } from "./ssu-programs.js";
-import { provisionOfficerAccount, sendSchoolPasswordReset } from "../../../shared/browser-provisioning.js?v=3-optional-email-1";
+import { provisionOfficerAccount, sendSchoolPasswordReset } from "../../../shared/browser-provisioning.js?v=3-flexible-id-1";
 import { enrollmentStatusForStanding, isActiveStudentStanding, studentStandingLabel } from "../../../shared/student-standing.js";
 
 const form = document.getElementById("officerForm");
@@ -133,7 +133,6 @@ document.getElementById("clearOfficerSlipBtn")?.addEventListener("click",()=>clo
 document.getElementById("closeOfficerSlipModalBtn")?.addEventListener("click",()=>closeSlipModal());
 slipSection?.addEventListener("click",(event)=>{ if (event.target?.dataset?.closeSlip === "true") closeSlipModal(); });
 document.addEventListener("keydown",(event)=>{ if (event.key === "Escape" && !slipSection?.hidden) closeSlipModal(); });
-document.getElementById("officerStudentId")?.addEventListener("input",e=>{e.target.value=e.target.value.replace(/\D/g,"").slice(0,6);});
 collegeSelect?.addEventListener("change",populatePrograms);
 standingSelect?.addEventListener("change",()=>{
   const active=isActiveStudentStanding(standingSelect.value);

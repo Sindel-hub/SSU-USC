@@ -21,7 +21,7 @@
       <div id="officerStatus" class="status-box ok">Officer account provisioning is ready.</div>
 
       <form id="officerForm" class="form-grid">
-        <label>Student ID<input id="officerStudentId" inputmode="numeric" maxlength="6" placeholder="260001" required /></label>
+        <label>Student ID<input id="officerStudentId" maxlength="64" placeholder="260001" required /></label>
         <label>Full Name<input id="officerName" placeholder="Juan Dela Cruz" required /></label>
         <label>Institutional Email (optional)<input id="officerEmail" type="email" placeholder="Officer’s institutional email" /></label>
         <label>USC Position
@@ -94,6 +94,6 @@
     </section>
   </main>
   <script type="module" src="../../shared/auth-guard.js?v=rbac7"></script>
-  <script type="module" src="js/officer-registration.js?v=6-optional-email-1"></script>
+  <script type="module" src="js/officer-registration.js?v=7-flexible-id-1"></script>
 </body>
 </html>

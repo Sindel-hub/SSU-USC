@@ -200,6 +200,16 @@ function normalizeStudentId(value) {
   return id;
 }
 
+// Manual account identifiers also support letters and separators. The original
+// roster/bulk normalizer above keeps its existing import validation unchanged.
+function normalizeAccountStudentId(value) {
+  const id = String(value ?? "").trim().toUpperCase();
+  if (!/^[A-Z0-9][A-Z0-9_-]{0,63}$/.test(id)) {
+    throw new HttpsError("invalid-argument", "Enter a valid Student ID using letters, numbers, hyphens, or underscores (up to 64 characters).");
+  }
+  return id;
+}
+
 function cleanText(value, max = 180) {
   return String(value || "").trim().replace(/\s+/g, " ").slice(0, max);
 }
@@ -527,7 +537,7 @@ exports.registerStudentProfile = onCall(callableOptions(), async () => {
 });
 
 exports.resolveSchoolLoginIdentifier = onCall(callableOptions(), async (request) => {
-  const studentId = normalizeStudentId(request.data?.studentId);
+  const studentId = normalizeAccountStudentId(request.data?.studentId);
   const accountSnap = await db.doc(`school_accounts/${studentId}`).get();
   if (!accountSnap.exists || accountSnap.get("isActive") === false) {
     // Keep the failure intentionally generic so the endpoint does not become a
@@ -719,7 +729,7 @@ exports.activateVerifiedStudent = onCall(callableOptions(), async (request) => {
   const initialUser = await userRef.get();
   if (!initialUser.exists) throw new HttpsError("failed-precondition", "Student profile not found. Please register again.");
   const initialProfile = initialUser.data();
-  const studentId = normalizeStudentId(initialProfile.studentId || initialProfile.requestedStudentId);
+  const studentId = normalizeAccountStudentId(initialProfile.studentId || initialProfile.requestedStudentId);
   const electionId = await currentElectionId();
   const rosterRef = db.doc(`elections/${electionId}/voterRoster/${studentId}`);
   const claimRef = db.doc(`student_id_claims/${studentId}`);
@@ -1032,7 +1042,7 @@ exports.submitCandidateApplication = onCall(callableOptions(), async (request) =
   if (user.candidacyApproved !== true) {
     throw new HttpsError("permission-denied", "The System Administrator has not approved this account for candidacy registration.");
   }
-  const studentId = normalizeStudentId(user.studentId);
+  const studentId = normalizeAccountStudentId(user.studentId);
   const rosterSnap = await db.doc(`elections/${electionId}/voterRoster/${studentId}`).get();
   const roster = rosterSnap.exists ? rosterSnap.data() : {};
   const position = cleanText(request.data?.position, 80);
@@ -1276,7 +1286,7 @@ exports.submitAnonymousBallot = onCall(callableOptions(), async (request) => {
     }
     const user = userSnap.data();
     if (user.role !== "student" || user.accountStatus !== "approved" || user.isActive === false || user.schoolProvisioned !== true) throw new HttpsError("permission-denied", "Your active school-provided student account is required to vote.");
-    const studentId = normalizeStudentId(user.studentId);
+    const studentId = normalizeAccountStudentId(user.studentId);
     const statusRef = db.doc(`elections/${electionId}/voterStatus/${uid}`);
     const statusSnap = await tx.get(statusRef);
     if (statusSnap.exists && statusSnap.get("hasVoted") === true) throw new HttpsError("already-exists", "Your voter record already shows a submitted ballot.");

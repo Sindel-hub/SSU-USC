@@ -21,7 +21,7 @@ import {
 } from "https://www.gstatic.com/firebasejs/12.12.0/firebase-firestore.js";
 
 const EMAIL_REGEX = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
-const STUDENT_ID_REGEX = /^\d{6}$/;
+const STUDENT_ID_REGEX = /^[A-Z0-9][A-Z0-9_-]{0,63}$/i;
 
 function clean(value, max = 200) {
   return String(value ?? "").trim().slice(0, max);
@@ -30,7 +30,7 @@ function normalizeEmail(value) {
   return clean(value, 200).toLowerCase();
 }
 function normalizeStudentId(value) {
-  return String(value ?? "").replace(/\D/g, "").slice(0, 6);
+  return String(value ?? "").trim().toUpperCase();
 }
 function normalizeFullName(value) {
   return clean(value, 120)
@@ -107,7 +107,7 @@ export async function provisionStudentAccount(input = {}) {
   const { user: adminUser } = await requireAdmin();
   const studentId = normalizeStudentId(input.studentId);
   const institutionalEmail = normalizeEmail(input.institutionalEmail || input.email) || null;
-  const authEmail = institutionalEmail || `${studentId}@student.ssu-usc.local`;
+  const authEmail = institutionalEmail || `${studentId.toLowerCase()}@student.ssu-usc.local`;
   const fullName = clean(input.fullName || input.name, 120);
   const program = clean(input.program, 160);
   const college = clean(input.college, 160);
@@ -117,7 +117,7 @@ export async function provisionStudentAccount(input = {}) {
   const standingActive = isActiveStudentStanding(studentStanding, enrollmentStatus);
   const eligible = input.eligible === true && standingActive;
 
-  if (!STUDENT_ID_REGEX.test(studentId)) throw new Error("Student ID must contain exactly 6 digits.");
+  if (!STUDENT_ID_REGEX.test(studentId)) throw new Error("Enter a Student ID using letters, numbers, hyphens, or underscores (up to 64 characters).");
   if (institutionalEmail && (!EMAIL_REGEX.test(institutionalEmail) || /@(?:student\.)?ssu-usc\.local$/.test(institutionalEmail))) throw new Error("Enter a valid institutional email address.");
   if (fullName.length < 2) throw new Error("Enter the student's full name.");
   if (!college || !program) throw new Error("Select the student's college/campus and program.");
@@ -335,7 +335,7 @@ export async function provisionOfficerAccount(input = {}) {
   const { user: adminUser } = await requireAdmin();
   const studentId = normalizeStudentId(input.studentId);
   const institutionalEmail = normalizeEmail(input.institutionalEmail || input.email) || null;
-  const authEmail = institutionalEmail || `${studentId}@student.ssu-usc.local`;
+  const authEmail = institutionalEmail || `${studentId.toLowerCase()}@student.ssu-usc.local`;
   const fullName = clean(input.fullName || input.name, 120);
   const program = clean(input.program, 160);
   const college = clean(input.college, 160);
@@ -348,7 +348,7 @@ export async function provisionOfficerAccount(input = {}) {
   const eligible = input.eligible !== false && standingActive;
   const positionPermissions = permissionsForOfficerPosition(officePosition);
 
-  if (!STUDENT_ID_REGEX.test(studentId)) throw new Error("Student ID must contain exactly 6 digits.");
+  if (!STUDENT_ID_REGEX.test(studentId)) throw new Error("Enter a Student ID using letters, numbers, hyphens, or underscores (up to 64 characters).");
   if (institutionalEmail && (!EMAIL_REGEX.test(institutionalEmail) || /@(?:student\.)?ssu-usc\.local$/.test(institutionalEmail))) throw new Error("Enter a valid institutional email address.");
   if (fullName.length < 2) throw new Error("Enter the officer's full name.");
   if (!college || !program) throw new Error("Select the officer's college/campus and program.");
@@ -576,7 +576,7 @@ export async function sendStudentPasswordReset(identifier) {
   const raw = clean(identifier, 200);
   let email = "";
   if (STUDENT_ID_REGEX.test(raw)) {
-    const alias = await getDoc(doc(db, "login_aliases", `id_${raw}`));
+    const alias = await getDoc(doc(db, "login_aliases", `id_${normalizeStudentId(raw)}`));
     email = alias.exists() ? normalizeEmail(alias.data()?.authEmail) : "";
   } else if (EMAIL_REGEX.test(raw)) {
     const normalized = normalizeEmail(raw);

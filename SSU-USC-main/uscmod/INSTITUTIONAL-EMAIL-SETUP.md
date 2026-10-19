@@ -3,7 +3,10 @@
 Manual student and officer creation accepts a blank institutional email. The
 existing password generator and administrator-only browser provisioner remain in
 use. A blank address produces `institutionalEmail: null`, an empty contact `email`,
-and a unique `<six-digit-id>@student.ssu-usc.local` Firebase Authentication address.
+and a unique `<student-id>@student.ssu-usc.local` Firebase Authentication address.
+Student IDs support 1–64 letters, numbers, hyphens, or underscores, beginning
+with a letter or number. IDs are trimmed and stored in uppercase; leading zeroes
+and the complete value are preserved. Existing numeric IDs remain unchanged.
 The internal address is a login identifier, never an institutional inbox. Login
 slips, the directory, and profile settings show **Not Linked** instead.
 
@@ -39,6 +42,14 @@ or Supabase functions. Review and approve the PR and backend updates separately.
    environment; do not repoint a production email service merely to test a PR.
 5. Merge/deploy the website only after review. Run the acceptance checks below
    with designated test accounts before enabling the flow for real students.
+
+When enabling flexible Student IDs, publish the updated rules and redeploy the
+existing `usc-email` service so email linking accepts the same identifiers as
+manual registration. If the project uses the existing account/election callables,
+update `resolveSchoolLoginIdentifier`, `activateVerifiedStudent`,
+`submitCandidateApplication`, and `submitAnonymousBallot` for matching identifier
+validation. Their permissions and election logic are unchanged. The separate
+roster/bulk-import normalizer retains its existing validation.
 
 No new Firebase Cloud Functions, paid Firebase services, SQL tables, spreadsheet
 processing, or bulk operations are required. No bulk-import code or deployment is

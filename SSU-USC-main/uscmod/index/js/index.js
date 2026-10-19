@@ -16,12 +16,12 @@ const dom = {
 };
 const signinSubmitButton = dom.signinForm?.querySelector('button[type="submit"]');
 const EMAIL_REGEX = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
-const STUDENT_ID_REGEX = /^\d{6}$/;
+const STUDENT_ID_REGEX = /^[A-Z0-9][A-Z0-9_-]{0,63}$/i;
 const SESSION_DURATION_MS = 15 * 60 * 1000;
 
 function clean(value) { return String(value || "").trim(); }
 function normalizeEmail(value) { return clean(value).toLowerCase(); }
-function normalizeStudentId(value) { return clean(value).replace(/\D/g, "").slice(0, 6); }
+function normalizeStudentId(value) { return clean(value).toUpperCase(); }
 function isEmail(value) { return EMAIL_REGEX.test(clean(value)); }
 function isStudentId(value) { return STUDENT_ID_REGEX.test(clean(value)); }
 
@@ -156,7 +156,7 @@ async function resolveLoginCandidates(identifier) {
     // Manual accounts without institutional email use an internal Firebase alias.
     return [...new Set([alias, `${id}@student.ssu-usc.local`].filter(Boolean))];
   }
-  if (!isEmail(value)) throw new Error("Enter your institutional email address or your 6-digit Student ID.");
+  if (!isEmail(value)) throw new Error("Enter your institutional email address or your Student ID.");
   const direct = normalizeEmail(value);
   const alias = await schoolAuthAliasForEmail(direct);
   return [...new Set([direct, alias].filter(Boolean))];
@@ -266,11 +266,6 @@ function bindRecovery() {
     openSupabaseRecoveryPage();
   });
 }
-
-dom.signinIdentifierInput?.addEventListener("input", () => {
-  const value = clean(dom.signinIdentifierInput.value);
-  if (/^\d+$/.test(value)) dom.signinIdentifierInput.value = value.slice(0, 6);
-});
 
 const guardMessage = sessionStorage.getItem("authGuardMessage");
 if (guardMessage) {

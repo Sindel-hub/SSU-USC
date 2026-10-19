@@ -72,7 +72,7 @@ export function createInstitutionalAccountService(deps) {
       const oldEmail = contactEmail(profile.data);
       if (profile.data.institutionalEmailVerified === true && oldEmail && oldEmail !== email) throw new Error('Another institutional email is already linked.');
       const studentId = String(profile.data.studentId || '');
-      if (!/^\d{6}$/.test(studentId)) throw new Error('The account has no valid Student ID. Contact the System Administrator.');
+      if (!/^[A-Z0-9][A-Z0-9_-]{0,63}$/i.test(studentId)) throw new Error('The account has no valid Student ID. Contact the System Administrator.');
       const alias = await available(email, user);
       const idPath = `login_aliases/id_${studentId}`;
       const idAlias = await deps.get(idPath);

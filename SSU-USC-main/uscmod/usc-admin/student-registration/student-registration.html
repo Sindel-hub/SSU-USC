@@ -30,7 +30,7 @@
           <legend>Student details</legend>
           <div class="registration-fields">
             <label for="studentId">Student ID
-              <input id="studentId" inputmode="numeric" maxlength="6" placeholder="260001" required aria-describedby="studentIdHint studentIdError" />
+              <input id="studentId" maxlength="64" placeholder="260001" required aria-describedby="studentIdHint studentIdError" />
               <small id="studentIdHint">Use the school-issued student ID.</small>
               <small id="studentIdError" class="field-error" hidden></small>
             </label>
@@ -124,6 +124,6 @@
     </section>
   </main>
   <script type="module" src="../../shared/auth-guard.js?v=rbac7"></script>
-  <script type="module" src="js/student-registration.js?v=6-optional-email-1"></script>
+  <script type="module" src="js/student-registration.js?v=7-flexible-id-1"></script>
 </body>
 </html>

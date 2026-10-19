@@ -270,7 +270,7 @@ service cloud.firestore {
         && (!("candidacyApproved" in request.resource.data) || request.resource.data.candidacyApproved is bool)
         && (request.resource.data.studentStanding == "active" || request.resource.data.isVerifiedStudent == false)
         && request.resource.data.studentId is string
-        && request.resource.data.studentId.matches("^[0-9]{6}$")
+        && request.resource.data.studentId.matches("^[A-Za-z0-9][A-Za-z0-9_-]{0,63}$")
         && request.resource.data.fullName is string
         && request.resource.data.fullName.size() >= 2
         && request.resource.data.fullName.size() <= 120
@@ -812,7 +812,7 @@ service cloud.firestore {
         && request.resource.data.uid is string
         && request.resource.data.uid.size() > 0
         && request.resource.data.studentId is string
-        && request.resource.data.studentId.matches("^[0-9]{6}$")
+        && request.resource.data.studentId.matches("^[A-Za-z0-9][A-Za-z0-9_-]{0,63}$")
         && request.resource.data.normalizedName is string
         && request.resource.data.normalizedName.size() > 0
         && request.resource.data.fullName is string
