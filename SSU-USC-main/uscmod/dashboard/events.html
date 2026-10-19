@@ -5,8 +5,8 @@
   <meta content="width=device-width,initial-scale=1" name="viewport"/>
   <title>USC Events / Programs</title>
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet"/>
-  <link href="css/dashboard.css?v=readability-2" rel="stylesheet"/>
-  <link href="css/student-pages.css?v=events-sticky-sidebar-1" rel="stylesheet"/>
+  <link href="css/dashboard.css?v=student-layout-2" rel="stylesheet"/>
+  <link href="css/student-pages.css?v=student-layout-2" rel="stylesheet"/>
 <link rel="stylesheet" href="../shared/profile-manager.css" />
   <script src="../shared/app-config.js"></script>
   <script type="module" src="../shared/auth-guard.js"></script>
@@ -14,9 +14,9 @@
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
-<link rel="stylesheet" href="css/events-mobile.css?v=2" />
+<link rel="stylesheet" href="css/events-mobile.css?v=student-layout-2" />
 </head>
-<body class="student-app-shell events-document-scroll">
+<body class="student-app-shell events-module-shell">
 <header class="dashboard-header">
   <div class="dashboard-brand">
     <img alt="SSU Seal" src="assets/SSUlogo.webp"/>
@@ -62,7 +62,7 @@
       </div>
     </div>
 
-    <main class="student-page-main events-page-main" id="eventsPageMain">
+    <main class="student-page-main events-page-main" id="eventsPageMain" tabindex="0" aria-label="Events and programs content">
       <div class="events-snap-viewport" id="eventsSnapViewport">
         <div class="events-snap-track" id="eventsSnapTrack">
           <!-- Section 1: full-bleed event highlight -->
@@ -132,10 +132,40 @@
           </section>
         </div>
       </div>
+
     </main>
   </div>
 </div>
 
+
+<footer class="site-footer shared-student-footer" id="contactSection">
+  <div class="footer-main">
+    <div class="footer-col">
+      <h3>ABOUT US</h3>
+      <a href="organizational-chart.html">About us</a>
+      <a href="organizational-chart.html">University Student Council Seal</a>
+      <a href="organizational-chart.html">Organizational Chart</a>
+    </div>
+    <div class="footer-col">
+      <h3>CONTACT US</h3>
+      <p><strong>Samar State University</strong></p>
+      <p>Arteche Boulevard</p>
+      <p>Catbalogan, Samar 6700</p>
+    </div>
+    <div class="footer-col footer-contact-links">
+      <a href="https://ssu.edu.ph" rel="noopener" target="_blank"><i class="fa-brands fa-square-facebook"></i> ssu.edu.ph</a>
+      <a href="mailto:ssuuniversitystudentcouncil@gmail.com"><i class="fa-regular fa-envelope"></i> ssuuniversitystudentcouncil@gmail.com</a>
+    </div>
+  </div>
+  <div class="footer-bottom">
+    <img alt="SSU Logo" src="assets/SSUlogo.webp"/>
+    <img alt="USC Logo" src="assets/USClogo.webp"/>
+    <div class="footer-brand-copy">
+      <strong>SSU UNIVERSITY STUDENT COUNCIL</strong>
+      <span>LEADERSHIP&nbsp;&nbsp;|&nbsp;&nbsp;EXCELLENCE&nbsp;&nbsp;|&nbsp;&nbsp;DISCIPLINE&nbsp;&nbsp;|&nbsp;&nbsp;SERVICE</span>
+    </div>
+  </div>
+</footer>
 
 <div class="events-detail-modal" id="eventsDetailModal" hidden>
   <button class="events-detail-backdrop" id="eventsDetailBackdrop" type="button" aria-label="Close event or program details"></button>
@@ -171,84 +201,7 @@
   </section>
 </div>
 
-<footer class="site-footer shared-student-footer" id="contactSection">
-  <div class="footer-main">
-    <div class="footer-col">
-      <h3>ABOUT US</h3>
-      <a href="organizational-chart.html">About us</a>
-      <a href="organizational-chart.html">University Student Council Seal</a>
-      <a href="organizational-chart.html">Organizational Chart</a>
-    </div>
-    <div class="footer-col">
-      <h3>CONTACT US</h3>
-      <p><strong>Samar State University</strong></p>
-      <p>Arteche Boulevard</p>
-      <p>Catbalogan, Samar 6700</p>
-    </div>
-    <div class="footer-col footer-contact-links">
-      <a href="https://ssu.edu.ph" rel="noopener" target="_blank"><i class="fa-brands fa-square-facebook"></i> ssu.edu.ph</a>
-      <a href="mailto:ssuuniversitystudentcouncil@gmail.com"><i class="fa-regular fa-envelope"></i> ssuuniversitystudentcouncil@gmail.com</a>
-    </div>
-  </div>
-  <div class="footer-bottom">
-    <img alt="SSU Logo" src="assets/SSUlogo.webp"/>
-    <img alt="USC Logo" src="assets/USClogo.webp"/>
-    <div class="footer-brand-copy">
-      <strong>SSU UNIVERSITY STUDENT COUNCIL</strong>
-      <span>LEADERSHIP&nbsp;&nbsp;|&nbsp;&nbsp;EXCELLENCE&nbsp;&nbsp;|&nbsp;&nbsp;DISCIPLINE&nbsp;&nbsp;|&nbsp;&nbsp;SERVICE</span>
-    </div>
-  </div>
-</footer>
-
-<script>
-(function () {
-  const down = document.getElementById("eventsScrollDown");
-  const up = document.getElementById("eventsScrollUp");
-  const highlight = document.getElementById("eventsHighlightSection");
-  const upcoming = document.getElementById("eventsUpcomingSection");
-
-
-
-  function syncHighlightViewportHeight() {
-    if (!highlight) return;
-    // Use the section's document-space top so this value stays identical even
-    // if images/fonts finish loading while the user is already scrolled down.
-    const documentTop = highlight.getBoundingClientRect().top + window.scrollY;
-    const available = window.innerWidth <= 820
-      ? Math.max(0, Math.floor(window.innerHeight - documentTop))
-      : Math.max(560, Math.floor(window.innerHeight - documentTop - 8));
-    highlight.style.setProperty("--events-highlight-viewport-height", available + "px");
-  }
-
-  function syncUpcomingShortcut() {
-    if (!upcoming) return;
-    const rect = upcoming.getBoundingClientRect();
-    const revealLine = window.innerHeight * 0.72;
-    const header = document.querySelector(".dashboard-header");
-    const headerBottom = header && ["fixed", "sticky"].includes(getComputedStyle(header).position)
-      ? Math.max(0, header.getBoundingClientRect().bottom) : 0;
-    const visibleEnough = window.innerWidth <= 820
-      ? rect.top <= headerBottom + 4 && rect.bottom > headerBottom + 44
-      : rect.top <= revealLine && rect.bottom > 120;
-    document.body.classList.toggle("events-upcoming-visible", visibleEnough);
-  }
-
-
-
-
-  syncHighlightViewportHeight();
-  syncUpcomingShortcut();
-  requestAnimationFrame(syncHighlightViewportHeight);
-  window.addEventListener("load", syncHighlightViewportHeight, { once: true });
-  window.addEventListener("resize", function () {
-    syncHighlightViewportHeight();
-    syncUpcomingShortcut();
-  }, { passive: true });
-  window.addEventListener("scroll", syncUpcomingShortcut, { passive: true });
-})();
-</script>
-
-<script src="js/events-section-scroll.js?v=2"></script>
+<script src="js/events-section-scroll.js?v=student-layout-2"></script>
 <script src="js/notifications.js?v=panel-polish-1" type="module"></script>
 <script src="js/events.js?v=events-programs-1" type="module"></script>
 <script type="module" src="../shared/profile-manager.js?v=supabase-email-1"></script>

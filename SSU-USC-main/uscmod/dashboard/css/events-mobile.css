@@ -1,16 +1,32 @@
 /* Keep the student Events mobile navigation and section controls in their own space. */
 @media (max-width:820px) {
-  /* Chrome/navigation scroll away with Highlights; Upcoming starts at the viewport top. */
-  body.student-app-shell.events-document-scroll .dashboard-header {
-    position:relative !important;
-    top:auto !important;
+  body.student-app-shell.events-module-shell .dashboard-layout {
+    flex:1;
+    min-height:0;
+    height:auto;
+    margin:0;
+    padding:8px 10px 10px;
+    display:flex;
+    flex-direction:column;
+    gap:0;
+    overflow:hidden;
   }
-  body.student-app-shell.events-document-scroll .student-sidebar {
+  body.student-app-shell.events-module-shell .student-sidebar { flex:0 0 auto; }
+  body.student-app-shell.events-module-shell .student-module-column {
+    flex:1;
+    min-height:0;
+    display:grid;
+    grid-template-rows:auto minmax(0,1fr);
+    overflow:visible;
+  }
+  body.student-app-shell.events-module-shell .student-module-toolbar { margin:0; min-height:48px; }
+  body.student-app-shell.events-module-shell .events-page-main { min-height:0; height:100%; border-radius:14px; }
+  body.student-app-shell.events-module-shell .student-sidebar {
     box-sizing:border-box;
     padding:8px 60px 8px 8px !important;
     min-height:60px !important;
   }
-  body.student-app-shell.events-document-scroll .student-nav {
+  body.student-app-shell.events-module-shell .student-nav {
     gap:6px !important;
     padding:0 0 4px !important;
     overflow-x:auto !important;
@@ -18,8 +34,8 @@
     scrollbar-width:thin;
     scrollbar-color:rgba(18,52,80,.4) transparent;
   }
-  body.student-app-shell.events-document-scroll .student-nav::-webkit-scrollbar { display:block; height:3px; }
-  body.student-app-shell.events-document-scroll .student-nav-link {
+  body.student-app-shell.events-module-shell .student-nav::-webkit-scrollbar { display:block; height:3px; }
+  body.student-app-shell.events-module-shell .student-nav-link {
     box-sizing:border-box;
     flex:0 0 auto !important;
     min-width:44px !important;
@@ -29,7 +45,7 @@
     transform:none !important;
   }
   /* The shared desktop palette pins Dashboard; mobile shows only the current page. */
-  body.student-app-shell.events-document-scroll .student-sidebar .student-nav-link:not(.active) {
+  body.student-app-shell.events-module-shell .student-sidebar .student-nav-link:not(.active) {
     color:#123450;
     background:none;
     box-shadow:none;
@@ -38,8 +54,8 @@
     text-shadow:none;
     font-weight:400;
   }
-  body.student-app-shell.events-document-scroll .student-nav-link:focus-visible { outline:2px solid #123450; outline-offset:-3px; }
-  body.student-app-shell.events-document-scroll .sidebar-logout {
+  body.student-app-shell.events-module-shell .student-nav-link:focus-visible { outline:2px solid #123450; outline-offset:-3px; }
+  body.student-app-shell.events-module-shell .sidebar-logout {
     top:8px !important;
     right:8px !important;
     width:44px !important;
@@ -47,24 +63,13 @@
     min-height:44px !important;
     margin:0 !important;
   }
-  /* The first frame ends at the visible viewport, after the header and navigation. */
-  body.student-app-shell.events-document-scroll :is(.events-highlight-section,.events-highlight-module,.events-highlight-content) {
-    box-sizing:border-box !important;
-    height:var(--events-highlight-viewport-height,calc(100svh - 240px)) !important;
-    min-height:var(--events-highlight-viewport-height,calc(100svh - 240px)) !important;
-    max-height:var(--events-highlight-viewport-height,calc(100svh - 240px)) !important;
-  }
-  body.student-app-shell.events-document-scroll.events-upcoming-visible .events-scroll-down {
-    visibility:hidden !important;
-    pointer-events:none !important;
-  }
-  body.student-app-shell.events-document-scroll .events-highlight-center h2 {
+  body.student-app-shell.events-module-shell .events-highlight-center h2 {
     font-size:clamp(26px,8vw,38px) !important;
     line-height:1.1 !important;
   }
-  body.student-app-shell.events-document-scroll .events-highlight-bottom {
+  body.student-app-shell.events-module-shell .events-highlight-bottom {
     left:16px !important;
-    bottom:max(8px,env(safe-area-inset-bottom)) !important;
+    bottom:max(12px,env(safe-area-inset-bottom)) !important;
     width:calc(100% - 32px) !important;
     transform:none !important;
     display:flex !important;
@@ -72,14 +77,14 @@
     align-items:center;
     gap:12px;
   }
-  body.student-app-shell.events-document-scroll .events-upcoming-section {
+  body.student-app-shell.events-module-shell .events-upcoming-section {
     display:flex !important;
     flex-direction:column;
     gap:20px;
-    padding:8px 0 28px !important;
+    padding:12px 0 28px !important;
     box-sizing:border-box;
   }
-  body.student-app-shell.events-document-scroll .events-scroll-up {
+  body.student-app-shell.events-module-shell .events-scroll-up {
     position:relative !important;
     left:auto !important;
     top:auto !important;
@@ -88,7 +93,7 @@
     margin:0 !important;
     transform:none !important;
   }
-  body.student-app-shell.events-document-scroll .events-section-jump:is(.events-scroll-up,.events-scroll-down) {
+  body.student-app-shell.events-module-shell .events-section-jump:is(.events-scroll-up,.events-scroll-down) {
     display:inline-flex !important;
     align-items:center;
     justify-content:center;
@@ -105,24 +110,62 @@
     box-sizing:border-box;
     box-shadow:none !important;
   }
-  body.student-app-shell.events-document-scroll .events-section-jump:is(.events-scroll-up,.events-scroll-down):focus-visible { outline:3px solid #8be7ff; outline-offset:3px; }
-  body.student-app-shell.events-document-scroll .events-upcoming-content {
+  body.student-app-shell.events-module-shell .events-section-jump:is(.events-scroll-up,.events-scroll-down):focus-visible { outline:3px solid #8be7ff; outline-offset:3px; }
+  body.student-app-shell.events-module-shell .events-upcoming-content {
     width:100% !important;
     padding:0 20px !important;
     gap:24px !important;
+    grid-template-columns:minmax(0,1fr) !important;
+    min-height:0 !important;
     box-sizing:border-box;
   }
-  body.student-app-shell.events-document-scroll #eventsUpcomingHeading {
+  body.student-app-shell.events-module-shell #eventsUpcomingHeading {
     margin:0 0 12px !important;
     font-size:clamp(24px,6vw,30px) !important;
     line-height:1.2 !important;
     overflow-wrap:anywhere;
   }
-  body.student-app-shell.events-document-scroll .events-upcoming-copy > p { margin:0 0 20px; font-size:15px; line-height:1.6; }
+  body.student-app-shell.events-module-shell .events-upcoming-copy > p { margin:0 0 20px; font-size:15px; line-height:1.6; }
+  body.student-app-shell.events-module-shell > .shared-student-footer .footer-main {
+    width:100%;
+    min-height:0;
+    height:auto;
+    padding:10px 14px;
+    display:grid;
+    grid-template-columns:repeat(2,minmax(0,1fr));
+    gap:8px 16px;
+    align-items:start;
+  }
+  body.student-app-shell.events-module-shell .shared-student-footer .footer-col { font-size:12px; line-height:1.35; }
+  body.student-app-shell.events-module-shell .shared-student-footer .footer-col h3 { font-size:13px; margin-bottom:4px; }
+  body.student-app-shell.events-module-shell .shared-student-footer .footer-col :is(a,p) { margin:0; line-height:1.35; overflow-wrap:anywhere; }
+  body.student-app-shell.events-module-shell .shared-student-footer .footer-contact-links {
+    grid-column:1/-1;
+    display:flex;
+    flex-wrap:wrap;
+    justify-content:space-between;
+    gap:4px 12px;
+    padding:0;
+  }
+  body.student-app-shell.events-module-shell .shared-student-footer .footer-bottom { min-height:40px; height:auto; padding:6px 14px; gap:8px; }
+  body.student-app-shell.events-module-shell .shared-student-footer .footer-bottom > img { width:24px; height:24px; }
+  body.student-app-shell.events-module-shell .shared-student-footer .footer-brand-copy strong { font-size:10px; }
+  body.student-app-shell.events-module-shell .shared-student-footer .footer-brand-copy span { display:none; }
+
 }
 
 @media (max-width:820px) and (max-height:700px) {
-  body.student-app-shell.events-document-scroll .events-highlight-center h2 { font-size:clamp(22px,7vw,30px) !important; }
-  body.student-app-shell.events-document-scroll .events-highlight-venue { margin-top:6px !important; }
-  body.student-app-shell.events-document-scroll .events-highlight-date { margin-top:6px !important; }
+  body.student-app-shell.events-module-shell .events-highlight-center h2 { font-size:clamp(22px,7vw,30px) !important; }
+  body.student-app-shell.events-module-shell .events-highlight-venue { margin-top:6px !important; }
+  body.student-app-shell.events-module-shell .events-highlight-date { margin-top:6px !important; }
+}
+
+@media (max-height:650px) {
+  body.events-module-shell .events-highlight-content { padding:12px 16px 72px !important; }
+  body.events-module-shell .events-highlight-center { top:calc(50% - 24px) !important; }
+  body.events-module-shell .events-highlight-center h2 { font-size:24px !important; }
+  body.events-module-shell .events-highlight-school { display:none !important; }
+  body.events-module-shell .events-highlight-date { margin-top:6px !important; letter-spacing:.08em !important; }
+  body.events-module-shell .events-highlight-action { margin-top:8px; min-height:40px; }
+  body.events-module-shell .events-highlight-bottom { bottom:8px !important; gap:6px !important; }
 }

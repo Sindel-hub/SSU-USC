@@ -1,3 +1,18 @@
+/* Student content scrollbar theme (Firefox and Chromium/WebKit). */
+body.student-app-shell {
+  --student-scroll-thumb:rgba(18,52,80,.42);
+  --student-panel-radius:16px;
+  scrollbar-width:thin;
+  scrollbar-color:var(--student-scroll-thumb) transparent;
+}
+body.student-app-shell * { scrollbar-width:thin; scrollbar-color:inherit; }
+body.student-app-shell :is(.student-main,.student-page-main,.student-sidebar):hover { scrollbar-color:rgba(18,52,80,.6) transparent; }
+body.student-app-shell ::-webkit-scrollbar { width:6px; height:6px; }
+body.student-app-shell ::-webkit-scrollbar-track { background:transparent; }
+body.student-app-shell ::-webkit-scrollbar-thumb { background:var(--student-scroll-thumb); border-radius:999px; }
+body.student-app-shell ::-webkit-scrollbar-thumb:hover { background:rgba(18,52,80,.68); }
+body.student-app-shell ::-webkit-scrollbar-corner { background:transparent; }
+
 :root {
   --usc-blue: #0c9fe0;
   --usc-cyan: #1bb7ec;
@@ -418,31 +433,11 @@ body { background: #fff; }
     overflow-x: hidden;
     overscroll-behavior-y: auto;
     scrollbar-gutter: stable;
-    scrollbar-width: thin;
-    scrollbar-color: #55bce9 #edf7fb;
-  }
-
-  body.student-app-shell .student-main::-webkit-scrollbar,
-  body.student-app-shell .student-page-main::-webkit-scrollbar {
-    width: 9px;
-  }
-
-  body.student-app-shell .student-main::-webkit-scrollbar-track,
-  body.student-app-shell .student-page-main::-webkit-scrollbar-track {
-    background: #edf7fb;
-    border-radius: 999px;
-  }
-
-  body.student-app-shell .student-main::-webkit-scrollbar-thumb,
-  body.student-app-shell .student-page-main::-webkit-scrollbar-thumb {
-    background: #55bce9;
-    border: 2px solid #edf7fb;
-    border-radius: 999px;
   }
 
   body.student-app-shell .student-page-main {
     border: 1px solid #e8f1f5;
-    border-radius: 18px;
+    border-radius:var(--student-panel-radius);
     background: #fff;
     padding: 0 12px 24px 18px;
     box-shadow: 0 12px 28px rgba(22, 81, 113, .06);
@@ -517,8 +512,10 @@ body { background: #fff; }
   }
 
   body.student-app-shell .student-sidebar {
-    height: 100%;
-    min-height: 0;
+    margin-top:0;
+    height:100%;
+    min-height:0;
+    overflow:hidden auto;
   }
 
   body.student-app-shell .student-module-column {
@@ -526,7 +523,7 @@ body { background: #fff; }
     min-height: 0;
     height: 100%;
     display: grid;
-    grid-template-rows: var(--student-module-toolbar-h) minmax(0, 1fr);
+    grid-template-rows:minmax(var(--student-module-toolbar-h),auto) minmax(0,1fr);
   }
 
   body.student-app-shell .student-module-toolbar {
@@ -565,10 +562,8 @@ body { background: #fff; }
     overflow-x: hidden;
     overscroll-behavior-y: auto;
     scrollbar-gutter: stable;
-    scrollbar-width: thin;
-    scrollbar-color: #55bce9 #edf7fb;
     border: 1px solid #e8f1f5;
-    border-radius: 18px;
+    border-radius:var(--student-panel-radius);
     background: #fff;
     box-shadow: 0 12px 28px rgba(22, 81, 113, .06);
   }
@@ -579,22 +574,6 @@ body { background: #fff; }
 
   body.student-app-shell .student-page-main {
     padding: 0 10px 22px 8px;
-  }
-
-  body.student-app-shell .student-main::-webkit-scrollbar,
-  body.student-app-shell .student-page-main::-webkit-scrollbar {
-    width: 9px;
-  }
-  body.student-app-shell .student-main::-webkit-scrollbar-track,
-  body.student-app-shell .student-page-main::-webkit-scrollbar-track {
-    background: #edf7fb;
-    border-radius: 999px;
-  }
-  body.student-app-shell .student-main::-webkit-scrollbar-thumb,
-  body.student-app-shell .student-page-main::-webkit-scrollbar-thumb {
-    background: #55bce9;
-    border: 2px solid #edf7fb;
-    border-radius: 999px;
   }
 
   /* Legacy in-module title strips are intentionally hidden. Module title lives above the container. */

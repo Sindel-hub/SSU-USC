@@ -359,42 +359,82 @@ body.modal-open{overflow:hidden}
 .bulletin-carousel-arrow:not(:disabled) { opacity: 1; }
 
 
-/* ===== Two-section Events module: full image -> Upcoming Events ===== */
-.events-page-main {
-  padding: 0 !important;
-  overflow: hidden !important;
-  background: #111d29 !important;
-  position: relative;
+/* ===== Events: one content scroller, two navigable sections ===== */
+body.student-app-shell.events-module-shell {
+  height:100dvh;
+  overflow:hidden;
+  display:flex;
+  flex-direction:column;
 }
-
-.events-snap-viewport {
-  width: 100%;
-  height: 100%;
-  overflow: hidden;
-  border-radius: inherit;
-  position: relative;
-  background: #17283a;
-  touch-action: pan-x;
+body.student-app-shell.events-module-shell .dashboard-header { position:relative; flex:0 0 auto; }
+body.student-app-shell.events-module-shell .dashboard-layout {
+  flex:1;
+  min-height:0;
+  height:auto;
+  margin:0 auto;
 }
-
-.events-snap-track {
-  width: 100%;
-  height: 200%;
-  display: grid;
-  grid-template-rows: repeat(2, 50%);
-  transform: translateY(0);
-  transition: transform .72s cubic-bezier(.22,.78,.2,1);
-  will-change: transform;
+body.student-app-shell.events-module-shell > .shared-student-footer {
+  position:relative;
+  flex:0 0 auto;
+  margin:0;
 }
-.events-snap-track.no-transition { transition: none !important; }
-
+body.events-module-shell .events-page-main {
+  --events-frame-height:100%;
+  padding:0 !important;
+  overflow:hidden auto !important;
+  position:relative;
+  background:#17283a !important;
+  overscroll-behavior-y:contain;
+  scroll-behavior:smooth;
+  touch-action:pan-y pinch-zoom;
+}
+.events-snap-viewport, .events-snap-track {
+  position:relative;
+  width:100%;
+  min-height:100%;
+  height:auto;
+  overflow:visible;
+}
 .events-snap-section {
-  min-height: 0;
-  position: relative;
-  overflow: hidden;
+  position:relative;
+  width:100%;
+  min-height:var(--events-frame-height);
+  overflow:clip;
+}
+body.events-module-shell :is(.events-highlight-section,.events-highlight-module,.events-highlight-content) {
+  box-sizing:border-box;
+  height:max(320px,var(--events-frame-height)) !important;
+  min-height:max(320px,var(--events-frame-height)) !important;
+  padding:0;
+  border:0;
+  border-radius:0 !important;
+}
+body.events-module-shell .events-highlight-content { padding:24px 32px 96px !important; }
+body.events-module-shell .events-highlight-center {
+  top:50% !important;
+  transform:translate(-50%,-50%) !important;
+}
+body.events-module-shell .events-highlight-center h2 { font-size:clamp(26px,4vw,54px) !important; }
+body.events-module-shell .events-highlight-bottom { bottom:16px !important; width:calc(100% - 32px); }
+body.events-module-shell .events-highlight-dots { max-width:min(100%,360px); overflow-x:auto; }
+body.events-module-shell .events-highlight-dot { flex-shrink:0; }
+body.events-module-shell .events-scroll-down:hover { transform:none !important; }
+body.events-module-shell .events-upcoming-section { height:auto !important; overflow:clip !important; }
+body.events-module-shell .events-upcoming-content {
+  min-height:var(--events-frame-height);
+  height:auto;
+  padding:76px 24px 32px;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  align-items:start;
+}
+body.events-module-shell .events-upcoming-calendar { min-width:0; }
+
+.events-highlight-background, .events-highlight-shade,
+.events-upcoming-background, .events-upcoming-shade { pointer-events:none; }
+@media (prefers-reduced-motion:reduce) {
+  body.events-module-shell .events-page-main { scroll-behavior:auto; }
 }
 
-.events-highlight-section,
 .events-highlight-module {
   width: 100%;
   height: 100%;
@@ -1257,7 +1297,7 @@ body:has(.candidate-focus-overlay.open) .candidate-vote-zone{opacity:0;visibilit
 /* STUDENT ELECTION INELIGIBLE HARD-HIDE FALLBACK - 2026-09-05 */
 #electionApp.election-ineligible-active .registration-layout,
 #electionApp.election-ineligible-active .election-detail-card{display:none!important;}
-#electionApp.election-ineligible-active .election-page-ineligible{padding-bottom:18px;}
+#electionApp.election-ineligible-active .election-page-ineligible{padding-bottom:0;}
 
 
 /* =========================================================
@@ -1348,10 +1388,11 @@ body:has(.candidate-focus-overlay.open) .candidate-vote-zone{opacity:0;visibilit
 .election-reference-landing {
   position: relative;
   isolation: isolate;
-  min-height: 660px;
-  overflow: hidden;
-  border-radius: 0 0 18px 18px;
-  background: #2f6ca1;
+  min-height:100%;
+  display:flex;
+  padding:clamp(16px,2vw,28px);
+  overflow:visible;
+  background:#122b40;
 }
 
 .election-reference-landing-bg {
@@ -1367,23 +1408,12 @@ body:has(.candidate-focus-overlay.open) .candidate-vote-zone{opacity:0;visibilit
   position: absolute;
   inset: 0;
   z-index: -2;
-  background:
-    linear-gradient(90deg, rgba(41, 122, 181, .84) 0%, rgba(59, 137, 194, .64) 42%, rgba(69, 139, 188, .38) 100%),
-    linear-gradient(180deg, rgba(15, 40, 73, .10), rgba(21, 39, 59, .28));
-}
-
-.election-reference-landing-content {
-  min-height: 660px;
-  padding: 70px 95px 70px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  color: #fff;
+  background:linear-gradient(135deg,rgba(8,24,38,.60),rgba(10,31,47,.46));
 }
 
 .election-reference-logo {
-  width: 160px;
-  height: 160px;
+  width:56px;
+  height:56px;
   object-fit: contain;
   background: rgba(255,255,255,.02);
   filter: drop-shadow(0 8px 18px rgba(8, 36, 58, .22));
@@ -1431,8 +1461,9 @@ body:has(.candidate-focus-overlay.open) .candidate-vote-zone{opacity:0;visibilit
 
 .election-reference-actions {
   width: min(780px, 100%);
-  margin: 28px auto 0;
-  display: flex;
+  margin:18px auto 0;
+  justify-content:center;
+  display:flex;
   flex-wrap: wrap;
   gap: 10px;
 }
@@ -2068,290 +2099,6 @@ body:has(.candidate-focus-overlay.open) .candidate-vote-zone{opacity:0;visibilit
 
 
 /* =========================================================
-   STUDENT EVENTS SECTION LAYER FIX - 2026-09-05
-   ========================================================= */
-/*
-   The old Events module used a 200%-high grid track translated by 50%.
-   On compact layouts the track height could be influenced by overflowing
-   Upcoming Events content, leaving the Highlight footer visible over the
-   event list. Keep each section as its own full viewport layer instead.
-*/
-.events-snap-viewport {
-  position: relative;
-  isolation: isolate;
-}
-
-.events-snap-track {
-  position: relative;
-  width: 100%;
-  height: 100%;
-  min-height: 100%;
-  display: block;
-  transform: none !important;
-  transition: none;
-  overflow: hidden;
-}
-
-.events-snap-section {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  min-height: 0;
-  overflow: hidden;
-  transition: transform .72s cubic-bezier(.22,.78,.2,1), visibility .72s step-end;
-  will-change: transform;
-  backface-visibility: hidden;
-}
-
-.events-snap-track.no-transition .events-snap-section {
-  transition: none !important;
-}
-
-.events-snap-track[data-active-section="0"] .events-highlight-section {
-  transform: translateY(0);
-  visibility: visible;
-  z-index: 2;
-}
-
-.events-snap-track[data-active-section="0"] .events-upcoming-section {
-  transform: translateY(100%);
-  visibility: hidden;
-  z-index: 1;
-}
-
-.events-snap-track[data-active-section="1"] .events-highlight-section {
-  transform: translateY(-100%);
-  visibility: hidden;
-  z-index: 1;
-}
-
-.events-snap-track[data-active-section="1"] .events-upcoming-section {
-  transform: translateY(0);
-  visibility: visible;
-  z-index: 2;
-}
-
-.events-upcoming-section {
-  overflow-y: auto;
-  overflow-x: hidden;
-  overscroll-behavior: contain;
-  scrollbar-gutter: stable;
-}
-
-.events-upcoming-content {
-  min-height: 100%;
-}
-
-.events-upcoming-list {
-  position: relative;
-  z-index: 2;
-  display: grid;
-  gap: 16px;
-  padding: 0 0 14px;
-}
-
-.events-upcoming-card {
-  position: relative;
-  z-index: 1;
-  margin: 0;
-  flex: none;
-}
-
-@media (max-width: 820px) {
-  .events-page-main {
-    min-height: 640px;
-  }
-
-  .events-snap-viewport {
-    height: max(640px, calc(100vh - 170px));
-    min-height: 640px;
-  }
-
-  .events-snap-track {
-    height: 100%;
-    min-height: 640px;
-  }
-
-  .events-upcoming-section {
-    padding-bottom: 0;
-  }
-
-  .events-upcoming-content {
-    padding-top: 66px;
-    padding-bottom: 36px;
-  }
-
-  .events-upcoming-list {
-    gap: 18px;
-  }
-}
-
-
-/* =========================================================
-   STUDENT EVENTS ATOMIC SECTION SWITCH - 2026-09-05
-   ========================================================= */
-/*
-   Do not translate the two full-screen event layers. Chromium/Edge can
-   briefly rasterize large background images into horizontal strips while a
-   transformed layer is entering/leaving. Only the active section participates
-   in layout/painting; the inactive one is display:none through [hidden].
-*/
-.events-snap-track {
-  position: relative;
-  width: 100%;
-  height: 100%;
-  min-height: 100%;
-  overflow: hidden;
-  transform: none !important;
-  transition: none !important;
-  will-change: auto !important;
-}
-
-.events-snap-section {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  transform: none !important;
-  transition: none !important;
-  visibility: visible;
-  will-change: auto;
-  backface-visibility: visible;
-}
-
-.events-snap-section[hidden] {
-  display: none !important;
-  visibility: hidden !important;
-  pointer-events: none !important;
-}
-
-.events-snap-track[data-active-section="0"] .events-highlight-section,
-.events-snap-track[data-active-section="1"] .events-upcoming-section {
-  transform: none !important;
-  visibility: visible;
-  z-index: 2;
-}
-
-.events-highlight-background,
-.events-upcoming-background {
-  will-change: auto;
-  backface-visibility: visible;
-}
-
-/* Keep wheel/touch switching controlled by JS without browser-native
-   vertical panning exposing an intermediate painted frame. */
-.events-snap-viewport {
-  overscroll-behavior: contain;
-  touch-action: pan-x;
-}
-
-
-/* =========================================================
-   STUDENT EVENTS NATURAL SCROLL FLOW - 2026-09-05
-   ========================================================= */
-/*
-   Events is a real vertical page again: Highlight first, Upcoming Events
-   second. There is no wheel/touch snap or automatic section switching.
-   The Scroll down/up controls only smooth-scroll to the corresponding section.
-*/
-.events-page-main {
-  overflow-y: auto !important;
-  overflow-x: hidden !important;
-  overscroll-behavior-y: auto !important;
-  scroll-behavior: smooth;
-  background: #17283a !important;
-}
-
-.events-snap-viewport {
-  width: 100%;
-  height: auto !important;
-  min-height: 0 !important;
-  overflow: visible !important;
-  position: relative;
-  touch-action: pan-y pinch-zoom !important;
-  overscroll-behavior: auto !important;
-  background: #17283a;
-}
-
-.events-snap-track {
-  position: relative !important;
-  display: block !important;
-  width: 100%;
-  height: auto !important;
-  min-height: 0 !important;
-  overflow: visible !important;
-  transform: none !important;
-  transition: none !important;
-}
-
-.events-snap-section,
-.events-highlight-section,
-.events-upcoming-section {
-  position: relative !important;
-  inset: auto !important;
-  width: 100%;
-  height: auto !important;
-  min-height: max(620px, calc(100vh - 176px));
-  overflow: hidden !important;
-  transform: none !important;
-  transition: none !important;
-  visibility: visible !important;
-  display: block !important;
-}
-
-.events-highlight-module {
-  min-height: max(620px, calc(100vh - 176px));
-  height: 100%;
-}
-
-.events-upcoming-section {
-  min-height: max(620px, calc(100vh - 176px));
-  overflow: hidden !important;
-}
-
-.events-upcoming-content {
-  min-height: max(620px, calc(100vh - 176px));
-  height: auto !important;
-}
-
-/* Do not let legacy active-section selectors hide or move either section. */
-.events-snap-track[data-active-section] .events-highlight-section,
-.events-snap-track[data-active-section] .events-upcoming-section,
-.events-snap-section[hidden] {
-  transform: none !important;
-  visibility: visible !important;
-}
-
-/* A manual jump button remains useful, but scrolling itself is fully native. */
-.events-scroll-up {
-  position: absolute;
-}
-
-@media (max-width: 820px) {
-  .events-page-main {
-    overflow: visible !important;
-    scroll-behavior: smooth;
-  }
-
-  .events-snap-viewport,
-  .events-snap-track {
-    min-height: 0 !important;
-    height: auto !important;
-  }
-
-  .events-snap-section,
-  .events-highlight-section,
-  .events-upcoming-section,
-  .events-highlight-module,
-  .events-upcoming-content {
-    min-height: 640px;
-    height: auto !important;
-  }
-}
-
-
-/* =========================================================
    STUDENT EVENTS HIGHLIGHT UI POLISH - 2026-09-05
    ========================================================= */
 .events-highlight-section {
@@ -2807,343 +2554,6 @@ body:has(.candidate-focus-overlay.open) .candidate-vote-zone{opacity:0;visibilit
 
 
 /* =========================================================
-   STUDENT EVENTS TRUE FREE SCROLL - 2026-09-05
-   ========================================================= */
-/*
-   Highlights and Upcoming Events are one continuous vertical document.
-   Wheel, trackpad, touch, keyboard and scrollbar navigation work normally.
-   The Scroll down/up controls are optional shortcuts only.
-*/
-.events-page-main {
-  overflow-y: auto !important;
-  overflow-x: hidden !important;
-  overscroll-behavior-y: auto !important;
-  scroll-snap-type: none !important;
-  scroll-behavior: auto !important;
-  touch-action: pan-y pinch-zoom !important;
-  -webkit-overflow-scrolling: touch;
-}
-
-.events-snap-viewport,
-.events-snap-track {
-  position: relative !important;
-  width: 100% !important;
-  height: auto !important;
-  min-height: 0 !important;
-  max-height: none !important;
-  overflow: visible !important;
-  transform: none !important;
-  transition: none !important;
-  scroll-snap-type: none !important;
-  touch-action: pan-y pinch-zoom !important;
-  overscroll-behavior: auto !important;
-}
-
-.events-snap-track {
-  display: block !important;
-}
-
-.events-snap-section,
-.events-highlight-section,
-.events-upcoming-section {
-  position: relative !important;
-  inset: auto !important;
-  display: block !important;
-  visibility: visible !important;
-  width: 100% !important;
-  height: auto !important;
-  min-height: max(620px, calc(100vh - 176px)) !important;
-  overflow: hidden !important;
-  transform: none !important;
-  transition: none !important;
-  scroll-snap-align: none !important;
-  scroll-snap-stop: normal !important;
-}
-
-.events-highlight-module,
-.events-highlight-content,
-.events-upcoming-content {
-  min-height: max(620px, calc(100vh - 176px)) !important;
-  height: auto !important;
-}
-
-/* Neutralize every older active-section / hidden-state rule. */
-.events-snap-track[data-active-section] .events-highlight-section,
-.events-snap-track[data-active-section] .events-upcoming-section,
-.events-snap-section[hidden] {
-  display: block !important;
-  visibility: visible !important;
-  opacity: 1 !important;
-  transform: none !important;
-}
-
-/* Buttons remain convenient shortcuts, but never control the scroll state. */
-.events-section-jump {
-  touch-action: manipulation !important;
-}
-
-@media (max-width: 820px) {
-  .events-page-main {
-    overflow: visible !important;
-    touch-action: pan-y pinch-zoom !important;
-  }
-
-  .events-snap-section,
-  .events-highlight-section,
-  .events-upcoming-section,
-  .events-highlight-module,
-  .events-highlight-content,
-  .events-upcoming-content {
-    min-height: 640px !important;
-    height: auto !important;
-  }
-}
-
-
-/* =========================================================
-   STUDENT EVENTS PAGE-LEVEL SCROLL FIX - 2026-09-05
-   ========================================================= */
-/*
-   The shared desktop student shell normally uses an internal fixed-height
-   scroller for every module. Events is intentionally a long two-section page,
-   so let the document/body own vertical scrolling instead. This prevents the
-   Upcoming Events section from trapping the wheel/trackpad at an inner
-   scrollbar and allows scrolling naturally through the rest of the page.
-*/
-@media (min-width: 821px) {
-  body.student-app-shell.events-document-scroll {
-    min-height: 100% !important;
-    /* Let the viewport own scrolling so sticky descendants follow it. */
-    overflow-x: clip !important;
-    overflow-y: visible !important;
-  }
-
-  body.student-app-shell.events-document-scroll .dashboard-layout {
-    height: auto !important;
-    min-height: calc(100vh - 74px) !important;
-    overflow: visible !important;
-    align-items: start !important;
-  }
-
-  body.student-app-shell.events-document-scroll .student-module-column {
-    min-height: 0 !important;
-    height: auto !important;
-    overflow: visible !important;
-  }
-
-  body.student-app-shell.events-document-scroll .events-page-main {
-    height: auto !important;
-    min-height: 0 !important;
-    max-height: none !important;
-    overflow: visible !important;
-    overscroll-behavior: auto !important;
-    scrollbar-gutter: auto !important;
-  }
-
-  body.student-app-shell.events-document-scroll .student-sidebar {
-    position: sticky !important;
-    top: calc(var(--student-global-header-h, 74px) + 12px) !important;
-    align-self: start !important;
-    height: calc(100dvh - var(--student-global-header-h, 74px) - 24px) !important;
-    overflow-x: hidden !important;
-    overflow-y: auto !important;
-    scrollbar-width: thin;
-    overscroll-behavior-y: contain;
-    min-height: 0 !important;
-  }
-
-  body.student-app-shell.events-document-scroll .events-snap-viewport,
-  body.student-app-shell.events-document-scroll .events-snap-track,
-  body.student-app-shell.events-document-scroll .events-highlight-section,
-  body.student-app-shell.events-document-scroll .events-upcoming-section {
-    max-height: none !important;
-    overflow: visible !important;
-  }
-
-  body.student-app-shell.events-document-scroll .events-highlight-module {
-    overflow: hidden !important;
-  }
-
-  body.student-app-shell.events-document-scroll .events-upcoming-section {
-    overflow: hidden !important;
-  }
-}
-
-@media (max-width: 820px) {
-  body.student-app-shell.events-document-scroll,
-  body.student-app-shell.events-document-scroll .dashboard-layout,
-  body.student-app-shell.events-document-scroll .student-module-column,
-  body.student-app-shell.events-document-scroll .events-page-main {
-    height: auto !important;
-    max-height: none !important;
-    overflow: visible !important;
-  }
-}
-
-/* Keep optional jump shortcuts aligned below the fixed global header. */
-body.events-document-scroll .events-highlight-section,
-body.events-document-scroll .events-upcoming-section {
-  scroll-margin-top: 88px;
-}
-
-
-/* =========================================================
-   STUDENT EVENTS VIEWPORT + IMMEDIATE SCROLL FINAL FIX - 2026-09-05
-   ========================================================= */
-/*
-   Desktop Events uses document scrolling. The first Highlight fills exactly
-   the available viewport below the global header + module toolbar so no part
-   of Upcoming Events leaks into the initial screen.
-*/
-@media (min-width: 821px) {
-  body.events-document-scroll .events-highlight-section,
-  body.events-document-scroll .events-highlight-module,
-  body.events-document-scroll .events-highlight-content {
-    box-sizing: border-box !important;
-    height: calc(100vh - var(--student-global-header-h, 74px) - var(--student-module-toolbar-h, 58px) - 12px) !important;
-    min-height: calc(100vh - var(--student-global-header-h, 74px) - var(--student-module-toolbar-h, 58px) - 12px) !important;
-    max-height: none !important;
-  }
-
-  body.events-document-scroll .events-highlight-section {
-    margin: 0 !important;
-    padding: 0 !important;
-    overflow: hidden !important;
-  }
-
-  body.events-document-scroll .events-highlight-module,
-  body.events-document-scroll .events-highlight-content {
-    width: 100% !important;
-  }
-
-  body.events-document-scroll .events-upcoming-section {
-    min-height: calc(100vh - var(--student-global-header-h, 74px) - 10px) !important;
-    height: auto !important;
-    margin: 0 !important;
-  }
-
-  /* One document scrollbar only. */
-  body.events-document-scroll .events-page-main,
-  body.events-document-scroll .events-snap-viewport,
-  body.events-document-scroll .events-snap-track,
-  body.events-document-scroll .events-upcoming-section,
-  body.events-document-scroll .events-upcoming-content {
-    overflow-y: visible !important;
-    overscroll-behavior-y: auto !important;
-  }
-
-  body.events-document-scroll .events-highlight-module {
-    overflow: hidden !important;
-  }
-}
-
-/* The Upcoming shortcut should never peek into the initial Highlight frame. */
-body.events-document-scroll .events-scroll-up {
-  opacity: 0 !important;
-  visibility: hidden !important;
-  pointer-events: none !important;
-  transition: opacity .16s ease, visibility .16s ease, transform .16s ease !important;
-}
-
-body.events-document-scroll.events-upcoming-visible .events-scroll-up {
-  opacity: 1 !important;
-  visibility: visible !important;
-  pointer-events: auto !important;
-}
-
-/* Smooth movement is used only when the optional shortcut is clicked.
-   Native wheel/touch/trackpad scrolling remains fully free. */
-html,
-body.events-document-scroll {
-  scroll-snap-type: none !important;
-  overscroll-behavior-y: auto !important;
-}
-
-body.events-document-scroll .events-highlight-section,
-body.events-document-scroll .events-upcoming-section {
-  scroll-snap-align: none !important;
-  scroll-snap-stop: normal !important;
-}
-
-@media (max-width: 820px) {
-  body.events-document-scroll .events-highlight-section,
-  body.events-document-scroll .events-highlight-module,
-  body.events-document-scroll .events-highlight-content {
-    min-height: calc(100svh - 64px) !important;
-    height: calc(100svh - 64px) !important;
-  }
-}
-
-
-/* =========================================================
-   STUDENT EVENTS EXACT VIEWPORT FIT - 2026-09-05
-   ========================================================= */
-/*
-   The Events page computes the actual space remaining below the module toolbar
-   at runtime. This avoids hard-coded header math at different zoom levels and
-   prevents the Upcoming section / Scroll up shortcut from peeking into the
-   initial Highlight screen.
-*/
-@media (min-width: 821px) {
-  body.events-document-scroll .events-highlight-section,
-  body.events-document-scroll .events-highlight-module,
-  body.events-document-scroll .events-highlight-content {
-    height: var(--events-highlight-viewport-height, calc(100vh - 152px)) !important;
-    min-height: var(--events-highlight-viewport-height, calc(100vh - 152px)) !important;
-    max-height: var(--events-highlight-viewport-height, calc(100vh - 152px)) !important;
-  }
-
-  body.events-document-scroll .events-highlight-section {
-    overflow: hidden !important;
-  }
-
-  body.events-document-scroll .events-highlight-bottom {
-    bottom: 18px !important;
-  }
-}
-
-/* Keep the next section's shortcut out of the first screen entirely. */
-body.events-document-scroll .events-scroll-up {
-  opacity: 0 !important;
-  visibility: hidden !important;
-  pointer-events: none !important;
-}
-
-body.events-document-scroll.events-upcoming-visible .events-scroll-up {
-  opacity: 1 !important;
-  visibility: visible !important;
-  pointer-events: auto !important;
-}
-
-
-/* =========================================================
-   STUDENT EVENTS STABLE HIGHLIGHT CONTROLS - 2026-09-05
-   ========================================================= */
-/* Keep the bottom shortcut at exactly the same visual position before and
-   after scrolling away from the Highlight section. */
-@media (min-width: 821px) {
-  body.events-document-scroll .events-highlight-bottom {
-    bottom: 22px !important;
-    transform: translateX(-50%) !important;
-  }
-}
-
-body.events-document-scroll .events-section-jump.events-scroll-down:hover,
-body.events-document-scroll .events-section-jump.events-scroll-down:focus-visible,
-body.events-document-scroll .events-section-jump.events-scroll-down:active {
-  transform: none !important;
-}
-
-/* The wrapper owns the centering transform; the button itself never shifts. */
-body.events-document-scroll .events-highlight-bottom .events-scroll-down {
-  position: relative !important;
-  top: 0 !important;
-  bottom: auto !important;
-  margin: 0 !important;
-}
-
-
-/* =========================================================
    STUDENT EVENT PARTICIPATION MODULE - 2026-09-07
    ========================================================= */
 .events-highlight-action{
@@ -3442,116 +2852,6 @@ body.events-modal-open{overflow:hidden}
   .events-detail-actions{display:grid;grid-template-columns:1fr}
   .events-detail-primary,.events-detail-secondary{width:100%}
   .events-upcoming-card-foot{align-items:flex-start;flex-direction:column}
-}
-
-/* =========================================================
-   STUDENT EVENTS MOBILE SINGLE-SCROLLER FIX - 2026-09-07
-   ========================================================= */
-/*
-   On phone/tablet layouts the old Events styles could leave Upcoming Events
-   as a nested scroll container. In Chrome's mobile/device mode (and on touch
-   devices) that can trap a drag/wheel inside the Upcoming panel and make the
-   rest of the page feel impossible to reach. Mobile Events now has exactly
-   one vertical document flow: Highlight -> Upcoming -> Calendar -> Footer.
-*/
-@media (max-width: 820px) {
-  html {
-    height: auto !important;
-    min-height: 100% !important;
-    max-height: none !important;
-    overflow-x: hidden !important;
-    overflow-y: auto !important;
-    overscroll-behavior-y: auto !important;
-  }
-
-  body.student-app-shell.events-document-scroll {
-    height: auto !important;
-    min-height: 100dvh !important;
-    max-height: none !important;
-    overflow-x: hidden !important;
-    overflow-y: visible !important;
-    overscroll-behavior-y: auto !important;
-    touch-action: pan-y pinch-zoom !important;
-  }
-
-  body.student-app-shell.events-document-scroll .dashboard-layout,
-  body.student-app-shell.events-document-scroll .student-module-column,
-  body.student-app-shell.events-document-scroll .events-page-main,
-  body.student-app-shell.events-document-scroll .events-snap-viewport,
-  body.student-app-shell.events-document-scroll .events-snap-track {
-    height: auto !important;
-    min-height: 0 !important;
-    max-height: none !important;
-    overflow: visible !important;
-    overscroll-behavior-y: auto !important;
-    touch-action: pan-y pinch-zoom !important;
-  }
-
-  /* Keep only the visual hero itself clipped; it must never become a scroller. */
-  body.student-app-shell.events-document-scroll .events-highlight-section {
-    overflow: hidden !important;
-  }
-
-  body.student-app-shell.events-document-scroll .events-highlight-module {
-    overflow: hidden !important;
-    touch-action: pan-y pinch-zoom !important;
-  }
-
-  /* Upcoming content expands with every event card and the full calendar. */
-  body.student-app-shell.events-document-scroll .events-upcoming-section {
-    height: auto !important;
-    min-height: 0 !important;
-    max-height: none !important;
-    overflow: visible !important;
-    overflow-y: visible !important;
-    scrollbar-gutter: auto !important;
-    overscroll-behavior: auto !important;
-    touch-action: pan-y pinch-zoom !important;
-  }
-
-  body.student-app-shell.events-document-scroll .events-upcoming-content {
-    height: auto !important;
-    min-height: 0 !important;
-    max-height: none !important;
-    overflow: visible !important;
-    grid-template-columns: minmax(0, 1fr) !important;
-    grid-auto-rows: max-content;
-    align-items: start !important;
-    align-content: start !important;
-    padding: 70px 18px 48px !important;
-    touch-action: pan-y pinch-zoom !important;
-  }
-
-  body.student-app-shell.events-document-scroll .events-upcoming-copy,
-  body.student-app-shell.events-document-scroll .events-upcoming-list,
-  body.student-app-shell.events-document-scroll .events-upcoming-card,
-  body.student-app-shell.events-document-scroll .events-upcoming-calendar {
-    height: auto !important;
-    max-height: none !important;
-    overflow: visible !important;
-    overscroll-behavior: auto !important;
-  }
-
-  body.student-app-shell.events-document-scroll .events-upcoming-calendar {
-    width: 100% !important;
-    min-height: 390px !important;
-    margin-bottom: 12px;
-  }
-
-  /* Decorative layers must never intercept a touch/drag gesture. */
-  body.student-app-shell.events-document-scroll .events-highlight-background,
-  body.student-app-shell.events-document-scroll .events-highlight-shade,
-  body.student-app-shell.events-document-scroll .events-upcoming-background,
-  body.student-app-shell.events-document-scroll .events-upcoming-shade {
-    pointer-events: none !important;
-  }
-
-  body.student-app-shell.events-document-scroll .shared-student-footer {
-    position: relative !important;
-    height: auto !important;
-    max-height: none !important;
-    overflow: visible !important;
-  }
 }
 
 /* =========================================================
@@ -5024,470 +4324,171 @@ body.events-modal-open{overflow:hidden}
   }
 }
 
-/* =========================================================
-   STUDENT ELECTION CLOSED / INACTIVE STATE POLISH - 2026-09-09
-   ========================================================= */
-#electionApp.election-ineligible-active{
-  padding:0 0 22px;
+/* ===== Election: centered public status and compact transparent schedule ===== */
+#electionApp.election-ineligible-active,
+#electionApp:has(> .election-reference-landing) {
+  padding:0 !important;
+  display:flex;
+  flex-direction:column;
+  overflow:hidden auto !important;
+  background:#122b40;
 }
-
-.election-page-ineligible{
-  padding:0 18px;
+#electionApp > .election-reference-landing { flex:1 0 auto; border-radius:0; }
+#electionApp.election-ineligible-active > .election-page-ineligible {
+  flex:1 0 auto;
+  display:flex;
+  min-height:100%;
+  padding:0;
 }
-
-.election-page-ineligible .election-ineligible-hero{
+.election-page-ineligible .election-ineligible-hero {
   position:relative;
   isolation:isolate;
-  min-height:clamp(500px,60vh,650px);
-  border:1px solid rgba(115,162,196,.28);
-  border-radius:26px;
-  padding:clamp(24px,4vw,52px);
-  overflow:hidden;
-  background-position:center 45%;
-  box-shadow:0 18px 45px rgba(26,68,101,.12);
+  flex:1;
+  min-width:0;
+  min-height:inherit;
+  display:flex;
+  border:0;
+  border-radius:0;
+  padding:clamp(16px,2vw,28px);
+  overflow:visible;
+  background-size:cover;
+  background-position:center;
 }
-
-.election-page-ineligible .election-ineligible-hero::before{
+.election-page-ineligible .election-ineligible-hero::before {
   z-index:0;
   background:linear-gradient(135deg,rgba(8,24,38,.60),rgba(10,31,47,.46));
   backdrop-filter:blur(5px);
   -webkit-backdrop-filter:blur(5px);
 }
-
-.election-page-ineligible .election-ineligible-hero::after{
-  content:"";
-  position:absolute;
-  inset:0;
-  z-index:0;
-  pointer-events:none;
-  background:
-    radial-gradient(circle at 50% 44%,rgba(102,204,238,.15),transparent 36%),
-    linear-gradient(to bottom,rgba(255,255,255,.03),rgba(2,15,27,.12));
-}
-
-.election-ineligible-overlay-message.election-ineligible-polish{
+.election-ineligible-stack {
   position:relative;
   z-index:2;
-  width:min(610px,calc(100% - 18px));
+  width:min(860px,100%);
+  max-width:860px;
+  min-width:0;
+  flex:0 1 860px;
+  align-self:stretch;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  gap:16px;
+  margin:0 auto;
+}
+
+.election-ineligible-overlay-message.election-ineligible-polish,
+.election-reference-landing-content {
+  position:relative;
+  z-index:2;
+  width:min(580px,100%);
   min-height:0;
-  padding:30px 38px 28px;
+  padding:18px 24px;
   display:flex;
   flex-direction:column;
   align-items:center;
   justify-content:center;
   gap:0;
-  overflow:hidden;
-  border:1px solid rgba(255,255,255,.68);
-  border-radius:28px;
-  background:linear-gradient(145deg,rgba(255,255,255,.97),rgba(242,248,253,.92));
-  color:#183f68;
-  box-shadow:0 24px 58px rgba(1,18,34,.28),inset 0 1px 0 rgba(255,255,255,.95);
-  backdrop-filter:blur(18px);
-  -webkit-backdrop-filter:blur(18px);
+  border:1px solid rgba(220,242,255,.30);
+  border-radius:22px;
+  background:rgba(8,29,48,.56);
+  color:#f4faff;
+  text-align:center;
+  box-shadow:0 16px 36px rgba(1,14,27,.20),inset 0 1px 0 rgba(255,255,255,.10);
+  backdrop-filter:blur(14px);
+  -webkit-backdrop-filter:blur(14px);
 }
-
-.election-ineligible-overlay-message.election-ineligible-polish::before{
-  content:"";
-  position:absolute;
-  top:0;
-  left:12%;
-  right:12%;
-  height:4px;
-  border-radius:0 0 999px 999px;
-  background:linear-gradient(90deg,#1d5aa5,#3cc6e8,#1d5aa5);
-  opacity:.9;
-}
-
-.election-ineligible-status{
+.election-ineligible-status {
   display:inline-flex;
   align-items:center;
-  gap:8px;
-  min-height:30px;
-  padding:6px 12px;
-  margin-bottom:17px;
-  border:1px solid #d8e6f1;
-  border-radius:999px;
-  background:#f7fbfe;
-  color:#58728a;
-  font-size: 14px;
-  line-height:1;
-  font-weight:800;
-  letter-spacing:.09em;
-  text-transform:uppercase;
-}
-
-.election-ineligible-status-dot{
-  width:7px;
-  height:7px;
-  flex:0 0 7px;
-  border-radius:50%;
-  background:#91a4b5;
-  box-shadow:0 0 0 4px rgba(145,164,181,.12);
-}
-
-.election-ineligible-icon{
-  width:64px;
-  height:64px;
-  display:grid;
-  place-items:center;
-  margin-bottom:14px;
-  border:1px solid #cfe4f2;
-  border-radius:20px;
-  background:linear-gradient(145deg,#eaf7ff,#f8fcff);
-  color:#1e75ae;
-  font-size:24px;
-  box-shadow:0 10px 24px rgba(38,112,158,.12);
-}
-
-.election-ineligible-kicker{
-  display:block;
-  margin-bottom:7px;
-  color:#688198;
-  font-size: 14px;
-  line-height:1.2;
-  font-weight:800;
-  letter-spacing:.12em;
-  text-transform:uppercase;
-}
-
-.election-ineligible-overlay-message.election-ineligible-polish h2{
-  margin:0;
-  color:#174f83;
-  font-family: "Roboto", Arial, sans-serif;
-  font-size:clamp(24px,2.25vw,32px);
-  line-height:1.15;
-  font-weight:900;
-  letter-spacing:-.025em;
-}
-
-.election-ineligible-overlay-message.election-ineligible-polish p{
-  max-width:475px;
-  margin:12px auto 0;
-  color:#60758a;
-  font-family: "Roboto", Arial, sans-serif;
-  font-size:14px;
-  line-height:1.55;
-  font-weight:500;
-}
-
-.election-ineligible-note{
-  width:100%;
-  margin-top:22px;
-  padding-top:17px;
-  display:flex;
-  align-items:center;
   justify-content:center;
-  gap:9px;
-  border-top:1px solid #dce7ef;
-  color:#526c83;
-  font-family: "Roboto", Arial, sans-serif;
-  font-size: 14px;
-  line-height:1.4;
+  gap:8px;
+  padding:5px 10px;
+  margin-bottom:8px;
+  border:1px solid rgba(166,219,250,.28);
+  border-radius:999px;
+  background:rgba(255,255,255,.08);
+  color:#d2ebfb;
+  font-size:12px;
+  line-height:1.2;
   font-weight:700;
+  letter-spacing:.08em;
+  text-transform:uppercase;
 }
-
-.election-ineligible-note i{
-  color:#2a8dc2;
-  font-size:14px;
-}
-
-@media(max-width:700px){
-  .election-page-ineligible{padding:0 10px;}
-  .election-page-ineligible .election-ineligible-hero{
-    min-height:470px;
-    padding:20px 14px;
-    border-radius:20px;
-  }
-  .election-ineligible-overlay-message.election-ineligible-polish{
-    width:100%;
-    padding:26px 20px 23px;
-    border-radius:22px;
-  }
-  .election-ineligible-icon{
-    width:58px;
-    height:58px;
-    border-radius:18px;
-    font-size:21px;
-  }
-  .election-ineligible-overlay-message.election-ineligible-polish h2{
-    font-size:24px;
-  }
-  .election-ineligible-overlay-message.election-ineligible-polish p{
-    font-size: 14px;
-  }
-  .election-ineligible-note{
-    align-items:flex-start;
-    font-size: 14px;
-  }
-}
-
-
-/* =========================================================
-   STUDENT ELECTION OFFICER-CONFIGURED SCHEDULE PANEL - 2026-09-09
-   The closed/inactive state now surfaces the live schedule saved by
-   Election Management directly below the status card.
-   ========================================================= */
-#electionApp.election-ineligible-active .election-ineligible-hero{
-  display:flex;
-  align-items:flex-start;
-  justify-content:center;
-  min-height:clamp(610px,72vh,790px);
-  padding:clamp(28px,4vw,52px);
-  overflow:auto;
-}
-
-.election-ineligible-stack{
-  position:relative;
-  z-index:2;
-  width:min(1080px,100%);
-  display:flex;
-  flex-direction:column;
-  align-items:center;
-  gap:20px;
-  margin:auto 0;
-}
-
-.election-ineligible-stack .election-ineligible-overlay-message.election-ineligible-polish{
-  width:min(650px,100%);
-  flex:0 0 auto;
-}
-
-.election-public-schedule{
-  width:100%;
-  padding:20px;
-  border:1px solid rgba(255,255,255,.55);
-  border-radius:24px;
-  background:linear-gradient(145deg,rgba(248,252,255,.95),rgba(233,244,252,.90));
-  color:#173f67;
-  box-shadow:0 20px 48px rgba(1,18,34,.22),inset 0 1px 0 rgba(255,255,255,.92);
-  backdrop-filter:blur(18px);
-  -webkit-backdrop-filter:blur(18px);
-}
-
-.election-public-schedule-head{
-  display:grid;
-  grid-template-columns:auto minmax(0,1fr) auto;
-  align-items:center;
-  gap:13px;
-  padding:0 2px 16px;
-  border-bottom:1px solid #d8e6ef;
-}
-
-.election-public-schedule-head-icon{
-  width:44px;
-  height:44px;
+.election-ineligible-status-dot { width:7px; height:7px; border-radius:50%; background:#8ad9fa; }
+.election-ineligible-icon {
+  width:40px;
+  height:40px;
   display:grid;
   place-items:center;
-  border:1px solid #c8e1f0;
+  margin-bottom:8px;
+  border:1px solid rgba(167,224,252,.25);
   border-radius:14px;
-  background:linear-gradient(145deg,#e7f7ff,#f7fcff);
-  color:#1977b2;
-  font-size:18px;
+  background:rgba(151,217,249,.10);
 }
-
-.election-public-schedule-head span:not(.election-public-schedule-live){
-  display:block;
-  color:#4780a8;
-  font-size: 14px;
-  line-height:1.2;
-  font-weight:900;
-  letter-spacing:.12em;
-  text-transform:uppercase;
-}
-
-.election-public-schedule-head h3{
-  margin:3px 0 2px;
-  color:#174f83;
-  font-family: "Roboto", Arial, sans-serif;
-  font-size:19px;
-  line-height:1.2;
-  font-weight:900;
-}
-
-.election-public-schedule-head p{
-  margin:0;
-  color:#6b7f91;
-  font-family: "Roboto", Arial, sans-serif;
-  font-size: 14px;
-  line-height:1.4;
-}
-
-.election-public-schedule-live{
-  display:inline-flex;
-  align-items:center;
-  gap:7px;
-  padding:7px 10px;
-  border:1px solid #cce8da;
-  border-radius:999px;
-  background:#f2fbf6;
-  color:#2d7750;
-  font-size: 14px;
-  font-weight:800;
-  white-space:nowrap;
-}
-
-.election-public-schedule-live>span{
-  width:7px;
-  height:7px;
-  border-radius:50%;
-  background:#35a76b;
-  box-shadow:0 0 0 4px rgba(53,167,107,.12);
-}
-
-.election-public-schedule-grid{
-  display:grid;
-  grid-template-columns:repeat(5,minmax(0,1fr));
-  gap:10px;
-  margin-top:16px;
-}
-
-.election-public-schedule-phase{
+.election-ineligible-overlay-message .election-ineligible-icon i { color:#a7e3ff; font-size:21px; }
+.election-ineligible-kicker { margin:6px 0; color:#c1d8ea; font-size:12px; font-weight:700; letter-spacing:.09em; text-transform:uppercase; }
+.election-ineligible-overlay-message.election-ineligible-polish h2,
+.election-reference-landing-content > h2 { margin:0; color:#f4faff; font-size:clamp(23px,2.1vw,30px); line-height:1.2; letter-spacing:-.02em; }
+.election-ineligible-overlay-message.election-ineligible-polish p,
+.election-reference-landing-content > p { max-width:460px; margin:8px 0 0; color:#d5e3ef; font-size:14px; line-height:1.5; font-weight:400; }
+.election-ineligible-note { width:100%; margin-top:12px; padding-top:10px; display:flex; justify-content:center; align-items:center; gap:8px; border-top:1px solid rgba(220,242,255,.18); color:#d5e3ef; font-size:13px; line-height:1.4; }
+.election-ineligible-note i { color:#a7e3ff; font-size:14px; }
+.election-public-schedule {
+  width:100%;
   min-width:0;
-  padding:13px 13px 12px;
-  border:1px solid #d8e5ee;
-  border-radius:16px;
-  background:rgba(255,255,255,.78);
-  box-shadow:0 7px 18px rgba(38,78,108,.05);
-  transition:border-color .2s ease,transform .2s ease,background .2s ease;
+  padding:10px;
+  border:1px solid rgba(220,242,255,.26);
+  border-radius:18px;
+  background:rgba(8,29,48,.46);
+  color:#eff8ff;
+  box-shadow:0 12px 28px rgba(1,14,27,.14);
+  backdrop-filter:blur(12px);
+  -webkit-backdrop-filter:blur(12px);
 }
-
-.election-public-schedule-phase-top{
-  display:flex;
-  align-items:center;
-  justify-content:space-between;
-  gap:8px;
-  margin-bottom:10px;
-}
-
-.election-public-schedule-number{
-  width:27px;
-  height:27px;
-  display:grid;
-  place-items:center;
-  flex:0 0 27px;
-  border-radius:9px;
-  background:#edf5fa;
-  color:#48708f;
-  font-size: 14px;
-  font-weight:900;
-}
-
-.election-public-schedule-state{
-  overflow:hidden;
-  text-overflow:ellipsis;
-  color:#7b8e9e;
-  font-size: 14px;
-  line-height:1;
-  font-weight:900;
-  letter-spacing:.06em;
-  text-transform:uppercase;
-  white-space:nowrap;
-}
-
-.election-public-schedule-phase>strong{
-  display:block;
-  margin-bottom:9px;
-  color:#214f76;
-  font-family: "Roboto", Arial, sans-serif;
-  font-size: 14px;
-  line-height:1.25;
-  font-weight:900;
-}
-
-.election-public-schedule-date{
-  display:flex;
-  align-items:flex-start;
-  gap:6px;
-  margin-top:5px;
-  color:#6f8292;
-  font-family: "Roboto", Arial, sans-serif;
-  font-size: 14px;
-  line-height:1.35;
-  font-weight:600;
-}
-
-.election-public-schedule-date i{
-  width:11px;
-  margin-top:1px;
-  flex:0 0 11px;
-  color:#4b94bd;
-  font-size:9px;
-}
-
-.election-public-schedule-phase.is-next{
-  border-color:#7cc5e7;
-  background:linear-gradient(145deg,#f8fdff,#eaf8ff);
-  box-shadow:0 8px 22px rgba(53,139,185,.10);
-}
-
-.election-public-schedule-phase.is-next .election-public-schedule-number{
-  background:#dff4ff;
-  color:#187ab1;
-}
-
-.election-public-schedule-phase.is-next .election-public-schedule-state{
-  color:#187ab1;
-}
-
-.election-public-schedule-phase.is-active{
-  border-color:#68c994;
-  background:linear-gradient(145deg,#f5fff9,#e8f9ef);
-  box-shadow:0 8px 22px rgba(54,152,99,.10);
-}
-
-.election-public-schedule-phase.is-active .election-public-schedule-number{
-  background:#dbf5e6;
-  color:#28784e;
-}
-
-.election-public-schedule-phase.is-active .election-public-schedule-state{
-  color:#28784e;
-}
-
-.election-public-schedule-phase.is-complete{
-  opacity:.72;
-}
-
-@media(max-width:980px){
-  .election-public-schedule-grid{
-    grid-template-columns:repeat(2,minmax(0,1fr));
+.election-public-schedule-head { display:grid; grid-template-columns:auto minmax(0,1fr) auto; align-items:center; gap:10px; padding-bottom:8px; border-bottom:1px solid rgba(220,242,255,.18); }
+.election-public-schedule-head-icon { width:26px; height:26px; display:grid; place-items:center; border-radius:10px; background:rgba(151,217,249,.12); color:#a7e3ff; }
+.election-public-schedule-head > div > span { display:block; color:#c1d8ea; font-size:11px; line-height:1.2; font-weight:700; letter-spacing:.08em; text-transform:uppercase; }
+.election-public-schedule-head h3 { margin:3px 0 0; color:#f4faff; font-size:15px; line-height:1.3; }
+.election-public-schedule-live { display:inline-flex; align-items:center; gap:7px; padding:5px 8px; border:1px solid rgba(153,237,194,.25); border-radius:999px; background:rgba(53,167,107,.12); color:#b6f2d1; font-size:12px; white-space:nowrap; }
+.election-public-schedule-live > span { width:6px; height:6px; border-radius:50%; background:#80dfad; }
+.election-public-schedule-grid { display:grid; grid-template-columns:repeat(5,minmax(0,1fr)); gap:8px; margin-top:8px; }
+.election-public-schedule-phase { min-width:0; padding:8px; border:1px solid rgba(220,242,255,.18); border-radius:12px; background:rgba(255,255,255,.06); transition:border-color .2s ease,background .2s ease; }
+.election-public-schedule-phase-top { display:flex; align-items:center; justify-content:space-between; gap:6px; margin-bottom:6px; }
+.election-public-schedule-number { width:20px; height:20px; flex:0 0 20px; display:grid; place-items:center; border-radius:8px; background:rgba(151,217,249,.12); color:#d6eeff; font-size:12px; font-weight:700; }
+.election-public-schedule-state { color:#c1d8ea; font-size:10px; line-height:1.3; font-weight:700; text-transform:uppercase; }
+.election-public-schedule-phase > strong { display:block; margin-bottom:4px; color:#f4faff; font-size:13px; line-height:1.3; }
+.election-public-schedule-date { display:flex; align-items:flex-start; gap:5px; margin-top:4px; color:#cbdde9; font-size:12px; line-height:1.35; }
+.election-public-schedule-date i { flex:0 0 10px; width:10px; margin-top:2px; color:#a7d9f3; font-size:10px; }
+.election-public-schedule-phase.is-next { border-color:rgba(120,212,250,.65); background:rgba(38,149,200,.14); }
+.election-public-schedule-phase.is-next .election-public-schedule-state { color:#a7e3ff; }
+.election-public-schedule-phase.is-active { border-color:rgba(128,223,173,.65); background:rgba(53,167,107,.14); }
+.election-public-schedule-phase.is-active .election-public-schedule-state { color:#b6f2d1; }
+@media (min-width:821px) and (min-height:800px) {
+  #electionApp.election-ineligible-active > .election-page-ineligible { height:100%; flex:0 0 auto; }
+  #electionApp > .election-reference-landing { height:100%; flex:0 0 auto; }
+  .election-ineligible-stack {
+    height:100%;
+    display:grid;
+    grid-template-columns:minmax(0,1fr);
+    grid-template-rows:minmax(0,1fr) auto minmax(0,1fr);
+    justify-items:center;
+    align-items:stretch;
   }
-  .election-public-schedule-phase:last-child{
-    grid-column:1/-1;
-  }
+  .election-ineligible-stack > :is(.election-ineligible-overlay-message,.election-reference-landing-content) { grid-row:2; }
+  .election-ineligible-stack > .election-public-schedule { grid-row:3; align-self:start; }
 }
-
-@media(max-width:700px){
-  #electionApp.election-ineligible-active .election-ineligible-hero{
-    min-height:0;
-    padding:18px 12px;
-    overflow:visible;
-  }
-  .election-ineligible-stack{
-    gap:14px;
-    margin:0;
-  }
-  .election-public-schedule{
-    padding:15px;
-    border-radius:20px;
-  }
-  .election-public-schedule-head{
-    grid-template-columns:auto minmax(0,1fr);
-  }
-  .election-public-schedule-live{
-    grid-column:1/-1;
-    justify-self:flex-start;
-  }
-  .election-public-schedule-grid{
-    grid-template-columns:1fr;
-    gap:8px;
-    margin-top:12px;
-  }
-  .election-public-schedule-phase:last-child{
-    grid-column:auto;
-  }
+@media (max-width:1120px) {
+  .election-public-schedule-grid { grid-template-columns:repeat(5,minmax(144px,1fr)); overflow-x:auto; padding-bottom:5px; overscroll-behavior-x:contain; }
 }
-
+@media (max-width:700px) {
+  .election-page-ineligible .election-ineligible-hero,
+  .election-reference-landing { padding:16px 12px; border-radius:0; }
+  .election-ineligible-stack { gap:14px; }
+  .election-ineligible-overlay-message.election-ineligible-polish,
+  .election-reference-landing-content { padding:20px 16px; }
+  .election-public-schedule-head { grid-template-columns:auto minmax(0,1fr); }
+  .election-public-schedule-live { grid-column:2; justify-self:start; }
+}
 
 /* =========================================================
    EVENTS / PROGRAMS MERGED FEED - 2026-09-09
