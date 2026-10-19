@@ -1,3 +1,4 @@
+import { mountElectionSummary } from "./election-summary.js?v=1";
 import { auth, db } from "../../../firebase/firebase-config.js";
 import { callSecure, openPrivateFile, resolveMediaUrl } from "../../../shared/security-client.js";
 import {
@@ -34,6 +35,8 @@ const scheduleInputs = {
   votingStart: els.votingStartInput, votingEnd: els.votingEndInput,
   resultPublicationStart: els.resultPublicationStartInput, resultPublicationEnd: els.resultPublicationEndInput
 };
+const electionSummary = mountElectionSummary(document.getElementById("electionSummary"), document.getElementById("electionParticipationDialog"));
+let turnoutAvailable = false;
 let context = null;
 let electionId = "";
 let applications = [];
@@ -98,6 +101,7 @@ async function loadContext() {
 }
 
 async function loadData() {
+  turnoutAvailable = false;
   applications = [];
   candidates = [];
   turnout = { ballotsCast: 0, eligibleVoters: context?.eligibleVoterCount || 0 };
@@ -114,7 +118,7 @@ async function loadData() {
   ]);
   if (appSnap) applications = appSnap.docs.map((d) => ({ id: d.id, ...d.data() }));
   if (candidateSnap) candidates = candidateSnap.docs.map((d) => ({ id: d.id, ...d.data() }));
-  if (turnoutSnap?.exists?.()) turnout = turnoutSnap.data();
+  if (turnoutSnap?.exists?.()) { turnout = turnoutSnap.data(); turnoutAvailable = true; }
   if (departmentResult) departmentTurnout = departmentResult;
 }
 
@@ -264,6 +268,7 @@ function renderStats() {
   if (els.turnoutBar) { els.turnoutBar.style.width = `${percent}%`; els.turnoutBar.textContent = `${percent.toFixed(1)}%`; }
   if (els.turnoutSnapshotText) els.turnoutSnapshotText.textContent = `${ballots} of ${eligible} ballots cast`;
   if (els.candidateSnapshotText) els.candidateSnapshotText.textContent = `${candidates.length} validated`;
+  electionSummary.update({ ballots, eligible, percent, available: turnoutAvailable, title: context?.title, lifecycle: context?.lifecycle, electionId });
   // Deliberately suppress live candidate totals for ordinary officers.
   if (els.presidentAnalytics) els.presidentAnalytics.innerHTML = `<div class="note-box"><strong>Candidate totals protected</strong><p>${context?.lifecycle === "Voting" ? "Voting is active. Only turnout and system health are shown." : "Candidate tallies are available only to an authorized canvasser after finalization."}</p></div>`;
   if (els.viceAnalytics) els.viceAnalytics.innerHTML = `<div class="note-box"><strong>Secret-ballot administration</strong><p>The officer dashboard never displays which student selected which candidate.</p></div>`;
