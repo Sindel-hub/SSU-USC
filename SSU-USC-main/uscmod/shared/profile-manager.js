@@ -977,7 +977,7 @@ function initialize() {
   if (!trigger) return;
   const { overlay, drawer } = createDrawer();
   bindDrawer(trigger, overlay, drawer);
-  import("./settings-manager.js")
+  import("./settings-manager.js?v=button-activation-1")
     .then(({ initializeSettingsManager }) => initializeSettingsManager({ role: currentProfile.role }))
     .catch((error) => console.warn("Settings manager load error:", error));
   refreshProfileFromFirestore();

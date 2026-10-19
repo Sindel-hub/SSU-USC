@@ -11,7 +11,6 @@ const DEFAULTS = Object.freeze({
 });
 
 let settings = { ...DEFAULTS };
-let settingsUserIntent = false;
 let currentRole = "student";
 let trigger = null;
 let overlay = null;
@@ -37,7 +36,7 @@ function normalizeSettings(value = {}) {
 }
 
 function saveSettings() {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(settings));
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(settings)); } catch { /* Keep preferences usable for this session when storage is blocked. */ }
 }
 
 function applySettings() {
@@ -90,6 +89,8 @@ function createDrawer() {
   panel.id = "uscSettingsDrawer";
   panel.className = "usc-settings-drawer usc-settings-loading";
   panel.setAttribute("aria-label", "Portal settings");
+  panel.setAttribute("role", "dialog");
+  panel.setAttribute("aria-modal", "true");
   panel.setAttribute("aria-hidden", "true");
   panel.innerHTML = `
     <header class="usc-settings-head">
@@ -211,20 +212,21 @@ function unlockScroll() {
 }
 
 function openSettings() {
-  if (!settingsUserIntent) return;
   if (!drawer || !overlay) return;
   updateControls();
-  mountFacebookSettings(drawer.querySelector("#facebookConnectionSettings"), currentRole);
+  document.dispatchEvent(new CustomEvent("usc:settings-open"));
+  open = true;
   overlay.hidden = false;
   requestAnimationFrame(() => {
+    if (!open) return;
     overlay.classList.add("is-open");
     drawer.classList.add("is-open");
   });
   drawer.setAttribute("aria-hidden", "false");
   trigger?.setAttribute("aria-expanded", "true");
   lockScroll();
-  open = true;
-  window.setTimeout(() => drawer.querySelector("#uscSettingsClose")?.focus(), 180);
+  window.setTimeout(() => { if (open) drawer.querySelector("#uscSettingsClose")?.focus(); }, 180);
+  Promise.resolve().then(() => mountFacebookSettings(drawer.querySelector("#facebookConnectionSettings"), currentRole)).catch(() => {});
 }
 
 function closeSettings({ restoreFocus = true } = {}) {
@@ -271,16 +273,10 @@ async function logout() {
 }
 
 function bindControls() {
-  trigger?.addEventListener("pointerdown", () => {
-    settingsUserIntent = true;
-    window.setTimeout(() => { settingsUserIntent = false; }, 800);
-  }, { capture: true });
   trigger?.addEventListener("click", (event) => {
     event.preventDefault();
     event.stopPropagation();
-    if (!settingsUserIntent) return;
     if (open) closeSettings(); else openSettings();
-    settingsUserIntent = false;
   }, { capture: true });
   overlay?.addEventListener("click", () => closeSettings());
   drawer?.querySelector("#uscSettingsClose")?.addEventListener("click", () => closeSettings());
