@@ -360,31 +360,14 @@ body.modal-open{overflow:hidden}
 
 
 /* ===== Events: one content scroller, two navigable sections ===== */
-body.student-app-shell.events-module-shell {
-  height:100dvh;
-  overflow:hidden;
-  display:flex;
-  flex-direction:column;
-}
-body.student-app-shell.events-module-shell .dashboard-header { position:relative; flex:0 0 auto; }
-body.student-app-shell.events-module-shell .dashboard-layout {
-  flex:1;
-  min-height:0;
-  height:auto;
-  margin:0 auto;
-}
-body.student-app-shell.events-module-shell > .shared-student-footer {
-  position:relative;
-  flex:0 0 auto;
-  margin:0;
-}
+/* Keep the full dashboard viewport separate from the page footer, like other modules. */
+.events-viewport-shell { height:100dvh; display:flow-root; }
 body.events-module-shell .events-page-main {
   --events-frame-height:100%;
   padding:0 !important;
   overflow:hidden auto !important;
   position:relative;
   background:#17283a !important;
-  overscroll-behavior-y:contain;
   scroll-behavior:smooth;
   touch-action:pan-y pinch-zoom;
 }
