@@ -14,6 +14,7 @@
 />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
 <link rel="stylesheet" href="../../shared/profile-manager.css" />
+<link rel="stylesheet" href="../../shared/engagement-analytics.css?v=2" />
 <link rel="stylesheet" href="css/events-modern.css?v=2" />
   <script src="../../shared/app-config.js"></script>
   <script type="module" src="../../shared/auth-guard.js?v=rbac7"></script>
@@ -146,40 +147,7 @@
                                 </div>
                             </div>
 
-                            <div class="stats module-summary-stats" aria-label="Event statistics">
-                                <article class="stat-card module-stat-card">
-                                    <div class="module-stat-icon" aria-hidden="true"><i class="fa-regular fa-calendar-plus"></i></div>
-                                    <div class="module-stat-copy">
-                                        <div class="stat-label">Upcoming</div>
-                                        <div class="stat-value" id="upcomingEventCount">0</div>
-                                    </div>
-                                </article>
-
-                                <article class="stat-card module-stat-card">
-                                    <div class="module-stat-icon" aria-hidden="true"><i class="fa-solid fa-bullhorn"></i></div>
-                                    <div class="module-stat-copy">
-                                        <div class="stat-label">Published events</div>
-                                        <div class="stat-value blue" id="publishedEventCount">0</div>
-                                    </div>
-                                </article>
-
-                                <article class="stat-card module-stat-card">
-                                    <div class="module-stat-icon" aria-hidden="true"><i class="fa-regular fa-bell"></i></div>
-                                    <div class="module-stat-copy">
-                                        <div class="stat-label">Reminders</div>
-                                        <div class="stat-value" id="reminderEnabledCount">0</div>
-                                    </div>
-                                </article>
-
-                                <article class="stat-card module-stat-card">
-                                    <div class="module-stat-icon" aria-hidden="true"><i class="fa-solid fa-user-check"></i></div>
-                                    <div class="module-stat-copy">
-                                        <div class="stat-label">Registrations</div>
-                                        <div class="stat-value green" id="confirmedAttendanceCount">0</div>
-                                    </div>
-                                </article>
-                            </div>
-
+                            <div id="engagementAnalytics"></div>
                         </div>
 
                     </section>
@@ -330,7 +298,7 @@
                             <div class="card-body">
                                 <div class="event-list-toolbar">
                                     <div class="field event-search-field"><label class="event-visually-hidden" for="eventSearch">Search events</label><span class="event-search-icon" aria-hidden="true"><i class="fa-solid fa-magnifying-glass"></i></span><input id="eventSearch" type="search" placeholder="Search events, venues or categories" /></div>
-                                    <div class="field"><label class="event-visually-hidden" for="eventStatusFilter">Event status</label><select id="eventStatusFilter"><option value="all">All events</option><option value="Upcoming">Upcoming</option><option value="Completed">Completed</option></select></div>
+                                    <div class="field"><label class="event-visually-hidden" for="eventStatusFilter">Event status</label><select id="eventStatusFilter"><option value="all">All events</option><option value="Active">Active</option><option value="Upcoming">Upcoming</option><option value="Completed">Completed</option><option value="Cancelled">Cancelled</option><option value="Unscheduled">Unscheduled</option></select></div>
                                 </div>
                                 <p class="event-results-count" id="eventResultsCount" role="status" aria-live="polite"></p>
                                 <div class="recent-list" id="recentEventsList"><div class="empty-state" role="status">Loading events…</div></div>
@@ -385,7 +353,7 @@
 </footer>
 
     <script src="../shared/js/nav-active.js?v=6"></script>
-    <script type="module" src="js/events.js?v=modern-2"></script>
+    <script type="module" src="js/events.js?v=reports-1"></script>
     <script type="module" src="../shared/js/admin-auth.js?v=rbac4"></script>
 <script type="module" src="../../shared/profile-manager.js?v=supabase-email-1"></script>
   <script type="module" src="../shared/js/officer-rbac.js?v=6"></script>
