@@ -33,7 +33,7 @@ test("removed filter controls default to all while search and sort remain live",
 });
 
 test("simple search receives dedicated responsive styling and cache version", () => {
-  assert.match(html, /users-modern\.css\?v=2/);
+  assert.match(html, /users-modern\.css\?v=3/);
   assert.match(html, /admin-users\.js\?v=directory-manual-password-2/);
   assert.match(css, /USER DIRECTORY SIMPLE NAME \/ STUDENT ID SEARCH - 2026-09-06/);
   assert.match(css, /\.directory-search-control #userSearchInput/);

@@ -113,7 +113,7 @@ body.officer-app-shell.admin-users-page .directory-search-actions { margin:0; pa
 body.officer-app-shell.admin-users-page .directory-search-control #userSearchInput { min-height:44px !important; height:44px; }
 body.officer-app-shell.admin-users-page .user-editor-modal-close:focus-visible { outline:3px solid #4285c5; outline-offset:3px; }
 /* Native top-layer dialog keeps a chosen password confined to its short-lived editor. */
-body.officer-app-shell.admin-users-page .admin-password-dialog { width:min(460px,calc(100% - 32px)); max-height:calc(100dvh - 32px); overflow:auto; box-sizing:border-box; padding:24px; border:1px solid #dce6f0; border-radius:16px; color:#23496d; background:#fff; box-shadow:0 20px 60px #163f6b33; }
+body.officer-app-shell.admin-users-page .admin-password-dialog { position:fixed; inset:0; margin:auto !important; width:min(460px,calc(100% - 32px)); max-height:calc(100dvh - 32px); overflow:auto; box-sizing:border-box; padding:24px; border:1px solid #dce6f0; border-radius:16px; color:#23496d; background:#fff; box-shadow:0 20px 60px #163f6b33; }
 body.officer-app-shell.admin-users-page .admin-password-dialog::backdrop { background:#102b4c99; }
 body.officer-app-shell.admin-users-page #adminPasswordForm { display:grid; gap:14px; }
 body.officer-app-shell.admin-users-page #adminPasswordForm h2 { margin:0; }
