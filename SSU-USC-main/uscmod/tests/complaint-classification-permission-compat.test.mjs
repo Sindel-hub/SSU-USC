@@ -59,6 +59,6 @@ test("classification audit entries are not misreported as USC feedback", () => {
 });
 
 test("USC complaint page cache-busts the corrected permission adapter", () => {
-  assert.match(officer, /security-client\.js\?v=classification-permission-2/);
-  assert.match(html, /js\/complaints\.js\?v=4/);
+  assert.match(officer, /security-client\.js\?v=complaint-review-compat-3/);
+  assert.match(html, /js\/complaints\.js\?v=complaint-review-compat-3/);
 });

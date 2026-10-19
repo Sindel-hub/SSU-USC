@@ -363,7 +363,10 @@ async function browserUpdateComplaintStatus(data = {}) {
   // can never roll back a valid USC review.
   const modernPatch = { updatedAt: serverTimestamp() };
   if (statusChanged) modernPatch.status = nextStatus;
-  if (classificationChanged) modernPatch.classification = requestedClassification;
+  // Older clients stored classification only in the thread. Include the known
+  // classification when saving status so current rules can validate the case.
+  // Firestore still checks complaints.classify if this adds/changes the field.
+  if (nextClassification) modernPatch.classification = nextClassification;
 
   try {
     await updateDoc(complaintRef, modernPatch);
@@ -804,7 +807,7 @@ async function browserComplaintReply(data = {}) {
   } catch (legacyError) {
     if (isFirestorePermissionDenied(legacyError)) {
       throw new Error(
-        "Firebase is blocking USC feedback updates for this account. Refresh and sign in again; if it persists, publish the included firestore.rules."
+        "Feedback was not saved because Firestore denied the update. Ask the system administrator to check this officer’s complaint permissions and the deployed complaint rules. Signing in again alone may not fix a rules or older-record compatibility issue."
       );
     }
     throw legacyError;
