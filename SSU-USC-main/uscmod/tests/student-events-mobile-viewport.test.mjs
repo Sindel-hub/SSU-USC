@@ -3,54 +3,67 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import vm from 'node:vm';
 
-const html = fs.readFileSync(new URL('../dashboard/events.html', import.meta.url), 'utf8');
-const code = html.match(/<script>\s*([\s\S]*?)<\/script>/)[1];
-function page({ width = 390, height = 844, sectionTop = 204, headerPosition = 'relative' } = {}) {
-  const state = { upcomingTop: height, headerBottom: 58, visible: false, properties: {}, listeners: {} };
-  const window = { innerWidth: width, innerHeight: height, scrollY: 0, addEventListener(name, fn) { state.listeners[name] = fn; } };
-  const header = { getBoundingClientRect: () => ({ bottom: state.headerBottom }) };
-  const highlight = { getBoundingClientRect: () => ({ top: sectionTop - window.scrollY }), style: { setProperty(name, value) { state.properties[name] = value; } } };
-  const upcoming = { getBoundingClientRect: () => ({ top: state.upcomingTop - window.scrollY, bottom: state.upcomingTop + 900 - window.scrollY }) };
-  const document = {
-    getElementById: id => id === 'eventsHighlightSection' ? highlight : id === 'eventsUpcomingSection' ? upcoming : {},
-    querySelector: () => header,
-    body: { classList: { toggle(name, value) { state.visible = value; } } }
+const code = fs.readFileSync(new URL('../dashboard/js/events-section-scroll.js', import.meta.url), 'utf8');
+function page({ height = 640, reducedMotion = false, missing = false } = {}) {
+  const listeners = {}, properties = {}, calls = [];
+  const frame = {
+    clientHeight: height, clientTop: 1, scrollTop: 0,
+    getBoundingClientRect: () => ({ top: 190 }),
+    style: { setProperty: (name, value) => { properties[name] = value; } },
+    scrollTo(options) { calls.push(options); this.scrollTop = options.top; }
   };
-  vm.runInNewContext(code, { window, document, requestAnimationFrame: callback => callback(), getComputedStyle: () => ({ position: headerPosition }) });
-  return { state, window };
+  const nodes = {
+    eventsPageMain: frame,
+    eventsHighlightSection: { getBoundingClientRect: () => ({ top: 191 - frame.scrollTop }) },
+    eventsUpcomingSection: { getBoundingClientRect: () => ({ top: 191 + parseInt(properties['--events-frame-height'] || height) - frame.scrollTop }) },
+    eventsScrollDown: { addEventListener: (_, handler) => { listeners.down = handler; } },
+    eventsScrollUp: { addEventListener: (_, handler) => { listeners.up = handler; } }
+  };
+  let onResize;
+  vm.runInNewContext(code, {
+    document: { getElementById: id => missing ? null : nodes[id] },
+    matchMedia: () => ({ matches: reducedMotion }),
+    ResizeObserver: class { constructor(handler) { onResize = handler; } observe() {} }
+  });
+  return { frame, properties, calls, listeners, resize: () => onResize?.() };
 }
 
-test('mobile highlight fills precisely the first visible screen below existing chrome', () => {
-  const { state } = page({ height: 568, sectionTop: 204 });
-  assert.equal(state.properties['--events-highlight-viewport-height'], '364px');
-  assert.equal(state.visible, false, 'up must not peek into the first frame');
+test('highlight sizing follows the actual content frame on phones and desktops', () => {
+  for (const height of [366, 642, 742]) {
+    const { properties } = page({ height });
+    assert.equal(properties['--events-frame-height'], `${height}px`);
+  }
 });
 
-test('mobile up shortcut waits until Upcoming reaches the visible top', () => {
-  const { state, window } = page();
-  window.scrollY = 400;
-  state.listeners.scroll();
-  assert.equal(state.visible, false, 'a partly visible next section must not reveal up beside down');
-  window.scrollY = 844;
-  state.listeners.scroll();
-  assert.equal(state.visible, true);
-  window.scrollY = 0;
-  state.listeners.scroll();
-  assert.equal(state.visible, false);
+test('jump controls scroll the module to exact section boundaries without moving the document', () => {
+  const { frame, calls, listeners } = page();
+  listeners.down();
+  assert.equal(frame.scrollTop, 640);
+  assert.equal(calls[0].behavior, 'smooth');
+  frame.scrollTop = 900; // after reading a long list
+  listeners.up();
+  assert.equal(frame.scrollTop, 0);
 });
 
-test('resize uses document position even when already scrolled', () => {
-  const { state, window } = page();
-  window.scrollY = 600;
-  window.innerHeight = 740;
-  state.listeners.resize();
-  assert.equal(state.properties['--events-highlight-viewport-height'], '536px');
+test('resizing at Upcoming preserves the chapter, while an arbitrary reading position stays put', () => {
+  const { frame, properties, resize } = page();
+  frame.scrollTop = 640;
+  frame.clientHeight = 400;
+  resize();
+  assert.equal(properties['--events-frame-height'], '400px');
+  assert.equal(frame.scrollTop, 400);
+  frame.scrollTop = 920;
+  frame.clientHeight = 600;
+  resize();
+  assert.equal(frame.scrollTop, 920);
 });
 
-test('desktop height and reveal behavior remain unchanged', () => {
-  const { state, window } = page({ width: 1024, height: 844, sectionTop: 142 });
-  assert.equal(state.properties['--events-highlight-viewport-height'], '694px');
-  window.scrollY = 300;
-  state.listeners.scroll();
-  assert.equal(state.visible, true);
+test('reduced motion disables animated shortcut scrolling', () => {
+  const { calls, listeners } = page({ reducedMotion: true });
+  listeners.down();
+  assert.equal(calls[0].behavior, 'instant');
+});
+
+test('missing Events markup does not install navigation or throw', () => {
+  assert.deepEqual(page({ missing: true }).calls, []);
 });

@@ -244,7 +244,6 @@ function electionSchedulePreview() {
       <div>
         <span>Official Election Schedule</span>
         <h3>${esc(context?.title || "USC Election")}</h3>
-        <p>Dates configured by Election Management are shown here automatically.</p>
       </div>
       <span class="election-public-schedule-live"><span></span> Live schedule</span>
     </div>
