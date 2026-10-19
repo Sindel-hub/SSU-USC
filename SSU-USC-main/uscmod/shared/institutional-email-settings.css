@@ -1,0 +1,7 @@
+#institutionalEmailSettings .usc-profile-password-head { flex-wrap:wrap; }
+#institutionalEmailSettings input { box-sizing:border-box; min-height:44px; font:inherit; }
+#institutionalEmailSettings #institutionalEmailHint { margin:10px 0 14px; color:#607087; font-size:12px; line-height:1.6; }
+#institutionalEmailSettings .usc-profile-save { min-height:44px; }
+#institutionalEmailSettings .usc-profile-save:disabled { opacity:.6; cursor:wait; }
+#institutionalEmailSettings input:focus-visible,
+#institutionalEmailSettings button:focus-visible { outline:2px solid #2d64bd; outline-offset:2px; }

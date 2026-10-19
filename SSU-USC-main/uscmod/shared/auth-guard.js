@@ -1,3 +1,4 @@
+import { institutionalEmailForDisplay } from "./account-email.js";
 import { auth, db } from "../firebase/firebase-config.js";
 import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.12.0/firebase-auth.js";
 import { doc, getDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/12.12.0/firebase-firestore.js";
@@ -82,7 +83,7 @@ function refreshSession(profile, claims = {}, electionEligibility = null, resolv
   const session = {
     uid: auth.currentUser?.uid || profile.uid || "",
     fullName: profile.fullName || "",
-    email: profile.institutionalEmail || profile.email || auth.currentUser?.email || "",
+    email: institutionalEmailForDisplay(profile),
     studentId: profile.studentId || "",
     profilePhoto: profile.profilePhoto || "",
     role,

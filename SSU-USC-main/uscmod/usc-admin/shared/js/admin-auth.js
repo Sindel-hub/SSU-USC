@@ -1,3 +1,4 @@
+import { institutionalEmailForDisplay } from "../../../shared/account-email.js";
 import { auth, db } from "../../../firebase/firebase-config.js";
 import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.12.0/firebase-auth.js";
 import { doc, getDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/12.12.0/firebase-firestore.js";
@@ -18,7 +19,7 @@ function normalizeProfile(raw = {}, user = null, claims = {}) {
   return {
     uid: user?.uid || raw.uid || "",
     fullName: String(raw.fullName || "").trim(),
-    email: user?.email || raw.email || "",
+    email: institutionalEmailForDisplay(raw),
     studentId: String(raw.studentId || "").trim(),
     profilePhoto: String(raw.profilePhoto || "").trim(),
     role,

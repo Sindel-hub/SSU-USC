@@ -22,7 +22,7 @@
     <section class="panel registration-panel no-print" aria-label="Student registration">
       <div class="registration-panel-head">
         <h2>New student</h2>
-        <span class="required-note">All fields are required</span>
+        <span class="required-note">Institutional email is optional</span>
       </div>
       <div id="bridgeStatus" class="status-box" role="status">Preparing account provisioning...</div>
       <form id="studentForm" class="form-grid">
@@ -38,8 +38,8 @@
               <input id="name" placeholder="Juan Dela Cruz" required autocomplete="name" aria-describedby="nameError" />
               <small id="nameError" class="field-error" hidden></small>
             </label>
-            <label for="email" class="registration-wide">Institutional email
-              <input id="email" type="email" placeholder="Student’s institutional email" required autocomplete="email" aria-describedby="emailError" />
+            <label for="email" class="registration-wide">Institutional email <small>(optional)</small>
+              <input id="email" type="email" placeholder="Student’s institutional email" autocomplete="email" aria-describedby="emailError" />
               <small id="emailError" class="field-error" hidden></small>
             </label>
           </div>
@@ -124,6 +124,6 @@
     </section>
   </main>
   <script type="module" src="../../shared/auth-guard.js?v=rbac7"></script>
-  <script type="module" src="js/student-registration.js?v=5"></script>
+  <script type="module" src="js/student-registration.js?v=6-optional-email-1"></script>
 </body>
 </html>

@@ -106,7 +106,8 @@ async function requireAdmin() {
 export async function provisionStudentAccount(input = {}) {
   const { user: adminUser } = await requireAdmin();
   const studentId = normalizeStudentId(input.studentId);
-  const institutionalEmail = normalizeEmail(input.institutionalEmail || input.email);
+  const institutionalEmail = normalizeEmail(input.institutionalEmail || input.email) || null;
+  const authEmail = institutionalEmail || `${studentId}@student.ssu-usc.local`;
   const fullName = clean(input.fullName || input.name, 120);
   const program = clean(input.program, 160);
   const college = clean(input.college, 160);
@@ -117,7 +118,7 @@ export async function provisionStudentAccount(input = {}) {
   const eligible = input.eligible === true && standingActive;
 
   if (!STUDENT_ID_REGEX.test(studentId)) throw new Error("Student ID must contain exactly 6 digits.");
-  if (!EMAIL_REGEX.test(institutionalEmail)) throw new Error("Enter a valid institutional email address.");
+  if (institutionalEmail && (!EMAIL_REGEX.test(institutionalEmail) || /@(?:student\.)?ssu-usc\.local$/.test(institutionalEmail))) throw new Error("Enter a valid institutional email address.");
   if (fullName.length < 2) throw new Error("Enter the student's full name.");
   if (!college || !program) throw new Error("Select the student's college/campus and program.");
   if (!yearLevel) throw new Error("Select the student's year level.");
@@ -137,6 +138,13 @@ export async function provisionStudentAccount(input = {}) {
   }
   if (existingClaim.exists()) throw new Error("This Student ID is already assigned to a school account. Duplicate Student IDs are not allowed.");
   if (existingNameClaim.exists()) throw new Error("This full name is already assigned to a school account. Duplicate account names are not allowed.");
+  if (institutionalEmail) {
+    const emailAlias = await getDoc(doc(db, "login_aliases", `email_${await sha256Hex(institutionalEmail)}`));
+    if (emailAlias.exists()) throw new Error("That institutional email already has an account. Use the existing account instead of creating a duplicate.");
+  }
+  const existingAccount = await getDoc(doc(db, "school_accounts", studentId));
+  const existingStudent = await getDoc(doc(db, "student_masterlist", studentId));
+  if (existingAccount.exists() || existingStudent.exists()) throw new Error("This Student ID already has an account record. Duplicate Student IDs are not allowed.");
   const existingNameRecord = await existingMasterlistNameMatch(fullName);
   if (existingNameRecord) {
     throw new Error(`This full name is already used by Student ID ${existingNameRecord.studentId || "an existing account"}. Duplicate account names are not allowed.`);
@@ -152,7 +160,7 @@ export async function provisionStudentAccount(input = {}) {
   let committed = false;
 
   try {
-    credential = await createUserWithEmailAndPassword(provisioningAuth, institutionalEmail, temporaryPassword);
+    credential = await createUserWithEmailAndPassword(provisioningAuth, authEmail, temporaryPassword);
     await updateProfile(credential.user, { displayName: fullName });
     const uid = credential.user.uid;
     const now = serverTimestamp();
@@ -163,8 +171,9 @@ export async function provisionStudentAccount(input = {}) {
       studentId,
       fullName,
       institutionalEmail,
-      email: institutionalEmail,
-      authEmail: institutionalEmail,
+      email: institutionalEmail || "",
+      institutionalEmailVerified: false,
+      authEmail,
       program,
       college,
       yearLevel,
@@ -186,7 +195,7 @@ export async function provisionStudentAccount(input = {}) {
       studentId,
       uid,
       institutionalEmail,
-      authEmail: institutionalEmail,
+      authEmail,
       createdBy: adminUser.uid,
       updatedAt: now
     });
@@ -206,7 +215,7 @@ export async function provisionStudentAccount(input = {}) {
       studentId,
       uid,
       institutionalEmail,
-      authEmail: institutionalEmail,
+      authEmail,
       active: standingActive,
       studentStanding,
       updatedAt: now
@@ -229,14 +238,13 @@ export async function provisionStudentAccount(input = {}) {
     });
 
     batch.set(doc(db, "login_aliases", `id_${studentId}`), {
-      authEmail: institutionalEmail,
+      authEmail,
       kind: "studentId",
+      uid,
       updatedAt: now
     });
-    batch.set(doc(db, "login_aliases", `email_${await sha256Hex(institutionalEmail)}`), {
-      authEmail: institutionalEmail,
-      kind: "institutionalEmail",
-      updatedAt: now
+    if (institutionalEmail) batch.set(doc(db, "login_aliases", `email_${await sha256Hex(institutionalEmail)}`), {
+      authEmail, uid, verified: false, kind: "institutionalEmail", updatedAt: now
     });
 
     batch.set(doc(collection(db, "audit_logs")), {
@@ -297,6 +305,7 @@ export async function provisionStudentAccount(input = {}) {
       try { await deleteUser(credential.user); } catch (rollbackError) { console.warn("Auth rollback failed:", rollbackError); }
     }
     if (error?.code === "auth/email-already-in-use") {
+      if (!institutionalEmail) throw new Error("This Student ID already has a Firebase account. Use the existing account instead of creating a duplicate.");
       throw new Error("That institutional email already has an account. Use Password Reset instead of creating a duplicate account.");
     }
     if (error?.code === "auth/weak-password") throw new Error("The temporary password generator produced an invalid password. Please retry.");
@@ -325,7 +334,8 @@ const USC_OFFICER_POSITIONS = Object.freeze([
 export async function provisionOfficerAccount(input = {}) {
   const { user: adminUser } = await requireAdmin();
   const studentId = normalizeStudentId(input.studentId);
-  const institutionalEmail = normalizeEmail(input.institutionalEmail || input.email);
+  const institutionalEmail = normalizeEmail(input.institutionalEmail || input.email) || null;
+  const authEmail = institutionalEmail || `${studentId}@student.ssu-usc.local`;
   const fullName = clean(input.fullName || input.name, 120);
   const program = clean(input.program, 160);
   const college = clean(input.college, 160);
@@ -339,7 +349,7 @@ export async function provisionOfficerAccount(input = {}) {
   const positionPermissions = permissionsForOfficerPosition(officePosition);
 
   if (!STUDENT_ID_REGEX.test(studentId)) throw new Error("Student ID must contain exactly 6 digits.");
-  if (!EMAIL_REGEX.test(institutionalEmail)) throw new Error("Enter a valid institutional email address.");
+  if (institutionalEmail && (!EMAIL_REGEX.test(institutionalEmail) || /@(?:student\.)?ssu-usc\.local$/.test(institutionalEmail))) throw new Error("Enter a valid institutional email address.");
   if (fullName.length < 2) throw new Error("Enter the officer's full name.");
   if (!college || !program) throw new Error("Select the officer's college/campus and program.");
   if (!yearLevel) throw new Error("Select the officer's year level.");
@@ -360,6 +370,13 @@ export async function provisionOfficerAccount(input = {}) {
   }
   if (existingClaim.exists()) throw new Error("This Student ID is already assigned to a school account. Duplicate Student IDs are not allowed.");
   if (existingNameClaim.exists()) throw new Error("This full name is already assigned to a school account. Duplicate account names are not allowed.");
+  if (institutionalEmail) {
+    const emailAlias = await getDoc(doc(db, "login_aliases", `email_${await sha256Hex(institutionalEmail)}`));
+    if (emailAlias.exists()) throw new Error("That institutional email already has an account. Use the existing account instead of creating a duplicate.");
+  }
+  const existingAccount = await getDoc(doc(db, "school_accounts", studentId));
+  const existingStudent = await getDoc(doc(db, "student_masterlist", studentId));
+  if (existingAccount.exists() || existingStudent.exists()) throw new Error("This Student ID already has an account record. Duplicate Student IDs are not allowed.");
   const existingNameRecord = await existingMasterlistNameMatch(fullName);
   if (existingNameRecord) {
     throw new Error(`This full name is already used by Student ID ${existingNameRecord.studentId || "an existing account"}. Duplicate account names are not allowed.`);
@@ -374,19 +391,15 @@ export async function provisionOfficerAccount(input = {}) {
   let verificationEmailSent = false;
 
   try {
-    credential = await createUserWithEmailAndPassword(provisioningAuth, institutionalEmail, temporaryPassword);
+    credential = await createUserWithEmailAndPassword(provisioningAuth, authEmail, temporaryPassword);
     await updateProfile(credential.user, { displayName: fullName });
-    try {
-      // Use Firebase Authentication's standard email verification flow.
+    if (institutionalEmail) {
       try {
         await sendEmailVerification(credential.user);
         verificationEmailSent = true;
       } catch (emailError) {
         console.warn("Firebase verification email was not sent:", emailError?.code || emailError);
-        verificationEmailSent = false;
       }
-    } catch (verificationError) {
-      console.warn("Officer verification email could not be sent:", verificationError);
     }
 
     const uid = credential.user.uid;
@@ -398,8 +411,9 @@ export async function provisionOfficerAccount(input = {}) {
       studentId,
       fullName,
       institutionalEmail,
-      email: institutionalEmail,
-      authEmail: institutionalEmail,
+      email: institutionalEmail || "",
+      institutionalEmailVerified: false,
+      authEmail,
       program,
       college,
       yearLevel,
@@ -425,7 +439,7 @@ export async function provisionOfficerAccount(input = {}) {
       studentId,
       uid,
       institutionalEmail,
-      authEmail: institutionalEmail,
+      authEmail,
       createdBy: adminUser.uid,
       accountRole: "officer",
       updatedAt: now
@@ -446,7 +460,7 @@ export async function provisionOfficerAccount(input = {}) {
       studentId,
       uid,
       institutionalEmail,
-      authEmail: institutionalEmail,
+      authEmail,
       role: "officer",
       active: standingActive,
       studentStanding,
@@ -472,14 +486,13 @@ export async function provisionOfficerAccount(input = {}) {
     });
 
     batch.set(doc(db, "login_aliases", `id_${studentId}`), {
-      authEmail: institutionalEmail,
+      authEmail,
       kind: "studentId",
+      uid,
       updatedAt: now
     });
-    batch.set(doc(db, "login_aliases", `email_${await sha256Hex(institutionalEmail)}`), {
-      authEmail: institutionalEmail,
-      kind: "institutionalEmail",
-      updatedAt: now
+    if (institutionalEmail) batch.set(doc(db, "login_aliases", `email_${await sha256Hex(institutionalEmail)}`), {
+      authEmail, uid, verified: false, kind: "institutionalEmail", updatedAt: now
     });
 
     batch.set(doc(collection(db, "audit_logs")), {
@@ -545,6 +558,7 @@ export async function provisionOfficerAccount(input = {}) {
       try { await deleteUser(credential.user); } catch (rollbackError) { console.warn("Officer Auth rollback failed:", rollbackError); }
     }
     if (error?.code === "auth/email-already-in-use") {
+      if (!institutionalEmail) throw new Error("This Student ID already has a Firebase account. Use the existing account instead of creating a duplicate.");
       throw new Error("That institutional email already has an account. Use the User Directory to promote the existing account instead of creating a duplicate.");
     }
     if (error?.code === "auth/weak-password") throw new Error("The temporary password generator produced an invalid password. Please retry.");
@@ -565,11 +579,13 @@ export async function sendStudentPasswordReset(identifier) {
     const alias = await getDoc(doc(db, "login_aliases", `id_${raw}`));
     email = alias.exists() ? normalizeEmail(alias.data()?.authEmail) : "";
   } else if (EMAIL_REGEX.test(raw)) {
-    email = normalizeEmail(raw);
+    const normalized = normalizeEmail(raw);
+    const alias = await getDoc(doc(db, "login_aliases", `email_${await sha256Hex(normalized)}`));
+    email = alias.exists() ? normalizeEmail(alias.data()?.authEmail) : normalized;
   }
   if (!email) throw new Error("Student account not found. Check the Student ID or institutional email.");
   if (email.endsWith("@student.ssu-usc.local")) {
-    throw new Error("This is a legacy synthetic-email account. Create a new institutional-email account for this student before using email password recovery.");
+    throw new Error("This account has no email inbox. Open User Directory and choose Reset password to issue a temporary password securely. Do not create another account.");
   }
   await sendPasswordResetEmail(auth, email);
   return { ok: true, email };

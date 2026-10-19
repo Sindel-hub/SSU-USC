@@ -17,13 +17,13 @@
 
     <section class="panel no-print">
       <h1>Create USC Officer Account</h1>
-      <p>Create a school-issued officer login directly from the Admin Dashboard. The officer receives a temporary password and an institutional-email verification link.</p>
+      <p>Create an officer login with a Student ID and temporary password. Institutional email is optional.</p>
       <div id="officerStatus" class="status-box ok">Officer account provisioning is ready.</div>
 
       <form id="officerForm" class="form-grid">
         <label>Student ID<input id="officerStudentId" inputmode="numeric" maxlength="6" placeholder="260001" required /></label>
         <label>Full Name<input id="officerName" placeholder="Juan Dela Cruz" required /></label>
-        <label>Institutional Email<input id="officerEmail" type="email" placeholder="ssuuniversitystudentcouncil@gmail.com" required /></label>
+        <label>Institutional Email (optional)<input id="officerEmail" type="email" placeholder="Officer’s institutional email" /></label>
         <label>USC Position
           <select id="officerPosition" required>
             <option value="">Select officer position</option>
@@ -94,6 +94,6 @@
     </section>
   </main>
   <script type="module" src="../../shared/auth-guard.js?v=rbac7"></script>
-  <script type="module" src="js/officer-registration.js?v=4"></script>
+  <script type="module" src="js/officer-registration.js?v=6-optional-email-1"></script>
 </body>
 </html>

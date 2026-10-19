@@ -1,3 +1,4 @@
+import { institutionalEmailForDisplay } from "./account-email.js";
 import { auth, db } from "../firebase/firebase-config.js";
 import { signOut, updatePassword } from "https://www.gstatic.com/firebasejs/12.12.0/firebase-auth.js";
 import { callStudentEmailService } from "./supabase-email-service.js";
@@ -85,7 +86,7 @@ function readStoredProfile() {
 }
 
 function normalizeProfile(raw = {}) {
-  const email = String(raw?.email || "").trim();
+  const email = institutionalEmailForDisplay(raw);
   const role = String(raw?.role || "student").trim().toLowerCase() || "student";
   const profilePhoto = String(
     raw?.profilePhoto || raw?.profilePhotoUrl || raw?.photoURL || raw?.avatarUrl || ""
@@ -607,6 +608,7 @@ function createDrawer() {
       </div>
       <div class="gmail-status-card" data-state="loading"><span class="gmail-status-icon"><i class="fa-solid fa-circle-notch fa-spin"></i></span><span class="gmail-status-copy"><strong>Loading Gmail settings</strong><small>Please wait while your saved recovery email is checked.</small></span></div>
     </section>
+    <section id="institutionalEmailSettings" class="usc-profile-password-card" aria-label="Account Settings: institutional email"></section>
     <div class="usc-profile-password-card">
       <div class="usc-profile-password-head"><strong>Change Password</strong><small>Optional</small></div>
       <p>Replace the school-issued password whenever you want. Use at least 10 characters with uppercase, lowercase, a number and a special character.</p>
@@ -655,12 +657,14 @@ function fillDrawer(profile) {
   document.getElementById("uscProfileDisplayName").textContent = name;
   document.getElementById("uscProfileDisplayRole").textContent = roleLabel(profile);
   document.getElementById("uscProfileFullName").value = profile.fullName || "";
-  document.getElementById("uscProfileEmail").value = profile.email || "Not available";
+  document.getElementById("uscProfileEmail").value = profile.email || "Not Linked";
   document.getElementById("uscProfileStudentId").value = profile.studentId || "Not available";
   document.getElementById("uscProfileRole").value = role;
   document.getElementById("uscProfilePosition").value = profile.officePosition || (profile.role === "admin" ? "System Administrator" : "Not applicable");
   document.getElementById("uscProfileStudentIdRow").hidden = !profile.studentId;
   document.getElementById("uscProfilePositionRow").hidden = profile.role === "student";
+  const institutionalSettings = document.getElementById("institutionalEmailSettings");
+  if (institutionalSettings) institutionalSettings.hidden = !["student", "officer"].includes(profile.role);
   const gmailSettings = document.getElementById("gmailSettings");
   if (gmailSettings) gmailSettings.hidden = !["student", "officer"].includes(profile.role);
 
@@ -688,6 +692,7 @@ function openDrawer(trigger) {
   fillDrawer(currentProfile);
   const gmailSettings = drawer.querySelector("#gmailSettings");
   if (["student", "officer"].includes(currentProfile.role) && gmailSettings) {
+    import("./institutional-email-settings.js?v=1").then(module => module.initializeInstitutionalEmailSettings(document.getElementById("institutionalEmailSettings"))).catch(() => { document.getElementById("institutionalEmailSettings").textContent = "Institutional email settings could not load. Refresh and try again."; });
     import("./email-settings.js")
       .then(({ initializeEmailSettings }) => initializeEmailSettings(gmailSettings))
       .catch((error) => {

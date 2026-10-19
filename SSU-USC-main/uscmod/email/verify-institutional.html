@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="referrer" content="no-referrer">
+  <title>Verify institutional email | SSU USC</title>
+  <link rel="stylesheet" href="css/email-action.css?v=verify-page-1">
+</head>
+<body>
+  <main class="email-action-shell">
+    <div class="email-action-brand"><img src="../index/assets/USClogo.webp" alt="USC logo"><span>SSU University Student Council</span></div>
+    <section class="email-action-card" aria-labelledby="verifyTitle">
+      <header class="email-action-head"><div class="email-action-icon" aria-hidden="true">✓</div><h1 id="verifyTitle">Verify institutional email</h1><p>Confirm the university email you requested in your profile.</p></header>
+      <div class="email-action-body">
+        <p id="verifyStatusText" class="email-action-status" role="status" aria-live="polite">Checking your session…</p>
+        <p class="email-action-note">Sign in to the same account that requested this link. Your Student ID, password, and account records stay unchanged. Links expire after 24 hours.</p>
+        <div class="email-action-actions">
+          <button id="verifyButton" class="email-action-btn primary" type="button" disabled>Confirm institutional email</button>
+          <a id="signinButton" class="email-action-btn secondary" href="../index/index.html" target="_blank" rel="noopener">Sign in to portal</a>
+          <a id="returnButton" class="email-action-btn secondary" href="../index/index.html">Return to portal</a>
+        </div>
+        <p class="email-action-foot">Only confirm if you personally requested this link. Never forward it.</p>
+      </div>
+    </section>
+  </main>
+  <script src="../shared/app-config.js"></script>
+  <script type="module" src="js/verify-institutional.js"></script>
+</body>
+</html>

@@ -1,3 +1,4 @@
+import { institutionalEmailForDisplay } from "../../shared/account-email.js";
 import { auth, db } from "../../firebase/firebase-config.js";
 import {
   signInWithEmailAndPassword,
@@ -34,7 +35,7 @@ function buildSession(profile, claims) {
   const sessionProfile = {
     uid: auth.currentUser?.uid || profile?.uid || "",
     fullName: profile?.fullName || "",
-    email: profile?.institutionalEmail || profile?.email || auth.currentUser?.email || "",
+    email: institutionalEmailForDisplay(profile),
     authEmail: auth.currentUser?.email || "",
     studentId: profile?.studentId || "",
     profilePhoto: profile?.profilePhoto || "",
@@ -152,8 +153,7 @@ async function resolveLoginCandidates(identifier) {
   if (isStudentId(value)) {
     const id = normalizeStudentId(value);
     const alias = await schoolAuthAliasForStudentId(id);
-    // The synthetic address is retained only as a compatibility fallback for
-    // accounts created by an older project revision.
+    // Manual accounts without institutional email use an internal Firebase alias.
     return [...new Set([alias, `${id}@student.ssu-usc.local`].filter(Boolean))];
   }
   if (!isEmail(value)) throw new Error("Enter your institutional email address or your 6-digit Student ID.");
@@ -210,6 +210,11 @@ function bindSignin() {
         return;
       }
       const profile = profileSnap.data();
+      if (isEmail(identifier) && profile.institutionalEmailVerified === false
+          && !(user.emailVerified === true && normalizeEmail(user.email) === normalizeEmail(profile.institutionalEmail))) {
+        await cleanupAndAlert("Sign in with your Student ID, then verify your institutional email in Profile → Account Settings before using email login.");
+        return;
+      }
       const profileRole = String(profile.role || "student").toLowerCase();
       const role = tokenRole === "admin" ? "admin" : profileRole;
 
