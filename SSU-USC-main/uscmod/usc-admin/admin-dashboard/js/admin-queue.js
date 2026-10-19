@@ -109,15 +109,15 @@ function renderList() {
     const protectedBadge = isProtectedAdmin(user) ? '<span class="quick-badge role-admin">Protected admin</span>' : '';
     const selected = selectedUserId === user.uid ? ' selected' : '';
     return `
-      <div class="queue-item${selected}" data-queue-user-card="${escapeHtml(user.uid)}">
+      <article class="queue-item${selected}" data-queue-user-card="${escapeHtml(user.uid)}">
         <div class="queue-copy">
           <div class="queue-title-row">
             <span class="queue-title">${escapeHtml(user.fullName || user.email || 'Unnamed user')}</span>
             <span class="role-badge ${roleClass(user.role)}">${escapeHtml(user.role)}</span>
             <span class="status-badge ${statusClass(user.accountStatus)}">${escapeHtml(user.accountStatus)}</span>
             ${protectedBadge}
-            <span class="quick-badge">${escapeHtml(getQueueTag(user))}</span>
           </div>
+          <span class="queue-record-context">${escapeHtml(getQueueTag(user))}</span>
           <div class="queue-meta-grid">
             <span><strong>Email</strong>${escapeHtml(user.email || 'No email')}</span>
             <span><strong>Student ID</strong>${escapeHtml(user.studentId || 'N/A')}</span>
@@ -126,9 +126,9 @@ function renderList() {
           </div>
         </div>
         <div class="stack-actions queue-open-action">
-          <button type="button" class="open-btn${selected}" data-open-queue-user="${escapeHtml(user.uid)}">${selected ? 'Selected' : 'Review'}</button>
+          <button type="button" class="open-btn${selected}" data-open-queue-user="${escapeHtml(user.uid)}" aria-controls="queueDetailPanel" aria-pressed="${selectedUserId === user.uid}" aria-label="Review account for ${escapeHtml(user.fullName || user.email || 'Unnamed user')}">${selected ? 'Selected' : 'Review'}</button>
         </div>
-      </div>
+      </article>
     `;
   }).join('');
 
@@ -170,6 +170,7 @@ function fillPanel(user) {
   dom.queuePromoteButton.disabled = protectedAdmin;
   dom.queueSuspendButton.disabled = protectedAdmin;
   dom.queueVerifyButton.disabled = protectedAdmin;
+  dom.queueVerifyButton.textContent = user.isVerifiedStudent ? 'Remove verification' : 'Mark as verified';
 }
 
 function openUser(userId) {
