@@ -58,6 +58,10 @@ const participantsBody = document.getElementById("eventParticipantsBody");
 let selectedEventImageFile = null;
 let selectedEventImageObjectUrl = "";
 let lastEvents = [];
+let participantsReturnFocus = null;
+const eventSearch = document.getElementById("eventSearch");
+const eventStatusFilter = document.getElementById("eventStatusFilter");
+const eventResultsCount = document.getElementById("eventResultsCount");
 let registrationCounts = new Map();
 const registrationCountUnsubs = new Map();
 
@@ -226,7 +230,7 @@ function renderEmptyState() {
     <div class="empty-state module-empty-state">
       <span class="empty-state-icon"><i class="fa-solid fa-calendar-days" aria-hidden="true"></i></span>
       <strong>Nothing published yet</strong>
-      <span>No events have been published yet.</span>
+      <span>Create an event to get started.</span>
     </div>
   `;
 }
@@ -249,22 +253,33 @@ function updateStats(events) {
 
 function renderEvents(events) {
   if (!recentEventsList) return;
+  const search = safeText(eventSearch?.value).toLowerCase();
+  const filter = eventStatusFilter?.value || "all";
+  const filteredEvents = events.filter(item =>
+    (filter === "all" || getEventStatus(item) === filter) &&
+    [item.title, item.venue, item.category].some(value => safeText(value).toLowerCase().includes(search))
+  );
+  if (eventResultsCount) eventResultsCount.textContent = `${filteredEvents.length} of ${events.length} events`;
   if (!events.length) {
     renderEmptyState();
     return;
   }
 
-  recentEventsList.innerHTML = events
+  if (!filteredEvents.length) {
+    recentEventsList.innerHTML = '<div class="empty-state module-empty-state"><strong>No matching events</strong><span>Try another search or status.</span></div>';
+    return;
+  }
+  recentEventsList.innerHTML = filteredEvents
     .map((eventItem) => {
       const status = getEventStatus(eventItem);
       const badgeClass = status === "Upcoming" ? "live" : "review";
-      const reminderText = eventItem.reminderEnabled ? "Reminders enabled" : "Reminders disabled";
+      const reminderText = eventItem.reminderEnabled ? "Reminders on" : "Reminders off";
       const mode = safeText(eventItem.registrationMode, "none").toLowerCase();
       const websiteRegistrations = registrationCounts.get(eventItem.id) || 0;
       const imageUrl = safeText(eventItem.imageUrl || eventItem.posterUrl);
       const imageMarkup = imageUrl
         ? `<img class="event-published-thumb" src="${escapeHtml(imageUrl)}" alt="${escapeHtml(safeText(eventItem.title, "Event background"))}">`
-        : `<div class="event-published-thumb-placeholder"><i class="fa-regular fa-image" aria-hidden="true"></i><span>No background image</span></div>`;
+        : "";
       const participantButton = mode === "internal"
         ? `<button class="mini-btn light" type="button" data-view-participants="${escapeHtml(eventItem.id)}"><i class="fa-solid fa-user-group" aria-hidden="true"></i> Participants (${websiteRegistrations})</button>`
         : "";
@@ -276,14 +291,13 @@ function renderEvents(events) {
             <div class="event-published-heading">
               <span class="published-type-icon"><i class="fa-solid fa-calendar-days" aria-hidden="true"></i></span>
               <div>
-                <div class="item-title">${escapeHtml(safeText(eventItem.title, "Untitled Event"))}</div>
+                <h3 class="item-title">${escapeHtml(safeText(eventItem.title, "Untitled Event"))}</h3>
                 <span class="event-category-chip"><i class="fa-solid fa-tag"></i>${escapeHtml(safeText(eventItem.category, "USC Event"))}</span>
               </div>
             </div>
             <div class="event-item-controls">
               <div class="badge ${badgeClass}"><i class="fa-solid fa-circle" aria-hidden="true"></i>${status}</div>
-              ${participantButton}
-              <button class="mini-btn danger" type="button" data-delete-event="${escapeHtml(eventItem.id)}" data-rbac-permission="events.manage"><i class="fa-solid fa-trash-can" aria-hidden="true"></i> Delete</button>
+
             </div>
           </div>
           <div class="event-core-meta">
@@ -296,10 +310,13 @@ function renderEvents(events) {
             <span><i class="fa-solid fa-users"></i> ${escapeHtml(safeText(eventItem.audience, "All Students"))}</span>
             <span><i class="fa-regular fa-bell"></i> ${reminderText}</span>
             <span><i class="fa-solid fa-ticket"></i> ${escapeHtml(registrationModeLabel(mode))}</span>
-            <span><i class="fa-solid fa-hourglass-end"></i> ${escapeHtml(formatRegistrationDeadline(eventItem))}</span>
-            ${mode === "internal" ? `<span><i class="fa-solid fa-user-check"></i> ${websiteRegistrations} registered</span>` : ""}
+            ${mode !== "none" ? `<span class="event-deadline"><i class="fa-solid fa-hourglass-end" aria-hidden="true"></i> Registration closes: ${escapeHtml(formatRegistrationDeadline(eventItem))}</span>` : ""}
           </div>
           ${eventItem.participationNotes ? `<div class="event-participation-note"><i class="fa-solid fa-circle-info" aria-hidden="true"></i><div><strong>Participation instructions</strong><span>${escapeHtml(eventItem.participationNotes)}</span></div></div>` : ""}
+          <div class="event-card-actions">
+            ${participantButton}
+            <button class="mini-btn danger" type="button" data-delete-event="${escapeHtml(eventItem.id)}" data-rbac-permission="events.manage"><i class="fa-solid fa-trash-can" aria-hidden="true"></i> Delete</button>
+          </div>
         </article>
       `;
     })
@@ -321,7 +338,8 @@ function subscribeToEvents() {
       console.error("Unable to read events:", error);
       lastEvents = [];
       updateStats([]);
-      renderEmptyState();
+      if (eventResultsCount) eventResultsCount.textContent = "";
+      recentEventsList.innerHTML = '<div class="empty-state" role="alert">Unable to load events. Check your connection and reload the page.</div>';
     }
   );
 }
@@ -366,6 +384,7 @@ function bindRegistrationCountListeners(events) {
 function closeParticipantsModal() {
   if (!participantsModal) return;
   participantsModal.hidden = true;
+  if (participantsReturnFocus?.isConnected) participantsReturnFocus.focus();
   document.body.classList.remove("event-participants-modal-open");
 }
 
@@ -374,7 +393,9 @@ async function openParticipantsModal(eventId) {
   const eventItem = lastEvents.find((item) => item.id === eventId);
   participantsTitle.textContent = eventItem ? safeText(eventItem.title, "Event participants") : "Event participants";
   participantsBody.innerHTML = `<div class="empty-state">Loading registrations...</div>`;
+  participantsReturnFocus = document.activeElement;
   participantsModal.hidden = false;
+  participantsClose?.focus();
   document.body.classList.add("event-participants-modal-open");
 
   try {
@@ -585,20 +606,34 @@ recentEventsList?.addEventListener("click", async (event) => {
 participantsBackdrop?.addEventListener("click", closeParticipantsModal);
 participantsClose?.addEventListener("click", closeParticipantsModal);
 document.addEventListener("keydown", (event) => {
+  if (event.key === "Tab" && participantsModal && !participantsModal.hidden) {
+    const controls = [...participantsModal.querySelectorAll('.event-participants-dialog button, .event-participants-dialog a[href], .event-participants-dialog [tabindex="0"]')].filter(el => !el.disabled);
+    const first = controls[0], last = controls[controls.length - 1];
+    if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last?.focus(); }
+    else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first?.focus(); }
+  }
   if (event.key === "Escape" && participantsModal && !participantsModal.hidden) closeParticipantsModal();
 });
 
 clearEventBtn?.addEventListener("click", resetEventForm);
 
+document.getElementById("eventFormCard")?.addEventListener("toggle", (event) => {
+  scrollToEventFormBtn?.setAttribute("aria-expanded", String(event.target.open));
+});
+
 scrollToEventFormBtn?.addEventListener("click", () => {
+  document.getElementById("eventFormCard").open = true;
+  eventTitleInput.focus({ preventScroll: true });
   document.getElementById("eventFormCard")?.scrollIntoView({
-    behavior: "smooth",
+    behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "instant" : "smooth",
     block: "start"
   });
 });
 
 window.addEventListener("beforeunload", releaseEventImageObjectUrl);
 
+eventSearch?.addEventListener("input", () => renderEvents(lastEvents));
+eventStatusFilter?.addEventListener("change", () => renderEvents(lastEvents));
 resetEventForm();
 subscribeToEvents();
 

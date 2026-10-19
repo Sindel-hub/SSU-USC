@@ -4,7 +4,7 @@ import { readFile } from 'node:fs/promises';
 
 const load = (path) => readFile(new URL(`../${path}`, import.meta.url), 'utf8');
 
-test('officer Events uses the icon-driven control-center UI', async () => {
+test('officer Events uses a compact searchable management workspace', async () => {
   const [html, css, js] = await Promise.all([
     load('usc-admin/events/events.html'),
     load('usc-admin/events/css/events.css'),
@@ -12,11 +12,14 @@ test('officer Events uses the icon-driven control-center UI', async () => {
   ]);
 
   assert.match(html, /event-management-page/);
-  assert.match(html, /module-workflow-strip/);
+  assert.doesNotMatch(html, /module-workflow-strip/);
+  assert.match(html, /<details[^>]+id="eventFormCard"/);
+  assert.match(html, /id="eventSearch"/);
+  assert.match(html, /id="eventStatusFilter"/);
   assert.match(html, /fa-calendar-plus/);
   assert.match(html, /fa-paper-plane/);
   assert.match(html, /module-card-icon/);
-  assert.match(html, /officer-clean-ui-1/);
+  assert.match(html, /css\/events-modern\.css/);
   assert.match(css, /OFFICER EVENTS CLEAN CONTROL-CENTER UI/);
   assert.match(css, /event-core-meta/);
   assert.match(js, /fa-user-group/);
