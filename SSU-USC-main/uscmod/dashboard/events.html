@@ -14,7 +14,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
-<link rel="stylesheet" href="css/events-mobile.css?v=1" />
+<link rel="stylesheet" href="css/events-mobile.css?v=2" />
 </head>
 <body class="student-app-shell events-document-scroll">
 <header class="dashboard-header">
@@ -210,11 +210,13 @@
 
 
   function syncHighlightViewportHeight() {
-    if (!highlight || window.innerWidth <= 820) return;
+    if (!highlight) return;
     // Use the section's document-space top so this value stays identical even
     // if images/fonts finish loading while the user is already scrolled down.
     const documentTop = highlight.getBoundingClientRect().top + window.scrollY;
-    const available = Math.max(560, Math.floor(window.innerHeight - documentTop - 8));
+    const available = window.innerWidth <= 820
+      ? Math.max(0, Math.floor(window.innerHeight - documentTop))
+      : Math.max(560, Math.floor(window.innerHeight - documentTop - 8));
     highlight.style.setProperty("--events-highlight-viewport-height", available + "px");
   }
 
@@ -222,7 +224,12 @@
     if (!upcoming) return;
     const rect = upcoming.getBoundingClientRect();
     const revealLine = window.innerHeight * 0.72;
-    const visibleEnough = rect.top <= revealLine && rect.bottom > 120;
+    const header = document.querySelector(".dashboard-header");
+    const headerBottom = header && ["fixed", "sticky"].includes(getComputedStyle(header).position)
+      ? Math.max(0, header.getBoundingClientRect().bottom) : 0;
+    const visibleEnough = window.innerWidth <= 820
+      ? rect.top <= headerBottom + 4 && rect.bottom > headerBottom + 44
+      : rect.top <= revealLine && rect.bottom > 120;
     document.body.classList.toggle("events-upcoming-visible", visibleEnough);
   }
 
