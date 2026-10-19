@@ -1,0 +1,34 @@
+/* Scoped to the four Admin Dashboard pages. */
+body.admin-navigation-ready .admin-navigation-close { display:none; }
+body.admin-navigation-ready .sidebar-backdrop[hidden] { display:none !important; }
+@media(max-width:900px){
+  html.admin-navigation-open { overflow:hidden; }
+  body.officer-app-shell.admin-navigation-ready .app-shell { display:block !important; height:auto !important; min-height:0 !important; overflow:visible !important; }
+  body.officer-app-shell.admin-navigation-ready .top-nav { display:flex !important; flex-direction:row !important; gap:10px; }
+  body.officer-app-shell.admin-navigation-ready .nav-left { flex:1 1 auto; min-width:0 !important; }
+  body.officer-app-shell.admin-navigation-ready .nav-right { flex:0 0 auto; width:auto !important; }
+  body.officer-app-shell.admin-navigation-ready .admin-mobile-menu-btn { display:grid !important; place-items:center; flex:0 0 44px; width:44px; height:44px; padding:0; }
+  body.officer-app-shell.admin-navigation-ready .sidebar {
+    display:flex !important; flex-direction:column !important; align-items:stretch !important;
+    position:fixed !important; inset:0 auto 0 0 !important;
+    width:min(290px,85vw) !important; max-width:85vw !important; height:100dvh !important;
+    padding:58px 18px 24px !important; overflow:auto !important;
+    z-index:2401 !important; transform:translateX(-110%) !important;
+    visibility:hidden; transition:transform .2s ease,visibility .2s; border-radius:0 16px 16px 0 !important;
+  }
+  body.officer-app-shell.admin-navigation-ready .sidebar.mobile-open { transform:translateX(0) !important; visibility:visible; }
+  body.officer-app-shell.admin-navigation-ready .sidebar-group { display:flex !important; flex-direction:column !important; gap:8px !important; }
+  body.officer-app-shell.admin-navigation-ready .sidebar .nav-btn { width:100% !important; min-width:0 !important; min-height:44px; white-space:normal !important; }
+  body.officer-app-shell.admin-navigation-ready .sidebar-backdrop { position:fixed; inset:0; z-index:2400; background:#08182d73; backdrop-filter:blur(3px); }
+  body.officer-app-shell.admin-navigation-ready .sidebar-backdrop.active { display:block; }
+  body.officer-app-shell.admin-navigation-ready .admin-navigation-close { display:grid; place-items:center; position:absolute; top:10px; right:12px; width:40px; height:40px; border:1px solid #2b7caa55; border-radius:10px; background:#fff; color:#174c7c; font-size:26px; cursor:pointer; }
+  body.officer-app-shell.admin-navigation-ready .usc-settings-trigger { width:44px; height:44px; min-width:44px; }
+  body.officer-app-shell.admin-navigation-ready .main { width:100% !important; }
+}
+@media(max-width:600px){
+  body.officer-app-shell.admin-navigation-ready .admin-headline { display:none !important; }
+  body.officer-app-shell.admin-navigation-ready .breadcrumb { font-size:17px !important; }
+  body.officer-app-shell.admin-navigation-ready .nav-right { gap:4px !important; }
+}
+body.admin-navigation-ready :is(.admin-mobile-menu-btn,.admin-navigation-close):focus-visible { outline:3px solid #4285c5; outline-offset:3px; }
+@media(prefers-reduced-motion:reduce){body.admin-navigation-ready .sidebar { transition:none !important; }}
