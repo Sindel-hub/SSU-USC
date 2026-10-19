@@ -59,6 +59,10 @@ const participantsBody = document.getElementById("eventParticipantsBody");
 let selectedEventImageFile = null;
 let selectedEventImageObjectUrl = "";
 let lastEvents = [];
+let participantsReturnFocus = null;
+const programSearch = document.getElementById("programSearch");
+const programStatusFilter = document.getElementById("programStatusFilter");
+const programResultsCount = document.getElementById("programResultsCount");
 let registrationCounts = new Map();
 const registrationCountUnsubs = new Map();
 
@@ -228,7 +232,7 @@ function renderEmptyState() {
     <div class="empty-state module-empty-state">
       <span class="empty-state-icon"><i class="fa-solid fa-earth-americas" aria-hidden="true"></i></span>
       <strong>Nothing published yet</strong>
-      <span>No external programs have been published yet.</span>
+      <span>Create a program to get started.</span>
     </div>
   `;
 }
@@ -251,22 +255,33 @@ function updateStats(events) {
 
 function renderEvents(events) {
   if (!recentEventsList) return;
+  const search = safeText(programSearch?.value).toLowerCase();
+  const filter = programStatusFilter?.value || "all";
+  const filteredEvents = events.filter(item =>
+    (filter === "all" || getEventStatus(item) === filter) &&
+    [item.title, item.venue, item.category, item.hostOrganization].some(value => safeText(value).toLowerCase().includes(search))
+  );
+  if (programResultsCount) programResultsCount.textContent = `${filteredEvents.length} of ${events.length} programs`;
   if (!events.length) {
     renderEmptyState();
     return;
   }
 
-  recentEventsList.innerHTML = events
+  if (!filteredEvents.length) {
+    recentEventsList.innerHTML = '<div class="empty-state module-empty-state"><strong>No matching programs</strong><span>Try another search or status.</span></div>';
+    return;
+  }
+  recentEventsList.innerHTML = filteredEvents
     .map((eventItem) => {
       const status = getEventStatus(eventItem);
       const badgeClass = status === "Upcoming" ? "live" : "review";
-      const reminderText = eventItem.reminderEnabled ? "Reminders enabled" : "Reminders disabled";
+      const reminderText = eventItem.reminderEnabled ? "Reminders on" : "Reminders off";
       const mode = safeText(eventItem.registrationMode, "none").toLowerCase();
       const websiteRegistrations = registrationCounts.get(eventItem.id) || 0;
       const imageUrl = safeText(eventItem.imageUrl || eventItem.posterUrl);
       const imageMarkup = imageUrl
         ? `<img class="event-published-thumb" src="${escapeHtml(imageUrl)}" alt="${escapeHtml(safeText(eventItem.title, "Program background"))}">`
-        : `<div class="event-published-thumb-placeholder"><i class="fa-regular fa-image" aria-hidden="true"></i><span>No background image</span></div>`;
+        : "";
       const participantButton = mode === "internal"
         ? `<button class="mini-btn light" type="button" data-view-participants="${escapeHtml(eventItem.id)}"><i class="fa-solid fa-user-group" aria-hidden="true"></i> Participants (${websiteRegistrations})</button>`
         : "";
@@ -278,31 +293,33 @@ function renderEvents(events) {
             <div class="event-published-heading">
               <span class="published-type-icon"><i class="fa-solid fa-earth-americas" aria-hidden="true"></i></span>
               <div>
-                <div class="item-title">${escapeHtml(safeText(eventItem.title, "Untitled Program"))}</div>
+                <h3 class="item-title">${escapeHtml(safeText(eventItem.title, "Untitled Program"))}</h3>
                 <span class="event-category-chip"><i class="fa-solid fa-tag"></i>${escapeHtml(safeText(eventItem.category, "External Program"))}</span>
               </div>
             </div>
             <div class="event-item-controls">
               <div class="badge ${badgeClass}"><i class="fa-solid fa-circle" aria-hidden="true"></i>${status}</div>
-              ${participantButton}
-              <button class="mini-btn danger" type="button" data-delete-event="${escapeHtml(eventItem.id)}" data-rbac-permission="programs.manage"><i class="fa-solid fa-trash-can" aria-hidden="true"></i> Delete</button>
+
             </div>
           </div>
           <div class="event-core-meta">
             <span class="event-core-meta-item"><i class="fa-regular fa-calendar"></i><span><small>Date</small><strong>${escapeHtml(formatEventDate(eventItem.eventDate))}</strong></span></span>
             <span class="event-core-meta-item"><i class="fa-regular fa-clock"></i><span><small>Time</small><strong>${escapeHtml(safeText(eventItem.startTime, "TBA"))}${eventItem.endTime ? ` - ${escapeHtml(eventItem.endTime)}` : ""}</strong></span></span>
             <span class="event-core-meta-item"><i class="fa-solid fa-location-dot"></i><span><small>Venue</small><strong>${escapeHtml(safeText(eventItem.venue, "TBA"))}</strong></span></span>
-                <span class="event-core-meta-item"><i class="fa-solid fa-handshake"></i><span><small>Host</small><strong>${escapeHtml(safeText(eventItem.hostOrganization, "External partner"))}</strong></span></span>
+            <span class="event-core-meta-item"><i class="fa-solid fa-handshake" aria-hidden="true"></i><span><small>Host</small><strong>${escapeHtml(safeText(eventItem.hostOrganization, "External partner"))}</strong></span></span>
           </div>
           <div class="item-text">${escapeHtml(safeText(eventItem.description, "No program description provided."))}</div>
           <div class="event-meta-line">
             <span><i class="fa-solid fa-users"></i> ${escapeHtml(safeText(eventItem.audience, "All Students"))}</span>
             <span><i class="fa-regular fa-bell"></i> ${reminderText}</span>
             <span><i class="fa-solid fa-ticket"></i> ${escapeHtml(registrationModeLabel(mode))}</span>
-            <span><i class="fa-solid fa-hourglass-end"></i> ${escapeHtml(formatRegistrationDeadline(eventItem))}</span>
-            ${mode === "internal" ? `<span><i class="fa-solid fa-user-check"></i> ${websiteRegistrations} registered</span>` : ""}
+            ${mode !== "none" ? `<span class="event-deadline"><i class="fa-solid fa-hourglass-end" aria-hidden="true"></i> Registration closes: ${escapeHtml(formatRegistrationDeadline(eventItem))}</span>` : ""}
           </div>
           ${eventItem.participationNotes ? `<div class="event-participation-note"><i class="fa-solid fa-circle-info" aria-hidden="true"></i><div><strong>Participation instructions</strong><span>${escapeHtml(eventItem.participationNotes)}</span></div></div>` : ""}
+          <div class="event-card-actions">
+            ${participantButton}
+            <button class="mini-btn danger" type="button" data-delete-event="${escapeHtml(eventItem.id)}" data-rbac-permission="programs.manage"><i class="fa-solid fa-trash-can" aria-hidden="true"></i> Delete</button>
+          </div>
         </article>
       `;
     })
@@ -324,7 +341,8 @@ function subscribeToEvents() {
       console.error("Unable to read programs:", error);
       lastEvents = [];
       updateStats([]);
-      renderEmptyState();
+      if (programResultsCount) programResultsCount.textContent = "";
+      recentEventsList.innerHTML = '<div class="empty-state" role="alert">Unable to load programs. Check your connection and reload the page.</div>';
     }
   );
 }
@@ -369,6 +387,7 @@ function bindRegistrationCountListeners(events) {
 function closeParticipantsModal() {
   if (!participantsModal) return;
   participantsModal.hidden = true;
+  if (participantsReturnFocus?.isConnected) participantsReturnFocus.focus();
   document.body.classList.remove("event-participants-modal-open");
 }
 
@@ -377,7 +396,9 @@ async function openParticipantsModal(eventId) {
   const eventItem = lastEvents.find((item) => item.id === eventId);
   participantsTitle.textContent = eventItem ? safeText(eventItem.title, "Program participants") : "Program participants";
   participantsBody.innerHTML = `<div class="empty-state">Loading registrations...</div>`;
+  participantsReturnFocus = document.activeElement;
   participantsModal.hidden = false;
+  participantsClose?.focus();
   document.body.classList.add("event-participants-modal-open");
 
   try {
@@ -592,20 +613,34 @@ recentEventsList?.addEventListener("click", async (event) => {
 participantsBackdrop?.addEventListener("click", closeParticipantsModal);
 participantsClose?.addEventListener("click", closeParticipantsModal);
 document.addEventListener("keydown", (event) => {
+  if (event.key === "Tab" && participantsModal && !participantsModal.hidden) {
+    const controls = [...participantsModal.querySelectorAll('.event-participants-dialog button, .event-participants-dialog a[href], .event-participants-dialog [tabindex="0"]')].filter(el => !el.disabled);
+    const first = controls[0], last = controls[controls.length - 1];
+    if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last?.focus(); }
+    else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first?.focus(); }
+  }
   if (event.key === "Escape" && participantsModal && !participantsModal.hidden) closeParticipantsModal();
 });
 
 clearEventBtn?.addEventListener("click", resetEventForm);
 
+document.getElementById("programFormCard")?.addEventListener("toggle", (event) => {
+  scrollToEventFormBtn?.setAttribute("aria-expanded", String(event.target.open));
+});
+
 scrollToEventFormBtn?.addEventListener("click", () => {
+  document.getElementById("programFormCard").open = true;
+  eventTitleInput.focus({ preventScroll: true });
   document.getElementById("programFormCard")?.scrollIntoView({
-    behavior: "smooth",
+    behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "instant" : "smooth",
     block: "start"
   });
 });
 
 window.addEventListener("beforeunload", releaseEventImageObjectUrl);
 
+programSearch?.addEventListener("input", () => renderEvents(lastEvents));
+programStatusFilter?.addEventListener("change", () => renderEvents(lastEvents));
 resetEventForm();
 subscribeToEvents();
 
