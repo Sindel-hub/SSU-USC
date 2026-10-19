@@ -7,9 +7,9 @@ export function mountEngagementAnalytics(root, { kind, canGenerate }) {
   const date=ms=>ms==null?'Not recorded':new Date(ms).toLocaleString();
   root.classList.add('engagement-analytics');
   root.innerHTML = `<section class="engagement-status-panel" aria-labelledby="engagementStatusTitle">
-    <h2 id="engagementStatusTitle">Status Report</h2><div class="engagement-status-grid">${STATUS_DEFINITIONS.slice(0,4).map(s=>`<button type="button" class="engagement-status-card" data-status="${s.name}"><span>${s.name}</span><span class="engagement-count-row"><i class="${s.icon}" aria-hidden="true" style="color:${s.color}"></i><strong ${s.name==='Upcoming'?'id="upcomingEventCount"':''} data-count="${s.name}">—</strong></span></button>`).join('')}</div>
+    <h2 id="engagementStatusTitle" class="engagement-sr-only">Status Report</h2><div class="engagement-status-grid">${STATUS_DEFINITIONS.slice(0,4).map(s=>`<button type="button" class="engagement-status-card" data-status="${s.name}"><span>${s.name}</span><span class="engagement-count-row"><i class="${s.icon}" aria-hidden="true" style="color:${s.color}"></i><strong ${s.name==='Upcoming'?'id="upcomingEventCount"':''} data-count="${s.name}">—</strong></span></button>`).join('')}</div>
     <button type="button" class="engagement-unscheduled" data-status="Unscheduled" hidden></button>
-    <div class="engagement-metrics"><span><strong id="publishedEventCount">—</strong> Published</span><span><strong id="reminderEnabledCount">—</strong> Reminders</span><span><strong id="confirmedAttendanceCount">—</strong> Portal registrations</span></div>
+    <section class="engagement-summary" aria-labelledby="engagementSummaryTitle"><h2 id="engagementSummaryTitle">Overview</h2><div class="engagement-metrics"><article class="engagement-metric"><i class="fa-solid fa-circle-check" aria-hidden="true"></i><div><span>Published</span><strong id="publishedEventCount">—</strong></div></article><article class="engagement-metric"><i class="fa-solid fa-bell" aria-hidden="true"></i><div><span>Reminders</span><strong id="reminderEnabledCount">—</strong></div></article><article class="engagement-metric"><i class="fa-solid fa-user-group" aria-hidden="true"></i><div><span>Portal registrations</span><strong id="confirmedAttendanceCount">—</strong><small data-registration-note></small></div></article></div></section>
   </section><section class="engagement-chart-panel" aria-labelledby="engagementChartTitle">
     <h2 id="engagementChartTitle">Active ${plural}</h2><button class="engagement-pie-button" type="button" aria-label="Open detailed status report"><span class="engagement-pie empty"></span></button>
     <div class="engagement-legend"></div><div class="engagement-chart-total"><strong data-total>—</strong><span>${noun}s</span><button class="engagement-open" type="button">View detailed report</button></div>
@@ -78,7 +78,8 @@ export function mountEngagementAnalytics(root, { kind, canGenerate }) {
     root.querySelector('[data-total]').textContent=ready?String(total):'—';
     root.querySelector('#publishedEventCount').textContent=ready?String(total):'—';
     root.querySelector('#reminderEnabledCount').textContent=ready?String(records.filter(r=>r.reminderEnabled===true).length):'—';
-    root.querySelector('#confirmedAttendanceCount').textContent=ready?`${report.knownPortalRegistrations}${report.pendingOrUnavailable?` + ${report.pendingOrUnavailable} pending/unavailable`:''}`:'—';
+    root.querySelector('#confirmedAttendanceCount').textContent=ready?String(report.knownPortalRegistrations):'—';
+    root.querySelector('[data-registration-note]').textContent=ready&&report.pendingOrUnavailable?`${report.pendingOrUnavailable} pending/unavailable`:'';
     let angle=0;const stops=[];
     for(const s of STATUS_DEFINITIONS) {const end=angle+(total?report.breakdown[s.name]/total*100:0);if(end>angle)stops.push(`${s.color} ${angle}% ${end}%`);angle=end;}
     const pie=root.querySelector('.engagement-pie');pie.classList.toggle('empty',!total);pie.style.background=total?`conic-gradient(${stops.join(',')})`:'';
