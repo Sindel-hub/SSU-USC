@@ -10,7 +10,7 @@ const browser = fs.readFileSync(new URL("../shared/security-client.js", import.m
 const rules = fs.readFileSync(new URL("../firestore.rules", import.meta.url), "utf8");
 
 test("officer election page shows aggregate department voting participation", () => {
-  assert.match(html, /Department Voting Participation/);
+  assert.match(html, /Department participation/);
   assert.match(html, /id="departmentTurnoutList"/);
   assert.match(html, /Aggregate counts only/);
   assert.match(css, /DEPARTMENT VOTING PARTICIPATION ANALYTICS/);
@@ -49,6 +49,6 @@ test("turnout rules constrain a student's department aggregate increment", () =>
 });
 
 test("election assets are cache-busted for department analytics", () => {
-  assert.match(html, /elections\.css\?v=candidate-preview-modal-1/);
-  assert.match(html, /elections\.js\?v=candidate-preview-modal-1/);
+  assert.match(html, /elections-modern\.css\?v=1/);
+  assert.match(html, /elections\.js\?v=candidate-photo-viewer-polish-2/);
 });

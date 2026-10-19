@@ -1,0 +1,184 @@
+/* Scoped election presentation. Election state, decisions and tallies remain in elections.js. */
+body.election-management-page { --election-ink:#203954; --election-muted:#5b7087; --election-border:#dce5ef; }
+body.election-management-page .main { padding:24px !important; }
+body.election-management-page .hero { display:grid !important; grid-template-columns:minmax(0,1fr) !important; padding:0 !important; background:transparent !important; border:0 !important; box-shadow:none !important; gap:22px !important; margin-bottom:22px !important; }
+body.election-management-page .hero-title { margin:0 0 20px !important; }
+body.election-management-page .hero-left h1 { margin:0 !important; font-size:28px !important; line-height:1.3 !important; letter-spacing:-.5px !important; }
+body.election-management-page .stats { display:grid !important; grid-template-columns:repeat(4,minmax(0,1fr)) !important; gap:12px !important; margin:0 !important; }
+body.election-management-page .stat-card { min-width:0; min-height:90px !important; padding:16px !important; background:#fff !important; border:1px solid var(--election-border) !important; border-radius:14px !important; box-shadow:none !important; }
+body.election-management-page .stat-label { font-size:12px !important; line-height:1.5; color:var(--election-muted) !important; }
+body.election-management-page .stat-value { margin-top:8px; font-size:28px !important; line-height:1.15 !important; color:var(--election-ink) !important; }
+body.election-management-page .hero-actions { margin-top:16px; gap:8px; flex-wrap:wrap; }
+body.election-management-page .side-panel { display:grid !important; grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:16px 24px !important; padding:22px !important; background:#fff !important; border:1px solid var(--election-border) !important; border-radius:16px !important; box-shadow:none !important; }
+body.election-management-page .side-panel > .panel-head { grid-column:1; padding:0 !important; margin:0 !important; border:0 !important; background:none !important; }
+body.election-management-page .side-panel > .progress-wrap { grid-column:1; margin:0; padding:0; }
+body.election-management-page .side-panel > .election-phase-note { grid-column:1; margin:0 !important; }
+body.election-management-page .department-turnout-panel { grid-column:2; grid-row:1/4; padding:0 0 0 24px; border:0; border-left:1px solid #e5ecf3; background:none; border-radius:0; margin:0; }
+body.election-management-page .department-turnout-head { gap:12px; flex-wrap:wrap; margin-bottom:12px; }
+body.election-management-page .department-turnout-head strong { font-size:14px; color:var(--election-ink); }
+body.election-management-page .department-turnout-head > span { font-size:12px; padding:5px 8px; color:#315579; background:#f0f5fa; border-radius:6px; }
+body.election-management-page .department-turnout-list { max-height:230px; padding:0 4px 0 0; }
+body.election-management-page .department-turnout-row { padding:10px 0; background:none; border:0; border-bottom:1px solid #edf1f6; box-shadow:none; border-radius:0; }
+body.election-management-page .department-turnout-privacy { font-size:12px; line-height:1.6; color:var(--election-muted); margin:14px 0 0; }
+body.election-management-page .bar { height:18px; border-radius:6px; background:#edf2f8; }
+body.election-management-page .bar-fill { border-radius:6px; background:#376bae !important; min-width:0; font-size:11px; line-height:18px; }
+body.election-management-page .progress-label { font-size:13px; gap:14px; flex-wrap:wrap; color:var(--election-ink); }
+body.election-management-page .card { border:1px solid var(--election-border) !important; border-radius:16px !important; box-shadow:0 4px 18px #20395408 !important; padding:0 !important; min-width:0; }
+body.election-management-page .card-head { padding:18px 22px !important; gap:14px; flex-wrap:wrap; background:#fff !important; border-bottom:1px solid #e6edf4 !important; }
+body.election-management-page .card-head h3,body.election-management-page .panel-head h3 { font-size:17px !important; line-height:1.4; margin:0; color:var(--election-ink) !important; }
+body.election-management-page .card-head > div { min-width:0; }
+body.election-management-page .card-head span { font-size:12px; line-height:1.6; color:var(--election-muted); }
+body.election-management-page .card-body { padding:22px !important; }
+body.election-management-page .election-schedule-workspace { display:grid; grid-template-columns:minmax(0,2fr) minmax(260px,1fr); gap:20px; margin-bottom:22px; align-items:start; }
+body.election-management-page .saved-schedule-meta { grid-template-columns:repeat(3,minmax(0,1fr)); gap:14px; padding:16px; background:#f8fafc; border:1px solid #e6edf4; border-radius:10px; }
+body.election-management-page .saved-field { min-width:0; padding:0; background:none; border:0; }
+body.election-management-page .saved-field span { font-size:11px; font-weight:500; text-transform:none; letter-spacing:0; color:var(--election-muted); }
+body.election-management-page .saved-field strong { font-size:13px; line-height:1.5; overflow-wrap:anywhere; color:var(--election-ink); }
+body.election-management-page .saved-schedule-status-row { margin:16px 0; gap:10px; flex-wrap:wrap; font-size:12px; }
+body.election-management-page .saved-phase-list { display:grid; gap:0; border:1px solid #e2eaf2; border-radius:12px; overflow:hidden; }
+body.election-management-page .saved-phase-row { display:grid; grid-template-columns:26px minmax(0,1.2fr) minmax(0,1fr) minmax(0,1fr); gap:12px; align-items:start; margin:0; padding:16px; border:0; border-bottom:1px solid #e6edf4; border-radius:0; background:#fff; box-shadow:none; }
+body.election-management-page .saved-phase-row:last-child { border-bottom:0; }
+body.election-management-page .saved-phase-row .phase-icon { display:none; }
+body.election-management-page .phase-number { width:24px; height:24px; border-radius:6px; background:#edf3fa; color:#426489; font-size:11px; box-shadow:none; }
+body.election-management-page .saved-phase-copy strong { color:var(--election-ink); font-size:13px; line-height:1.5; }
+body.election-management-page .saved-phase-copy small { font-size:11px; line-height:1.6; color:var(--election-muted); }
+body.election-management-page .saved-phase-time { min-width:0; padding:0; background:none; border:0; }
+body.election-management-page .saved-phase-time span { font-size:11px; text-transform:none; color:var(--election-muted); }
+body.election-management-page .saved-phase-time strong { font-size:12px; line-height:1.6; color:var(--election-ink); overflow-wrap:anywhere; }
+body.election-management-page .phase-status-pill,body.election-management-page .candidate-status-label { font-size:11px !important; line-height:1.5; padding:5px 9px; border-radius:6px; white-space:normal; max-width:100%; }
+body.election-management-page .schedule-lock-note { border:0; border-radius:8px; background:#f2f6fb; color:#506b86; padding:12px; font-size:12px; line-height:1.6; }
+body.election-management-page .schedule-control-card { position:static; }
+body.election-management-page .current-schedule-box { padding:14px; border:1px solid #e2eaf2; border-radius:10px; background:#f8fafc; }
+body.election-management-page .current-schedule-box strong { font-size:14px; color:var(--election-ink); }
+body.election-management-page .current-schedule-box p { font-size:12px; line-height:1.6; color:var(--election-muted); }
+body.election-management-page .schedule-control-actions { gap:10px; margin-top:16px; }
+body.election-management-page .schedule-action { padding:14px; border-radius:10px; box-shadow:none; background:#fff; }
+body.election-management-page .schedule-action strong { font-size:13px; }
+body.election-management-page .schedule-action small { font-size:11px; line-height:1.6; }
+body.election-management-page .schedule-reminders { padding:14px; background:#fafbfe; border:1px solid #e6edf4; border-radius:10px; }
+body.election-management-page .schedule-reminders strong { font-size:12px; }
+body.election-management-page .schedule-reminders li { font-size:12px; line-height:1.7; }
+body.election-management-page .schedule-summary-panel { border-top:1px solid #e6edf4; padding-top:16px; }
+body.election-management-page .schedule-summary-panel h4 { font-size:13px; }
+body.election-management-page .schedule-summary-row { padding:10px 0; background:none; border:0; border-bottom:1px solid #edf1f6; box-shadow:none; border-radius:0; }
+body.election-management-page .schedule-summary-row strong { font-size:12px; }
+body.election-management-page .schedule-summary-row small { font-size:11px; line-height:1.6; }
+body.election-management-page :is(.btn,.mini-btn) { min-height:40px !important; border-radius:9px !important; font-size:13px !important; padding:10px 14px !important; line-height:1.4; box-shadow:none !important; transition:background-color .15s,border-color .15s; }
+body.election-management-page :is(.btn.primary,.mini-btn.primary) { color:#fff !important; background:#2459a3 !important; border:1px solid #2459a3 !important; }
+body.election-management-page :is(.btn.light,.mini-btn.light) { color:#315477 !important; background:#fff !important; border:1px solid #cedae7 !important; }
+body.election-management-page .mini-btn.danger { color:#a83243 !important; background:#fff !important; border:1px solid #e5bcc4 !important; }
+body.election-management-page button:hover:not(:disabled) { transform:none !important; filter:brightness(.97); }
+body.election-management-page button:disabled { opacity:.55; cursor:not-allowed; }
+body.election-management-page :is(button,a,input,select,textarea):focus-visible { outline:3px solid #2876c6 !important; outline-offset:3px; }
+body.election-management-page .row-actions { gap:10px; flex-wrap:wrap; }
+body.election-management-page .candidate-review-card { margin-bottom:22px; }
+body.election-management-page .candidate-review-summary { gap:10px; margin-bottom:20px; }
+body.election-management-page .candidate-review-summary > span { padding:9px 12px; border:1px solid #e0e8f0; border-radius:8px; background:#f8fafc; font-size:12px; color:var(--election-muted); }
+body.election-management-page .candidate-review-summary strong { color:var(--election-ink); }
+body.election-management-page .candidate-review-list { gap:16px; }
+body.election-management-page .candidate-review-item { display:grid; grid-template-columns:40px minmax(0,1fr) minmax(230px,.8fr); gap:16px; padding:20px; border:1px solid var(--election-border); border-radius:12px; background:#fff; box-shadow:none; }
+body.election-management-page .candidate-review-avatar { width:40px; height:40px; border-radius:10px; font-size:14px; background:#edf3fa; color:#345d89; box-shadow:none; }
+body.election-management-page .candidate-review-name-row { align-items:start; gap:12px; flex-wrap:wrap; }
+body.election-management-page .candidate-review-name-row strong { font-size:16px; line-height:1.5; overflow-wrap:anywhere; }
+body.election-management-page .candidate-review-position { font-size:12px; line-height:1.6; color:var(--election-muted); }
+body.election-management-page .candidate-review-meta { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px; margin-top:16px; }
+body.election-management-page .candidate-review-meta > span { min-width:0 !important; padding:0 !important; border:0 !important; border-radius:0 !important; background:none !important; }
+body.election-management-page .candidate-review-meta small { font-size:11px !important; font-weight:400 !important; color:var(--election-muted) !important; }
+body.election-management-page .candidate-review-meta strong { font-size:12px !important; line-height:1.6 !important; overflow-wrap:anywhere !important; }
+body.election-management-page .candidate-review-meta > span > i { display:none !important; }
+body.election-management-page .candidate-review-action-panel { padding:0 0 0 18px !important; border:0 !important; border-left:1px solid #e6edf4 !important; border-radius:0 !important; background:none !important; box-shadow:none !important; }
+body.election-management-page .candidate-review-action-title { font-size:11px !important; letter-spacing:0 !important; text-transform:none !important; }
+body.election-management-page .candidate-review-action-title em { font-size:11px !important; background:#f0f4f8 !important; border-radius:5px !important; }
+body.election-management-page .candidate-review-media-row { grid-template-columns:88px minmax(0,1fr) !important; gap:12px !important; }
+body.election-management-page .candidate-photo-preview { width:88px !important; height:112px !important; min-height:112px !important; border-radius:8px !important; box-shadow:none !important; }
+body.election-management-page .candidate-photo-preview img { width:100% !important; height:100% !important; object-fit:contain !important; }
+body.election-management-page .candidate-photo-badge { font-size:9px; padding:4px; }
+body.election-management-page .candidate-file-btn { padding:8px !important; min-height:40px !important; }
+body.election-management-page .candidate-documents-label,body.election-management-page .candidate-file-copy strong { font-size:11px; }
+body.election-management-page .candidate-file-copy small { font-size:10px; }
+body.election-management-page .candidate-review-lock-note { font-size:11px !important; line-height:1.6 !important; padding:10px !important; background:#f6f8fb !important; border:0 !important; border-radius:8px !important; }
+body.election-management-page .candidate-review-lock-note strong { font-size:11px !important; }
+body.election-management-page .election-bottom-grid { display:grid !important; grid-template-columns:minmax(0,.9fr) minmax(0,1.1fr) !important; gap:20px !important; align-items:start; }
+body.election-management-page .note-box { padding:14px; border:1px solid #e5edf5; border-radius:10px; background:#f7f9fc; font-size:12px; line-height:1.7; color:#506983; }
+body.election-management-page .note-box p { font-size:12px; line-height:1.7; margin:6px 0 0; }
+body.election-management-page .turnout-snapshot-top { gap:14px; }
+body.election-management-page .turnout-snapshot-top small { font-size:11px; text-transform:none; letter-spacing:0; color:var(--election-muted); }
+body.election-management-page .turnout-snapshot-top strong { font-size:14px; color:var(--election-ink); }
+body.election-management-page .turnout-snapshot-top span { font-size:12px; line-height:1.6; }
+body.election-management-page .snapshot-analytics-card { padding:14px; border:1px solid #e2eaf2; border-radius:10px; background:#fff; }
+body.election-management-page .snapshot-analytics-card > strong { font-size:13px; }
+body.election-management-page :is(.schedule-editor-dialog,.candidate-preview-dialog) { width:min(1000px,calc(100vw - 32px)); max-width:calc(100vw - 32px); max-height:90dvh; border-radius:16px; }
+body.election-management-page :is(.schedule-editor-shell,.candidate-preview-shell) { max-height:90dvh; border-radius:16px; }
+body.election-management-page :is(.schedule-editor-head,.candidate-preview-head) { padding:20px; background:#fff; border-bottom:1px solid #e2eaf2; gap:16px; }
+body.election-management-page :is(.schedule-editor-head,.candidate-preview-head) h2 { margin:4px 0; font-size:21px; line-height:1.4; }
+body.election-management-page :is(.schedule-editor-head,.candidate-preview-head) p { font-size:12px; line-height:1.6; }
+body.election-management-page :is(.schedule-editor-kicker,.candidate-preview-kicker) { color:#5b7390; font-size:11px; letter-spacing:.06em; }
+body.election-management-page :is(.schedule-editor-body,.candidate-preview-body) { padding:20px; background:#fafbfd; overflow:auto; }
+body.election-management-page .schedule-editor-meta-grid { grid-template-columns:repeat(3,minmax(0,1fr)); gap:16px; }
+body.election-management-page .schedule-editor-phase-grid { grid-template-columns:repeat(2,minmax(0,1fr)); gap:16px; }
+body.election-management-page .phase-schedule-item { min-width:0; padding:16px; border:1px solid #e0e8f0; border-radius:10px; box-shadow:none; background:#fff; }
+body.election-management-page .phase-schedule-heading { gap:10px; margin-bottom:16px; }
+body.election-management-page .phase-schedule-heading strong { font-size:13px; }
+body.election-management-page .phase-schedule-heading small { font-size:11px; line-height:1.6; }
+body.election-management-page .phase-schedule-heading > span { width:24px; height:24px; border-radius:6px; font-size:11px; background:#edf3fa; color:#426489; }
+body.election-management-page .field { min-width:0; margin:0 !important; }
+body.election-management-page .field label { font-size:12px; font-weight:600; color:var(--election-ink); }
+body.election-management-page .field :is(input,select,textarea) { box-sizing:border-box; min-width:0; width:100%; min-height:44px !important; padding:10px 12px !important; border:1px solid #c8d5e3 !important; border-radius:8px !important; background:#fff !important; font-size:14px !important; color:var(--election-ink) !important; }
+body.election-management-page .field .read-only-field { background:#f1f5f9 !important; }
+body.election-management-page :is(.schedule-editor-actions,.candidate-preview-footer) { padding:16px 20px; background:#fff; border-top:1px solid #e2eaf2; gap:12px; flex-wrap:wrap; }
+body.election-management-page .candidate-preview-profile-card,body.election-management-page .candidate-preview-media-card { border:1px solid #e0e8f0; border-radius:12px; background:#fff; box-shadow:none; padding:18px; min-width:0; }
+body.election-management-page .candidate-preview-photo-frame { height:260px; border-radius:10px; }
+body.election-management-page .candidate-preview-photo-frame img { object-fit:contain; }
+body.election-management-page .candidate-preview-platform p { white-space:pre-wrap; overflow-wrap:anywhere; font-size:13px; line-height:1.7; }
+body.election-management-page [hidden] { display:none !important; }
+@media(max-width:1200px) {
+  body.election-management-page .election-schedule-workspace { grid-template-columns:minmax(0,1fr); }
+  body.election-management-page .candidate-review-item { grid-template-columns:40px minmax(0,1fr); }
+  body.election-management-page .candidate-review-action-panel { grid-column:2 !important; border-left:0 !important; border-top:1px solid #e6edf4 !important; padding:16px 0 0 !important; }
+  body.election-management-page .candidate-review-media-row { grid-template-columns:88px minmax(0,1fr) !important; }
+}
+@media(max-width:800px) {
+  body.election-management-page .stats { grid-template-columns:repeat(2,minmax(0,1fr)) !important; }
+  body.election-management-page .side-panel { grid-template-columns:minmax(0,1fr); }
+  body.election-management-page .department-turnout-panel { grid-column:1; grid-row:auto; border-left:0; border-top:1px solid #e6edf4; padding:18px 0 0; }
+  body.election-management-page .side-panel > .election-phase-note { grid-row:auto; }
+  body.election-management-page .election-bottom-grid { grid-template-columns:minmax(0,1fr) !important; }
+  body.election-management-page .saved-phase-row { grid-template-columns:24px minmax(0,1fr) minmax(0,1fr); }
+  body.election-management-page .saved-phase-copy { grid-column:2/-1; }
+  body.election-management-page .saved-phase-time:nth-last-child(2) { grid-column:2; }
+  body.election-management-page .schedule-editor-phase-grid { grid-template-columns:minmax(0,1fr); }
+}
+@media(max-width:600px) {
+  body.election-management-page .main { padding:14px !important; }
+  body.election-management-page .card-body,body.election-management-page .card-head { padding:16px !important; }
+  body.election-management-page .side-panel { padding:16px !important; }
+  body.election-management-page .saved-schedule-meta { grid-template-columns:minmax(0,1fr); }
+  body.election-management-page .saved-phase-row { padding:14px 12px; gap:10px; }
+  body.election-management-page .candidate-review-item { grid-template-columns:minmax(0,1fr); padding:16px; gap:14px; }
+  body.election-management-page .candidate-review-avatar { display:none; }
+  body.election-management-page .candidate-review-action-panel { grid-column:1 !important; }
+  body.election-management-page .candidate-review-meta { grid-template-columns:minmax(0,1fr); }
+  body.election-management-page .candidate-review-summary { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); }
+  body.election-management-page .schedule-editor-meta-grid { grid-template-columns:minmax(0,1fr); }
+  body.election-management-page .phase-schedule-item .grid-2 { grid-template-columns:minmax(0,1fr) !important; gap:12px !important; }
+  body.election-management-page :is(.schedule-editor-head,.candidate-preview-head,.schedule-editor-body,.candidate-preview-body) { padding:16px; }
+  body.election-management-page :is(.schedule-editor-actions,.candidate-preview-footer) { padding:14px 16px; }
+  body.election-management-page .schedule-editor-actions-right,body.election-management-page .candidate-preview-footer-actions { flex-wrap:wrap; gap:8px; }
+  body.election-management-page .candidate-preview-grid { grid-template-columns:minmax(0,1fr); }
+  body.election-management-page .snapshot-analytics-grid { grid-template-columns:minmax(0,1fr); }
+}
+@media(prefers-reduced-motion:reduce) {
+  body.election-management-page *,body.election-management-page *::before,body.election-management-page *::after { animation:none !important; transition:none !important; scroll-behavior:auto !important; }
+}
+
+/* Neutral, equally sized candidate presentation overrides older decorative rules. */
+body.election-management-page .candidate-review-meta > span { display:block !important; }
+body.election-management-page .candidate-review-meta small { display:block; text-transform:none; letter-spacing:0; }
+body.election-management-page .candidate-review-meta strong { display:block; margin-top:4px; }
+body.election-management-page .candidate-review-actions .candidate-preview-btn {
+  border-radius:9px !important; background:#fff !important; color:#315477 !important; border:1px solid #cedae7 !important; box-shadow:none !important;
+}
+body.election-management-page .candidate-review-actions .candidate-preview-btn.primary { background:#2459a3 !important; border-color:#2459a3 !important; color:#fff !important; }
+body.election-management-page .candidate-review-action-title { grid-template-columns:minmax(0,1fr) auto !important; }
+body.election-management-page .candidate-review-action-title > i { display:none !important; }
+body.election-management-page .candidate-file-copy small { font-size:11px !important; }
