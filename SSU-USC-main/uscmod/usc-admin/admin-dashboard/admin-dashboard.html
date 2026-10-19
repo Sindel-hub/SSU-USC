@@ -9,13 +9,13 @@
     <link rel="stylesheet" href="../shared/css/officer-ui.css?v=instant-shell-2" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
 <link rel="stylesheet" href="../../shared/profile-manager.css" />
-<link rel="stylesheet" href="css/overview-modern.css?v=1" />
+<link rel="stylesheet" href="css/overview-modern.css?v=2" />
   <script src="../../shared/app-config.js"></script>
   <script type="module" src="../../shared/auth-guard.js?v=rbac7"></script>
 <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet" />
 </head>
 <body class="officer-app-shell admin-overview-page">
-    <div class="sidebar-backdrop" onclick="document.querySelector('.sidebar').classList.remove('mobile-open');this.classList.remove('active')"></div>
+    <div class="sidebar-backdrop" onclick="document.querySelector('.sidebar').classList.remove('mobile-open');this.classList.remove('active');document.getElementById('overviewMenuButton').setAttribute('aria-expanded','false')"></div>
 <div class="page">
         <div class="page-label">Admin Control</div>
         <div class="app-shell">
@@ -31,7 +31,7 @@
             </header>
             <nav class="top-nav">
                 <div class="nav-left">
-                    <button class="admin-mobile-menu-btn" type="button" aria-label="Toggle admin navigation" onclick="(function(){const s=document.querySelector('.sidebar'),b=document.querySelector('.sidebar-backdrop');s.classList.toggle('mobile-open');b.classList.toggle('active',s.classList.contains('mobile-open'))})()"><i class="fa-solid fa-bars"></i></button>
+                    <button id="overviewMenuButton" class="admin-mobile-menu-btn" type="button" aria-label="Toggle admin navigation" aria-expanded="false" aria-controls="overviewSidebar" onclick="const expanded=document.getElementById('overviewSidebar').classList.toggle('mobile-open');document.querySelector('.sidebar-backdrop').classList.toggle('active',expanded);this.setAttribute('aria-expanded',String(expanded))"><i class="fa-solid fa-bars" aria-hidden="true"></i></button>
                     <div class="breadcrumb">Admin Dashboard</div>
                 </div>
                 <div class="nav-right">
@@ -44,7 +44,7 @@
                 </div>
             </nav>
             <main class="layout">
-                <aside class="sidebar">
+                <aside class="sidebar" id="overviewSidebar">
                     <div class="officer-sidebar-mark"><i class="fa-solid fa-user-tie"></i></div>
                     <h2>Admin Modules</h2>
                     <div class="sidebar-group">
@@ -61,12 +61,12 @@
                             <li>The admin controls account access only.</li>
                         </ul>
                     </div>
-                    <button class="nav-btn logout-btn" type="button" onclick="logoutAdminOnly()"><span>↩</span><span>Log Out</span></button>
+                    <button class="nav-btn logout-btn" type="button" onclick="logoutAdminOnly()"><span><i class="fa-solid fa-arrow-right-from-bracket" aria-hidden="true"></i></span><span>Log Out</span></button>
                 </aside>
                 <section class="main">
 
 <section class="hero">
-    <article class="card hero-card admin-overview-hero-card">
+    <article class="card hero-card admin-overview-hero-card" aria-label="Account summary">
         <div class="hero-title-row">
             <div>
                 <p class="admin-welcome-line">Welcome back, <strong><span data-usc-welcome-role class="overview-visually-hidden">System Administrator</span> <span data-usc-welcome-name data-admin-name>USC Admin</span>!</strong></p>
@@ -110,30 +110,51 @@
             </article>
         </div>
     </article>
-    <article class="card hero-card">
-        <div class="card-head card-head-stack">
-            <div>
-                <h3>Quick actions</h3>
-
+</section>
+<section class="overview-summary-grid" aria-label="Analytics and shortcuts">
+    <article class="card overview-status-card">
+        <div class="card-head"><h2 id="statusChartTitle">Account status</h2><a class="btn soft" href="users.html">View accounts</a></div>
+        <div class="overview-status-content" id="overviewStatusChart">
+            <div class="overview-donut-wrap">
+                <svg class="overview-donut" viewBox="0 0 160 160" role="img" aria-labelledby="statusChartTitle statusChartDescription">
+                    <desc id="statusChartDescription">Account status distribution.</desc>
+                    <circle class="overview-donut-track" cx="80" cy="80" r="64" />
+                    <circle data-status-segment="approved" cx="80" cy="80" r="64" pathLength="100" stroke-dasharray="0 100" />
+                    <circle data-status-segment="pending" cx="80" cy="80" r="64" pathLength="100" stroke-dasharray="0 100" />
+                    <circle data-status-segment="suspended" cx="80" cy="80" r="64" pathLength="100" stroke-dasharray="0 100" />
+                </svg>
+                <div class="overview-donut-center" aria-hidden="true"><strong id="statusChartTotal">0</strong><span>Accounts</span></div>
+            </div>
+            <div class="overview-status-key">
+                <div class="overview-status-legend" aria-label="Explore account statuses">
+                    <button type="button" data-status-key="approved"><span class="overview-status-dot status-approved-dot" aria-hidden="true"></span><span>Approved</span><strong data-status-count="approved">0</strong></button>
+                    <button type="button" data-status-key="pending"><span class="overview-status-dot status-pending-dot" aria-hidden="true"></span><span>Pending</span><strong data-status-count="pending">0</strong></button>
+                    <button type="button" data-status-key="suspended"><span class="overview-status-dot status-suspended-dot" aria-hidden="true"></span><span>Suspended</span><strong data-status-count="suspended">0</strong></button>
+                    <div class="overview-status-other" id="statusChartOther" hidden><span class="overview-status-dot" aria-hidden="true"></span><span>Other statuses</span><strong id="statusChartOtherCount">0</strong></div>
+                </div>
+                <p id="statusChartDetail" class="overview-chart-detail" role="status">No account data yet.</p>
             </div>
         </div>
-        <div class="quick-links">
-            <a class="quick-link" href="users.html"><strong>User Directory</strong><p>Manage accounts and roles.</p></a>
-            <a class="quick-link" href="queue.html"><strong>Registration Queue</strong><p>Review pending accounts.</p></a>
-            <a class="quick-link" href="../student-registration/student-registration.html"><strong>Create Student</strong><p>Issue student credentials.</p></a>
-            <a class="quick-link" href="../student-registration/officer-registration.html"><strong>Create Officer</strong><p>Assign officer access.</p></a>
-        </div>
+    </article>
+    <article class="card overview-shortcuts-card">
+        <div class="card-head"><h2>Quick actions</h2></div>
+        <nav class="quick-links" aria-label="Account management shortcuts">
+            <a class="quick-link" href="users.html"><i class="fa-solid fa-users" aria-hidden="true"></i><strong>User Directory</strong></a>
+            <a class="quick-link" href="queue.html"><i class="fa-solid fa-inbox" aria-hidden="true"></i><strong>Registration Queue</strong></a>
+            <a class="quick-link" href="../student-registration/student-registration.html"><i class="fa-solid fa-user-plus" aria-hidden="true"></i><strong>Create Student</strong></a>
+            <a class="quick-link" href="../student-registration/officer-registration.html"><i class="fa-solid fa-user-tie" aria-hidden="true"></i><strong>Create Officer</strong></a>
+        </nav>
     </article>
 </section>
 
 <section class="card-grid two overview-activity-grid">
     <article class="card">
         <div class="card-head"><div><h3>Recent registrations</h3></div><a class="btn soft" href="queue.html">Open queue</a></div>
-        <div class="queue-list" id="recentQueueList"><div class="empty-state"><strong>Loading queue</strong><span>Connecting to Firestore…</span></div></div>
+        <div class="queue-list" id="recentQueueList" role="region" aria-label="Recent registrations" tabindex="0"><div class="empty-state"><strong>Loading queue</strong><span>Connecting to Firestore…</span></div></div>
     </article>
     <article class="card">
         <div class="card-head"><div><h3>Latest access activity</h3></div><a class="btn soft" href="audit.html">Open audit log</a></div>
-        <div class="log-list" id="recentLogList"><div class="empty-state"><strong>Access history</strong><span>Open the audit log to review access changes.</span></div></div>
+        <div class="log-list" id="recentLogList" role="region" aria-label="Latest access activity" tabindex="0"><div class="empty-state"><strong>Access history</strong><span>Open the audit log to review access changes.</span></div></div>
     </article>
 </section>
 <section class="card-grid two overview-health-grid">
@@ -141,14 +162,14 @@
         <div class="card-head"><div><h3>Users needing attention</h3></div></div>
         <div class="warning-list" id="warningsList"><div class="empty-state"><strong>Loading warnings</strong><span>Checking current user data…</span></div></div>
     </article>
-    <article class="card overview-policy-card">
-        <div class="card-head"><div><h3>System policy</h3></div></div>
+    <details class="card overview-policy-card">
+        <summary>System policy</summary>
         <div class="system-list">
             <div class="system-card"><h4>Sole admin identity</h4><p>Administrator access is granted by a trusted server-side custom claim, not by a hard-coded email address.</p></div>
             <div class="system-card"><h4>Officer separation</h4><p>The admin account is locked out of officer pages. Officers still use the officer dashboard and operational modules.</p></div>
             <div class="system-card"><h4>Recommended backend rule</h4><p>Firestore rules should reject any write that attempts to assign <code>role = &quot;admin&quot;</code> to a different email.</p></div>
         </div>
-    </article>
+    </details>
 </section>
 
                 </section>
@@ -182,6 +203,7 @@
   </div>
 </footer>
 
+    <script type="module" src="js/overview-status-chart.js?v=1"></script>
     <script type="module" src="js/admin-dashboard.js"></script>
     <script type="module" src="../shared/js/admin-only-auth.js"></script>
 <script type="module" src="../../shared/profile-manager.js?v=supabase-email-1"></script>

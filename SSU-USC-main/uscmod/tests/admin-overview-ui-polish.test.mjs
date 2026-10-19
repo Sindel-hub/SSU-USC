@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import fs from "node:fs";
 
 const html = fs.readFileSync(new URL("../usc-admin/admin-dashboard/admin-dashboard.html", import.meta.url), "utf8");
-const css = fs.readFileSync(new URL("../usc-admin/admin-dashboard/css/admin-dashboard.css", import.meta.url), "utf8");
+const css = fs.readFileSync(new URL("../usc-admin/admin-dashboard/css/overview-modern.css", import.meta.url), "utf8");
 
 test("admin overview uses icon-backed polished metric cards", () => {
   assert.match(html, /class="stats-grid admin-overview-stats"/);
@@ -14,8 +14,8 @@ test("admin overview uses icon-backed polished metric cards", () => {
   assert.match(html, /fa-solid fa-user-slash/);
   assert.match(html, /fa-solid fa-user-tie/);
   assert.match(html, /fa-solid fa-shield-halved/);
-  assert.match(css, /ADMIN ACCESS OVERVIEW POLISH - 2026-09-04/);
-  assert.match(css, /\.admin-overview-stats\s*\{[\s\S]*?grid-template-columns:\s*repeat\(4, minmax\(0, 1fr\)\);/);
+  assert.match(css, /Overview presentation only/);
+  assert.match(css, /\.admin-overview-stats\s*\{[\s\S]*?grid-template-columns:repeat\(4,minmax\(0,1fr\)\) !important;/);
 });
 
 test("admin overview keeps the existing metric element ids", () => {
@@ -25,5 +25,5 @@ test("admin overview keeps the existing metric element ids", () => {
 });
 
 test("admin overview cache-busts the polished stylesheet", () => {
-  assert.match(html, /overview-modern\.css\?v=1/);
+  assert.match(html, /overview-modern\.css\?v=2/);
 });
