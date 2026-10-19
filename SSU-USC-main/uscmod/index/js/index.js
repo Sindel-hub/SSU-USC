@@ -16,12 +16,12 @@ const dom = {
 };
 const signinSubmitButton = dom.signinForm?.querySelector('button[type="submit"]');
 const EMAIL_REGEX = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
-const STUDENT_ID_REGEX = /^[A-Z0-9][A-Z0-9_-]{0,63}$/i;
+const STUDENT_ID_REGEX = /^\d{1,64}$/;
 const SESSION_DURATION_MS = 15 * 60 * 1000;
 
 function clean(value) { return String(value || "").trim(); }
 function normalizeEmail(value) { return clean(value).toLowerCase(); }
-function normalizeStudentId(value) { return clean(value).toUpperCase(); }
+function normalizeStudentId(value) { return clean(value); }
 function isEmail(value) { return EMAIL_REGEX.test(clean(value)); }
 function isStudentId(value) { return STUDENT_ID_REGEX.test(clean(value)); }
 

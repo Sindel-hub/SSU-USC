@@ -88,7 +88,7 @@ test('reservations cannot be overwritten or taken over; only admins may release 
 
 test('malformed name reservations and forged creator IDs are rejected', async () => {
   const db = adminDb();
-  for (const patch of [{ nameKey: 'wrong' }, { createdBy: 'someone-else' }, { accountRole: 'admin' }, { studentId: '../other' }, { uid: '' }, { normalizedName: '' }]) {
+  for (const patch of [{ nameKey: 'wrong' }, { createdBy: 'someone-else' }, { accountRole: 'admin' }, { studentId: '../other' }, { studentId: 'ABC123' }, { studentId: '123-456' }, { studentId: '123_456' }, { uid: '' }, { normalizedName: '' }]) {
     await assertFails(firestore.setDoc(ref(db), { ...claim, ...patch }));
   }
   await assertFails(firestore.setDoc(firestore.doc(db, 'student_name_claims', 'invalid-key'), { ...claim, nameKey: 'invalid-key' }));
@@ -171,21 +171,24 @@ test('alias writes remain privileged, existing owners cannot be replaced, and ve
   }
 });
 
-for (const role of ['student', 'officer']) for (const studentId of ['123', '00123456789', 'SSU-2026_001']) {
+for (const role of ['student', 'officer']) for (const studentId of ['123', '00123456789', '12345678901234567890']) {
   test(`manual ${role} accepts ${studentId} without truncating its aliases or records`, async () => {
     const db = adminDb(), api = provisioner(db);
-    const row = {...input, studentId: studentId.toLowerCase(), institutionalEmail: '', officePosition: 'Secretary'};
+    const row = {...input, studentId, institutionalEmail: '', officePosition: 'Secretary'};
     const result = await (role === 'student' ? api.provisionStudentAccount(row) : api.provisionOfficerAccount(row));
     assert.equal(result.credential.studentId, studentId);
     const profile = (await firestore.getDoc(firestore.doc(db, 'users', result.credential.uid))).data();
     assert.equal(profile.studentId, studentId);
-    assert.equal(api.created[0].email, `${studentId.toLowerCase()}@student.ssu-usc.local`);
+    assert.equal(api.created[0].email, `${studentId}@student.ssu-usc.local`);
     for (const path of [`student_id_claims/${studentId}`, `school_accounts/${studentId}`, `student_masterlist/${studentId}`, `login_aliases/id_${studentId}`, `elections/current-election/voterRoster/${studentId}`]) assert.equal((await firestore.getDoc(firestore.doc(db,path))).exists(), true, path);
     await assert.rejects(api.provisionStudentAccount(row), /Duplicate Student IDs/);
   });
 }
 test('manual IDs remain required and cannot contain document-path characters or exceed the Auth local-part limit', async () => {
   const api=provisioner(adminDb());
-  for(const studentId of ['', '   ', '../123', '123/456', '123 456', 'abc@ssu.edu.ph', '1'.repeat(65)]) await assert.rejects(api.provisionStudentAccount({...input,studentId}), /Enter a Student ID/);
+  for(const studentId of ['', '   ', '../123', '123/456', '123 456', 'ABC123', '123-456', '123_456', '123.456', 'abc@ssu.edu.ph', '1'.repeat(65)]) {
+    await assert.rejects(api.provisionStudentAccount({...input,studentId}), /numbers only/);
+    await assert.rejects(api.provisionOfficerAccount({...input,studentId,officePosition:'Secretary'}), /numbers only/);
+  }
   assert.equal(api.created.length,0);
 });

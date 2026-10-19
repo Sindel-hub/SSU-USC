@@ -4,9 +4,9 @@ Manual student and officer creation accepts a blank institutional email. The
 existing password generator and administrator-only browser provisioner remain in
 use. A blank address produces `institutionalEmail: null`, an empty contact `email`,
 and a unique `<student-id>@student.ssu-usc.local` Firebase Authentication address.
-Student IDs support 1–64 letters, numbers, hyphens, or underscores, beginning
-with a letter or number. IDs are trimmed and stored in uppercase; leading zeroes
-and the complete value are preserved. Existing numeric IDs remain unchanged.
+Student IDs accept numbers only, with 1–64 digits. Letters, hyphens, underscores,
+spaces within the ID, and other symbols are rejected. Leading zeroes and the
+complete numeric value are preserved. IDs do not have to be exactly six digits.
 The internal address is a login identifier, never an institutional inbox. Login
 slips, the directory, and profile settings show **Not Linked** instead.
 

@@ -200,12 +200,12 @@ function normalizeStudentId(value) {
   return id;
 }
 
-// Manual account identifiers also support letters and separators. The original
+// Manual account identifiers accept variable-length numeric IDs. The original
 // roster/bulk normalizer above keeps its existing import validation unchanged.
 function normalizeAccountStudentId(value) {
-  const id = String(value ?? "").trim().toUpperCase();
-  if (!/^[A-Z0-9][A-Z0-9_-]{0,63}$/.test(id)) {
-    throw new HttpsError("invalid-argument", "Enter a valid Student ID using letters, numbers, hyphens, or underscores (up to 64 characters).");
+  const id = String(value ?? "").trim();
+  if (!/^\d{1,64}$/.test(id)) {
+    throw new HttpsError("invalid-argument", "Student ID must contain numbers only (up to 64 digits).");
   }
   return id;
 }

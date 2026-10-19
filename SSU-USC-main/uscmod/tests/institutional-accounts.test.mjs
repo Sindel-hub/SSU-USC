@@ -128,3 +128,12 @@ test('metadata failures after password update still return the issued secret to 
   const result=await ctx.service.resetPassword({uid:'admin',role:'admin',authTime:timestamp/1000},ctx.user.uid);
   assert.ok(result.temporaryPassword);assert.match(result.warning,/Password changed/);
 });
+
+test('institutional linking rejects nonnumeric IDs without publishing an email alias',async()=>{
+  for(const studentId of ['ABC123','123-456','123_456']){
+    const ctx=setup();ctx.seed('users/'+ctx.user.uid,{...ctx.profile,studentId});
+    await ctx.service.request(ctx.user,'ana@ssu.edu.ph');
+    await assert.rejects(ctx.service.verify(ctx.user,ctx.mails[0].token),/no valid Student ID/);
+    assert.equal(ctx.records.has('login_aliases/email_'+hash('ana@ssu.edu.ph')),false);
+  }
+});

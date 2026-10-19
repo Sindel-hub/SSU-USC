@@ -1,5 +1,5 @@
 import { SSU_PROGRAMS, isValidSsuProgram } from "./ssu-programs.js";
-import { provisionStudentAccount } from "../../../shared/browser-provisioning.js?v=3-flexible-id-1";
+import { provisionStudentAccount } from "../../../shared/browser-provisioning.js?v=3-numeric-id-1";
 import { enrollmentStatusForStanding, isActiveStudentStanding, studentStandingLabel } from "../../../shared/student-standing.js";
 
 const form = document.getElementById("studentForm");

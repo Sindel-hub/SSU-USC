@@ -22,7 +22,7 @@ before(async()=>{
 });
 after(async()=>{await env?.cleanup();if(adminApp)await deleteAdminApp(adminApp);});
 
-for (const studentId of ['567891', '00012345678', 'SSU-2026_001']) test(`real Firebase account ${studentId}: creation, both logins, email linking, and password reset preserve UID`,async()=>{
+for (const studentId of ['567891', '00012345678', '1'.repeat(64)]) test(`real Firebase account ${studentId}: creation, both logins, email linking, and password reset preserve UID`,async()=>{
   await env.clearFirestore();
   await adminDb.doc('users/admin').set({uid:'admin',role:'admin',accountStatus:'approved',isActive:true});
   const db=env.authenticatedContext('admin',{role:'admin'}).firestore();
@@ -35,7 +35,7 @@ for (const studentId of ['567891', '00012345678', 'SSU-2026_001']) test(`real Fi
   };
   const provisioning=strip(fs.readFileSync(new URL('../shared/browser-provisioning.js',import.meta.url),'utf8'));
   const provision=new Function(...Object.keys(provisionBindings),`${provisioning};return provisionStudentAccount;`)(...Object.values(provisionBindings));
-  const result=await provision({studentId:studentId.toLowerCase(),fullName:'Real Emulator Student',institutionalEmail:'',college:'College of Education',program:'Bachelor of Elementary Education',yearLevel:'1st Year',studentStanding:'active',eligible:true});
+  const result=await provision({studentId,fullName:'Real Emulator Student',institutionalEmail:'',college:'College of Education',program:'Bachelor of Elementary Education',yearLevel:'1st Year',studentStanding:'active',eligible:true});
   const {uid,temporaryPassword}=result.credential;
   const app=initializeApp({projectId,apiKey:'fake-api-key'},'login-optional-email');apps.push(app);
   const auth=getAuth(app);connectAuthEmulator(auth,`http://${process.env.FIREBASE_AUTH_EMULATOR_HOST}`,{disableWarnings:true});
@@ -69,7 +69,7 @@ for (const studentId of ['567891', '00012345678', 'SSU-2026_001']) test(`real Fi
   }
   const linked=(await adminDb.doc('users/'+uid).get()).data();
   assert.equal(linked.institutionalEmailVerified,true);assert.equal(linked.role,before.role);assert.equal(linked.studentId,before.studentId);
-  assert.equal((await adminAuth.getUser(uid)).email,`${studentId.toLowerCase()}@student.ssu-usc.local`);
+  assert.equal((await adminAuth.getUser(uid)).email,`${studentId}@student.ssu-usc.local`);
   await assert.rejects(adminAuth.getUserByEmail('student@ssu.edu.ph'),error=>error.code==='auth/user-not-found');
   const reset=await service.resetPassword({uid:'admin',role:'admin',authTime:Date.now()/1000},uid);
   for(const identifier of [studentId,'student@ssu.edu.ph']){
