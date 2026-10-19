@@ -3948,3 +3948,18 @@ html {
   outline: 3px solid #154f97;
   outline-offset: 3px;
 }
+
+/* Keep About USC, Goals and Contact Us on one continuous navy surface. */
+.about-goals-wrapper {
+    background: var(--usc-navy);
+    min-height: 0;
+    padding-bottom: 0;
+}
+
+.about-goals-wrapper .feature-strip + .feature-strip {
+    margin-top: 0;
+}
+
+.site-footer .footer-bottom {
+    background: var(--usc-navy);
+}
