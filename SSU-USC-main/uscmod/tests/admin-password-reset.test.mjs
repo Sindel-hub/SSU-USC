@@ -30,9 +30,10 @@ test('user directory has reset password control and one-time credential card', (
   assert.match(usersJs, /resetSelectedUserPassword/);
 });
 
-test('forgot-password login flow points users to administrator-issued temporary passwords', () => {
-  assert.match(loginJs, /Contact the System Administrator/);
-  assert.match(loginJs, /issue a new temporary password/);
+test('forgot-password opens Supabase self-service recovery while administrator resets remain available', () => {
+  assert.match(loginJs, /dom\.forgotPasswordBtn\?\.addEventListener\("click"/);
+  assert.match(loginJs, /openSupabaseRecoveryPage\(\)/);
+  assert.match(usersJs, /resetSelectedUserPassword/);
   assert.doesNotMatch(loginJs, /sendPasswordResetEmail/);
 });
 

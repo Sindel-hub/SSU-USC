@@ -4,7 +4,8 @@ import {
   collection,
   doc,
   getDoc,
-  getDocs
+  getDocs,
+  onSnapshot
 } from "https://www.gstatic.com/firebasejs/12.12.0/firebase-firestore.js";
 import { signOut } from "https://www.gstatic.com/firebasejs/12.12.0/firebase-auth.js";
 
@@ -28,6 +29,8 @@ let student = null;
 let context = null;
 let application = null;
 let candidates = [];
+let stopCandidateWatch = null;
+let watchedElection = "";
 let voterStatus = null;
 let turnout = { ballotsCast: 0, eligibleVoters: 0 };
 let currentView = "landing";
@@ -100,7 +103,7 @@ function photo(candidate) {
   ) || "assets/USClogo.webp";
 }
 function candidatesFor(position) {
-  return candidates.filter((c) => c.position === position && c.approved !== false && (position !== "Department Representative" || clean(c.department) === clean(student.college)));
+  return candidates.filter((c) => c.position === position && c.approved !== false && c.removed !== true && (position !== "Department Representative" || clean(c.department) === clean(student.college)));
 }
 
 async function loadSecureState() {
@@ -130,9 +133,30 @@ async function loadSecureState() {
   application = appSnap.exists() ? { id: appSnap.id, ...appSnap.data() } : null;
   voterStatus = statusSnap.exists() ? statusSnap.data() : null;
   turnout = turnoutSnap.exists() ? turnoutSnap.data() : { ballotsCast: 0, eligibleVoters: context.eligibleVoterCount || 0 };
+  if (context.candidateVisible && watchedElection !== electionId) {
+    stopCandidateWatch?.();
+    watchedElection = electionId;
+    stopCandidateWatch = onSnapshot(collection(db,"elections",electionId,"candidates"), (snap) => {
+      candidates = snap.docs.map((d) => ({id:d.id,...d.data()})).filter((c) => c.approved !== false && !c.removed);
+      if (currentView === "candidates") renderCandidates();
+      else if (currentView === "ballot") {
+        const selected = [...document.querySelectorAll(".ballot-select")].map((el) => [el.dataset.position,el.value]);
+        renderBallot();
+        for (const el of document.querySelectorAll(".ballot-select")) {
+          const value = selected.find(([position]) => position === el.dataset.position)?.[1];
+          if ([...el.options].some((option) => option.value === value)) el.value = value;
+        }
+      }
+    }, (error) => { console.warn("Candidate updates unavailable:", error); });
+  }
+  if (!context.candidateVisible) {
+    stopCandidateWatch?.();
+    stopCandidateWatch = null;
+    watchedElection = "";
+  }
   if (context.candidateVisible) {
     const snap = await getDocs(collection(db, "elections", electionId, "candidates"));
-    candidates = snap.docs.map((d) => ({ id: d.id, ...d.data() })).filter((c) => c.approved !== false);
+    candidates = snap.docs.map((d) => ({ id: d.id, ...d.data() })).filter((c) => c.approved !== false && c.removed !== true);
   } else {
     candidates = [];
   }

@@ -37,3 +37,11 @@ export function openSupabaseRecoveryPage() {
   const recoveryUrl = new URL("../email/recover-password.html", import.meta.url);
   window.open(recoveryUrl.href, "_blank", "noopener,noreferrer");
 }
+
+export async function authenticateVerifiedGmailLogin(email, password) {
+  const result = await callStudentEmailService("authenticate_gmail", { email, password }, { requireSession: false });
+  if (result.protocol !== "gmail-password-v1" || typeof result.uid !== "string" || !result.uid || typeof result.authEmail !== "string" || !result.authEmail) {
+    throw new Error("The Gmail login could not be verified. Use your Student ID instead.");
+  }
+  return { uid: result.uid, authEmail: result.authEmail };
+}

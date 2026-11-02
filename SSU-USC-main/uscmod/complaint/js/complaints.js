@@ -18,7 +18,7 @@ const LAST_ACTIVITY_AT_KEY = "lastActivityAt";
 
 // Complaint burst-control settings. The Firestore Rules enforce the same cooldown
 // using request.time, so changing the browser clock cannot bypass it.
-const SUBMISSION_COOLDOWN_MS = 0;
+const SUBMISSION_COOLDOWN_MS = 20_000;
 const LOCAL_LOCK_TTL_MS = 90_000;
 const MAX_SUBMIT_ATTEMPTS = 4;
 const IMAGE_MAX_BYTES = 3 * 1024 * 1024;
@@ -257,11 +257,14 @@ function lastSubmissionMs(snapshot) {
 }
 
 function cooldownRemainingMs(snapshot) {
-  return 0;
+  const last = lastSubmissionMs(snapshot);
+  return last > 0 ? Math.max(0, SUBMISSION_COOLDOWN_MS - (Date.now() - last)) : 0;
 }
 
 async function preflightCooldown(uid) {
-  return;
+  const snapshot = await getDoc(doc(db, "complaint_rate_limits", uid));
+  const remaining = cooldownRemainingMs(snapshot);
+  if (remaining > 0) throw new Error(`Please wait ${Math.ceil(remaining / 1000)} seconds before submitting another complaint.`);
 }
 
 function normalizedErrorCode(error) {

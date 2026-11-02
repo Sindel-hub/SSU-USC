@@ -623,7 +623,7 @@ service cloud.firestore {
 
         // Authorized election reviewers may manually remove pending candidate applications.
         // This supports the officer "Remove Candidate" action while keeping access controlled.
-        allow delete: if (isOfficerOrAdmin() || role() == "officer" || role() == "admin")
+        allow delete: if officerHasPermission("elections.review")
           && resource.data.status == "Under Review";
       }
 
@@ -642,10 +642,36 @@ service cloud.firestore {
           && request.resource.data.candidateId == candidateId
           && request.resource.data.approved == true
           && request.resource.data.position in ["President", "Vice President", "Secretary", "Treasurer", "Auditor", "Public Relations Officer", "Business Manager", "Sgt. at Arms", "Department Representative"];
-        allow update: if false;
-        // Authorized election reviewers/admins may remove a candidate application
-        // while preserving the election audit trail handled by the application layer.
-        allow delete: if officerHasPermission("elections.review");
+        // Changes and their immutable audit event must commit together.
+        allow update: if officerHasPermission("elections.review")
+          && resource.data.get("removed", false) == false
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+            "fullName", "position", "department", "partylist", "platform", "campaignPhotoUrl",
+            "removed", "updatedAt", "updatedByUid", "managementAuditId", "resultIdentity"
+          ])
+          && request.resource.data.fullName is string
+          && request.resource.data.fullName.size() > 0 && request.resource.data.fullName.size() <= 120
+          && request.resource.data.position in ["President", "Vice President", "Secretary", "Treasurer", "Auditor", "Public Relations Officer", "Business Manager", "Sgt. at Arms", "Department Representative"]
+          && request.resource.data.get("department", "").size() <= 160
+          && request.resource.data.get("partylist", "").size() <= 100
+          && request.resource.data.get("platform", "").size() <= 5000
+          && request.resource.data.get("campaignPhotoUrl", "").size() <= 1000
+          && request.resource.data.updatedAt == request.time
+          && request.resource.data.updatedByUid == uid()
+          && request.resource.data.get("removed", false) is bool
+          && (request.time < electionDoc(electionId).votingStart
+            ? request.resource.data.get("resultIdentity", null) == resource.data.get("resultIdentity", null)
+            : ((request.time >= electionDoc(electionId).votingEnd
+                || (request.resource.data.position == resource.data.position
+                  && request.resource.data.get("department", "") == resource.data.get("department", "")))
+              && request.resource.data.resultIdentity == resource.data.get("resultIdentity", resource.data)))
+          && !exists(/databases/$(database)/documents/audit_logs/$(request.resource.data.managementAuditId))
+          && getAfter(/databases/$(database)/documents/audit_logs/$(request.resource.data.managementAuditId)).data.actorUid == uid()
+          && getAfter(/databases/$(database)/documents/audit_logs/$(request.resource.data.managementAuditId)).data.target == "elections/" + electionId + "/candidates/" + candidateId
+          && getAfter(/databases/$(database)/documents/audit_logs/$(request.resource.data.managementAuditId)).data.before == resource.data
+          && getAfter(/databases/$(database)/documents/audit_logs/$(request.resource.data.managementAuditId)).data.after == request.resource.data
+          && getAfter(/databases/$(database)/documents/audit_logs/$(request.resource.data.managementAuditId)).data.action == (request.resource.data.get("removed", false) ? "CANDIDATE_REMOVE" : "CANDIDATE_EDIT");
+        allow delete: if false;
       }
 
       // Capstone browser ballot. The ballot document itself contains only candidate IDs
@@ -711,7 +737,8 @@ service cloud.firestore {
             && electionDoc(electionId).finalized == true
             && request.time >= electionDoc(electionId).votingEnd)
           || resultsReadableByServer(electionId);
-        allow create, update: if officerHasPermission("elections.results") && isCanvasser()
+        allow update: if false;
+        allow create: if officerHasPermission("elections.results") && isCanvasser()
           && resultId == "official"
           && electionDoc(electionId).finalized == true
           && request.time >= electionDoc(electionId).resultPublicationStart;
@@ -850,7 +877,13 @@ service cloud.firestore {
     && request.resource.data.action is string
     && (
       isAdmin()
-
+      || (
+        officerHasPermission("elections.review")
+        && request.resource.data.action in ["CANDIDATE_EDIT", "CANDIDATE_REMOVE", "CANDIDATE_APPLICATION_REMOVE"]
+        && request.resource.data.source == "browser-election-runtime"
+        && request.resource.data.target.matches("^elections/[^/]+/(candidates|applications)/[^/]+$")
+        && request.resource.data.createdAt == request.time
+      )
       ||
 
       (

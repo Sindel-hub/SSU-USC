@@ -1,3 +1,4 @@
+import { createGmailPasswordAuthenticator } from "./gmail-login.mjs";
 import { createInstitutionalAccountService } from "./institutional-accounts.mjs";
 import {
   CORS_HEADERS,
@@ -8,6 +9,8 @@ import {
   errorText,
   escapeHtml,
   firebaseUserByUid,
+  firebasePasswordIdentity,
+  gmailRateLimitHash,
   firestoreGet,
   firestoreVersionedGet,
   firestoreIdentityCommit,
@@ -130,8 +133,8 @@ async function saveSettings(req: Request, body: Record<string, unknown>) {
 
   const verifyUrl = `${env().portalUrl}/email/verify-gmail.html?token=${encodeURIComponent(token)}`;
   const accountLabel = accountRole === "officer" ? "officer" : "student";
-  const text = `A signed-in SSU USC ${accountLabel} requested to use this Gmail from their ${PROFILE_SCOPE_LABEL} for portal notifications and optional password recovery.\n\nConfirm the Gmail here:\n${verifyUrl}\n\nThe link expires in 24 hours. If you did not request this, ignore the email.`;
-  const html = `<p>A signed-in SSU USC <strong>${escapeHtml(accountLabel)}</strong> requested to use this Gmail from their ${escapeHtml(PROFILE_SCOPE_LABEL)} for portal notifications and optional password recovery.</p><p><a href="${escapeHtml(verifyUrl)}" style="display:inline-block;padding:12px 18px;border-radius:10px;background:#2457a7;color:white;text-decoration:none;font-weight:700">Review &amp; confirm my Gmail</a></p><p>This link expires in 24 hours. If you did not request this, ignore the email.</p>`;
+  const text = `A signed-in SSU USC ${accountLabel} requested to use this Gmail from their ${PROFILE_SCOPE_LABEL} for portal login with the existing password, notifications and optional password recovery.\n\nConfirm the Gmail here:\n${verifyUrl}\n\nThe link expires in 24 hours. If you did not request this, ignore the email.`;
+  const html = `<p>A signed-in SSU USC <strong>${escapeHtml(accountLabel)}</strong> requested to use this Gmail from their ${escapeHtml(PROFILE_SCOPE_LABEL)} for portal login with the existing password, notifications and optional password recovery.</p><p><a href="${escapeHtml(verifyUrl)}" style="display:inline-block;padding:12px 18px;border-radius:10px;background:#2457a7;color:white;text-decoration:none;font-weight:700">Review &amp; confirm my Gmail</a></p><p>This link expires in 24 hours. If you did not request this, ignore the email.</p>`;
   try {
     const providerId = await sendEmail(email, "Verify your Gmail for SSU USC", html, text);
     await logDelivery({ uid: user.uid, recipient: email, kind: "verification", status: "sent", providerId });
@@ -209,7 +212,7 @@ async function verifyToken(token: string): Promise<Response> {
   const returnUrl = `${env().portalUrl}${portalPage(profile)}`;
   return jsonResponse({
     ok: true,
-    message: "Your Gmail is verified and ready for the notification and recovery options you enabled.",
+    message: "Your Gmail is verified. You can sign in with your existing account password; notifications and recovery follow the options you enabled.",
     email: data.requested_email,
     accountRole: roleName(profile),
     profileLabel: profileLabel(profile),
@@ -275,6 +278,45 @@ Deno.serve(async (req) => {
       if (action === "institutional_request") return jsonResponse(await institutionalAccounts.request(user, body.email));
       if (action === "institutional_verify") return jsonResponse(await institutionalAccounts.verify(user, body.token));
       return jsonResponse(await institutionalAccounts.resetPassword(user, String(body.uid || "")));
+    }
+    if (action === "resolve_gmail_login") {
+      // Retire the unauthenticated metadata oracle; old callers receive no identity.
+      return jsonResponse({ok:false, message:"Unable to sign in. Check your credentials or use your Student ID."}, 401);
+    }
+    if (action === "authenticate_gmail") {
+      const authenticate = createGmailPasswordAuthenticator({
+        canonicalGmail,
+        consumeBudget: async (email: string, address: string) => {
+          const { data, error } = await supabase.rpc("consume_gmail_login_budget", {
+            p_identity_hash: await gmailRateLimitHash(`identity:${email}`),
+            p_client_hash: address ? await gmailRateLimitHash(`client:${address}`) : null,
+          });
+          if (error || typeof data !== "boolean") throw new Error("Rate limiter unavailable.");
+          return data;
+        },
+        verifiedAccount: async (email: string) => {
+          const {data, error} = await supabase.from("student_email_accounts")
+            .select("firebase_uid,requested_email,verified_email,verified_at")
+            .eq("requested_email",email).eq("verified_email",email).maybeSingle();
+          if (error) throw new Error("Sign-in unavailable.");
+          return data;
+        },
+        profile:(uid: string)=>firestoreGet(`users/${uid}`), activeProfile:activeEmailProfile,
+        authUser:firebaseUserByUid, authByEmail:firebaseUserByEmail,
+        passwordIdentity:firebasePasswordIdentity,
+        finishDelay:async (start: number)=>{
+          const jitter = crypto.getRandomValues(new Uint8Array(1))[0] % 101;
+          const remaining = 900 + jitter - (Date.now()-start);
+          if (remaining > 0) await new Promise(resolve=>setTimeout(resolve,remaining));
+        },
+      });
+      // Only use an address header explicitly guaranteed to be overwritten by the
+      // deployment gateway. Otherwise global + identity limits still apply.
+      const trustedHeader = String(Deno.env.get("GMAIL_LOGIN_TRUSTED_IP_HEADER") || "").toLowerCase();
+      const address = ["cf-connecting-ip","x-real-ip"].includes(trustedHeader) ? String(req.headers.get(trustedHeader)||"") : "";
+      const safeAddress = /^[0-9a-fA-F:.]{3,64}$/.test(address) ? address : "";
+      const result = await authenticate(body, safeAddress);
+      return jsonResponse(result.body,result.status);
     }
     if (action === "verify") return await verifyToken(String(body.token || ""));
     if (action === "recover") {

@@ -1,7 +1,8 @@
+import { effectiveOfficerPermissions } from "../../../shared/officer-permissions.js";
 import { auth, db } from "../../../firebase/firebase-config.js";
 import { callSecure, openPrivateFile, resolveMediaUrl } from "../../../shared/security-client.js";
 import {
-  collection, doc, getDoc, getDocs, deleteDoc
+  collection, doc, getDoc, getDocs
 } from "https://www.gstatic.com/firebasejs/12.12.0/firebase-firestore.js";
 
 const uscAuthAllowed = await (globalThis.USC_AUTH_READY || Promise.resolve(false));
@@ -41,6 +42,7 @@ let candidates = [];
 let turnout = { ballotsCast: 0, eligibleVoters: 0 };
 let departmentTurnout = { totalVoters: 0, departments: [] };
 let trustedClaims = {};
+let canManageCandidates = false;
 
 let scheduleFormDirty = false;
 
@@ -73,7 +75,7 @@ function lifecycleDescription() {
     "Voting Closed": "Voting Closed: no more ballots are accepted. Finalization is required before canvassing.",
     Canvassing: "Canvassing: the election is finalized and authorized canvassers may inspect tallies.",
     "Results Published": "Results Published: official candidate totals are now student-readable.",
-    Archived: "Archived: schedule, candidate records, and election results are locked."
+    Archived: "Archived: official results are preserved. Authorized officers may still manage candidate profiles."
   };
   return map[context.lifecycle] || context.lifecycle;
 }
@@ -257,13 +259,13 @@ function renderStats() {
   const eligible = Number(turnout.eligibleVoters || context?.eligibleVoterCount || 0);
   const percent = eligible > 0 ? Math.min(100, ballots / eligible * 100) : 0;
   if (els.activeElectionCount) els.activeElectionCount.textContent = electionId ? "01" : "00";
-  if (els.candidateCount) els.candidateCount.textContent = String(candidates.length);
+  if (els.candidateCount) els.candidateCount.textContent = String(candidates.filter((c) => !c.removed).length);
   if (els.votesCastCount) els.votesCastCount.textContent = String(ballots);
   if (els.turnoutPercent) els.turnoutPercent.textContent = `${percent.toFixed(1)}%`;
   if (els.turnoutProgressLabel) els.turnoutProgressLabel.textContent = `${ballots} / ${eligible}`;
   if (els.turnoutBar) { els.turnoutBar.style.width = `${percent}%`; els.turnoutBar.textContent = `${percent.toFixed(1)}%`; }
   if (els.turnoutSnapshotText) els.turnoutSnapshotText.textContent = `${ballots} of ${eligible} ballots cast`;
-  if (els.candidateSnapshotText) els.candidateSnapshotText.textContent = `${candidates.length} validated`;
+  if (els.candidateSnapshotText) els.candidateSnapshotText.textContent = `${candidates.filter((c) => !c.removed).length} validated`;
   // Deliberately suppress live candidate totals for ordinary officers.
   if (els.presidentAnalytics) els.presidentAnalytics.innerHTML = `<div class="note-box"><strong>Candidate totals protected</strong><p>${context?.lifecycle === "Voting" ? "Voting is active. Only turnout and system health are shown." : "Candidate tallies are available only to an authorized canvasser after finalization."}</p></div>`;
   if (els.viceAnalytics) els.viceAnalytics.innerHTML = `<div class="note-box"><strong>Secret-ballot administration</strong><p>The officer dashboard never displays which student selected which candidate.</p></div>`;
@@ -368,20 +370,65 @@ async function submitCandidatePreviewDecision(application, decision, trigger) {
 }
 
 async function removeCandidateApplication(application) {
-  if (!confirm(`Remove ${application.fullName || "this candidate"} from the candidate list?`)) return;
+  const candidate = candidates.find((c) => c.id === application.candidateId);
+  if (candidate) return removeElectionCandidate(candidate);
+  if (!canManageCandidates || application.status !== "Under Review") return;
+  if (!confirm(`Remove the pending application for ${application.fullName}? This action will be audited.`)) return;
   try {
-    // Spark-plan compatible removal: no Cloud Function required.
-    // Firestore Security Rules control who can perform this action.
-    const activeElectionId = clean(electionId || "");
-    if (!activeElectionId) throw new Error("No active election selected.");
-
-    await deleteDoc(doc(db, "elections", activeElectionId, "applications", application.id));
-
+    await callSecure("removeCandidateApplication", {applicantUid:application.id});
     closeCandidatePreview();
     await refreshAll();
-  } catch (error) {
-    alert(error.message);
+  } catch (error) { alert(error.message); }
+}
+
+async function removeElectionCandidate(candidate) {
+  if (!canManageCandidates || candidate.removed) return;
+  if (!confirm(`Remove ${candidate.fullName} from the visible candidate list and future ballots? Existing votes, audit history, and official results will be preserved.`)) return;
+  try {
+    await callSecure("removeElectionCandidate", {electionId, candidateId:candidate.id});
+    closeCandidatePreview();
+    await refreshAll();
+  } catch (error) { alert(error.message); }
+}
+
+function renderCandidateManagement() {
+  let panel = $("candidateManagementCard");
+  if (!panel) {
+    $("candidateReviewCard")?.insertAdjacentHTML("beforebegin", `<section class="card" id="candidateManagementCard" style="margin-bottom:18px"><div class="card-head"><div><h3>Candidate Management</h3><span>Edit profiles or remove candidates at any election stage. Historical votes and official results are preserved.</span></div></div><div class="card-body" id="candidateManagementList"></div></section>`);
+    panel = $("candidateManagementCard");
   }
+  if (!panel) return;
+  const list = $("candidateManagementList");
+  const visible = candidates.filter((c) => !c.removed);
+  list.innerHTML = visible.map((c) => `<article class="candidate-review-item"><div class="candidate-review-copy"><strong>${esc(c.fullName)}</strong><p>${esc(c.position)}${c.department ? ` · ${esc(c.department)}` : ""}</p></div>${canManageCandidates ? `<div class="row-actions"><button type="button" class="mini-btn light" data-edit-profile="${esc(c.id)}"><i class="fa-solid fa-pen"></i> Edit</button><button type="button" class="mini-btn danger" data-remove-profile="${esc(c.id)}"><i class="fa-solid fa-trash"></i> Remove</button></div>` : ""}</article>`).join("") || `<div class="review-empty-state">No active candidate profiles.</div>`;
+  list.querySelectorAll("[data-edit-profile]").forEach((b) => b.addEventListener("click", () => openCandidateEditor(candidates.find((c) => c.id === b.dataset.editProfile))));
+  list.querySelectorAll("[data-remove-profile]").forEach((b) => b.addEventListener("click", () => removeElectionCandidate(candidates.find((c) => c.id === b.dataset.removeProfile))));
+}
+
+function openCandidateEditor(candidate) {
+  if (!canManageCandidates || !candidate || candidate.removed) return;
+  let dialog = $("candidateEditDialog");
+  if (!dialog) {
+    document.body.insertAdjacentHTML("beforeend", `<dialog id="candidateEditDialog" class="candidate-edit-dialog"></dialog>`);
+    dialog = $("candidateEditDialog");
+  }
+  const locked = Date.now() >= Number(context?.votingStart || 0) && Date.now() < Number(context?.votingEnd || 0);
+  const fields = [["fullName","Full name",120],["position","Position",80],["department","Department",160],["partylist","Partylist",100],["campaignPhotoUrl","Campaign photo HTTPS URL",1000],["platform","Platform and advocacy",5000]];
+  const positions = ["President","Vice President","Secretary","Treasurer","Auditor","Public Relations Officer","Business Manager","Sgt. at Arms","Department Representative"];
+  dialog.innerHTML = `<form><h3>Edit Candidate</h3><p>Profile changes do not rewrite historical results. Position and department remain fixed while voting is active.</p>${fields.map(([key,label,max]) => `<label class="field">${label}${key === "position" ? `<select name="${key}" ${locked ? "disabled" : ""}>${positions.map((v) => `<option ${v === candidate.position ? "selected" : ""}>${esc(v)}</option>`).join("")}</select>` : key === "platform" ? `<textarea name="${key}" maxlength="${max}">${esc(candidate[key])}</textarea>` : `<input name="${key}" value="${esc(candidate[key])}" maxlength="${max}" ${key === "fullName" ? "required" : ""} ${key === "department" && locked ? "disabled" : ""}>`}</label>`).join("")}<p role="alert" id="candidateEditError"></p><div class="row-actions"><button type="button" class="mini-btn light" data-cancel>Cancel</button><button type="submit" class="mini-btn primary">Save changes</button></div></form>`;
+  dialog.querySelector("[data-cancel]").onclick = () => dialog.close();
+  dialog.querySelector("form").onsubmit = async (event) => {
+    event.preventDefault();
+    const button = dialog.querySelector('[type="submit"]');
+    button.disabled = true;
+    const details = Object.fromEntries(fields.map(([key]) => [key, dialog.querySelector(`[name="${key}"]`).value]));
+    try {
+      await callSecure("updateElectionCandidate", {electionId, candidateId:candidate.id, details});
+      dialog.close();
+      await refreshAll();
+    } catch (error) { $("candidateEditError").textContent = error.message; button.disabled = false; }
+  };
+  dialog.showModal();
 }
 
 async function openCandidatePreview(uid) {
@@ -433,7 +480,7 @@ async function openCandidatePreview(uid) {
     <div class="candidate-preview-footer-actions">
       <button class="mini-btn light" type="button" data-candidate-preview-close>Close</button>
       ${canReview ? `<button class="mini-btn danger candidate-preview-return" type="button" data-preview-decision="reject"><i class="fa-solid fa-rotate-left"></i> Reject</button><button class="mini-btn primary candidate-preview-approve" type="button" data-preview-decision="approve"><i class="fa-solid fa-check"></i> Approve</button>` : ""}
-      ${status.toLowerCase() === "under review" ? `<button class="mini-btn danger" type="button" data-remove-candidate="${esc(application.id)}"><i class="fa-solid fa-trash"></i> Remove</button>` : `<button class="mini-btn danger" type="button" disabled title="Only pending candidates can be removed"><i class="fa-solid fa-trash"></i> Remove</button>`}
+      ${canManageCandidates && (application.status === "Under Review" || candidates.some((c) => c.id === application.candidateId && !c.removed)) ? `<button class="mini-btn danger" type="button" data-remove-candidate="${esc(application.id)}"><i class="fa-solid fa-trash"></i> Remove</button>` : ""}
     </div>`;
 
   if (dialog.open) dialog.close();
@@ -661,7 +708,7 @@ async function showTallies() {
     ]);
     const counts = new Map();
     ballots.forEach((d)=>Object.values(d.data().selections||{}).forEach((id)=>counts.set(String(id),(counts.get(String(id))||0)+1)));
-    const rows = candidateSnap.docs.filter((d)=>d.data().approved===true).map((d)=>({ ...d.data(), id:d.id, votes:counts.get(d.id)||0 })).sort((a,b)=>clean(a.position).localeCompare(clean(b.position)) || Number(b.votes||0)-Number(a.votes||0));
+    const rows = candidateSnap.docs.filter((d)=>d.data().approved===true).map((d)=>({ ...(d.data().resultIdentity || d.data()), id:d.id, votes:counts.get(d.id)||0 })).sort((a,b)=>clean(a.position).localeCompare(clean(b.position)) || Number(b.votes||0)-Number(a.votes||0));
     alert(rows.map((r)=>`${r.position}: ${r.fullName} — ${Number(r.votes||0)}`).join("\n") || "No tallies recorded.");
   } catch (error) { alert(error.message || "Tallies are not available."); }
 }
@@ -694,6 +741,7 @@ async function refreshAll(forceSchedule = false) {
   renderStats();
   renderDepartmentTurnout();
   renderApplications();
+  renderCandidateManagement();
 
   const finalize = $("finalizeElectionBtn");
   const publish = $("publishResultsBtn");
@@ -733,6 +781,7 @@ installHardeningPanels();
   const tokenClaims = (await auth.currentUser?.getIdTokenResult(true))?.claims || {};
   const profileSnap = auth.currentUser ? await getDoc(doc(db, "users", auth.currentUser.uid)).catch(() => null) : null;
   const profile = profileSnap?.exists?.() ? profileSnap.data() : {};
+  canManageCandidates = effectiveOfficerPermissions(profile).includes("elections.review") || String(tokenClaims.role || profile.role).toLowerCase() === "admin";
   trustedClaims = {
     ...tokenClaims,
     role: String(tokenClaims.role || profile.role || "").toLowerCase(),

@@ -88,14 +88,15 @@ test("complaint and election actions enforce function-level permissions", () => 
 });
 
 
-test("officer dashboard keeps complaint/election summaries and recent records visible in the read-only model", () => {
+test("officer dashboard keeps complaint analytics, election access and recent records visible in the read-only model", () => {
   const html = read("usc-admin/overview/overview.html");
   const js = read("usc-admin/overview/js/overview.js");
-  assert.match(html, /data-overview-total-complaints/);
-  assert.match(html, /data-overview-complaint-student/);
-  assert.match(html, /data-overview-complaint-administrative/);
-  assert.match(html, /data-overview-complaint-crisis/);
-  assert.match(html, /data-overview-election-registered/);
+  assert.match(html, /data-summary="complaint"/);
+  assert.match(html, /href="\.\.\/elections\/elections\.html"/);
+  assert.match(html, /id="officerOverviewEvents"/);
+  assert.match(html, /id="officerOverviewPrograms"/);
+  assert.match(js, /renderOverviewChart\('complaint'/);
+  assert.match(js, /state\.complaintAnalytics =/);
   assert.doesNotMatch(js, /overviewHasPermission\("complaints\.view"\)/);
   assert.doesNotMatch(js, /Aggregate complaint statistics are available on the dashboard/);
   assert.match(js, /where\("classification","==","Student Level"\)/);

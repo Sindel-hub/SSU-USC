@@ -333,3 +333,22 @@ export async function resetFirebaseAuthPassword(uid: string, password: string, t
     method: "POST", body: JSON.stringify({ localId: uid, password, validSince: String(Math.floor(timestamp / 1000)) })
   });
 }
+
+// Verify only: discard provider tokens and never propagate provider errors or passwords.
+export async function firebasePasswordIdentity(email: string, password: string): Promise<{uid:string}> {
+  const response = await fetch(`https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=${encodeURIComponent(env().firebaseWebApiKey)}`, {
+    method: "POST", headers:{"Content-Type":"application/json"},
+    body:JSON.stringify({email, password, returnSecureToken:false}),
+  });
+  const payload = await response.json().catch(() => ({}));
+  if (!response.ok || !payload?.localId) throw new Error("Invalid sign-in credentials.");
+  return {uid:String(payload.localId)};
+}
+
+export async function gmailRateLimitHash(value: string): Promise<string> {
+  const secret = String(Deno.env.get("GMAIL_LOGIN_RATE_LIMIT_SECRET") || "");
+  if (secret.length < 32) throw new Error("Gmail rate limiting is not configured.");
+  const key = await crypto.subtle.importKey("raw", new TextEncoder().encode(secret), {name:"HMAC",hash:"SHA-256"}, false, ["sign"]);
+  const digest = await crypto.subtle.sign("HMAC", key, new TextEncoder().encode(value));
+  return [...new Uint8Array(digest)].map(byte=>byte.toString(16).padStart(2,"0")).join("");
+}

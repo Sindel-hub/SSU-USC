@@ -46,7 +46,9 @@ test('student profile always contains the Gmail self-service section above passw
   const gmailIndex = profile.indexOf('id="gmailSettings"');
   const passwordIndex = profile.indexOf('usc-profile-password-card');
   assert.ok(gmailIndex >= 0 && passwordIndex > gmailIndex);
-  assert.match(email, /Your Gmail address/);
+  assert.match(email, /<label[^>]*for="gmailAddress">Personal Gmail address<\/label>/);
+  assert.match(email, /id="gmailAddress" type="email"/);
+  assert.match(email, /Gmail login, recovery and alerts activate after you confirm it/);
   assert.match(email, /No administrator approval is required/);
   assert.doesNotMatch(email, /<details>/);
 });
