@@ -286,13 +286,12 @@ Deno.serve(async (req) => {
       const user = await verifyFirebaseIdToken(String(req.headers.get("x-firebase-token") || ""));
       return jsonResponse(await removeSuspendedAccount(user, String(body.uid || "")));
     }
-    if (["institutional_get", "institutional_request", "institutional_verify", "admin_reset_password", "admin_set_password"].includes(action)) {
+    if (["institutional_get", "institutional_request", "institutional_verify", "admin_reset_password"].includes(action)) {
       const user = await verifyFirebaseIdToken(String(req.headers.get("x-firebase-token") || ""));
       if (action === "institutional_get") return jsonResponse(await institutionalAccounts.status(user));
       if (action === "institutional_request") return jsonResponse(await institutionalAccounts.request(user, body.email));
       if (action === "institutional_verify") return jsonResponse(await institutionalAccounts.verify(user, body.token));
-      if (action === "admin_set_password" && typeof body.newPassword !== "string") throw new Error("A new password is required.");
-      return jsonResponse(await institutionalAccounts.resetPassword(user, String(body.uid || ""), action === "admin_set_password" ? body.newPassword : undefined));
+      return jsonResponse(await institutionalAccounts.resetPassword(user, String(body.uid || "")));
     }
     if (action === "resolve_gmail_login") {
       // Retire the unauthenticated metadata oracle; old callers receive no identity.

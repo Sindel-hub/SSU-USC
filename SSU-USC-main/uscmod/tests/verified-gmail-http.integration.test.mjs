@@ -170,53 +170,17 @@ function manualFixture() {
  adminAuthRecords.set('synthetic-admin',{uid:'synthetic-admin',disabled:false,emailVerified:true,customClaims:{role:'admin'}});
  adminAuthRecords.set(uid,{...user,customClaims:{role:'student'}});
 }
-test('integrated actual Edge manual-password action validates admin and applies exact target password without email',async()=>{
- manualFixture();const password='Synthetic!Password123';
- const response=await post({action:'admin_set_password',uid,newPassword:password});
- assert.equal(response.status,200);assert.equal((await response.json()).temporaryPassword,password);
- assert.deepEqual(passwordWrites,[{uid,password}]);
- assert.ok(!JSON.stringify([...adminRecords]).includes(password));
- assert.equal([...adminRecords].filter(([path])=>path.startsWith('audit_logs/')).length,1);
-});
-test('integrated manual-password rejects missing or weak password before any mutation',async()=>{
+test('removed manual-password action is rejected without account mutation',async()=>{
  manualFixture();
- for(const password of [undefined,null,123,'short','MissingSpecial123','Has spaces!123']){
-  const response=await post({action:'admin_set_password',uid,newPassword:password});assert.ok(response.status>=400);
- }
- assert.equal(passwordWrites.length,0);
-});
-test('integrated manual-password rejects unauthorized, stale, inactive and unverified administrators',async()=>{
- for(const change of [
-  ()=>{adminSession=null;},()=>{adminSession.role='student';},()=>{adminSession.authTime=0;},
-  ()=>{adminRecords.get('users/synthetic-admin').data.isActive=false;},
-  ()=>{adminAuthRecords.get('synthetic-admin').emailVerified=false;},
-  ()=>{adminAuthRecords.get('synthetic-admin').disabled=true;},
-  ()=>{adminAuthRecords.get('synthetic-admin').customClaims={role:'student'};},
-  ()=>{adminAuthRecords.get('synthetic-admin').uid='different';}
- ]){
-  manualFixture();change();const response=await post({action:'admin_set_password',uid,newPassword:'Synthetic!Password123'});
-  assert.ok(response.status>=400);assert.equal(passwordWrites.length,0);
- }
-});
-test('integrated manual-password rejects privileged, disabled, suspended, unverified and mismatched target identities',async()=>{
- for(const change of [
-  ()=>{adminAuthRecords.get(uid).customClaims={role:'admin'};},
-  ()=>{adminAuthRecords.get(uid).customClaims={admin:true};},
-  ()=>{adminAuthRecords.get(uid).customClaims={role:'unknown'};},
-  ()=>{adminAuthRecords.get(uid).disabled=true;},
-  ()=>{adminAuthRecords.get(uid).uid='different';},
-  ()=>{adminRecords.get('users/'+uid).data.accountStatus='suspended';},
-  ()=>{adminRecords.get('users/'+uid).data.isActive=false;},
-  ()=>{adminRecords.get('users/'+uid).data.isVerifiedStudent=false;},
-  ()=>{adminRecords.get('users/'+uid).data.role='admin';}
- ]){
-  manualFixture();change();const response=await post({action:'admin_set_password',uid,newPassword:'Synthetic!Password123'});
-  assert.ok(response.status>=400);assert.equal(passwordWrites.length,0);
- }
-});
-test('old backend manual action fails explicitly without any password or email mutation',async()=>{
- manualFixture();legacyBackend=true;
  const response=await post({action:'admin_set_password',uid,newPassword:'Synthetic!Password123'});
  assert.equal(response.status,400);assert.match((await response.json()).message,/Unknown email-service action/);
  assert.equal(passwordWrites.length,0);
+});
+test('existing generated admin reset still succeeds without manual input',async()=>{
+ manualFixture();
+ const response=await post({action:'admin_reset_password',uid});
+ assert.equal(response.status,200);const result=await response.json();
+ assert.ok(result.temporaryPassword);assert.equal(passwordWrites.length,1);
+ assert.equal(passwordWrites[0].uid,uid);assert.equal(passwordWrites[0].password,result.temporaryPassword);
+ assert.ok(!JSON.stringify([...adminRecords]).includes(result.temporaryPassword));
 });

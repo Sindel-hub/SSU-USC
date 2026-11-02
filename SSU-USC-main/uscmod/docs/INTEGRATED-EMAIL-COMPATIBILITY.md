@@ -1,3 +1,5 @@
+> Superseded for administrator-entered passwords: the user requested removal. The removal branch restores generated reset/recovery and retires admin_set_password. The package checksums and deployment proposal below describe the previous review and must not be used as a release authorization or current package identity. The separate Gmail login mismatch remains unresolved in production.
+
 # Integrated usc-email compatibility review
 
 ## Production evidence and decision
