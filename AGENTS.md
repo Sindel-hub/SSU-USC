@@ -255,3 +255,14 @@ After an authorized deployment:
 **I request changes → Codex modifies the website → Codex tests the changes → Codex shows me what changed → Vercel Preview website → I test and review → I say APPROVE AND DEPLOY → GitHub merges to main → Vercel updates the live website.**
 
 My production website must remain unchanged until I have personally reviewed and explicitly approved the changes.
+
+## Latest override — pull requests are merged manually by the user
+
+The user reserves the final GitHub pull-request merge action for themselves. This overrides any earlier instruction authorizing Codex to merge after approval or after `APPROVE AND DEPLOY`.
+
+- Prepare, test, commit and push development changes; create/update the PR and verified Preview as authorized.
+- After review, leave the PR for the user to merge manually in GitHub.
+- Never merge a PR, enable auto-merge, schedule a merge, or use a merge queue on the user's behalf. Approval does not grant that permission.
+- Keep required checks and branch protections in place. Do not change repository or Vercel settings to circumvent this manual gate.
+- The existing Vercel integration may deploy after the user manually merges. Verify and report that deployment when requested; do not initiate a separate production deployment without authorization.
+- Required production backend changes still require separate explicit authorization and coordinated deployment order.
