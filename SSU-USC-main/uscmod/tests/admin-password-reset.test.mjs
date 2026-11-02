@@ -26,8 +26,7 @@ test('user directory has reset password control and one-time credential card', (
   assert.match(usersHtml, /NEW TEMPORARY PASSWORD/);
   assert.match(usersHtml, /id="copyTemporaryPasswordButton"/);
   assert.match(usersHtml, /id="printTemporaryPasswordButton"/);
-  assert.match(usersJs, /newPassword \? 'adminSetUserPassword' : 'adminResetUserPassword'/);
-  assert.match(usersJs, /callSecure\(resetAction/);
+  assert.match(usersJs, /callSecure\('adminResetUserPassword'/);
   assert.match(usersJs, /resetSelectedUserPassword/);
 });
 

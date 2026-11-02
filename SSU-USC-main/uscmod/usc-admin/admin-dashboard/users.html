@@ -181,12 +181,6 @@
                     <div class="field"><label for="adminNotesInput">Admin notes</label><textarea id="adminNotesInput" placeholder="Internal admin notes for this account."></textarea></div>
                     <div class="field"><label for="roleChangeNote">Change reason</label><textarea id="roleChangeNote" placeholder="Required when changing role, status, or active access."></textarea></div>
                     <div class="subtext" id="roleRoutePreview">Route after next login: Student dashboard</div>
-                    <fieldset><legend>Password reset</legend>
-                      <p class="subtext">Leave both fields blank to generate a password or use existing recovery. To choose a password, enter it twice, then click Reset password. Saving user updates does not change the password.</p>
-                      <div class="field"><label for="adminNewPassword">New password (optional)</label><input id="adminNewPassword" type="password" autocomplete="new-password" maxlength="64" aria-describedby="adminPasswordHelp" /></div>
-                      <div class="field"><label for="adminConfirmPassword">Confirm new password</label><input id="adminConfirmPassword" type="password" autocomplete="new-password" maxlength="64" /></div>
-                      <p class="subtext" id="adminPasswordHelp">Use 10–64 characters with uppercase, lowercase, a number and a special character, without spaces. Share the password privately.</p>
-                    </fieldset>
                     <div class="editor-actions"><button type="submit" class="btn primary" id="saveRoleButton">Save user updates</button><button type="button" class="btn light" id="approveUserButton">Approve</button><button type="button" class="btn danger-light" id="suspendUserButton">Suspend</button><button type="button" class="btn danger-light" id="removeUserButton" hidden>Remove account &amp; unlink Gmail</button><button type="button" class="btn light" id="reactivateUserButton">Reactivate</button><button type="button" class="btn light" id="demoteToStudentButton">Return to student</button><button type="button" class="btn password-reset-btn" id="resetUserPasswordButton"><i class="fa-solid fa-key" aria-hidden="true"></i> Reset password</button></div>
                     <div class="subtext" id="saveFeedbackText" role="status">Ready for admin updates.</div>
                     <div class="subtext" id="lastActionSummary" aria-live="polite">Select a user to begin.</div>

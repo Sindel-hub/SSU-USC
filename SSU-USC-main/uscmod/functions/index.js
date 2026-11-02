@@ -1625,11 +1625,7 @@ exports.adminResetUserPassword = onCall(callableOptions(), async (request) => {
     throw error;
   }
 
-  const requestedPassword = request.data?.newPassword;
-  if (requestedPassword !== undefined && (typeof requestedPassword !== 'string' || !/^(?=.{10,64}$)(?=.*[a-z])(?=.*[A-Z])(?=.*[0-9])(?=.*[^A-Za-z0-9\s])\S+$/.test(requestedPassword))) {
-    throw new HttpsError("invalid-argument", "Use 10–64 characters with uppercase, lowercase, number and special character, without spaces.");
-  }
-  const temporaryPassword = requestedPassword === undefined ? generateTemporaryPassword() : requestedPassword;
+  const temporaryPassword = generateTemporaryPassword();
   try {
     await adminAuth.updateUser(uid, { password: temporaryPassword });
   } catch (error) {
@@ -1836,6 +1832,3 @@ exports.syncElectionLifecycle = onSchedule({ region: REGION, schedule: "every 5 
 
 // Exported only for unit tests that run without Firebase deployment.
 exports.__test = { electionLifecycle, validateSchedule };
-
-// Separate endpoint prevents older deployments from silently generating a different password.
-exports.adminSetUserPassword = exports.adminResetUserPassword;

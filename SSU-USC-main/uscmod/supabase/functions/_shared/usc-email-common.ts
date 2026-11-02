@@ -327,7 +327,7 @@ export function activeStudentProfile(profile: Record<string, any> | null): boole
   return String(profile?.role || "").toLowerCase() === "student" && activeEmailProfile(profile);
 }
 
-export async function firebaseUserByUid(uid: string): Promise<{ uid: string; email: string; disabled: boolean; emailVerified: boolean; customClaims: Record<string, unknown> } | null> {
+export async function firebaseUserByUid(uid: string): Promise<{ uid: string; email: string; disabled: boolean; emailVerified: boolean } | null> {
   const cfg = env();
   const payload = await googleJson(`https://identitytoolkit.googleapis.com/v1/projects/${encodeURIComponent(cfg.firebaseProjectId)}/accounts:lookup`, {
     method: "POST",
@@ -335,9 +335,7 @@ export async function firebaseUserByUid(uid: string): Promise<{ uid: string; ema
   });
   const user = payload?.users?.[0];
   if (!user?.localId) return null;
-  const customClaims = user.customAttributes ? JSON.parse(user.customAttributes) : {};
-  if (!customClaims || typeof customClaims !== "object" || Array.isArray(customClaims)) throw new Error("Firebase account claims could not be verified.");
-  return { uid: String(user.localId), email: String(user.email || ""), disabled: Boolean(user.disabled), emailVerified: user.emailVerified === true, customClaims };
+  return { uid: String(user.localId), email: String(user.email || ""), disabled: Boolean(user.disabled), emailVerified: user.emailVerified === true };
 }
 
 export async function generateFirebaseResetLink(authEmail: string): Promise<string> {
