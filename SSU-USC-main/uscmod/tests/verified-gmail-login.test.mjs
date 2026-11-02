@@ -37,8 +37,14 @@ for(const [name,change] of [
 test('invalid addresses are rejected before any account lookup',async()=>{const h=fixture();h.deps.verifiedAccount=()=>{throw Error('must not query');};assert.equal(await resolveVerifiedGmailAccount(h.deps,'student@example.com'),null);});
 test('provider errors fail closed',async()=>{const h=fixture();h.deps.verifiedAccount=async()=>{throw Error('unavailable');};await assert.rejects(resolveVerifiedGmailAccount(h.deps,'personal@gmail.com'),/unavailable/);});
 
-function browser({verified=true,returnedUid='school-uid',nativeGmail=false,expectedPassword='correct-password',returnGmail='',settingsGmail='personal@gmail.com'}={}){
- const h=fixture(),calls=[],requests=[],alerts=[],handlers={},storage=new Map();let resets=0,signouts=0;if(returnGmail)storage.set('uscVerifiedGmailReturnEmail',returnGmail);
+function browser({verified=true,returnedUid='school-uid',nativeGmail=false,nativeConflict=false,activeConflict=false,trustedAdmin=false,expectedPassword='correct-password',returnGmail='',settingsGmail='personal@gmail.com'}={}){
+ const h=fixture(),calls=[],requests=[],alerts=[],handlers={},storage=new Map();
+ const legacy={uid:'legacy-uid',email:'personal@gmail.com',disabled:false},legacyProfile={role:'student',schoolProvisioned:true,accountStatus:activeConflict?'approved':'suspended',isActive:activeConflict,institutionalEmailVerified:true,studentStanding:'active'};
+ if(nativeGmail)h.user.email='personal@gmail.com';
+ h.deps.authByEmail=async email=>email==='personal@gmail.com'?(nativeConflict?legacy:nativeGmail?h.user:null):null;
+ h.deps.authUser=async uid=>uid==='legacy-uid'?legacy:uid===h.user.uid?h.user:null;
+ h.deps.profile=async uid=>uid==='legacy-uid'?legacyProfile:h.profile;
+ h.deps.activeNativeProfile=p=>p?.accountStatus==='approved'&&p.isActive!==false&&['student','officer','admin'].includes(p.role);let resets=0,signouts=0;if(returnGmail)storage.set('uscVerifiedGmailReturnEmail',returnGmail);
  const button={},form={prepend:()=>{},querySelector:()=>button,addEventListener:(event,fn)=>{handlers[event]=fn;},reset:()=>{resets++;}};
  const elements={signinForm:form,signinIdentifier:{value:'personal@gmail.com'},signinPassword:{value:'correct-password',addEventListener:(event,fn)=>{handlers['password-'+event]=fn;}},forgotPasswordBtn:{addEventListener:(event,fn)=>{handlers.recover=fn;}}};
  const auth={currentUser:null},location={};
@@ -48,7 +54,7 @@ function browser({verified=true,returnedUid='school-uid',nativeGmail=false,expec
   sessionStorage:{getItem:key=>storage.get(key)||null,setItem:(k,v)=>storage.set(k,v),removeItem:k=>storage.delete(k)},
   institutionalEmailForDisplay,isActiveStudentStanding,studentStandingLabel,
   doc:(_db,...parts)=>parts.join('/'),serverTimestamp:()=>123,runTransaction:async()=>{},
-  getDoc:async path=>({exists:()=>path.startsWith('users/')||aliases.has(path.split('/').at(-1)),data:()=>path.startsWith('users/')?h.profile:{authEmail:aliases.get(path.split('/').at(-1))}}),
+  getDoc:async path=>({exists:()=>path.startsWith('users/')||aliases.has(path.split('/').at(-1)),data:()=>path==='users/legacy-uid'?legacyProfile:path.startsWith('users/')?h.profile:{authEmail:aliases.get(path.split('/').at(-1))}}),
   fetch:async(url,options)=>{
    const body=JSON.parse(options.body);requests.push({url,...body,headers:options.headers});
    if(body.action==='get')return {ok:true,status:200,json:async()=>({ok:true,settings:{active:true,verifiedEmail:settingsGmail,accountRole:h.profile.role}})};
@@ -63,8 +69,8 @@ function browser({verified=true,returnedUid='school-uid',nativeGmail=false,expec
   },
   signInWithEmailAndPassword:async(_auth,email,password)=>{
    calls.push({email,password});
-   if((email!==h.user.email&&!(nativeGmail&&email==='personal@gmail.com'))||password!==expectedPassword)throw Object.assign(Error('Wrong password'),{code:'auth/invalid-credential'});
-   const user={uid:returnedUid,email:h.user.email,emailVerified:false,getIdToken:async()=> 'synthetic-token',getIdTokenResult:async()=>({claims:{}})};auth.currentUser=user;return {user};
+   if((email!==h.user.email&&!((nativeGmail||nativeConflict)&&email==='personal@gmail.com'))||password!==expectedPassword)throw Object.assign(Error('Wrong password'),{code:'auth/invalid-credential'});
+   const user={uid:nativeConflict&&email==='personal@gmail.com'?'legacy-uid':returnedUid,email:h.user.email,emailVerified:false,getIdToken:async()=> 'synthetic-token',getIdTokenResult:async()=>({claims:trustedAdmin?{role:'admin'}:{}})};auth.currentUser=user;return {user};
   },
   signOut:async()=>{auth.currentUser=null;signouts++;},
   window:{open:()=>{handlers.recoveryOpened=true;}},
@@ -77,10 +83,10 @@ function browser({verified=true,returnedUid='school-uid',nativeGmail=false,expec
 }
 test('Gmail requires backend Firebase password proof over HTTPS before the SDK authenticates',async()=>{
  const h=browser();assert.equal((await h.ctx.signInByIdentifier('personal@gmail.com','correct-password')).user.uid,'school-uid');
- assert.deepEqual(h.calls,[{email:'personal@gmail.com',password:'correct-password'},{email:'001234@student.ssu-usc.local',password:'correct-password'}]);
+ assert.deepEqual(h.calls,[{email:'001234@student.ssu-usc.local',password:'correct-password'}]);
  assert.equal(h.requests[0].headers['x-firebase-token'],undefined);assert.equal(h.requests[0].password,'correct-password');
 });
-test('unverified Gmail never attempts the school account password',async()=>{const h=browser({verified:false});await assert.rejects(h.ctx.signInByIdentifier('personal@gmail.com','correct-password'),/Unable to sign in/);assert.equal(h.calls.length,1);assert.equal(h.calls[0].email,'personal@gmail.com');});
+test('unverified Gmail never attempts the school account password',async()=>{const h=browser({verified:false});await assert.rejects(h.ctx.signInByIdentifier('personal@gmail.com','correct-password'),/Unable to sign in/);assert.equal(h.calls.length,0);});
 test('Gmail still rejects an incorrect account password',async()=>{const h=browser();await assert.rejects(h.ctx.signInByIdentifier('personal@gmail.com','wrong'),/Unable to sign in/);assert.equal(h.auth.currentUser,null);});
 test('unexpected authenticated UID is signed out and rejected',async()=>{const h=browser({returnedUid:'wrong-uid'});await assert.rejects(h.ctx.signInByIdentifier('personal@gmail.com','correct-password'),e=>e.code==='auth/invalid-credential');assert.equal(h.signouts(),1);assert.equal(h.auth.currentUser,null);});
 test('Gmail submit preserves student role and UID even without a verified institutional email',async()=>{
@@ -93,10 +99,10 @@ test('Student ID and institutional email continue to sign into the same account 
 });
 test('Forgot Password still opens the existing recovery page',()=>{const h=browser();h.handlers.recover();assert.equal(h.handlers.recoveryOpened,true);});
 
-test('existing Firebase-native Gmail accounts keep their original direct sign-in route',async()=>{
+test('existing Firebase-native Gmail accounts keep their UID after server confirms no verified mapping',async()=>{
  const h=browser({verified:false,nativeGmail:true});
  assert.equal((await h.ctx.signInByIdentifier('personal@gmail.com','correct-password')).user.uid,'school-uid');
- assert.equal(h.requests.length,0);assert.equal(h.calls.length,1);
+ assert.equal(h.requests.length,1);assert.equal(h.calls.length,1);assert.equal(h.calls[0].email,'personal@gmail.com');
 });
 
 for(const identifier of ['001234','student@ssu.edu.ph','personal@gmail.com'])test(`formatted temporary password paste completes existing login route for ${identifier}`,async()=>{
@@ -124,4 +130,32 @@ for(const role of ['student','officer'])test(`return login preserves linked ${ro
  assert.equal(h.alerts.length,0);assert.equal(h.storage.get('uscVerifiedGmailReturnUid'),'school-uid');
  assert.equal(JSON.parse(h.storage.get('studentProfile')).role,role);
  assert.equal(h.location.href,role==='officer'?'../usc-admin/overview/overview.html':'../dashboard/dashboard.html');
+});
+
+test('verified Gmail never signs into suspended native mock first and reaches active mapped dashboard',async()=>{
+ const h=browser({nativeConflict:true});await h.handlers.submit({preventDefault(){}});
+ assert.equal(h.alerts.length,0);assert.equal(h.auth.currentUser.uid,'school-uid');assert.equal(h.location.href,'../dashboard/dashboard.html');
+ assert.deepEqual(h.calls,[{email:'001234@student.ssu-usc.local',password:'correct-password'}]);
+ assert.equal(JSON.parse(h.storage.get('studentProfile')).role,'student');assert.equal(h.profile.accountStatus,'approved');
+});
+test('active native-owner conflict is rejected without selecting another UID',async()=>{
+ const h=browser({nativeConflict:true,activeConflict:true});await h.handlers.submit({preventDefault(){}});
+ assert.equal(h.auth.currentUser,null);assert.equal(h.calls.length,0);assert.equal(h.location.href,undefined);assert.equal(h.alerts.length,1);
+});
+test('mapped suspended account stays blocked even if another native account exists',async()=>{
+ const h=browser({nativeConflict:true});h.profile.accountStatus='suspended';h.profile.isActive=false;
+ await h.handlers.submit({preventDefault(){}});assert.equal(h.auth.currentUser,null);assert.equal(h.calls.length,0);assert.equal(h.location.href,undefined);
+});
+
+test('native Gmail administrator requires the existing trusted admin claim',async()=>{
+ const h=browser({verified:false,nativeGmail:true});h.profile.role='admin';h.profile.institutionalEmailVerified=true;
+ await h.handlers.submit({preventDefault(){}});assert.equal(h.auth.currentUser,null);assert.equal(h.location.href,undefined);assert.match(h.alerts[0],/trusted System Administrator/);
+});
+test('eligible native Gmail administrator retains admin dashboard and existing UID',async()=>{
+ const h=browser({verified:false,nativeGmail:true,trustedAdmin:true});h.profile.role='admin';h.profile.institutionalEmailVerified=true;
+ await h.handlers.submit({preventDefault(){}});assert.equal(h.alerts.length,0);assert.equal(h.auth.currentUser.uid,'school-uid');assert.equal(h.location.href,'../usc-admin/admin-dashboard/admin-dashboard.html');
+});
+test('native Gmail SDK UID mismatch is signed out and never accepted',async()=>{
+ const h=browser({verified:false,nativeGmail:true,returnedUid:'wrong-native-uid'});
+ await assert.rejects(h.ctx.signInByIdentifier('personal@gmail.com','correct-password'));assert.equal(h.auth.currentUser,null);assert.equal(h.signouts(),1);
 });

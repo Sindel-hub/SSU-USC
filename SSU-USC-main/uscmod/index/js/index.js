@@ -167,18 +167,15 @@ async function resolveLoginCandidates(identifier) {
 
 async function signInByIdentifier(identifier, password) {
   if (isPersonalGmail(identifier)) {
-    // Preserve existing Firebase-native Gmail accounts, including administrators.
-    try { return await signInSecurely(normalizeEmail(identifier), password); }
-    catch (error) {
-      if (!["auth/invalid-credential", "auth/wrong-password", "auth/user-not-found", "auth/invalid-email"].includes(error?.code)) throw error;
-    }
+    // Server password proof selects the verified mapping first. Native Gmail is
+    // eligible only when the server confirms no valid verified mapping exists.
     const account = await authenticateVerifiedGmailLogin(normalizeEmail(identifier), password);
     const credential = await signInSecurely(account.authEmail, password);
     if (credential.user.uid !== account.uid) {
       await signOut(auth);
       throw Object.assign(new Error("The Gmail account could not be verified. Use your Student ID instead."), {code:"auth/invalid-credential"});
     }
-    return { ...credential, verifiedGmailUid: account.uid };
+    return account.loginMethod === "verified-gmail" ? { ...credential, verifiedGmailUid: account.uid } : credential;
   }
   const candidates = await resolveLoginCandidates(identifier);
   let lastError = null;

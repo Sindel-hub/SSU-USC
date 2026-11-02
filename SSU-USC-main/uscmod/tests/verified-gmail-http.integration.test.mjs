@@ -15,7 +15,7 @@ const read=path=>fs.readFileSync(new URL('../'+path,import.meta.url),'utf8');
 const stripImports=source=>source.replace(/import\s+[\s\S]*?from\s+["'][^"']+["'];/g,'').replace(/\bexport\s+/g,'');
 const compile=source=>stripImports(stripTypeScriptTypes(source));
 const token='a'.repeat(64), uid='synthetic-student';
-let rows,profile,user,owner,handler,server,base,client,providerCalls,requests,legacyBackend,providerFailure;
+let rows,profile,user,owner,handler,server,base,client,providerCalls,requests,legacyBackend,providerFailure,legacyProfile,legacyUser;
 function query(){
  const filters=[];let patch;
  const execute=()=>{
@@ -56,8 +56,8 @@ before(async()=>{
  Object.assign(ctx,{
   adminClient:()=>({from(table){assert.equal(table,'student_email_accounts');return query();},rpc:async(name,args)=>{assert.equal(name,'consume_gmail_login_budget');assert.match(args.p_identity_hash,/^[a-f0-9]{64}$/);return {data:true,error:null};}}),
   firebasePasswordIdentity:async(email,password)=>{providerCalls.push('password-proof');if(email!==user.email||password!=='synthetic-password')throw Error('Invalid credentials');return {uid:user.uid};},
-  firestoreGet:async path=>{assert.equal(path,'users/'+uid);providerCalls.push('profile');return profile;},
-  firebaseUserByUid:async id=>{providerCalls.push('auth-user');if(id==='unavailable-gmail-login')return null;assert.equal(id,uid);return user;},
+  firestoreGet:async path=>{if(legacyUser&&path==='users/'+legacyUser.uid)return legacyProfile;assert.equal(path,'users/'+uid);providerCalls.push('profile');return profile;},
+  firebaseUserByUid:async id=>{providerCalls.push('auth-user');if(id==='unavailable-gmail-login')return null;if(legacyUser&&id===legacyUser.uid)return legacyUser;assert.equal(id,uid);return user;},
   firebaseUserByEmail:async email=>{providerCalls.push('auth-owner');return owner;},
   env:()=>({portalUrl:'https://synthetic-staging.invalid'}),
  });
@@ -76,7 +76,7 @@ before(async()=>{
 });
 after(async()=>{if(server)await new Promise(resolve=>server.close(resolve));});
 beforeEach(()=>{
- providerCalls=[];requests=[];owner=null;legacyBackend=false;providerFailure=false;
+ providerCalls=[];requests=[];owner=null;legacyProfile=null;legacyUser=null;legacyBackend=false;providerFailure=false;
  profile={uid,role:'student',schoolProvisioned:true,accountStatus:'approved',isActive:true,studentStanding:'active'};
  user={uid,email:'001234@student.ssu-usc.local',disabled:false};
  rows=[{firebase_uid:uid,requested_email:'personal@gmail.com',verified_email:null,verified_at:null,
@@ -121,7 +121,7 @@ test('metadata is password-gated, retired lookup is closed and responses are no-
  assert.equal(retired.status,401);assert.equal((await retired.json()).uid,undefined);
  const response=await post({action:'authenticate_gmail',email:'personal@gmail.com',password:'synthetic-password'});
  assert.equal(response.status,200);assert.equal(response.headers.get('Cache-Control'),'no-store');
- const payload=await response.json();assert.deepEqual(Object.keys(payload).sort(),['authEmail','ok','protocol','uid']);
+ const payload=await response.json();assert.deepEqual(Object.keys(payload).sort(),['authEmail','loginMethod','ok','protocol','uid']);
  assert.equal(payload.idToken,undefined);assert.equal(payload.refreshToken,undefined);
 });
 test('older backend fails closed in the current frontend rather than pretending Gmail is enabled',async()=>{
@@ -144,4 +144,15 @@ test('HTTP OPTIONS contract supports cross-origin browser requests without an au
 test('account removal HTTP endpoint rejects missing administrator authentication',async()=>{
  const before=JSON.stringify(rows);const response=await post({action:'admin_remove_suspended_account',uid});
  assert.equal(response.ok,false);assert.equal(JSON.stringify(rows),before);assert.equal(providerCalls.length,0);
+});
+
+test('actual Edge HTTP resolver selects verified student over suspended native mock without modifying records',async()=>{
+ await verify();owner={uid:'synthetic-legacy-mock'};legacyUser={uid:owner.uid,email:'personal@gmail.com',disabled:false};legacyProfile={role:'student',accountStatus:'suspended',isActive:false};
+ const before=JSON.stringify({rows,profile,user,legacyUser,legacyProfile});
+ const result=await client.authenticateVerifiedGmailLogin('personal@gmail.com','synthetic-password');
+ assert.equal(result.uid,uid);assert.equal(result.loginMethod,'verified-gmail');assert.equal(JSON.stringify({rows,profile,user,legacyUser,legacyProfile}),before);
+});
+test('actual Edge HTTP resolver refuses another active native owner',async()=>{
+ await verify();owner={uid:'synthetic-active-other'};legacyUser={uid:owner.uid,email:'personal@gmail.com',disabled:false};legacyProfile={role:'student',accountStatus:'approved',isActive:true};
+ await assert.rejects(client.authenticateVerifiedGmailLogin('personal@gmail.com','synthetic-password'));
 });

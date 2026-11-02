@@ -103,12 +103,12 @@ test('invalid credentials consume shared DB budget; exhaustion stops password ch
  assert.equal((await authenticate({email:'synthetic@gmail.com',password:'incorrect'})).status,429);assert.equal(proofs,5);
 });
 test('simultaneous Edge authenticators cannot exceed a shared identity budget',async()=>{
- let proofs=0;const deps={canonicalGmail:()=> 'synthetic@gmail.com',consumeBudget:async()=> (await consume()).stdout==='t',finishDelay:async()=>{},verifiedAccount:async()=>null,authUser:async()=>null,passwordIdentity:async()=>{proofs++;throw Error('invalid');}};
+ let proofs=0;const deps={authByEmail:async()=>null,canonicalGmail:()=> 'synthetic@gmail.com',consumeBudget:async()=> (await consume()).stdout==='t',finishDelay:async()=>{},verifiedAccount:async()=>null,authUser:async()=>null,passwordIdentity:async()=>{proofs++;throw Error('invalid');}};
  const results=await Promise.all(Array.from({length:15},()=>createGmailPasswordAuthenticator(deps)({email:'synthetic@gmail.com',password:'incorrect'})));
  assert.equal(results.filter(r=>r.status===401).length,5);assert.equal(results.filter(r=>r.status===429).length,10);assert.equal(proofs,5);
 });
 test('successful verified Gmail password login still uses existing UID and consumes one budget',async()=>{
- const deps={canonicalGmail:()=> 'synthetic@gmail.com',consumeBudget:async()=> (await consume()).stdout==='t',finishDelay:async()=>{},verifiedAccount:async()=>({firebase_uid:'synthetic',requested_email:'synthetic@gmail.com',verified_email:'synthetic@gmail.com',verified_at:'synthetic'}),authUser:async()=>({uid:'synthetic',email:'001@student.ssu-usc.local'}),passwordIdentity:async()=>({uid:'synthetic'}),profile:async()=>({role:'student'}),activeProfile:()=>true,authByEmail:async()=>null};
+ const deps={authByEmail:async()=>null,canonicalGmail:()=> 'synthetic@gmail.com',consumeBudget:async()=> (await consume()).stdout==='t',finishDelay:async()=>{},verifiedAccount:async()=>({firebase_uid:'synthetic',requested_email:'synthetic@gmail.com',verified_email:'synthetic@gmail.com',verified_at:'synthetic'}),authUser:async()=>({uid:'synthetic',email:'001@student.ssu-usc.local'}),passwordIdentity:async()=>({uid:'synthetic'}),profile:async()=>({role:'student'}),activeProfile:()=>true,authByEmail:async()=>null};
  const result=await createGmailPasswordAuthenticator(deps)({email:'synthetic@gmail.com',password:'correct-synthetic-password'});
  assert.equal(result.status,200);assert.equal(result.body.uid,'synthetic');assert.equal(result.body.authEmail,'001@student.ssu-usc.local');
  assert.equal((await sql("select attempts from public.gmail_login_rate_limits where bucket_key='identity:"+identity+"';")).stdout,'1');

@@ -316,6 +316,9 @@ Deno.serve(async (req) => {
           return data;
         },
         profile:(uid: string)=>firestoreGet(`users/${uid}`), activeProfile:activeEmailProfile,
+        activeNativeProfile:(profile: Record<string, any> | null)=>activeEmailProfile(profile)
+          || (["admin", "officer"].includes(profile?.role || "") && profile?.accountStatus === "approved"
+            && profile.isActive !== false && (profile.role === "admin" || !profile.studentStanding || profile.studentStanding === "active")),
         authUser:firebaseUserByUid, authByEmail:firebaseUserByEmail,
         passwordIdentity:firebasePasswordIdentity,
         finishDelay:async (start: number)=>{

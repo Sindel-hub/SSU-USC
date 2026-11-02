@@ -1,3 +1,30 @@
+const normalized = value => String(value || '').trim().toLowerCase();
+const validMapping = (mapping, email) => Boolean(mapping?.firebase_uid && mapping.verified_at
+  && mapping.requested_email === email && mapping.verified_email === email);
+
+// A proven inactive legacy student/officer does not own the *login mapping*.
+// Its Firebase account/email is not changed. Active, admin or unknown conflicts
+// stay blocked; a future reactivation makes this mapping fail closed again.
+async function inactiveLegacyOwner(deps, owner, address) {
+  const [profile, auth] = await Promise.all([deps.profile(owner.uid), deps.authUser(owner.uid)]);
+  const sameMailbox = auth?.email && deps.canonicalGmail(auth.email) === deps.canonicalGmail(address);
+  return Boolean(profile && auth?.uid === owner.uid && sameMailbox
+    && typeof auth.disabled === 'boolean' && ['student', 'officer'].includes(normalized(profile.role))
+    && ['approved', 'suspended'].includes(normalized(profile.accountStatus)) && profile.isActive === false);
+}
+
+async function nativeOwner(deps, input) {
+  const original = normalized(input), canonical = deps.canonicalGmail(input);
+  let found = null;
+  for (const email of new Set([original, canonical].filter(Boolean))) {
+    const owner = await deps.authByEmail(email);
+    if (!owner) continue;
+    if (found && found.uid !== owner.uid) return null;
+    found = owner;
+  }
+  return found;
+}
+
 // Resolve verified Gmail against the authoritative recovery record on every login.
 // No aliases are persisted: changing/removing Gmail immediately revokes this route.
 export async function resolveVerifiedGmailAccount(deps, input) {
@@ -11,10 +38,16 @@ export async function resolveVerifiedGmailAccount(deps, input) {
   if (!deps.activeProfile(profile)) return null;
   const user = await deps.authUser(uid);
   if (!user || user.uid !== uid || user.disabled || !user.email) return null;
-  // A Gmail already owned by another Firebase account cannot redirect that account.
+  // Reject ambiguous aliases even when several old records look inactive.
+  const owners = [];
   for (const address of new Set([email, String(input || '').trim().toLowerCase()])) {
     const owner = await deps.authByEmail(address);
-    if (owner && owner.uid !== uid) return null;
+    if (owner) owners.push({owner, address});
+  }
+  if (new Set(owners.map(({owner}) => owner.uid)).size > 1) return null;
+  for (const {owner, address} of owners) {
+    if (owner.uid !== uid && (profile.isActive !== true || normalized(profile.accountStatus) !== 'approved'
+        || !await inactiveLegacyOwner(deps, owner, address))) return null;
   }
   return { uid, authEmail: user.email };
 }
@@ -36,19 +69,36 @@ export function createGmailPasswordAuthenticator(deps) {
       if (!allowed) return {status:429, body:{ok:false, message:'Too many sign-in attempts. Try again later or use your Student ID.'}};
       if (!email || !password) return {status:401, body:{ok:false, message:GMAIL_LOGIN_FAILURE}};
       const mapping = await deps.verifiedAccount(email);
-      const verified = mapping?.firebase_uid && mapping.verified_at
-        && mapping.requested_email === email && mapping.verified_email === email;
-      // Keep unauthenticated work similar for present and absent mappings. Check
-      // the profile and Gmail ownership only after Firebase proves the password.
-      const user = await deps.authUser(verified ? String(mapping.firebase_uid) : 'unavailable-gmail-login');
-      const candidate = verified && user?.uid === String(mapping.firebase_uid) && !user.disabled && user.email;
+      const verified = validMapping(mapping, email);
+      // The verified mapping wins before password verification. Never try a
+      // different UID when a mapped account/password is ineligible or incorrect.
+      const native = verified ? null : await nativeOwner(deps, input.email);
+      const targetUid = verified ? String(mapping.firebase_uid) : native?.uid;
+      const user = await deps.authUser(targetUid || 'unavailable-gmail-login');
+      const candidate = targetUid && user?.uid === targetUid && !user.disabled && user.email;
       const identity = await deps.passwordIdentity(candidate || 'unavailable@invalid.invalid', password);
-      if (!candidate || identity?.uid !== String(mapping.firebase_uid)) return {status:401, body:{ok:false, message:GMAIL_LOGIN_FAILURE}};
-      // Re-read the authoritative mapping after proof so a changed/revoked Gmail
-      // record is not accepted from the pre-password snapshot.
-      const account = await resolveVerifiedGmailAccount(deps, input.email);
+      if (!candidate || identity?.uid !== targetUid) return {status:401, body:{ok:false, message:GMAIL_LOGIN_FAILURE}};
+      let account;
+      let loginMethod;
+      if (verified) {
+        // Re-read mapping/ownership/eligibility after proof; revocations and UID
+        // changes during verification cannot authenticate a stale target.
+        account = await resolveVerifiedGmailAccount(deps, input.email);
+        loginMethod = 'verified-gmail';
+      } else {
+        // A mapping added while native proof was in flight must not be bypassed.
+        const refreshed = await deps.verifiedAccount(email);
+        if (validMapping(refreshed, email)) return {status:401, body:{ok:false, message:GMAIL_LOGIN_FAILURE}};
+        const owner = await nativeOwner(deps, input.email);
+        const auth = await deps.authUser(targetUid);
+        const profile = await deps.profile(targetUid);
+        if (!owner || owner.uid !== targetUid || !auth || auth.uid !== targetUid || auth.disabled
+            || auth.email !== user.email || !deps.activeNativeProfile?.(profile)) return {status:401, body:{ok:false, message:GMAIL_LOGIN_FAILURE}};
+        account = {uid:targetUid, authEmail:auth.email};
+        loginMethod = 'firebase-native';
+      }
       if (!account || identity.uid !== account.uid) return {status:401, body:{ok:false, message:GMAIL_LOGIN_FAILURE}};
-      result = {status:200, body:{ok:true, protocol:'gmail-password-v1', uid:account.uid, authEmail:account.authEmail}};
+      result = {status:200, body:{ok:true, protocol:'gmail-password-v1', loginMethod, uid:account.uid, authEmail:account.authEmail}};
       return result;
     } catch {
       // Do not log passwords, provider error objects, user records or identifiers.
