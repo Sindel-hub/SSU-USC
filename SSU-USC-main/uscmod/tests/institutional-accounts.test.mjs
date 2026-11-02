@@ -137,3 +137,22 @@ test('institutional linking rejects nonnumeric IDs without publishing an email a
     assert.equal(ctx.records.has('login_aliases/email_'+hash('ana@ssu.edu.ph')),false);
   }
 });
+
+test('admin-selected password is applied exactly, never persisted, and requires trusted recent admin access', async () => {
+  const ctx=setup();ctx.seed('users/admin',{role:'admin',isActive:true,accountStatus:'approved'});
+  const admin={uid:'admin',role:'admin',authTime:timestamp/1000};
+  const password='Chosen!Password123';
+  for (const actor of [ctx.user,{...admin,role:''},{...admin,authTime:0}]) {
+    await assert.rejects(ctx.service.resetPassword(actor,ctx.user.uid,password));
+  }
+  for (const invalid of ['',null,123,'short','alllowercase123!','NoDigitsHere!','Has spaces!123']) {
+    await assert.rejects(ctx.service.resetPassword(admin,ctx.user.uid,invalid));
+  }
+  assert.equal(ctx.passwordChanges.length,0);
+  const result=await ctx.service.resetPassword(admin,ctx.user.uid,password);
+  assert.equal(result.temporaryPassword,password);
+  assert.equal(ctx.passwordChanges[0].password,password);
+  assert.equal(ctx.passwordChanges[0].uid,ctx.user.uid);
+  assert.ok(!JSON.stringify([...ctx.records.values()]).includes(password));
+  assert.equal(ctx.mails.length,0);
+});

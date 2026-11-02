@@ -519,8 +519,8 @@ async function browserSendAdminPasswordResetEmail(data = {}) {
   const email = String(profile.authEmail || profile.institutionalEmail || profile.email || "").trim().toLowerCase();
   if (!email) throw new Error("This account has no registered authentication email for password recovery.");
 
-  if (isInternalAuthEmail(email)) {
-    return callStudentEmailService("admin_reset_password", { uid });
+  if (data.newPassword !== undefined || isInternalAuthEmail(email)) {
+    return callStudentEmailService(data.newPassword !== undefined ? "admin_set_password" : "admin_reset_password", { uid, ...(data.newPassword !== undefined ? { newPassword: data.newPassword } : {}) });
   }
   await sendPasswordResetEmail(auth, email);
 
@@ -1484,7 +1484,7 @@ export async function callSecure(name, data = {}) {
     const result = await callable(name)(data);
     return result.data;
   } catch (error) {
-    if (name === "adminResetUserPassword" && globalThis.USC_FREE_SPARK_MODE === true) {
+    if ((name === "adminResetUserPassword" || name === "adminSetUserPassword") && globalThis.USC_FREE_SPARK_MODE === true) {
       try {
         return await browserSendAdminPasswordResetEmail(data);
       } catch (fallbackError) {
