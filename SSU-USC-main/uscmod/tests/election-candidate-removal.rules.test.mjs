@@ -56,3 +56,27 @@ test('attempt to change another candidate rejects the whole batch',async()=>{
  await seed();await assertFails(remove('module','ongoing',{changeOther:true}));
  await env.withSecurityRulesDisabled(async context=>{assert.equal((await getDoc(doc(context.firestore(),'elections','e','candidates','one'))).data().removed,undefined);});
 });
+
+async function seedSchedule(flags={}){
+ await seed();await env.withSecurityRulesDisabled(async context=>{
+  const db=context.firestore(),now=Date.now(),stamp=offset=>Timestamp.fromMillis(now+offset*3600000);
+  await setDoc(doc(db,'elections','usc-schedule'),{title:'Schedule',registrationStart:stamp(-7),registrationEnd:stamp(-6),applicationReviewStart:stamp(-6),applicationReviewEnd:stamp(-5),candidatePublicationStart:stamp(-5),candidatePublicationEnd:stamp(5),votingStart:stamp(-4),votingEnd:stamp(1),resultPublicationStart:stamp(2),resultPublicationEnd:stamp(3),finalized:false,resultsPublished:false,archived:false,candidateReviewComplete:true,scheduleVersion:1,...flags});
+ });
+}
+async function updateSchedule(extra={}){
+ const db=env.authenticatedContext('module',{role:'officer'}).firestore(),ref=doc(db,'elections','usc-schedule');
+ const before=(await getDoc(ref)).data(),batch=writeBatch(db);
+ batch.update(ref,{votingEnd:Timestamp.fromMillis(before.votingEnd.toMillis()+3600000),scheduleVersion:2,updatedAt:serverTimestamp(),...extra});
+ batch.set(doc(collection(db,'audit_logs')),{actorUid:'module',action:'ELECTION_SCHEDULE_SAVE',target:ref.path,source:'browser-election-runtime',createdAt:serverTimestamp()});
+ return batch.commit();
+}
+test('module officer extends voting and commits its schedule audit without resetting review status',async()=>{
+ await seedSchedule();await assertSucceeds(updateSchedule());
+ const db=env.authenticatedContext('module',{role:'officer'}).firestore();assert.equal((await getDoc(doc(db,'elections','usc-schedule'))).data().candidateReviewComplete,true);
+});
+for(const flag of ['finalized','resultsPublished','archived'])test(`rules reject rescheduling a ${flag} election`,async()=>{
+ await seedSchedule({[flag]:true});await assertFails(updateSchedule());
+});
+test('rules reject extending voting past results without shifting the publication window',async()=>{
+ await seedSchedule();await assertFails(updateSchedule({votingEnd:Timestamp.fromMillis(Date.now()+10*3600000)}));
+});

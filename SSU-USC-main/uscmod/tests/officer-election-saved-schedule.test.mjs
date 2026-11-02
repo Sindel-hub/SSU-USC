@@ -16,7 +16,8 @@ const permissions = read("shared/officer-permissions.js");
   assert.match(html, /id="editScheduleBtn"[^>]*data-rbac-permission="elections\.view"/);
   assert.match(html, /id="scheduleEditorDialog"/);
   assert.match(html, /id="saveElectionSettingsBtn"[^>]*data-rbac-permission="elections\.view"/);
-  assert.match(html, /Create Replacement Schedule/);
+  assert.match(html, /Save Schedule Changes/);
+  assert.match(html, /id="extendVotingBtn"[^>]*data-rbac-permission="elections\.view"/);
   assert.doesNotMatch(html, /data-rbac-permission="elections\.schedule"/);
 });
 

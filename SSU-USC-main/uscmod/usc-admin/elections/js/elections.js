@@ -1,3 +1,4 @@
+import { extendVotingSchedule } from "../../../shared/election-extension.js";
 import { effectiveOfficerPermissions } from "../../../shared/officer-permissions.js";
 import { auth, db } from "../../../firebase/firebase-config.js";
 import { callSecure, openPrivateFile, resolveMediaUrl } from "../../../shared/security-client.js";
@@ -46,6 +47,9 @@ let canManageCandidates = false;
 let canRemoveCandidates = false;
 
 let scheduleFormDirty = false;
+let scheduleEditorMode = "edit";
+let scheduleEditorOriginal = null;
+let scheduleEditorVersion = null;
 
 function markScheduleDirty() {
   scheduleFormDirty = true;
@@ -153,7 +157,7 @@ function renderSavedSchedule() {
   setText("savedElectionPhase", lifecycle);
   setText("currentScheduleStatus", hasSchedule ? lifecycle : "Not configured");
   setText("currentScheduleDescription", hasSchedule ? "This saved schedule is active in the election workflow." : "Create an election schedule to begin.");
-  setText("savedScheduleUpdated", hasSchedule ? "Saved fields are locked. Open Edit Schedule to create a replacement." : "No active schedule is currently saved.");
+  setText("savedScheduleUpdated", hasSchedule ? "Use Edit Schedule to update dates, or Extend Voting Time to move the closing time later." : "No active schedule is currently saved.");
   const state = $("savedScheduleState");
   if (state) {
     state.innerHTML = hasSchedule
@@ -175,7 +179,9 @@ function renderSavedSchedule() {
   const summary = $("scheduleSummaryList");
   if (summary) summary.innerHTML = hasSchedule ? summaryRows.join("") : '<div class="schedule-summary-empty">No saved schedule yet.</div>';
 
-  setButtonState($("editScheduleBtn"), !hasSchedule);
+  const scheduleLocked = context?.finalized || context?.resultsPublished || context?.archived;
+  setButtonState($("editScheduleBtn"), !hasSchedule || scheduleLocked);
+  setButtonState($("extendVotingBtn"), !hasSchedule || scheduleLocked);
   setButtonState($("deleteCurrentScheduleBtn"), !hasSchedule || context?.finalized || context?.resultsPublished || context?.archived);
   setButtonState($("deleteScheduleFromEditorBtn"), !hasSchedule || context?.finalized || context?.resultsPublished || context?.archived);
 }
@@ -196,18 +202,26 @@ function openScheduleEditor(mode = "edit") {
   const dialog = $("scheduleEditorDialog");
   if (!dialog) return;
   const hasSchedule = Boolean(electionId && context?.scheduleComplete);
+  if (hasSchedule && (context?.finalized || context?.resultsPublished || context?.archived)) return alert("Officially finalized, published, or archived elections cannot be rescheduled.");
+  scheduleEditorMode = mode;
+  scheduleEditorOriginal = hasSchedule ? {...context} : null;
+  scheduleEditorVersion = hasSchedule ? Number(context?.scheduleVersion || 0) : null;
   const blank = mode === "create" && !hasSchedule;
   populateScheduleEditor({ blank });
   const title = $("scheduleEditorTitle");
   const description = $("scheduleEditorDescription");
-  if (title) title.textContent = hasSchedule ? "Edit Schedule Preview" : "Create Election Schedule";
+  if (title) title.textContent = mode === "extend" ? "Extend Voting Time" : hasSchedule ? "Edit Election Schedule" : "Create Election Schedule";
   if (description) description.textContent = hasSchedule
-    ? "Review the locked saved schedule below. Saving creates a replacement schedule version and records the change in the audit trail."
-    : "Configure the election dates. The schedule becomes locked after it is saved.";
-  if (els.saveElectionSettingsBtn) els.saveElectionSettingsBtn.textContent = hasSchedule ? "Create Replacement Schedule" : "Save Election Schedule";
-  if ($("deleteScheduleFromEditorBtn")) $("deleteScheduleFromEditorBtn").hidden = !hasSchedule;
+    ? (mode === "extend" ? "Choose a later Voting Until time. If needed, result publication moves to the new closing time while keeping its duration. Review the displayed times before saving." : "Update the existing election's dates. Candidates, recorded votes, and turnout are preserved; every saved change is audited.")
+    : "Configure the election dates. You can edit the saved schedule later, until the election is finalized.";
+  if (els.saveElectionSettingsBtn) els.saveElectionSettingsBtn.textContent = mode === "extend" ? "Save Extended Voting Time" : hasSchedule ? "Save Schedule Changes" : "Save Election Schedule";
+  if ($("deleteScheduleFromEditorBtn")) $("deleteScheduleFromEditorBtn").hidden = !hasSchedule || mode === "extend";
+  $("electionIdInput").disabled = hasSchedule;
+  if (els.electionTitleInput) els.electionTitleInput.disabled = mode === "extend";
+  for (const [field,input] of Object.entries(scheduleInputs)) if (input) input.disabled = mode === "extend" && field !== "votingEnd";
   msg("");
   if (typeof dialog.showModal === "function") dialog.showModal(); else dialog.setAttribute("open", "");
+  if (mode === "extend") { els.votingEndInput?.focus(); els.votingEndInput?.scrollIntoView({block:"center"}); }
 }
 
 function closeScheduleEditor() {
@@ -563,15 +577,29 @@ function schedulePayload() {
   return schedule;
 }
 
+function previewVotingExtension() {
+  const original = scheduleEditorOriginal;
+  if (!original) throw new Error("Open the saved election schedule first.");
+  const base = Object.fromEntries(Object.keys(scheduleInputs).map((key)=>[key,new Date(Number(original[key])).toISOString()]));
+  const proposed = extendVotingSchedule({...base,votingEnd:new Date(els.votingEndInput.value).toISOString()},original.votingEnd);
+  scheduleInputs.resultPublicationStart.value = asLocalInput(new Date(proposed.resultPublicationStart).getTime());
+  scheduleInputs.resultPublicationEnd.value = asLocalInput(new Date(proposed.resultPublicationEnd).getTime());
+  msg("Review the new Voting Until and Result Publication times, then save. Existing votes remain recorded.");
+  return proposed;
+}
+
 async function saveSchedule() {
   setButtonState(els.saveElectionSettingsBtn, true);
-  msg("Validating and saving the replacement schedule...");
+  msg("Validating the schedule update...");
   try {
     const id = clean($("electionIdInput")?.value).toLowerCase();
+    const schedule = scheduleEditorMode === "extend" ? previewVotingExtension() : schedulePayload();
+    if (scheduleEditorOriginal && !confirm(`Save the updated schedule for ${scheduleEditorOriginal.title || id}?\nVoting closes: ${new Date(schedule.votingEnd).toLocaleString()}\nResult publication: ${new Date(schedule.resultPublicationStart).toLocaleString()} → ${new Date(schedule.resultPublicationEnd).toLocaleString()}\nExisting candidates, votes, and turnout will be preserved.`)) return;
     const result = await callSecure("saveElectionSchedule", {
       electionId: id,
       title: clean(els.electionTitleInput?.value) || "USC General Election",
-      schedule: schedulePayload()
+      schedule,
+      ...(scheduleEditorVersion === null ? {} : {expectedScheduleVersion:scheduleEditorVersion})
     });
     electionId = result.electionId;
     msg(`Election ${result.electionId} saved. Lifecycle: ${result.lifecycle}.`, "success");
@@ -785,6 +813,11 @@ installHardeningPanels();
   };
 }
 els.saveElectionSettingsBtn?.addEventListener("click", saveSchedule);
+$("extendVotingBtn")?.addEventListener("click", () => openScheduleEditor("extend"));
+els.votingEndInput?.addEventListener("change", () => {
+  if (scheduleEditorMode !== "extend") return;
+  try { previewVotingExtension(); } catch (error) { msg(error.message,"error"); }
+});
 $("editScheduleBtn")?.addEventListener("click", () => openScheduleEditor("edit"));
 $("createNewScheduleBtn")?.addEventListener("click", () => openScheduleEditor("create"));
 $("deleteCurrentScheduleBtn")?.addEventListener("click", deleteCurrentSchedule);
