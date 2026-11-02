@@ -642,8 +642,14 @@ service cloud.firestore {
           && request.resource.data.candidateId == candidateId
           && request.resource.data.approved == true
           && request.resource.data.position in ["President", "Vice President", "Secretary", "Treasurer", "Auditor", "Public Relations Officer", "Business Manager", "Sgt. at Arms", "Department Representative"];
-        // Changes and their immutable audit event must commit together.
-        allow update: if officerHasPermission("elections.review")
+        // Module access permits removal only; profile edits still require review permission.
+        // Candidate changes and their immutable audit event must commit together.
+        allow update: if (officerHasPermission("elections.review")
+          || (officerHasPermission("elections.view")
+            && request.resource.data.get("removed", false) == true
+            && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+              "removed", "updatedAt", "updatedByUid", "managementAuditId", "resultIdentity"
+            ])))
           && resource.data.get("removed", false) == false
           && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
             "fullName", "position", "department", "partylist", "platform", "campaignPhotoUrl",
@@ -877,6 +883,21 @@ service cloud.firestore {
     && request.resource.data.action is string
     && (
       isAdmin()
+      || (
+        officerHasPermission("elections.view")
+        && request.resource.data.action == "CANDIDATE_REMOVE"
+        && request.resource.data.source == "browser-election-runtime"
+        && request.resource.data.createdAt == request.time
+        && request.resource.data.electionId is string
+        && request.resource.data.candidateId is string
+        && request.resource.data.electionId.matches("^[^/]+$")
+        && request.resource.data.candidateId.matches("^[^/]+$")
+        && request.resource.data.target == "elections/" + request.resource.data.electionId + "/candidates/" + request.resource.data.candidateId
+        && getAfter(/databases/$(database)/documents/elections/$(request.resource.data.electionId)/candidates/$(request.resource.data.candidateId)).data.managementAuditId == logId
+        && getAfter(/databases/$(database)/documents/elections/$(request.resource.data.electionId)/candidates/$(request.resource.data.candidateId)).data.removed == true
+        && getAfter(/databases/$(database)/documents/elections/$(request.resource.data.electionId)/candidates/$(request.resource.data.candidateId)).data.updatedAt == request.time
+        && getAfter(/databases/$(database)/documents/elections/$(request.resource.data.electionId)/candidates/$(request.resource.data.candidateId)).data.updatedByUid == uid()
+      )
       || (
         officerHasPermission("elections.review")
         && request.resource.data.action in ["CANDIDATE_EDIT", "CANDIDATE_REMOVE", "CANDIDATE_APPLICATION_REMOVE"]

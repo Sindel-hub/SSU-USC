@@ -169,8 +169,9 @@ async function requireOfficerPermission(request, permission) {
   const profile = await requireActiveRole(request, ["officer", "admin"]);
   if (roleOf(request) === "admin") return profile;
   const permissions = effectiveOfficerPermissionList(profile);
-  if (!permissions.includes(permission)) {
-    throw new HttpsError("permission-denied", `Your assigned USC office does not have permission for ${permission.replaceAll(".", " ")}.`);
+  const alternatives = Array.isArray(permission) ? permission : [permission];
+  if (!alternatives.some((item) => permissions.includes(item))) {
+    throw new HttpsError("permission-denied", `Your assigned USC office does not have permission for ${alternatives.map((item) => item.replaceAll(".", " ")).join(" or ")}.`);
   }
   return profile;
 }
@@ -1151,7 +1152,7 @@ async function syncCandidateReviewCompletion(electionId, actorUid = "") {
 
 
 async function manageElectionCandidate(request, remove = false) {
-  await requireOfficerPermission(request, "elections.review");
+  await requireOfficerPermission(request, remove ? ["elections.view", "elections.review"] : "elections.review");
   requireRecentAuth(request);
   const electionId = cleanText(request.data?.electionId, 128);
   const candidateId = cleanText(request.data?.candidateId, 128);

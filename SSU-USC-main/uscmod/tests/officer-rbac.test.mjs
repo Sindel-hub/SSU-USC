@@ -83,7 +83,9 @@ test("complaint and election actions enforce function-level permissions", () => 
 
   const electionHtml = read("usc-admin/elections/elections.html");
   assert.match(electionHtml, /data-rbac-permission="elections\.view"/);
-  assert.match(electionHtml, /data-rbac-permission="elections\.review"/);
+  const electionJs = read("usc-admin/elections/js/elections.js");
+  assert.match(electionJs, /data-rbac-permission="elections\.review" data-preview-decision="approve"/);
+  assert.doesNotMatch(electionHtml, /id="candidateReviewCard" data-rbac-permission="elections\.review"/);
   assert.match(electionHtml, /data-rbac-permission="elections\.results"/);
 });
 

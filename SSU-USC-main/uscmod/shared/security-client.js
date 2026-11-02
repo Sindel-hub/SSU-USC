@@ -596,8 +596,9 @@ function browserHasOfficerPermission(profile = {}, role = "", permission = "") {
 
 async function requireBrowserPermission(permission, roles = ["officer", "admin"]) {
   const context = await requireBrowserRole(roles);
-  if (!browserHasOfficerPermission(context.profile, context.role, permission)) {
-    throw new Error(`Your assigned USC office does not have permission for ${permission.replaceAll(".", " ")}.`);
+  const alternatives = Array.isArray(permission) ? permission : [permission];
+  if (!alternatives.some((item) => browserHasOfficerPermission(context.profile, context.role, item))) {
+    throw new Error(`Your assigned USC office does not have permission for ${alternatives.map((item) => item.replaceAll(".", " ")).join(" or ")}.`);
   }
   return context;
 }
@@ -1106,7 +1107,7 @@ async function browserRemoveCandidateApplication(data = {}) {
 
 // Candidate management is independent of the application review window.
 async function browserManageCandidate(data = {}, remove = false) {
-  const { user } = await requireBrowserPermission("elections.review");
+  const { user } = await requireBrowserPermission(remove ? ["elections.view", "elections.review"] : "elections.review");
   const electionId = String(data.electionId || "");
   const candidateId = String(data.candidateId || "");
   if (!electionId || !candidateId || /[/]/.test(electionId + candidateId)) throw new Error("Select a valid election and candidate.");
@@ -1135,7 +1136,7 @@ async function browserManageCandidate(data = {}, remove = false) {
     changes.updatedByUid = user.uid;
     changes.managementAuditId = auditRef.id;
     tx.update(ref, changes);
-    tx.set(auditRef, {actorUid:user.uid, action:remove ? "CANDIDATE_REMOVE" : "CANDIDATE_EDIT", target:ref.path, source:"browser-election-runtime", before, after:{...before,...changes}, createdAt:serverTimestamp()});
+    tx.set(auditRef, {actorUid:user.uid, electionId, candidateId, action:remove ? "CANDIDATE_REMOVE" : "CANDIDATE_EDIT", target:ref.path, source:"browser-election-runtime", before, after:{...before,...changes}, createdAt:serverTimestamp()});
   });
   return { success:true };
 }

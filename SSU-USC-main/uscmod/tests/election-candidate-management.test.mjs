@@ -5,7 +5,7 @@ import vm from 'node:vm';
 
 const source = fs.readFileSync(new URL('../shared/security-client.js', import.meta.url), 'utf8');
 const manage = source.slice(source.indexOf('async function browserManageCandidate('), source.indexOf('async function browserReviewCandidate('));
-function harness({started = false, completed = false, denied = false, auditFails = false} = {}) {
+function harness({started = false, completed = false, denied = false, auditFails = false, permissions = ["elections.review"]} = {}) {
   const candidate = {candidateId:'one', fullName:'Original',position:'President',department:'Arts',approved:true};
   const records = new Map([
     ['elections/e', {votingStart:started || completed ? 1 : Date.now()+60000, votingEnd:completed ? 2 : Date.now()+120000}],
@@ -18,7 +18,8 @@ function harness({started = false, completed = false, denied = false, auditFails
   const ref = (path) => ({path,id:path.split('/').at(-1)});
   const ctx = vm.createContext({
     db:{}, Date, ELECTION_POSITIONS:['President','Vice President'],
-    requireBrowserPermission:async (permission) => {assert.equal(permission,'elections.review'); if (denied) throw Error('denied'); return {user:{uid:'officer'}};},
+    requireBrowserRole:async()=>{if(denied)throw Error('denied');return {user:{uid:'officer'},profile:{},role:'officer'};},
+    browserHasOfficerPermission:(_profile,_role,permission)=>permissions.includes(permission),
     toMillis:(v)=>v, serverTimestamp:()=>123,
     collection:(_db,...parts)=>ref(parts.join('/')),
     doc:(first,...parts)=>first.path ? ref(`${first.path}/audit-${++sequence}`) : ref(parts.join('/')),
@@ -32,6 +33,7 @@ function harness({started = false, completed = false, denied = false, auditFails
       for (const [path,data] of changes) records.set(path,data);
     }
   });
+  vm.runInContext(source.slice(source.indexOf("async function requireBrowserPermission("),source.indexOf("function timestampFromInput(")),ctx);
   vm.runInContext(manage,ctx);
   return {records,run:(details={},remove=false)=>ctx.browserManageCandidate({electionId:'e',candidateId:'one',details},remove)};
 }
@@ -106,12 +108,12 @@ test('publication includes removed candidates and uses their historical identity
 });
 
 const officerSource=fs.readFileSync(new URL('../usc-admin/elections/js/elections.js',import.meta.url),'utf8');
-function officerHarness({authorized=true,removed=false,confirmRemoval=true}={}){
+function officerHarness({authorized=true,removeAuthorized=authorized,removed=false,confirmRemoval=true}={}){
   const calls=[];
   const application={id:'applicant',candidateId:'candidate',status:'Approved',fullName:'Approved Student',position:'President'};
   const candidate={id:'candidate',approved:true,removed,fullName:application.fullName};
   const list={innerHTML:'',querySelectorAll:()=>[]};
-  const ctx=vm.createContext({applications:[application],candidates:[candidate],canManageCandidates:authorized,
+  const ctx=vm.createContext({applications:[application],candidates:[candidate],canManageCandidates:authorized,canRemoveCandidates:removeAuthorized,
     context:{reviewOpen:false,lifecycle:'Archived'},electionId:'e',els:{candidateReviewList:list},
     clean:v=>String(v??'').trim(),esc:v=>String(v??''),confirm:()=>confirmRemoval,
     hydrateCandidatePreviewImages:async()=>{},closeCandidatePreview:()=>{},refreshAll:async()=>{},alert:()=>{},
@@ -140,4 +142,35 @@ test('removed approved candidates show historical status without a second Remove
   const h=officerHarness({removed:true});h.ctx.renderApplications();assert.match(h.list.innerHTML,/Candidate removed/);
   assert.doesNotMatch(h.list.innerHTML,/data-remove-approved-candidate/);assert.equal(h.application.status,'Approved');
   await h.ctx.removeCandidateApplication(h.application);assert.equal(h.calls.length,0);
+});
+
+test('module-assigned officers can remove approved candidates without review permission',async()=>{
+  const h=harness({permissions:['elections.view'],completed:true});await h.run({},true);
+  assert.equal(h.records.get('elections/e/candidates/one').removed,true);
+  assert.equal(h.records.get('audit_logs/audit-1').action,'CANDIDATE_REMOVE');
+  assert.equal(h.records.get('audit_logs/audit-1').electionId,'e');
+  assert.equal(h.records.get('elections/e/results/official').results[0].votes,1);
+});
+test('module removal permission does not grant candidate profile editing',async()=>{
+  const h=harness({permissions:['elections.view']});await assert.rejects(h.run({fullName:'Unauthorized edit'}),/permission/);
+  assert.equal(h.records.get('elections/e/candidates/one').fullName,'Original');
+});
+test('officers without election permissions cannot remove candidates',async()=>{
+  const h=harness({permissions:[]});await assert.rejects(h.run({},true),/permission/);
+  assert.equal(h.records.get('elections/e/candidates/one').removed,undefined);
+});
+test('module-assigned officers see the approved-card removal action and use the soft-removal endpoint',async()=>{
+  const h=officerHarness({authorized:false,removeAuthorized:true});h.ctx.renderApplications();
+  assert.match(h.list.innerHTML,/data-remove-approved-candidate="applicant"/);
+  await h.ctx.removeCandidateApplication(h.application);assert.equal(h.calls[0].name,'removeElectionCandidate');
+});
+test('cloud permission helper accepts either module access or existing review access',async()=>{
+  const cloud=fs.readFileSync(new URL('../functions/index.js',import.meta.url),'utf8');
+  const helper=cloud.slice(cloud.indexOf('async function requireOfficerPermission('),cloud.indexOf('function requireRecentAuth('));
+  for(const permissions of [['elections.view'],['elections.review'],[]]){
+    const ctx=vm.createContext({requireActiveRole:async()=>({}),roleOf:()=> 'officer',effectiveOfficerPermissionList:()=>permissions,HttpsError:class extends Error{constructor(code,message){super(message);this.code=code;}}});
+    vm.runInContext(helper,ctx);
+    if(permissions.length)await ctx.requireOfficerPermission({},['elections.view','elections.review']);
+    else await assert.rejects(ctx.requireOfficerPermission({},['elections.view','elections.review']));
+  }
 });
