@@ -105,6 +105,7 @@ resultsVisible: false,
   lifecycle,
 
   scheduleComplete,
+  scheduleVersion:Number(e.scheduleVersion || 0),
 
   serverNowMs:
     now,
@@ -827,43 +828,44 @@ async function browserSaveElectionSchedule(data = {}, emergency = false) {
   const schedule = normalizedSchedule(data.schedule || {});
   const electionRef = doc(db, "elections", electionId);
   const pointerRef = doc(db, "election_config", "current");
-  const [existing, current] = await Promise.all([getDoc(electionRef), getDoc(pointerRef)]);
-  const before = existing.exists() ? existing.data() : null;
+  return runTransaction(db, async (tx) => {
+    const [existing, current] = await Promise.all([tx.get(electionRef), tx.get(pointerRef)]);
+    const before = existing.exists() ? existing.data() : null;
 
-  if (before?.finalized === true || before?.archived === true || before?.resultsPublished === true) {
-    throw new Error("A finalized, published-result, or archived election cannot be rescheduled.");
-  }
-
-  const previousId = current.exists() ? String(current.data()?.electionId || "") : "";
-  if (previousId && previousId !== electionId) {
-    const previous = await getDoc(doc(db, "elections", previousId));
-    if (previous.exists() && previous.data()?.archived !== true) {
-      throw new Error(`Archive the current election (${previousId}) before switching to a new Election ID.`);
+    if (before?.finalized === true || before?.archived === true || before?.resultsPublished === true) {
+      throw new Error("A finalized, published-result, or archived election cannot be rescheduled.");
     }
-  }
 
-  const reason = String(data.reason || "").trim().slice(0, 500);
-  if (emergency && reason.length < 15) {
-    throw new Error("A specific emergency schedule reason of at least 15 characters is required.");
-  }
+    if (before && data.expectedScheduleVersion !== undefined && Number(data.expectedScheduleVersion) !== Number(before.scheduleVersion || 0)) {
+      throw new Error("The schedule changed while you were editing. Close and reopen the editor to review the latest dates.");
+    }
+    const previousId = current.exists() ? String(current.data()?.electionId || "") : "";
+    if (previousId && previousId !== electionId) {
+      const previous = await tx.get(doc(db, "elections", previousId));
+      if (previous.exists() && previous.data()?.archived !== true) {
+        throw new Error(`Archive the current election (${previousId}) before switching to a new Election ID.`);
+      }
+    }
 
-  const title = String(data.title || before?.title || "USC General Election").trim().slice(0, 120);
-  const lifecycle = lifecycleFromSchedule({
-    ...(before || {}),
-    ...schedule,
-    finalized: false,
-    resultsPublished: false,
-    archived: false
+    const reason = String(data.reason || "").trim().slice(0, 500);
+    if (emergency && reason.length < 15) {
+      throw new Error("A specific emergency schedule reason of at least 15 characters is required.");
+    }
+
+    const title = String(data.title || before?.title || "USC General Election").trim().slice(0, 120);
+    const lifecycle = lifecycleFromSchedule({
+      ...(before || {}),
+      ...schedule,
+      finalized: false,
+      resultsPublished: false,
+      archived: false
   });
 
   const patch = {
     electionId,
     title,
     ...schedule,
-    candidateReviewComplete: before?.candidateReviewComplete === true,
-    finalized: false,
-    resultsPublished: false,
-    archived: false,
+    ...(before ? {} : {candidateReviewComplete:false, finalized:false, resultsPublished:false, archived:false}),
     scheduleDeleted: false,
     lifecycle,
     scheduleVersion: Number(before?.scheduleVersion || 0) + 1,
@@ -875,25 +877,24 @@ async function browserSaveElectionSchedule(data = {}, emergency = false) {
     } : {})
   };
 
-  const batch = writeBatch(db);
-  batch.set(electionRef, patch, { merge: true });
-  batch.set(pointerRef, { electionId, updatedAt: serverTimestamp() }, { merge: true });
-  batch.set(doc(collection(db, "audit_logs")), {
+  tx.set(electionRef, patch, { merge: true });
+  tx.set(pointerRef, { electionId, updatedAt: serverTimestamp() }, { merge: true });
+  tx.set(doc(collection(db, "audit_logs")), {
     actorUid: user.uid,
     actorEmail: user.email || "",
     action: emergency ? "ELECTION_EMERGENCY_SCHEDULE_UPDATE" : "ELECTION_SCHEDULE_SAVE",
     target: `elections/${electionId}`,
     source: "browser-election-runtime",
-    details: emergency ? { reason } : {},
+    details: { ...(emergency ? {reason} : {}), beforeSchedule:before ? Object.fromEntries(Object.keys(schedule).map((key)=>[key,before[key] ?? null])) : null, afterSchedule:schedule, scheduleVersion:patch.scheduleVersion },
     createdAt: serverTimestamp()
   });
-  await batch.commit();
 
   return {
     electionId,
     lifecycle,
     emergencyChangeRecorded: emergency
   };
+  });
 }
 
 

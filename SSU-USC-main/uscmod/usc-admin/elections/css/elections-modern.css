@@ -188,3 +188,26 @@ body.election-management-page .candidate-file-copy small { font-size:11px !impor
 .candidate-edit-dialog .field { display:flex; flex-direction:column; gap:6px; margin:14px 0; }
 .candidate-edit-dialog input, .candidate-edit-dialog select, .candidate-edit-dialog textarea { padding:10px; border:1px solid #ccd5df; border-radius:8px; font:inherit; width:100%; box-sizing:border-box; }
 .candidate-edit-dialog [role="alert"] { color:#b42318; }
+
+/* Candidate Review actions: distinct hit areas and responsive spacing. */
+body.election-management-page .candidate-review-actions {
+  display:flex !important; flex-wrap:wrap !important; align-items:stretch !important;
+  gap:12px !important; width:100%; margin-top:16px; min-width:0;
+}
+body.election-management-page .candidate-review-actions .mini-btn {
+  display:inline-flex !important; align-items:center; justify-content:center; gap:8px;
+  position:static !important; margin:0 !important; min-height:44px !important; border-radius:10px !important;
+  flex:0 1 auto; white-space:normal; text-align:center; max-width:100%;
+}
+body.election-management-page .candidate-review-actions .candidate-preview-btn {
+  flex:1 0 100% !important; width:100% !important; min-width:0 !important; box-sizing:border-box;
+}
+body.election-management-page .candidate-review-actions [data-edit-reviewed-candidate],
+body.election-management-page .candidate-review-actions [data-remove-approved-candidate] {
+  flex:1 1 110px; min-width:0; box-sizing:border-box;
+}
+body.election-management-page .candidate-review-actions .mini-btn:focus-visible { outline:3px solid #80b4ef; outline-offset:3px; }
+@media(max-width:480px) {
+  body.election-management-page .candidate-review-actions { gap:10px !important; }
+  body.election-management-page .candidate-review-actions .mini-btn { flex-basis:100%; width:100%; }
+}

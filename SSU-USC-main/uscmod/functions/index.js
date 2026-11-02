@@ -499,6 +499,7 @@ exports.getElectionContext = onCall(callableOptions(), async (request) => {
     title: election.title || "USC Election",
     lifecycle,
     scheduleComplete,
+    scheduleVersion:Number(election.scheduleVersion || 0),
     serverNowMs: nowMs,
     registrationOpen: scheduleComplete && lifecycle === "Registration" && inWindow(election, "registrationStart", "registrationEnd", nowMs),
     reviewOpen: scheduleComplete && lifecycle === "Review" && inWindow(election, "applicationReviewStart", "applicationReviewEnd", nowMs),
@@ -907,57 +908,38 @@ exports.saveElectionSchedule = onCall(callableOptions(), async (request) => {
   if (!/^[a-z0-9][a-z0-9-]{2,79}$/.test(electionId)) throw new HttpsError("invalid-argument", "Election ID may contain lowercase letters, numbers, and hyphens only.");
   const electionRef = db.doc(`elections/${electionId}`);
   const pointerRef = db.doc("election_config/current");
-  const pointerSnap = await pointerRef.get();
-  const previousElectionId = pointerSnap.exists ? cleanText(pointerSnap.get("electionId"), 80) : "";
-  if (previousElectionId && previousElectionId !== electionId) {
-    const previousSnap = await db.doc(`elections/${previousElectionId}`).get();
-    if (previousSnap.exists && previousSnap.get("archived") !== true) {
-      throw new HttpsError("failed-precondition", `Archive the current election (${previousElectionId}) before switching the active pointer to a new Election ID.`);
+  return db.runTransaction(async (tx) => {
+    const pointerSnap = await tx.get(pointerRef);
+    const previousElectionId = pointerSnap.exists ? cleanText(pointerSnap.get("electionId"), 80) : "";
+    if (previousElectionId && previousElectionId !== electionId) {
+      const previousSnap = await tx.get(db.doc(`elections/${previousElectionId}`));
+      if (previousSnap.exists && previousSnap.get("archived") !== true) {
+        throw new HttpsError("failed-precondition", `Archive the current election (${previousElectionId}) before switching the active pointer to a new Election ID.`);
+      }
     }
-  }
-  const beforeSnap = await electionRef.get();
-  const before = beforeSnap.exists ? beforeSnap.data() : null;
-  if (before?.finalized === true || before?.archived === true) throw new HttpsError("failed-precondition", "A finalized or archived election schedule is immutable.");
-  const next = {
-  electionId,
-  title,
-  ...schedule,
-
-  candidateReviewComplete:
-    before?.candidateReviewComplete === true,
-
-  finalized: false,
-  resultsPublished: false,
-  archived: false,
-  scheduleDeleted: false,
-
-  lifecycle: electionLifecycle({
-    ...before,
-    ...schedule,
-    finalized: false,
-    resultsPublished: false,
-    archived: false
-  }),
-
-  scheduleVersion: Number(before?.scheduleVersion || 0) + 1,
-
-  updatedAt:
-    FieldValue.serverTimestamp(),
-
-  ...(beforeSnap.exists
-    ? {}
-    : {
-        createdAt:
-          FieldValue.serverTimestamp()
-      })
-};
-  const batch = db.batch();
-  batch.set(electionRef, next, { merge: true });
-  batch.set(pointerRef, { electionId, updatedAt: FieldValue.serverTimestamp() }, { merge: true });
-  const auditAfter = Object.fromEntries(Object.entries(next).filter(([key]) => !["createdAt", "updatedAt"].includes(key)));
-  batch.set(db.collection("audit_logs").doc(), auditData(request, before ? "ELECTION_SCHEDULE_UPDATE" : "ELECTION_CREATE", `elections/${electionId}`, before, auditAfter));
-  await batch.commit();
-  return { electionId, lifecycle: next.lifecycle };
+    const beforeSnap = await tx.get(electionRef);
+    const before = beforeSnap.exists ? beforeSnap.data() : null;
+    if (before?.finalized === true || before?.archived === true || before?.resultsPublished === true) throw new HttpsError("failed-precondition", "A finalized, published-result, or archived election schedule is immutable.");
+    if (before && request.data?.expectedScheduleVersion !== undefined && Number(request.data.expectedScheduleVersion) !== Number(before.scheduleVersion || 0)) {
+      throw new HttpsError("failed-precondition", "The schedule changed while you were editing. Close and reopen the editor to review the latest dates.");
+    }
+    const next = {
+      electionId,
+      title,
+      ...schedule,
+      ...(before ? {} : {candidateReviewComplete:false, finalized:false, resultsPublished:false, archived:false}),
+      scheduleDeleted:false,
+      lifecycle:electionLifecycle({...before,...schedule,finalized:false,resultsPublished:false,archived:false}),
+      scheduleVersion:Number(before?.scheduleVersion || 0)+1,
+      updatedAt:FieldValue.serverTimestamp(),
+      ...(beforeSnap.exists ? {} : {createdAt:FieldValue.serverTimestamp()})
+    };
+    tx.set(electionRef, next, { merge: true });
+    tx.set(pointerRef, { electionId, updatedAt: FieldValue.serverTimestamp() }, { merge: true });
+    const auditAfter = Object.fromEntries(Object.entries(next).filter(([key]) => !["createdAt", "updatedAt"].includes(key)));
+    tx.set(db.collection("audit_logs").doc(), auditData(request, before ? "ELECTION_SCHEDULE_UPDATE" : "ELECTION_CREATE", `elections/${electionId}`, before, auditAfter));
+    return { electionId, lifecycle: next.lifecycle };
+  });
 });
 
 exports.deleteElectionSchedule = onCall(callableOptions(), async (request) => {
