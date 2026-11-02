@@ -1,0 +1,16 @@
+{
+  "projectRef": "svgfxatigtjdrwzibjbu",
+  "function": "usc-email",
+  "productionVersion": 21,
+  "reviewedCommit": "b8dd974069fa2fdaa497a0d65e84c7425d1ba0f5",
+  "retrievedFiles": {
+    "index.ts": "acb82f08b4d3cd871612b15b60aea39fcf176a449e2ca754c685f28aa39c8df0",
+    "usc-email-common.ts": "a3b7faa281cb45dca3dacde80a430e4d297f2169558372137bf2b14e06de9d22",
+    "institutional-accounts.mjs": "875aad2ba3e0840bcbfd6ed04cd54b677291297941711bd739a4b90f5f55bf13"
+  },
+  "unchangedProviderBodySha256": {
+    "env": "22525742273b0ddfae34b549b6da914df3926c925a122cfc5735399b63c16a93",
+    "sendAppsScriptEmail": "44fb722a2dfd2c6015d18a46e94fbacff6e17558f89a75c9cb679da85e4513d8",
+    "sendEmail": "64f4f19a05e0e4810c6cddc236990d9d43b86cd602e23e6969f76db3e326a611"
+  }
+}

@@ -25,11 +25,13 @@ export function env() {
     firebaseProjectId: required("FIREBASE_PROJECT_ID"),
     firebaseWebApiKey: required("FIREBASE_WEB_API_KEY"),
     portalUrl: required("PORTAL_URL").replace(/\/$/, ""),
-    resendApiKey: required("RESEND_API_KEY"),
-    emailFrom: required("EMAIL_FROM"),
+    // Delivery credentials are checked only when sending, so identity/settings
+    // operations do not require credentials for an unused provider.
+    emailProvider: String(Deno.env.get("EMAIL_PROVIDER") || "resend").trim().toLowerCase(),
+    resendApiKey: String(Deno.env.get("RESEND_API_KEY") || "").trim(),
+    emailFrom: String(Deno.env.get("EMAIL_FROM") || "").trim()
   };
 }
-
 function secretKey(): string {
   const modern = String(Deno.env.get("SUPABASE_SECRET_KEYS") || "").trim();
   if (modern) {
@@ -95,18 +97,93 @@ export function randomToken(): string {
   return [...bytes].map((b) => b.toString(16).padStart(2, "0")).join("");
 }
 
-export async function sendEmail(to: string, subject: string, html: string, text: string): Promise<string> {
+// Google Apps Script reads signed fields from the body: its web-app request
+// object does not expose arbitrary authentication headers.
+async function sendAppsScriptEmail(to: string, subject: string, html: string, text: string, kind: string): Promise<string> {
+  const url = required("APPS_SCRIPT_EMAIL_URL");
+  const secret = required("APPS_SCRIPT_EMAIL_SECRET");
+  if (!/^https:\/\/script\.google\.com\/macros\/s\/[A-Za-z0-9_-]+\/exec$/.test(url)) {
+    throw new Error("APPS_SCRIPT_EMAIL_URL must be the deployed Google Apps Script /exec URL.");
+  }
+  if (!/^[a-f0-9]{64}$/.test(secret)) throw new Error("APPS_SCRIPT_EMAIL_SECRET must contain 64 lowercase hexadecimal characters.");
+  const bytes = new TextEncoder().encode(JSON.stringify({
+    to,
+    subject,
+    html,
+    text,
+    kind
+  }));
+  if (bytes.length > 60000) throw new Error("Email exceeds the Apps Script message size limit.");
+  const payload = btoa(Array.from(bytes, (byte)=>String.fromCharCode(byte)).join(""));
+  const timestamp = Date.now();
+  const requestId = randomToken().slice(0, 32);
+  const signed = `1\n${timestamp}\n${requestId}\n${payload}`;
+  const key = await crypto.subtle.importKey("raw", new TextEncoder().encode(secret), {
+    name: "HMAC",
+    hash: "SHA-256"
+  }, false, [
+    "sign"
+  ]);
+  const mac = await crypto.subtle.sign("HMAC", key, new TextEncoder().encode(signed));
+  const signature = Array.from(new Uint8Array(mac), (byte)=>byte.toString(16).padStart(2, "0")).join("");
+  let response;
+  try {
+    response = await fetch(url, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        version: 1,
+        timestamp,
+        requestId,
+        payload,
+        signature
+      }),
+      signal: AbortSignal.timeout(25000),
+      redirect: "follow"
+    });
+  } catch (_) {
+    // Never automatically retry or fall back: MailApp may already have accepted
+    // the email when a network response is lost.
+    throw new Error("Email delivery could not be confirmed. Do not automatically resend this request.");
+  }
+  const result = await response.json().catch(()=>null);
+  if (!response.ok || result?.ok !== true || result?.id !== `apps-script:${requestId}`) {
+    const code = String(result?.code || "UNAVAILABLE");
+    const reason = code === "RATE_LIMITED" ? "Email sending limit reached; try again later." : [
+      "UNAUTHORIZED",
+      "CONFIGURATION"
+    ].includes(code) ? "The email sender configuration needs administrator attention." : "The email sender did not confirm delivery.";
+    throw new Error(reason);
+  }
+  return result.id;
+}
+export async function sendEmail(to: string, subject: string, html: string, text: string, kind = "transactional"): Promise<string> {
   const cfg = env();
+  if (cfg.emailProvider === "apps-script") return await sendAppsScriptEmail(to, subject, html, text, kind);
+  if (cfg.emailProvider !== "resend") throw new Error("EMAIL_PROVIDER must be resend or apps-script.");
+  // Resend remains the default and is not used as an automatic fallback.
   const response = await fetch("https://api.resend.com/emails", {
     method: "POST",
-    headers: { "Content-Type": "application/json", Authorization: `Bearer ${cfg.resendApiKey}` },
-    body: JSON.stringify({ from: cfg.emailFrom, to: [to], subject, html, text }),
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${required("RESEND_API_KEY")}`
+    },
+    body: JSON.stringify({
+      from: required("EMAIL_FROM"),
+      to: [
+        to
+      ],
+      subject,
+      html,
+      text
+    })
   });
-  const payload = await response.json().catch(() => ({}));
+  const payload = await response.json().catch(()=>({}));
   if (!response.ok) throw new Error(`Email provider rejected the message (${response.status}): ${payload?.message || payload?.error || "Unknown error"}`);
   return String(payload?.id || "");
 }
-
 export async function verifyFirebaseIdToken(idToken: string): Promise<{ uid: string; email: string; disabled: boolean; role: string; authTime: number }> {
   if (!idToken || idToken.length < 100 || idToken.length > 10000) throw new Error("Your Firebase session is missing or expired. Sign in again.");
   const cfg = env();
