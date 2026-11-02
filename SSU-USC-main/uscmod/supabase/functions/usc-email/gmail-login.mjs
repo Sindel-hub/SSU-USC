@@ -2,13 +2,15 @@ const normalized = value => String(value || '').trim().toLowerCase();
 const validMapping = (mapping, email) => Boolean(mapping?.firebase_uid && mapping.verified_at
   && mapping.requested_email === email && mapping.verified_email === email);
 
-// A disabled/suspended legacy student/officer does not own the *login mapping*.
+// A proven inactive legacy student/officer does not own the *login mapping*.
 // Its Firebase account/email is not changed. Active, admin or unknown conflicts
 // stay blocked; a future reactivation makes this mapping fail closed again.
-async function inactiveLegacyOwner(deps, owner) {
+async function inactiveLegacyOwner(deps, owner, address) {
   const [profile, auth] = await Promise.all([deps.profile(owner.uid), deps.authUser(owner.uid)]);
-  return Boolean(profile && auth?.uid === owner.uid && ['student', 'officer'].includes(normalized(profile.role))
-    && (auth.disabled === true || profile.isActive === false || normalized(profile.accountStatus) === 'suspended'));
+  const sameMailbox = auth?.email && deps.canonicalGmail(auth.email) === deps.canonicalGmail(address);
+  return Boolean(profile && auth?.uid === owner.uid && sameMailbox
+    && typeof auth.disabled === 'boolean' && ['student', 'officer'].includes(normalized(profile.role))
+    && ['approved', 'suspended'].includes(normalized(profile.accountStatus)) && profile.isActive === false);
 }
 
 async function nativeOwner(deps, input) {
@@ -36,10 +38,16 @@ export async function resolveVerifiedGmailAccount(deps, input) {
   if (!deps.activeProfile(profile)) return null;
   const user = await deps.authUser(uid);
   if (!user || user.uid !== uid || user.disabled || !user.email) return null;
-  // A Gmail already owned by another Firebase account cannot redirect that account.
+  // Reject ambiguous aliases even when several old records look inactive.
+  const owners = [];
   for (const address of new Set([email, String(input || '').trim().toLowerCase()])) {
     const owner = await deps.authByEmail(address);
-    if (owner && owner.uid !== uid && !await inactiveLegacyOwner(deps, owner)) return null;
+    if (owner) owners.push({owner, address});
+  }
+  if (new Set(owners.map(({owner}) => owner.uid)).size > 1) return null;
+  for (const {owner, address} of owners) {
+    if (owner.uid !== uid && (profile.isActive !== true || normalized(profile.accountStatus) !== 'approved'
+        || !await inactiveLegacyOwner(deps, owner, address))) return null;
   }
   return { uid, authEmail: user.email };
 }

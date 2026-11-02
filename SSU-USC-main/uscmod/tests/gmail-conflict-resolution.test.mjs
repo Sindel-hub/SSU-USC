@@ -25,9 +25,9 @@ for(const state of ['active','admin','missing-profile','missing-auth'])test(`con
  if(state==='admin')h.profiles.get('mock-uid').role='admin';if(state==='missing-profile')h.profiles.delete('mock-uid');if(state==='missing-auth')h.users.delete('mock-uid');
  assert.equal((await h.run()).status,401);
 });
-test('disabled legacy student owner permits only the verified active mapped account',async()=>{
+test('disabled Auth with active Firestore profile is ambiguous and stays blocked',async()=>{
  const h=fixture();Object.assign(h.profiles.get('mock-uid'),{accountStatus:'approved',isActive:true});h.users.get('mock-uid').disabled=true;
- assert.equal((await h.run()).body.uid,'active-uid');assert.equal(h.users.get('mock-uid').disabled,true);
+ assert.equal((await h.run()).status,401);assert.equal(h.users.get('mock-uid').disabled,true);
 });
 test('old mock password cannot authenticate the mapped student or fall back to another UID',async()=>{
  const h=fixture();const result=await h.run('mock-password');assert.equal(result.status,401);assert.equal(result.body.uid,undefined);assert.deepEqual(h.calls,['budget','001@student.ssu-usc.local']);
@@ -65,4 +65,32 @@ test('ambiguous native Gmail aliases do not select either Firebase account',asyn
 for(const unavailable of [false,true])test(`budget gate remains before all password/identity work (${unavailable?'unavailable':'exhausted'})`,async()=>{
  const h=fixture();h.deps.consumeBudget=async()=>{if(unavailable)throw Error('unavailable');return false;};
  const result=await h.run();assert.equal(result.status,unavailable?503:429);assert.deepEqual(h.calls,[]);
+});
+
+for(const status of ['approved','suspended'])test(`explicit inactive legacy profile remains an allowed conflict (${status})`,async()=>{
+ const h=fixture();h.profiles.get('mock-uid').accountStatus=status;assert.equal((await h.run()).body.uid,'active-uid');
+ assert.equal(h.profiles.get('mock-uid').isActive,false);
+});
+for(const kind of ['pending','missing-status','missing-active','string-active','suspended-but-active'])test(`unknown or contradictory legacy state fails closed (${kind})`,async()=>{
+ const h=fixture(),profile=h.profiles.get('mock-uid');
+ if(kind==='pending')profile.accountStatus='pending';if(kind==='missing-status')delete profile.accountStatus;
+ if(kind==='missing-active')delete profile.isActive;if(kind==='string-active')profile.isActive='false';if(kind==='suspended-but-active')profile.isActive=true;
+ assert.equal((await h.run()).status,401);
+});
+test('exception requires explicit active target, not an omitted activity flag',async()=>{
+ const h=fixture();delete h.profiles.get('active-uid').isActive;assert.equal((await h.run()).status,401);
+});
+test('two different inactive owners across Gmail aliases remain ambiguous',async()=>{
+ const h=fixture();h.users.set('second-mock',{uid:'second-mock',email:'p.ersonal+tag@gmail.com',disabled:false});h.profiles.set('second-mock',{role:'student',accountStatus:'suspended',isActive:false});h.owners.set('p.ersonal+tag@gmail.com',{uid:'second-mock'});
+ assert.equal((await h.run('active-password','p.ersonal+tag@gmail.com')).status,401);
+});
+test('stale owner email or incomplete Auth status cannot prove the legacy exception',async()=>{
+ for(const kind of ['changed-email','unknown-disabled']){
+ const h=fixture();if(kind==='changed-email')h.users.get('mock-uid').email='different@gmail.com';else delete h.users.get('mock-uid').disabled;
+ assert.equal((await h.run()).status,401);
+ }
+});
+
+test('same legacy UID with an equivalent Gmail alias retains canonical-mailbox matching',async()=>{
+ const h=fixture();h.users.get('mock-uid').email='p.ersonal+tag@gmail.com';assert.equal((await h.run()).body.uid,'active-uid');
 });
