@@ -14,6 +14,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="css/users-modern.css?v=1" />
     <link rel="stylesheet" href="css/admin-navigation.css?v=2" />
+    <link rel="stylesheet" href="css/account-details.css?v=1" />
     <script type="module" src="js/admin-navigation.js?v=1"></script>
 </head>
 <body class="officer-app-shell admin-users-page">
@@ -123,48 +124,24 @@
 
 <div class="user-editor-modal hidden" id="userEditorModal" aria-hidden="true">
     <button type="button" class="user-editor-modal-backdrop" id="userEditorModalBackdrop" aria-label="Close account details"></button>
-    <div class="user-editor-modal-dialog" role="dialog" aria-modal="true" aria-labelledby="selectedUserName">
+    <div class="user-editor-modal-dialog" role="dialog" aria-modal="true" aria-labelledby="accountDetailsTitle selectedUserName">
 
             <article class="card user-directory-editor-card user-directory-editor-modal-card">
-                <button type="button" class="user-editor-modal-close" id="userEditorModalClose" aria-label="Close account details"><i class="fa-solid fa-xmark" aria-hidden="true"></i></button>
+
         <div id="editorEmptyState" class="empty-state directory-editor-empty"><div class="directory-editor-empty-icon" aria-hidden="true"><i class="fa-regular fa-address-card"></i></div><strong>No user selected</strong><span>Select an account from the directory to open the detail editor.</span></div>
         <div id="editorPanel" class="hidden">
-            <div class="card-head user-directory-card-head selected-user-head"><h2>Account details</h2><span class="quick-badge" id="rolePreviewBadge">Student access</span></div>
+            <div class="card-head user-directory-card-head selected-user-head"><div><span class="account-eyebrow">USER DIRECTORY</span><h2 id="accountDetailsTitle">Account details</h2></div><div class="account-header-actions"><span class="quick-badge" id="rolePreviewBadge">Student access</span><button type="button" class="user-editor-modal-close" id="userEditorModalClose" aria-label="Close account details"><span aria-hidden="true">×</span></button></div></div>
             <div class="user-summary">
                 <div class="restriction-banner hidden" id="selectedUserRestrictionBanner">This protected admin account cannot be demoted or suspended from this page.</div>
                 <div class="user-summary-top"><div class="profile-avatar" id="selectedUserInitials">--</div><div><div class="user-header-row"><span class="user-name" id="selectedUserName">—</span><span class="role-badge role-student" id="selectedUserRole">Role: student</span><span class="status-badge status-approved" id="selectedUserStatus">Status: approved</span></div><p class="subtext" id="selectedUserEmail">—</p><p class="subtext" id="selectedUserId">Student ID: —</p></div></div>
                 <details class="directory-account-details"><summary>Account information &amp; activity</summary>
-                <div class="detail-grid">
-                    <div class="detail-chip"><strong>Route after login</strong><span id="selectedUserRoute">Student dashboard</span></div>
-                    <div class="detail-chip"><strong>Office assignment</strong><span id="selectedUserOfficePosition">—</span></div>
-                    <div class="detail-chip"><strong>RBAC access</strong><span id="selectedUserPermissionSummary">—</span></div>
-                    <div class="detail-chip"><strong>Registered at</strong><span id="selectedUserRegisteredAt">—</span></div>
-                    <div class="detail-chip"><strong>Last login</strong><span id="selectedUserLastLogin">—</span></div>
-                    <div class="detail-chip"><strong>Last activity</strong><span id="selectedUserLastActivity">—</span></div>
-                    <div class="detail-chip"><strong>Role effective date</strong><span id="selectedUserEffectiveDate">—</span></div>
-                    <div class="detail-chip"><strong>Year level</strong><span id="selectedUserYearLevel">—</span></div>
-                    <div class="detail-chip"><strong>Student standing</strong><span id="selectedUserStanding">—</span></div>
-                    <div class="detail-chip"><strong>School verification</strong><span id="selectedUserVerified">—</span></div>
-                    <div class="detail-chip"><strong>Candidacy approval</strong><span id="selectedUserCandidacy">—</span></div>
-                    <div class="detail-chip"><strong>Account active</strong><span id="selectedUserActive">—</span></div>
-                    <div class="detail-chip"><strong>Complaint count</strong><span id="selectedUserComplaintCount">—</span></div>
-                    <div class="detail-chip"><strong>Complaint status</strong><span id="selectedUserComplaintStatus">—</span></div>
-                    <div class="detail-chip"><strong>Vote status</strong><span id="selectedUserVoteStatus">—</span></div>
-                    <div class="detail-chip"><strong>Last update</strong><span id="selectedUserLastUpdate">—</span></div>
-                </div>
+<section class="account-detail-group"><h3>Login &amp; access</h3><div class="detail-grid"><div class="detail-chip"><strong>Route after login</strong><span id="selectedUserRoute">Student dashboard</span></div><div class="detail-chip"><strong>Office assignment</strong><span id="selectedUserOfficePosition">—</span></div><div class="detail-chip"><strong>RBAC access</strong><span id="selectedUserPermissionSummary">—</span></div><div class="detail-chip"><strong>Role effective date</strong><span id="selectedUserEffectiveDate">—</span></div></div></section><section class="account-detail-group"><h3>Student information</h3><div class="detail-grid"><div class="detail-chip"><strong>Year level</strong><span id="selectedUserYearLevel">—</span></div><div class="detail-chip"><strong>Student standing</strong><span id="selectedUserStanding">—</span></div><div class="detail-chip"><strong>School verification</strong><span id="selectedUserVerified">—</span></div><div class="detail-chip"><strong>Candidacy approval</strong><span id="selectedUserCandidacy">—</span></div><div class="detail-chip"><strong>Account active</strong><span id="selectedUserActive">—</span></div></div></section><section class="account-detail-group"><h3>Activity &amp; history</h3><div class="detail-grid"><div class="detail-chip"><strong>Registered at</strong><span id="selectedUserRegisteredAt">—</span></div><div class="detail-chip"><strong>Last login</strong><span id="selectedUserLastLogin">—</span></div><div class="detail-chip"><strong>Last activity</strong><span id="selectedUserLastActivity">—</span></div><div class="detail-chip"><strong>Complaint count</strong><span id="selectedUserComplaintCount">—</span></div><div class="detail-chip"><strong>Complaint status</strong><span id="selectedUserComplaintStatus">—</span></div><div class="detail-chip"><strong>Vote status</strong><span id="selectedUserVoteStatus">—</span></div><div class="detail-chip"><strong>Last update</strong><span id="selectedUserLastUpdate">—</span></div></div></section>
                 </details>
                 <form id="roleEditorForm" class="field-stack">
-                    <div class="filters-grid user-editor-fields-grid">
-                        <div class="field"><label for="targetRoleSelect">Target role</label><select id="targetRoleSelect"><option value="student">Student</option><option value="officer">Officer</option></select></div>
-                        <div class="field"><label for="accountStatusSelect">Account status</label><select id="accountStatusSelect"><option value="approved">Approved</option><option value="pending">Pending</option><option value="suspended">Suspended</option></select></div>
-                        <div class="field"><label for="officePositionInput">Office position</label><input id="officePositionInput" type="text" placeholder="USC Officer" /></div>
-                        <div class="field"><label for="effectiveDateInput">Effective date</label><input id="effectiveDateInput" type="date" /></div>
-                        <div class="field"><label for="yearLevelSelect">Year level</label><select id="yearLevelSelect"><option value="">Not set</option><option value="1st Year">1st Year</option><option value="2nd Year">2nd Year</option><option value="3rd Year">3rd Year</option><option value="4th Year">4th Year</option><option value="5th Year">5th Year</option></select></div>
-                        <div class="field"><label for="studentStandingSelect">Student standing</label><select id="studentStandingSelect"><option value="active">Active / Enrolled</option><option value="leave">Leave of Absence</option>
-            <option value="inactive">Inactive / Not Enrolled</option><option value="graduated">Graduated</option><option value="transferred">Transferred / Changed School</option><option value="withdrawn">Withdrawn</option><option value="eliminated">Eliminated / Dismissed</option></select></div>
-                    </div>
-                    <div class="subtext" id="standingAccessNote">Changing standing away from Active immediately removes portal access. Active students remain voting-eligible by default.</div>
-                    <div class="toggle-row"><label class="toggle-box"><span>School identity verified</span><input id="verifiedToggle" type="checkbox" /></label><label class="toggle-box"><span>Approved for candidacy</span><input id="candidacyToggle" type="checkbox" /></label><label class="toggle-box"><span>Account active</span><input id="activeToggle" type="checkbox" /></label></div>
+                    <section class="account-section" aria-labelledby="accountAssignmentTitle"><div class="account-section-heading"><span class="account-section-icon" aria-hidden="true"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="3" width="16" height="18" rx="3"/><circle cx="12" cy="9" r="2"/><path d="M8 17c0-4 8-4 8 0"/></svg></span><div><h3 id="accountAssignmentTitle">Role &amp; assignment</h3><p>Manage dashboard access and office assignment.</p></div></div><div class="filters-grid user-editor-fields-grid"><div class="field"><label for="targetRoleSelect">Target role</label><select id="targetRoleSelect"><option value="student">Student</option><option value="officer">Officer</option></select></div><div class="field"><label for="officePositionInput">Office position</label><input id="officePositionInput" type="text" placeholder="USC Officer" /></div><div class="field"><label for="effectiveDateInput">Effective date</label><input id="effectiveDateInput" type="date" /></div></div></section>
+                    <section class="account-section" aria-labelledby="accountStudentTitle"><div class="account-section-heading"><span class="account-section-icon" aria-hidden="true"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="m2 9 10-5 10 5-10 5zM6 11v6c4 3 8 3 12 0v-6M22 9v8"/></svg></span><div><h3 id="accountStudentTitle">Student information</h3><p>Enrollment and academic standing.</p></div></div><div class="filters-grid user-editor-fields-grid"><div class="field"><label for="yearLevelSelect">Year level</label><select id="yearLevelSelect"><option value="">Not set</option><option value="1st Year">1st Year</option><option value="2nd Year">2nd Year</option><option value="3rd Year">3rd Year</option><option value="4th Year">4th Year</option><option value="5th Year">5th Year</option></select></div><div class="field"><label for="studentStandingSelect">Student standing</label><select id="studentStandingSelect"><option value="active">Active / Enrolled</option><option value="leave">Leave of Absence</option>
+            <option value="inactive">Inactive / Not Enrolled</option><option value="graduated">Graduated</option><option value="transferred">Transferred / Changed School</option><option value="withdrawn">Withdrawn</option><option value="eliminated">Eliminated / Dismissed</option></select></div></div><p class="subtext" id="standingAccessNote">Non-active student standing removes portal access.</p></section>
+                    <section class="account-section" aria-labelledby="accountAccessTitle"><div class="account-section-heading"><span class="account-section-icon" aria-hidden="true"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3 8 3v6c0 5-8 9-8 9s-8-4-8-9V6zM9 12l2 2 4-4"/></svg></span><div><h3 id="accountAccessTitle">Status &amp; verification</h3><p>Control account eligibility and verification.</p></div></div><div class="account-status-field"><div class="field"><label for="accountStatusSelect">Account status</label><select id="accountStatusSelect"><option value="approved">Approved</option><option value="pending">Pending</option><option value="suspended">Suspended</option></select></div></div><div class="toggle-row"><label class="toggle-box"><span>School identity verified</span><input id="verifiedToggle" type="checkbox" /></label><label class="toggle-box"><span>Approved for candidacy</span><input id="candidacyToggle" type="checkbox" /></label><label class="toggle-box"><span>Account active</span><input id="activeToggle" type="checkbox" /></label></div></section>
                     <section class="officer-rbac-editor" id="officerRbacEditor" hidden>
                         <div class="officer-rbac-editor-head">
                             <div><strong>Officer role-based access</strong><span>Assign the modules and functions this USC office may manage. Unassigned officer modules remain visible in read-only mode; dashboard access is always retained.</span></div>
@@ -178,10 +155,14 @@
                         <details class="directory-permissions"><summary>Management permissions</summary><div class="officer-rbac-permission-grid" id="officerPermissionGrid"></div></details>
                         <p class="subtext">“Apply to same office” copies this management permission set to all active officer accounts with the same Office Position. Other modules remain read-only.</p>
                     </section>
+                    <section class="account-section" aria-labelledby="accountNotesTitle"><div class="account-section-heading"><div><h3 id="accountNotesTitle">Notes &amp; change history</h3><p>Internal context for this account.</p></div></div><div class="account-notes-grid">
                     <div class="field"><label for="adminNotesInput">Admin notes</label><textarea id="adminNotesInput" placeholder="Internal admin notes for this account."></textarea></div>
                     <div class="field"><label for="roleChangeNote">Change reason</label><textarea id="roleChangeNote" placeholder="Required when changing role, status, or active access."></textarea></div>
+                    </div></section>
                     <div class="subtext" id="roleRoutePreview">Route after next login: Student dashboard</div>
-                    <div class="editor-actions"><button type="submit" class="btn primary" id="saveRoleButton">Save user updates</button><button type="button" class="btn light" id="approveUserButton">Approve</button><button type="button" class="btn danger-light" id="suspendUserButton">Suspend</button><button type="button" class="btn danger-light" id="removeUserButton" hidden>Remove account &amp; unlink Gmail</button><button type="button" class="btn light" id="reactivateUserButton">Reactivate</button><button type="button" class="btn light" id="demoteToStudentButton">Return to student</button><button type="button" class="btn password-reset-btn" id="resetUserPasswordButton"><i class="fa-solid fa-key" aria-hidden="true"></i> Reset password</button></div>
+                    <section class="account-section account-management" aria-labelledby="accountManagementTitle"><div class="account-section-heading"><div><h3 id="accountManagementTitle">Account management</h3><p>Account actions apply immediately.</p></div></div><div class="editor-actions"><button type="button" class="btn light" id="approveUserButton">Approve</button><button type="button" class="btn danger-light" id="suspendUserButton">Suspend</button><button type="button" class="btn danger-light" id="removeUserButton" hidden>Remove account &amp; unlink Gmail</button><button type="button" class="btn light" id="reactivateUserButton">Reactivate</button><button type="button" class="btn light" id="demoteToStudentButton">Return to student</button><button type="button" class="btn password-reset-btn" id="resetUserPasswordButton"><i class="fa-solid fa-key" aria-hidden="true"></i> Reset password</button></div>
+                    </section>
+                    <div class="account-save-bar"><button type="button" class="btn light" id="cancelAccountDetailsButton">Cancel</button><button type="submit" class="btn primary" id="saveRoleButton">Save user updates</button></div>
                     <div class="subtext" id="saveFeedbackText" role="status">Ready for admin updates.</div>
                     <div class="subtext" id="lastActionSummary" aria-live="polite">Select a user to begin.</div>
                 </form>
@@ -210,7 +191,7 @@
       <span>NEW TEMPORARY PASSWORD</span>
       <div><code id="passwordResetResultPassword">••••••••••••••</code><button type="button" id="copyTemporaryPasswordButton"><i class="fa-regular fa-copy"></i> Copy</button></div>
     </div>
-    <div class="password-reset-security-note"><i class="fa-solid fa-shield-halved"></i><p>This password is displayed only in this confirmation card and is not stored in Firestore. The user's existing sessions are revoked. Ask them to sign in with this temporary password and change it from Profile → Change Password.</p></div>
+    <div class="password-reset-security-note"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3 8 3v6c0 5-8 9-8 9s-8-4-8-9V6zM9 12l2 2 4-4"/></svg><p>This password is displayed only in this confirmation card and is not stored in Firestore. The user's existing sessions are revoked. Ask them to sign in with this temporary password and change it from Profile → Change Password.</p></div>
     <div class="password-reset-result-actions"><button type="button" class="btn light" id="printTemporaryPasswordButton"><i class="fa-solid fa-print"></i> Print slip</button><button type="button" class="btn primary" id="doneTemporaryPasswordButton">Done</button></div>
   </article>
 </div>
@@ -219,7 +200,7 @@
             </main>
         </div>
     </div>
-    
+
 <footer class="officer-shared-footer">
   <div class="officer-footer-main">
     <div class="officer-footer-col">

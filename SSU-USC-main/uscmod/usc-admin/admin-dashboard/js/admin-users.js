@@ -294,10 +294,11 @@ function openUserEditorModal() {
 }
 
 function closeUserEditorModal() {
-  if (!dom.userEditorModal) return;
+  if (!dom.userEditorModal || isSaving) return;
   dom.userEditorModal.classList.add('hidden');
   dom.userEditorModal.setAttribute('aria-hidden', 'true');
   document.body.classList.remove('user-editor-modal-open');
+  [...dom.usersTableBody.querySelectorAll('[data-open-user]')].find(button => button.dataset.openUser === selectedUserId)?.focus({ preventScroll: true });
 }
 
 function toggleEditor(hasSelection) {
@@ -482,6 +483,12 @@ async function saveSelectedUser(overrides = null) {
   if (!user) {
     alert('Select a user first.');
     return;
+  }
+  if (!overrides && (dom.targetRoleSelect.value !== user.role
+      || dom.accountStatusSelect.value !== user.accountStatus
+      || dom.activeToggle.checked !== user.isActive
+      || dom.studentStandingSelect.value !== (user.studentStanding || 'active'))) {
+    if (!window.confirm(`Save access changes for ${user.fullName || user.studentId || 'this user'}? These changes may affect sign-in and dashboard permissions.`)) return;
   }
   isSaving = true;
   dom.saveRoleButton.disabled = true;
@@ -720,6 +727,7 @@ function bind() {
 }
 
 
+document.getElementById('cancelAccountDetailsButton')?.addEventListener('click', closeUserEditorModal);
 dom.userEditorModalClose?.addEventListener('click', closeUserEditorModal);
 dom.userEditorModalBackdrop?.addEventListener('click', closeUserEditorModal);
 dom.passwordResetResultClose?.addEventListener('click', closePasswordResetResult);
@@ -728,6 +736,14 @@ dom.doneTemporaryPasswordButton?.addEventListener('click', closePasswordResetRes
 dom.copyTemporaryPasswordButton?.addEventListener('click', copyTemporaryPassword);
 dom.printTemporaryPasswordButton?.addEventListener('click', printTemporaryPasswordSlip);
 document.addEventListener('keydown', (event) => {
+  if (event.key === 'Tab' && !dom.userEditorModal?.classList.contains('hidden')
+      && dom.passwordResetResultModal?.classList.contains('hidden')) {
+    const controls = [...dom.userEditorModal.querySelectorAll('button, input, select, textarea, summary, [tabindex="0"]')]
+      .filter(control => !control.disabled && control.offsetParent !== null && !control.classList.contains('user-editor-modal-backdrop'));
+    const first = controls[0], last = controls.at(-1);
+    if (first && event.shiftKey && document.activeElement === first) { event.preventDefault(); last.focus(); }
+    else if (first && !event.shiftKey && document.activeElement === last) { event.preventDefault(); first.focus(); }
+  }
   if (event.key === 'Escape') {
     if (!dom.passwordResetResultModal?.classList.contains('hidden')) return closePasswordResetResult();
     if (!dom.userEditorModal?.classList.contains('hidden')) closeUserEditorModal();
