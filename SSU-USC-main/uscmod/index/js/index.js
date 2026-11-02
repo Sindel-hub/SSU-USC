@@ -1,3 +1,4 @@
+import { bindPastedPasswordLogin } from "../../shared/pasted-password.js";
 import { institutionalEmailForDisplay } from "../../shared/account-email.js";
 import { auth, db } from "../../firebase/firebase-config.js";
 import {
@@ -203,6 +204,8 @@ async function signInSecurely(email, password) {
   }
 }
 
+const signInWithPastedPassword = bindPastedPasswordLogin(dom.signinPasswordInput, signInByIdentifier);
+
 function bindSignin() {
   dom.signinForm?.addEventListener("submit", async (event) => {
     event.preventDefault();
@@ -213,7 +216,7 @@ function bindSignin() {
 
     buttonState(true);
     try {
-      const credential = await signInByIdentifier(identifier, password);
+      const credential = await signInWithPastedPassword(identifier, password);
       const user = credential.user;
 
       const token = await user.getIdTokenResult(true);

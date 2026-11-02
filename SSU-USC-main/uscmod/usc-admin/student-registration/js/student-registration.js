@@ -1,3 +1,4 @@
+import { copyTemporaryPassword } from "../../../shared/pasted-password.js";
 import { SSU_PROGRAMS, isValidSsuProgram } from "./ssu-programs.js";
 import { provisionStudentAccount } from "../../../shared/browser-provisioning.js?v=3-numeric-id-1";
 import { enrollmentStatusForStanding, isActiveStudentStanding, studentStandingLabel } from "../../../shared/student-standing.js";
@@ -136,6 +137,15 @@ function renderSlip(c,title="STUDENT ACCOUNT INFORMATION"){
     ? "Keep this information private. The student may change the temporary password after signing in."
     : `This account is currently inactive because the recorded student standing is ${studentStandingLabel(c.studentStanding)}. Portal access and voting are disabled until an administrator restores Active / Enrolled standing.`;
   slip.innerHTML=`<article class="login-slip"><div class="header"><h2>SSU UNIVERSITY STUDENT COUNCIL</h2><strong>${esc(title)}</strong></div><div class="credential-grid">${credentialRows(c)}</div><div class="notice"><strong>Important:</strong> ${esc(notice)}</div></article>`;
+  if (c.temporaryPassword) {
+    const copyButton = document.createElement("button");
+    copyButton.type = "button";
+    copyButton.className = "copy-temporary-password no-print";
+    copyButton.textContent = "Copy password";
+    copyButton.setAttribute("aria-live", "polite");
+    copyButton.addEventListener("click", () => copyTemporaryPassword(c.temporaryPassword, copyButton));
+    slip.appendChild(copyButton);
+  }
 }
 function safeFilenamePart(value){
   return String(value||"").trim().replace(/[^a-z0-9_-]+/gi,"_").replace(/^_+|_+$/g,"").slice(0,60)||"student";

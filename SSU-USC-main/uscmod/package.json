@@ -14,7 +14,7 @@
     "test:syntax": "node --test tests/js-syntax.test.mjs",
     "test:admin-auth": "node --test tests/mfa-enrollment.test.mjs",
     "test:verify": "node --test tests/admin-verification.test.mjs",
-    "test:school-login": "node --test tests/school-login.test.mjs",
+    "test:school-login": "node --test tests/school-login.test.mjs tests/pasted-password.test.mjs",
     "test:complaints": "node --test tests/complaint-stress.test.mjs",
     "test:capstone": "node --test tests/capstone-browser-mode.test.mjs",
     "test:navigation-profile": "node --test tests/navigation-profile-scroll.test.mjs",

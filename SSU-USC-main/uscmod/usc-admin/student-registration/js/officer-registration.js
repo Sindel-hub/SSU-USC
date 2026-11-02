@@ -1,3 +1,4 @@
+import { copyTemporaryPassword } from "../../../shared/pasted-password.js";
 import { SSU_PROGRAMS, isValidSsuProgram } from "./ssu-programs.js";
 import { provisionOfficerAccount, sendSchoolPasswordReset } from "../../../shared/browser-provisioning.js?v=3-numeric-id-1";
 import { enrollmentStatusForStanding, isActiveStudentStanding, studentStandingLabel } from "../../../shared/student-standing.js";
@@ -85,6 +86,15 @@ function renderSlip(c){
       ? "A verification link was also sent to the institutional email for account recovery/contact verification. Officer dashboard access is controlled by the school-issued account status and assigned officer role."
       : "Officer dashboard access is controlled by the school-issued account status and assigned officer role. Email verification is optional and does not block login.";
   slip.innerHTML=`<article class="login-slip"><div class="header"><h2>SSU UNIVERSITY STUDENT COUNCIL</h2><strong>OFFICER ACCOUNT INFORMATION</strong></div><div class="credential-grid">${credentialRows(c)}</div><div class="notice"><strong>Important:</strong> Keep this information private. ${esc(emailNotice)} The officer may change the temporary password after signing in.</div></article>`;
+  if (c.temporaryPassword) {
+    const copyButton = document.createElement("button");
+    copyButton.type = "button";
+    copyButton.className = "copy-temporary-password no-print";
+    copyButton.textContent = "Copy password";
+    copyButton.setAttribute("aria-live", "polite");
+    copyButton.addEventListener("click", () => copyTemporaryPassword(c.temporaryPassword, copyButton));
+    slip.appendChild(copyButton);
+  }
 }
 function buildDownloadableSlip(c){
   const notice=c.verificationEmailSent?"A verification link was sent to the institutional email for recovery/contact verification. It is not required for officer dashboard access.":"Email verification is optional. Officer access is controlled by the school-issued account and assigned officer role.";
