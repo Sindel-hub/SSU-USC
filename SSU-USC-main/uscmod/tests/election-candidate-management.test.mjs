@@ -119,7 +119,7 @@ function officerHarness({authorized=true,removeAuthorized=authorized,removed=fal
     hydrateCandidatePreviewImages:async()=>{},closeCandidatePreview:()=>{},refreshAll:async()=>{},alert:()=>{},
     callSecure:async(name,data)=>{calls.push({name,data});}
   });
-  vm.runInContext(officerSource.slice(officerSource.indexOf('async function removeCandidateApplication('),officerSource.indexOf('function renderCandidateManagement(')),ctx);
+  vm.runInContext(officerSource.slice(officerSource.indexOf('async function removeCandidateApplication('),officerSource.indexOf('function openCandidateEditor(')),ctx);
   vm.runInContext(officerSource.slice(officerSource.indexOf('function renderApplications('),officerSource.indexOf('function schedulePayload(')),ctx);
   return {ctx,list,calls,application};
 }
@@ -173,4 +173,18 @@ test('cloud permission helper accepts either module access or existing review ac
     if(permissions.length)await ctx.requireOfficerPermission({},['elections.view','elections.review']);
     else await assert.rejects(ctx.requireOfficerPermission({},['elections.view','elections.review']));
   }
+});
+
+test('candidate management panel is removed and actions remain in candidate review',()=>{
+  assert.doesNotMatch(officerSource,/candidateManagementCard|renderCandidateManagement/);
+  const h=officerHarness();h.ctx.renderApplications();
+  assert.match(h.list.innerHTML,/data-remove-approved-candidate="applicant"/);
+  assert.match(h.list.innerHTML,/data-edit-reviewed-candidate="candidate"/);
+});
+test('module-only officers can remove from review without gaining edit controls',()=>{
+  const h=officerHarness({authorized:false,removeAuthorized:true});h.ctx.renderApplications();
+  assert.match(h.list.innerHTML,/data-remove-approved-candidate/);assert.doesNotMatch(h.list.innerHTML,/data-edit-reviewed-candidate/);
+});
+test('historically removed candidates do not expose edit controls in review',()=>{
+  const h=officerHarness({removed:true});h.ctx.renderApplications();assert.doesNotMatch(h.list.innerHTML,/data-edit-reviewed-candidate/);
 });

@@ -392,20 +392,6 @@ async function removeElectionCandidate(candidate) {
   } catch (error) { alert(error.message); }
 }
 
-function renderCandidateManagement() {
-  let panel = $("candidateManagementCard");
-  if (!panel) {
-    $("candidateReviewCard")?.insertAdjacentHTML("beforebegin", `<section class="card" id="candidateManagementCard" style="margin-bottom:18px"><div class="card-head"><div><h3>Candidate Management</h3><span>Edit profiles or remove candidates at any election stage. Historical votes and official results are preserved.</span></div></div><div class="card-body" id="candidateManagementList"></div></section>`);
-    panel = $("candidateManagementCard");
-  }
-  if (!panel) return;
-  const list = $("candidateManagementList");
-  const visible = candidates.filter((c) => !c.removed);
-  list.innerHTML = visible.map((c) => `<article class="candidate-review-item"><div class="candidate-review-copy"><strong>${esc(c.fullName)}</strong><p>${esc(c.position)}${c.department ? ` · ${esc(c.department)}` : ""}</p></div>${canManageCandidates || canRemoveCandidates ? `<div class="row-actions">${canManageCandidates ? `<button type="button" class="mini-btn light" data-edit-profile="${esc(c.id)}"><i class="fa-solid fa-pen"></i> Edit</button>` : ""}${canRemoveCandidates ? `<button type="button" class="mini-btn danger" data-remove-profile="${esc(c.id)}"><i class="fa-solid fa-trash"></i> Remove</button>` : ""}</div>` : ""}</article>`).join("") || `<div class="review-empty-state">No active candidate profiles.</div>`;
-  list.querySelectorAll("[data-edit-profile]").forEach((b) => b.addEventListener("click", () => openCandidateEditor(candidates.find((c) => c.id === b.dataset.editProfile))));
-  list.querySelectorAll("[data-remove-profile]").forEach((b) => b.addEventListener("click", () => removeElectionCandidate(candidates.find((c) => c.id === b.dataset.removeProfile))));
-}
-
 function openCandidateEditor(candidate) {
   if (!canManageCandidates || !candidate || candidate.removed) return;
   let dialog = $("candidateEditDialog");
@@ -546,6 +532,7 @@ function renderApplications() {
           </div>
           <div class="candidate-review-actions">
             <button class="mini-btn ${canReview ? "primary" : "light"} candidate-preview-btn" type="button" data-candidate-preview="${esc(a.id)}"><i class="fa-regular fa-eye" aria-hidden="true"></i><span>${canReview ? "Review application" : "View application"}</span><i class="fa-solid fa-arrow-right candidate-preview-arrow" aria-hidden="true"></i></button>
+            ${canManageCandidates && linkedCandidate && !removed ? `<button class="mini-btn light" type="button" data-edit-reviewed-candidate="${esc(linkedCandidate.id)}"><i class="fa-solid fa-pen" aria-hidden="true"></i> Edit</button>` : ""}
             ${canRemoveCandidates && normalizedStatus === "approved" && linkedCandidate ? `<button class="mini-btn danger" type="button" data-remove-approved-candidate="${esc(a.id)}" aria-label="Remove approved candidate ${esc(name)}"><i class="fa-solid fa-trash" aria-hidden="true"></i> Remove</button>` : ""}
           </div>
           ${removed ? `<small class="candidate-review-lock-note"><i class="fa-solid fa-box-archive" aria-hidden="true"></i><span><strong>Candidate removed</strong> The approval record, existing votes, and official results are preserved.</span></small>` : canReview
@@ -558,6 +545,7 @@ function renderApplications() {
         </div>
       </article>`;
   }).join("");
+  els.candidateReviewList.querySelectorAll("[data-edit-reviewed-candidate]").forEach((btn) => btn.addEventListener("click", () => openCandidateEditor(candidates.find((c) => c.id === btn.dataset.editReviewedCandidate))));
   els.candidateReviewList.querySelectorAll("[data-remove-approved-candidate]").forEach((btn) => btn.addEventListener("click", () => removeCandidateApplication(applications.find((a) => a.id === btn.dataset.removeApprovedCandidate))));
   els.candidateReviewList.querySelectorAll("[data-private-path]").forEach((btn) => btn.addEventListener("click", () => openPrivateFile(btn.dataset.privatePath).catch((e) => alert(e.message))));
   els.candidateReviewList.querySelectorAll("[data-candidate-photo-preview]").forEach((btn) => btn.addEventListener("click", () => openCandidatePhotoPreview(btn.dataset.candidatePhotoPreview).catch((e) => alert(e.message))));
@@ -747,7 +735,6 @@ async function refreshAll(forceSchedule = false) {
   renderStats();
   renderDepartmentTurnout();
   renderApplications();
-  renderCandidateManagement();
 
   const finalize = $("finalizeElectionBtn");
   const publish = $("publishResultsBtn");

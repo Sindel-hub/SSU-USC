@@ -2,7 +2,7 @@
 
 Officers explicitly assigned `elections.view` can remove an approved candidate without receiving application-review or profile-edit authority. Existing `elections.review` officers and administrators retain their prior removal permission. Generic officer read-only navigation without an assigned election permission does not grant removal.
 
-The UI exposes Remove on the approved application card, candidate management panel and preview dialog. The entire application card is no longer locked behind review permission; Approve/Reject still require review permission. Pending application deletion and profile editing retain their existing review restrictions.
+The UI exposes Remove in Candidate Review, on the approved application card and its preview dialog. The separate Candidate Management panel is removed; authorized profile editing is available on the review card. The entire application card is no longer locked behind review permission; Approve/Reject still require review permission. Pending application deletion and profile editing retain their existing review restrictions.
 
 Removal is available before, during and after voting. Confirmation remains required. The candidate is soft-removed, and student candidate lists/ballots omit it. Original approval records, votes, official results and immutable actor/timestamp/before-after audit records are retained. No election reset or physical candidate deletion is performed.
 
