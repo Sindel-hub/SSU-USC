@@ -1133,8 +1133,8 @@ async function syncCandidateReviewCompletion(electionId, actorUid = "") {
 }
 
 
-async function manageElectionCandidate(request, remove = false) {
-  await requireOfficerPermission(request, remove ? ["elections.view", "elections.review"] : "elections.review");
+async function manageElectionCandidate(request, remove = false, dismiss = false) {
+  await requireOfficerPermission(request, remove || dismiss ? ["elections.view", "elections.review"] : "elections.review");
   requireRecentAuth(request);
   const electionId = cleanText(request.data?.electionId, 128);
   const candidateId = cleanText(request.data?.candidateId, 128);
@@ -1145,9 +1145,12 @@ async function manageElectionCandidate(request, remove = false) {
     const snap = await tx.get(ref);
     if (!electionSnap.exists || !snap.exists) throw new HttpsError("not-found", "Candidate or election not found.");
     const before = snap.data();
-    if (before.removed === true) throw new HttpsError("failed-precondition", "Candidate already removed.");
+    if (dismiss && before.removed !== true) throw new HttpsError("failed-precondition", "Remove the candidate before deleting it from Candidate Review.");
+    if (dismiss && before.managementHidden === true) return;
+    if (!dismiss && before.removed === true) throw new HttpsError("failed-precondition", "Candidate already removed.");
     const changes = {};
-    if (remove) changes.removed = true;
+    if (dismiss) changes.managementHidden = true;
+    else if (remove) changes.removed = true;
     else {
       for (const [key, limit] of Object.entries({fullName:120,position:80,department:160,partylist:100,platform:5000,campaignPhotoUrl:1000})) {
         const value = String(request.data?.details?.[key] ?? before[key] ?? "").trim();
@@ -1158,15 +1161,16 @@ async function manageElectionCandidate(request, remove = false) {
       if (changes.campaignPhotoUrl && !/^https:\/\//i.test(changes.campaignPhotoUrl) && changes.campaignPhotoUrl !== before.campaignPhotoUrl) throw new HttpsError("invalid-argument", "Use an HTTPS photo URL.");
       if (Date.now() >= toMillis(electionSnap.data().votingStart) && Date.now() < toMillis(electionSnap.data().votingEnd) && (changes.position !== before.position || changes.department !== (before.department || ""))) throw new HttpsError("failed-precondition", "Position and department are fixed while voting is active to preserve ballot assignments.");
     }
-    if (Date.now() >= toMillis(electionSnap.data().votingStart) && !before.resultIdentity) changes.resultIdentity = before;
+    if (!dismiss && Date.now() >= toMillis(electionSnap.data().votingStart) && !before.resultIdentity) changes.resultIdentity = before;
     changes.updatedAt = FieldValue.serverTimestamp();
     changes.updatedByUid = request.auth.uid;
     tx.update(ref, changes);
-    tx.set(db.collection("audit_logs").doc(), auditData(request, remove ? "CANDIDATE_REMOVE" : "CANDIDATE_EDIT", ref.path, before, {...before,...changes}));
+    tx.set(db.collection("audit_logs").doc(), auditData(request, dismiss ? "CANDIDATE_DISMISS" : remove ? "CANDIDATE_REMOVE" : "CANDIDATE_EDIT", ref.path, before, {...before,...changes}));
   });
   return {success:true};
 }
 exports.updateElectionCandidate = onCall(callableOptions(), (request) => manageElectionCandidate(request));
+exports.dismissElectionCandidate = onCall(callableOptions(), (request) => manageElectionCandidate(request, false, true));
 exports.removeElectionCandidate = onCall(callableOptions(), (request) => manageElectionCandidate(request, true));
 
 exports.removeCandidateApplication = onCall(callableOptions(), async (request) => {

@@ -80,3 +80,25 @@ for(const flag of ['finalized','resultsPublished','archived'])test(`rules reject
 test('rules reject extending voting past results without shifting the publication window',async()=>{
  await seedSchedule();await assertFails(updateSchedule({votingEnd:Timestamp.fromMillis(Date.now()+10*3600000)}));
 });
+
+async function dismiss(uid,{audit=true,extra={}}={}){
+ const db=env.authenticatedContext(uid,{role:'officer'}).firestore(),ref=doc(db,'elections','e','candidates','one');
+ const before=(await getDoc(ref)).data(),auditRef=doc(collection(db,'audit_logs'));
+ const changes={managementHidden:true,updatedAt:serverTimestamp(),updatedByUid:uid,managementAuditId:auditRef.id,...extra};
+ const batch=writeBatch(db);batch.update(ref,changes);
+ if(audit)batch.set(auditRef,{actorUid:uid,electionId:'e',candidateId:'one',action:'CANDIDATE_DISMISS',target:ref.path,source:'browser-election-runtime',before,after:{...before,...changes},createdAt:serverTimestamp()});
+ return batch.commit();
+}
+test('dismissal requires prior removal and retains votes and official results',async()=>{
+ await seed();await assertFails(dismiss('module'));await assertSucceeds(remove('module'));await assertSucceeds(dismiss('module'));
+ await env.withSecurityRulesDisabled(async context=>{
+ const db=context.firestore();assert.equal((await getDoc(doc(db,'elections','e','candidates','one'))).data().managementHidden,true);
+ assert.equal((await getDoc(doc(db,'elections','e','results','official'))).data().results[0].votes,7);
+ assert.equal((await getDoc(doc(db,'elections','e','ballots','historical'))).data().selections.President,'one');
+ });
+});
+test('dismissal rejects omitted audits, profile changes and unassigned officers',async()=>{
+ await seed();await remove('module');await assertFails(dismiss('module',{audit:false}));
+ await assertFails(dismiss('module',{extra:{fullName:'tampered'}}));await assertFails(dismiss('other'));
+ await assertSucceeds(dismiss('reviewer'));
+});

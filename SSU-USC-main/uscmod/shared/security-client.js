@@ -1107,8 +1107,8 @@ async function browserRemoveCandidateApplication(data = {}) {
 }
 
 // Candidate management is independent of the application review window.
-async function browserManageCandidate(data = {}, remove = false) {
-  const { user } = await requireBrowserPermission(remove ? ["elections.view", "elections.review"] : "elections.review");
+async function browserManageCandidate(data = {}, remove = false, dismiss = false) {
+  const { user } = await requireBrowserPermission(remove || dismiss ? ["elections.view", "elections.review"] : "elections.review");
   const electionId = String(data.electionId || "");
   const candidateId = String(data.candidateId || "");
   if (!electionId || !candidateId || /[/]/.test(electionId + candidateId)) throw new Error("Select a valid election and candidate.");
@@ -1119,9 +1119,12 @@ async function browserManageCandidate(data = {}, remove = false) {
     const snap = await tx.get(ref);
     if (!election.exists() || !snap.exists()) throw new Error("Candidate or election no longer exists.");
     const before = snap.data();
-    if (before.removed === true) throw new Error("This candidate has already been removed.");
+    if (dismiss && before.removed !== true) throw new Error("Remove the candidate before deleting it from Candidate Review.");
+    if (dismiss && before.managementHidden === true) return;
+    if (!dismiss && before.removed === true) throw new Error("This candidate has already been removed.");
     const changes = {};
-    if (remove) changes.removed = true;
+    if (dismiss) changes.managementHidden = true;
+    else if (remove) changes.removed = true;
     else {
       for (const [key, limit] of Object.entries({fullName:120, position:80, department:160, partylist:100, platform:5000, campaignPhotoUrl:1000})) {
         changes[key] = String(data.details?.[key] ?? before[key] ?? "").trim();
@@ -1132,12 +1135,12 @@ async function browserManageCandidate(data = {}, remove = false) {
       if (Date.now() >= toMillis(election.data().votingStart) && Date.now() < toMillis(election.data().votingEnd) && (changes.position !== before.position || changes.department !== (before.department || ""))) throw new Error("Position and department are fixed while voting is active to preserve ballot assignments.");
     }
     // Capture the original identity before the first management change during/after voting.
-    if (Date.now() >= toMillis(election.data().votingStart) && !before.resultIdentity) changes.resultIdentity = before;
+    if (!dismiss && Date.now() >= toMillis(election.data().votingStart) && !before.resultIdentity) changes.resultIdentity = before;
     changes.updatedAt = serverTimestamp();
     changes.updatedByUid = user.uid;
     changes.managementAuditId = auditRef.id;
     tx.update(ref, changes);
-    tx.set(auditRef, {actorUid:user.uid, electionId, candidateId, action:remove ? "CANDIDATE_REMOVE" : "CANDIDATE_EDIT", target:ref.path, source:"browser-election-runtime", before, after:{...before,...changes}, createdAt:serverTimestamp()});
+    tx.set(auditRef, {actorUid:user.uid, electionId, candidateId, action:dismiss ? "CANDIDATE_DISMISS" : remove ? "CANDIDATE_REMOVE" : "CANDIDATE_EDIT", target:ref.path, source:"browser-election-runtime", before, after:{...before,...changes}, createdAt:serverTimestamp()});
   });
   return { success:true };
 }
@@ -1459,6 +1462,7 @@ async function callBrowserMode(name, data) {
   if (name === "submitCandidateApplication") return browserSubmitCandidateApplication(data);
   if (name === "removeCandidateApplication") return browserRemoveCandidateApplication(data);
   if (name === "updateElectionCandidate") return browserManageCandidate(data);
+  if (name === "dismissElectionCandidate") return browserManageCandidate(data, false, true);
   if (name === "removeElectionCandidate") return browserManageCandidate(data, true);
   if (name === "reviewCandidateApplication") return browserReviewCandidate(data);
   if (name === "submitAnonymousBallot") return browserSubmitBallot(data);

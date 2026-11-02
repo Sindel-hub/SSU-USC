@@ -408,6 +408,16 @@ async function removeElectionCandidate(candidate) {
   } catch (error) { alert(error.message); }
 }
 
+async function deleteRemovedCandidate(candidate) {
+  if (!canRemoveCandidates || !candidate || candidate.removed !== true || candidate.managementHidden === true) return;
+  if (!confirm(`Delete ${candidate.fullName || "this candidate"} from Candidate Review? The card will disappear from this module. Approval records, votes, official results, and audit history will be retained.`)) return;
+  try {
+    await callSecure("dismissElectionCandidate", {electionId, candidateId:candidate.id});
+    closeCandidatePreview();
+    await refreshAll();
+  } catch (error) { alert(error.message); }
+}
+
 function openCandidateEditor(candidate) {
   if (!canManageCandidates || !candidate || candidate.removed) return;
   let dialog = $("candidateEditDialog");
@@ -484,6 +494,7 @@ async function openCandidatePreview(uid) {
     <div class="candidate-preview-footer-actions">
       <button class="mini-btn light" type="button" data-candidate-preview-close>Close</button>
       ${canReview ? `<button class="mini-btn danger candidate-preview-return" type="button" data-rbac-permission="elections.review" data-preview-decision="reject"><i class="fa-solid fa-rotate-left"></i> Reject</button><button class="mini-btn primary candidate-preview-approve" type="button" data-rbac-permission="elections.review" data-preview-decision="approve"><i class="fa-solid fa-check"></i> Approve</button>` : ""}
+      ${canRemoveCandidates && linkedCandidate?.removed === true && !linkedCandidate.managementHidden ? `<button class="mini-btn danger" type="button" data-delete-removed-candidate="${esc(linkedCandidate.id)}">Delete from Review</button>` : ""}
       ${((canManageCandidates && application.status === "Under Review") || (canRemoveCandidates && candidates.some((c) => c.id === application.candidateId && !c.removed))) ? `<button class="mini-btn danger" type="button" data-remove-candidate="${esc(application.id)}"><i class="fa-solid fa-trash"></i> Remove</button>` : ""}
     </div>`;
 
@@ -492,23 +503,28 @@ async function openCandidatePreview(uid) {
   dialog.querySelectorAll("[data-candidate-preview-close]").forEach((button) => button.addEventListener("click", closeCandidatePreview));
   dialog.querySelectorAll("[data-preview-private-path]").forEach((button) => button.addEventListener("click", () => openPrivateFile(button.dataset.previewPrivatePath).catch((error) => alert(error.message))));
   dialog.querySelectorAll("[data-preview-decision]").forEach((button) => button.addEventListener("click", () => submitCandidatePreviewDecision(application, button.dataset.previewDecision, button)));
+  dialog.querySelector("[data-delete-removed-candidate]")?.addEventListener("click", () => deleteRemovedCandidate(linkedCandidate));
   dialog.querySelector("[data-remove-candidate]")?.addEventListener("click", () => removeCandidateApplication(application));
   await hydrateCandidatePreviewImages(dialog);
 }
 
 function renderApplications() {
+  const visibleApplications = applications.filter((a) => {
+    const candidate = candidates.find((c) => c.id === a.candidateId);
+    return !(candidate?.removed === true && candidate.managementHidden === true);
+  });
   const counts = { approved: 0, pending: 0, rejected: 0 };
-  for (const item of applications) {
+  for (const item of visibleApplications) {
     const status = clean(item.status).toLowerCase();
     if (status === "approved") counts.approved += 1; else if (status === "rejected") counts.rejected += 1; else counts.pending += 1;
   }
-  if (els.candidateApplicationTotal) els.candidateApplicationTotal.textContent = String(applications.length);
+  if (els.candidateApplicationTotal) els.candidateApplicationTotal.textContent = String(visibleApplications.length);
   if (els.candidateApprovedTotal) els.candidateApprovedTotal.textContent = String(counts.approved);
   if (els.candidatePendingTotal) els.candidatePendingTotal.textContent = String(counts.pending);
   if (els.candidateRejectedTotal) els.candidateRejectedTotal.textContent = String(counts.rejected);
   if (!els.candidateReviewList) return;
-  if (!applications.length) { els.candidateReviewList.innerHTML = `<div class="review-empty-state">No candidate applications exist for this election ID.</div>`; return; }
-  els.candidateReviewList.innerHTML = applications.map((a) => {
+  if (!visibleApplications.length) { els.candidateReviewList.innerHTML = `<div class="review-empty-state">No candidate applications to display for this election.</div>`; return; }
+  els.candidateReviewList.innerHTML = visibleApplications.map((a) => {
     const linkedCandidate = candidates.find((c) => c.id === a.candidateId);
     const removed = linkedCandidate?.removed === true;
     const normalizedStatus = removed ? "removed" : clean(a.status || "Under Review").toLowerCase();
@@ -550,6 +566,7 @@ function renderApplications() {
             <button class="mini-btn ${canReview ? "primary" : "light"} candidate-preview-btn" type="button" data-candidate-preview="${esc(a.id)}"><i class="fa-regular fa-eye" aria-hidden="true"></i><span>${canReview ? "Review application" : "View application"}</span><i class="fa-solid fa-arrow-right candidate-preview-arrow" aria-hidden="true"></i></button>
             ${canManageCandidates && linkedCandidate && !removed ? `<button class="mini-btn light" type="button" data-edit-reviewed-candidate="${esc(linkedCandidate.id)}"><i class="fa-solid fa-pen" aria-hidden="true"></i> Edit</button>` : ""}
             ${canRemoveCandidates && normalizedStatus === "approved" && linkedCandidate ? `<button class="mini-btn danger" type="button" data-remove-approved-candidate="${esc(a.id)}" aria-label="Remove approved candidate ${esc(name)}"><i class="fa-solid fa-trash" aria-hidden="true"></i> Remove</button>` : ""}
+            ${canRemoveCandidates && removed ? `<button class="mini-btn danger" type="button" data-delete-removed-candidate="${esc(linkedCandidate.id)}"><i class="fa-solid fa-trash-can" aria-hidden="true"></i> Delete from Review</button>` : ""}
           </div>
           ${removed ? `<small class="candidate-review-lock-note"><i class="fa-solid fa-box-archive" aria-hidden="true"></i><span><strong>Candidate removed</strong> The approval record, existing votes, and official results are preserved.</span></small>` : canReview
             ? `<small class="candidate-review-lock-note is-ready"><i class="fa-solid fa-circle-check" aria-hidden="true"></i><span><strong>Ready for review</strong> Open the application to approve or reject it.</span></small>`
@@ -561,6 +578,7 @@ function renderApplications() {
         </div>
       </article>`;
   }).join("");
+  els.candidateReviewList.querySelectorAll("[data-delete-removed-candidate]").forEach((btn) => btn.addEventListener("click", () => deleteRemovedCandidate(candidates.find((c) => c.id === btn.dataset.deleteRemovedCandidate))));
   els.candidateReviewList.querySelectorAll("[data-edit-reviewed-candidate]").forEach((btn) => btn.addEventListener("click", () => openCandidateEditor(candidates.find((c) => c.id === btn.dataset.editReviewedCandidate))));
   els.candidateReviewList.querySelectorAll("[data-remove-approved-candidate]").forEach((btn) => btn.addEventListener("click", () => removeCandidateApplication(applications.find((a) => a.id === btn.dataset.removeApprovedCandidate))));
   els.candidateReviewList.querySelectorAll("[data-private-path]").forEach((btn) => btn.addEventListener("click", () => openPrivateFile(btn.dataset.privatePath).catch((e) => alert(e.message))));
