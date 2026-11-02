@@ -1478,6 +1478,7 @@ exports.adminUpdateUser = onCall(callableOptions(), async (request) => {
   const beforeSnap = await userRef.get();
   if (!beforeSnap.exists) throw new HttpsError("not-found", "User profile not found.");
   const before = beforeSnap.data();
+  if (before.accountRemoved || before.accountRemovalPending) throw new HttpsError("failed-precondition", "Removed or pending-removal accounts cannot be edited.");
   const role = cleanText(request.data?.role || before.role, 20).toLowerCase();
   if (!["student", "officer", "admin"].includes(role)) throw new HttpsError("invalid-argument", "Invalid role.");
   if (uid === request.auth.uid && role !== "admin") throw new HttpsError("failed-precondition", "You cannot remove your own administrator role while signed in.");
@@ -1538,7 +1539,7 @@ exports.adminUpdateUser = onCall(callableOptions(), async (request) => {
     verifiedAt: requestedVerifiedStudent ? FieldValue.serverTimestamp() : FieldValue.delete()
   };
   try {
-    await userRef.set(patch, { merge: true });
+    await userRef.update(patch, { lastUpdateTime: beforeSnap.updateTime });
   } catch (error) {
     console.error("adminUpdateUser profile write failed", { uid, code: error?.code, message: error?.message });
     throw new HttpsError("internal", "The user profile could not be updated on the server.");

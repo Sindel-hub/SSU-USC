@@ -1,3 +1,4 @@
+import { createAccountRemovalService } from "./account-removal.mjs";
 import { createGmailPasswordAuthenticator } from "./gmail-login.mjs";
 import { createInstitutionalAccountService } from "./institutional-accounts.mjs";
 import {
@@ -9,6 +10,7 @@ import {
   errorText,
   escapeHtml,
   firebaseUserByUid,
+  disableFirebaseAuthAccount,
   firebasePasswordIdentity,
   gmailRateLimitHash,
   firestoreGet,
@@ -27,6 +29,14 @@ import {
 } from "../_shared/usc-email-common.ts";
 
 const supabase = adminClient();
+const removeSuspendedAccount = createAccountRemovalService({
+  get: firestoreVersionedGet, commit: firestoreIdentityCommit, randomToken,
+  disableAuth: disableFirebaseAuthAccount,
+  unlinkGmail: async (uid: string) => {
+    const { error } = await supabase.from("student_email_accounts").delete().eq("firebase_uid", uid);
+    if (error) throw new Error("Gmail detachment failed. The account remains suspended; retry removal.");
+  }
+});
 const institutionalAccounts = createInstitutionalAccountService({
   get: firestoreVersionedGet, commit: firestoreIdentityCommit, activeProfile: activeEmailProfile,
   authUser: firebaseUserByUid, authByEmail: firebaseUserByEmail,
@@ -272,6 +282,10 @@ Deno.serve(async (req) => {
 
     const body = await jsonBody(req);
     const action = String(body.action || "").trim();
+    if (action === "admin_remove_suspended_account") {
+      const user = await verifyFirebaseIdToken(String(req.headers.get("x-firebase-token") || ""));
+      return jsonResponse(await removeSuspendedAccount(user, String(body.uid || "")));
+    }
     if (["institutional_get", "institutional_request", "institutional_verify", "admin_reset_password"].includes(action)) {
       const user = await verifyFirebaseIdToken(String(req.headers.get("x-firebase-token") || ""));
       if (action === "institutional_get") return jsonResponse(await institutionalAccounts.status(user));

@@ -352,3 +352,9 @@ export async function gmailRateLimitHash(value: string): Promise<string> {
   const digest = await crypto.subtle.sign("HMAC", key, new TextEncoder().encode(value));
   return [...new Uint8Array(digest)].map(byte=>byte.toString(16).padStart(2,"0")).join("");
 }
+
+export async function disableFirebaseAuthAccount(uid: string, timestamp: number) {
+  await googleJson(`https://identitytoolkit.googleapis.com/v1/projects/${env().firebaseProjectId}/accounts:update`, {
+    method: "POST", body: JSON.stringify({ localId: uid, disableUser: true, validSince: String(Math.floor(timestamp / 1000)) })
+  });
+}

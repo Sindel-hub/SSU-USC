@@ -181,7 +181,7 @@
                     <div class="field"><label for="adminNotesInput">Admin notes</label><textarea id="adminNotesInput" placeholder="Internal admin notes for this account."></textarea></div>
                     <div class="field"><label for="roleChangeNote">Change reason</label><textarea id="roleChangeNote" placeholder="Required when changing role, status, or active access."></textarea></div>
                     <div class="subtext" id="roleRoutePreview">Route after next login: Student dashboard</div>
-                    <div class="editor-actions"><button type="submit" class="btn primary" id="saveRoleButton">Save user updates</button><button type="button" class="btn light" id="approveUserButton">Approve</button><button type="button" class="btn danger-light" id="suspendUserButton">Suspend</button><button type="button" class="btn light" id="reactivateUserButton">Reactivate</button><button type="button" class="btn light" id="demoteToStudentButton">Return to student</button><button type="button" class="btn password-reset-btn" id="resetUserPasswordButton"><i class="fa-solid fa-key" aria-hidden="true"></i> Reset password</button></div>
+                    <div class="editor-actions"><button type="submit" class="btn primary" id="saveRoleButton">Save user updates</button><button type="button" class="btn light" id="approveUserButton">Approve</button><button type="button" class="btn danger-light" id="suspendUserButton">Suspend</button><button type="button" class="btn danger-light" id="removeUserButton" hidden>Remove account &amp; unlink Gmail</button><button type="button" class="btn light" id="reactivateUserButton">Reactivate</button><button type="button" class="btn light" id="demoteToStudentButton">Return to student</button><button type="button" class="btn password-reset-btn" id="resetUserPasswordButton"><i class="fa-solid fa-key" aria-hidden="true"></i> Reset password</button></div>
                     <div class="subtext" id="saveFeedbackText" role="status">Ready for admin updates.</div>
                     <div class="subtext" id="lastActionSummary" aria-live="polite">Select a user to begin.</div>
                 </form>
@@ -246,7 +246,7 @@
   </div>
 </footer>
 
-    <script type="module" src="js/admin-users.js?v=optional-email-1"></script>
+    <script type="module" src="js/admin-users.js?v=suspended-account-removal-2"></script>
     <script type="module" src="../shared/js/admin-only-auth.js"></script>
 <script type="module" src="../../shared/profile-manager.js?v=admin-settings-1"></script>
 </body>

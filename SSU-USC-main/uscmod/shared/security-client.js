@@ -178,6 +178,7 @@ async function browserAdminUpdateUser(data = {}) {
   const snap = await getDoc(ref);
   if (!snap.exists()) throw new Error("User profile not found.");
   const old = snap.data();
+  if (old.accountRemoved || old.accountRemovalPending) throw new Error("This account is removed or pending removal and cannot be edited.");
   if (String(old.role || "").toLowerCase() === "admin" && uid !== admin.uid) {
     throw new Error("Another System Administrator account is protected from this editor.");
   }
