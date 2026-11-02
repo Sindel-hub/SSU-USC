@@ -704,6 +704,23 @@ service cloud.firestore {
           && getAfter(/databases/$(database)/documents/audit_logs/$(request.resource.data.managementAuditId)).data.before == resource.data
           && getAfter(/databases/$(database)/documents/audit_logs/$(request.resource.data.managementAuditId)).data.after == request.resource.data
           && getAfter(/databases/$(database)/documents/audit_logs/$(request.resource.data.managementAuditId)).data.action == (request.resource.data.get("removed", false) ? "CANDIDATE_REMOVE" : "CANDIDATE_EDIT");
+        // Delete from Review is a one-way display dismissal of an already removed
+        // candidate. Votes, result identity and application records cannot change.
+        allow update: if (officerHasPermission("elections.view") || officerHasPermission("elections.review"))
+          && resource.data.get("removed", false) == true
+          && resource.data.get("managementHidden", false) == false
+          && request.resource.data.managementHidden == true
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+            "managementHidden", "updatedAt", "updatedByUid", "managementAuditId"
+          ])
+          && request.resource.data.updatedAt == request.time
+          && request.resource.data.updatedByUid == uid()
+          && !exists(/databases/$(database)/documents/audit_logs/$(request.resource.data.managementAuditId))
+          && getAfter(/databases/$(database)/documents/audit_logs/$(request.resource.data.managementAuditId)).data.actorUid == uid()
+          && getAfter(/databases/$(database)/documents/audit_logs/$(request.resource.data.managementAuditId)).data.action == "CANDIDATE_DISMISS"
+          && getAfter(/databases/$(database)/documents/audit_logs/$(request.resource.data.managementAuditId)).data.target == "elections/" + electionId + "/candidates/" + candidateId
+          && getAfter(/databases/$(database)/documents/audit_logs/$(request.resource.data.managementAuditId)).data.before == resource.data
+          && getAfter(/databases/$(database)/documents/audit_logs/$(request.resource.data.managementAuditId)).data.after == request.resource.data;
         allow delete: if false;
       }
 
@@ -911,8 +928,8 @@ service cloud.firestore {
     && (
       isAdmin()
       || (
-        officerHasPermission("elections.view")
-        && request.resource.data.action == "CANDIDATE_REMOVE"
+        (officerHasPermission("elections.view") || officerHasPermission("elections.review"))
+        && request.resource.data.action in ["CANDIDATE_REMOVE", "CANDIDATE_DISMISS"]
         && request.resource.data.source == "browser-election-runtime"
         && request.resource.data.createdAt == request.time
         && request.resource.data.electionId is string
@@ -922,6 +939,7 @@ service cloud.firestore {
         && request.resource.data.target == "elections/" + request.resource.data.electionId + "/candidates/" + request.resource.data.candidateId
         && getAfter(/databases/$(database)/documents/elections/$(request.resource.data.electionId)/candidates/$(request.resource.data.candidateId)).data.managementAuditId == logId
         && getAfter(/databases/$(database)/documents/elections/$(request.resource.data.electionId)/candidates/$(request.resource.data.candidateId)).data.removed == true
+        && (request.resource.data.action != "CANDIDATE_DISMISS" || getAfter(/databases/$(database)/documents/elections/$(request.resource.data.electionId)/candidates/$(request.resource.data.candidateId)).data.managementHidden == true)
         && getAfter(/databases/$(database)/documents/elections/$(request.resource.data.electionId)/candidates/$(request.resource.data.candidateId)).data.updatedAt == request.time
         && getAfter(/databases/$(database)/documents/elections/$(request.resource.data.electionId)/candidates/$(request.resource.data.candidateId)).data.updatedByUid == uid()
       )

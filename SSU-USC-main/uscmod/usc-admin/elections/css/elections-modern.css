@@ -211,3 +211,5 @@ body.election-management-page .candidate-review-actions .mini-btn:focus-visible 
   body.election-management-page .candidate-review-actions { gap:10px !important; }
   body.election-management-page .candidate-review-actions .mini-btn { flex-basis:100%; width:100%; }
 }
+
+body.election-management-page .candidate-review-actions [data-delete-removed-candidate] { flex:1 1 100%; width:100%; }
