@@ -16,6 +16,7 @@ const stripImports=source=>source.replace(/import\s+[\s\S]*?from\s+["'][^"']+["'
 const compile=source=>stripImports(stripTypeScriptTypes(source));
 const token='a'.repeat(64), uid='synthetic-student';
 let rows,profile,user,owner,handler,server,base,client,providerCalls,requests,legacyBackend,providerFailure,legacyProfile,legacyUser;
+let adminSession, adminRecords, adminAuthRecords, passwordWrites;
 function query(){
  const filters=[];let patch;
  const execute=()=>{
@@ -54,10 +55,14 @@ before(async()=>{
  // Evaluate real helper implementations, then replace only provider adapters.
  vm.runInContext(compile(read('supabase/functions/_shared/usc-email-common.ts')),ctx);
  Object.assign(ctx,{
+  verifyFirebaseIdToken:async()=>{if(!adminSession)throw Error('No synthetic session');return adminSession;},
+  firestoreVersionedGet:async path=>adminRecords.get(path)||null,
+  firestoreIdentityCommit:async writes=>{for(const w of writes)adminRecords.set(w.path,{data:w.data,version:'next'});},
+  resetFirebaseAuthPassword:async(id,password)=>{passwordWrites.push({uid:id,password});},
   adminClient:()=>({from(table){assert.equal(table,'student_email_accounts');return query();},rpc:async(name,args)=>{assert.equal(name,'consume_gmail_login_budget');assert.match(args.p_identity_hash,/^[a-f0-9]{64}$/);return {data:true,error:null};}}),
   firebasePasswordIdentity:async(email,password)=>{providerCalls.push('password-proof');if(email!==user.email||password!=='synthetic-password')throw Error('Invalid credentials');return {uid:user.uid};},
   firestoreGet:async path=>{if(legacyUser&&path==='users/'+legacyUser.uid)return legacyProfile;assert.equal(path,'users/'+uid);providerCalls.push('profile');return profile;},
-  firebaseUserByUid:async id=>{providerCalls.push('auth-user');if(id==='unavailable-gmail-login')return null;if(legacyUser&&id===legacyUser.uid)return legacyUser;assert.equal(id,uid);return user;},
+  firebaseUserByUid:async id=>{if(adminSession)return adminAuthRecords.get(id)||null;providerCalls.push('auth-user');if(id==='unavailable-gmail-login')return null;if(legacyUser&&id===legacyUser.uid)return legacyUser;assert.equal(id,uid);return user;},
   firebaseUserByEmail:async email=>{providerCalls.push('auth-owner');return owner;},
   env:()=>({portalUrl:'https://synthetic-staging.invalid'}),
  });
@@ -76,6 +81,7 @@ before(async()=>{
 });
 after(async()=>{if(server)await new Promise(resolve=>server.close(resolve));});
 beforeEach(()=>{
+ adminSession=null;adminRecords=new Map();adminAuthRecords=new Map();passwordWrites=[];
  providerCalls=[];requests=[];owner=null;legacyProfile=null;legacyUser=null;legacyBackend=false;providerFailure=false;
  profile={uid,role:'student',schoolProvisioned:true,accountStatus:'approved',isActive:true,studentStanding:'active'};
  user={uid,email:'001234@student.ssu-usc.local',disabled:false};
@@ -155,4 +161,62 @@ test('actual Edge HTTP resolver selects verified student over suspended native m
 test('actual Edge HTTP resolver refuses another active native owner',async()=>{
  await verify();owner={uid:'synthetic-active-other'};legacyUser={uid:owner.uid,email:'personal@gmail.com',disabled:false};legacyProfile={role:'student',accountStatus:'approved',isActive:true};
  await assert.rejects(client.authenticateVerifiedGmailLogin('personal@gmail.com','synthetic-password'));
+});
+
+function manualFixture() {
+ adminSession={uid:'synthetic-admin',role:'admin',authTime:Date.now()/1000,disabled:false};
+ adminRecords.set('users/synthetic-admin',{data:{role:'admin',accountStatus:'approved',isActive:true},version:'1'});
+ adminRecords.set('users/'+uid,{data:{...profile,isVerifiedStudent:true},version:'1'});
+ adminAuthRecords.set('synthetic-admin',{uid:'synthetic-admin',disabled:false,emailVerified:true,customClaims:{role:'admin'}});
+ adminAuthRecords.set(uid,{...user,customClaims:{role:'student'}});
+}
+test('integrated actual Edge manual-password action validates admin and applies exact target password without email',async()=>{
+ manualFixture();const password='Synthetic!Password123';
+ const response=await post({action:'admin_set_password',uid,newPassword:password});
+ assert.equal(response.status,200);assert.equal((await response.json()).temporaryPassword,password);
+ assert.deepEqual(passwordWrites,[{uid,password}]);
+ assert.ok(!JSON.stringify([...adminRecords]).includes(password));
+ assert.equal([...adminRecords].filter(([path])=>path.startsWith('audit_logs/')).length,1);
+});
+test('integrated manual-password rejects missing or weak password before any mutation',async()=>{
+ manualFixture();
+ for(const password of [undefined,null,123,'short','MissingSpecial123','Has spaces!123']){
+  const response=await post({action:'admin_set_password',uid,newPassword:password});assert.ok(response.status>=400);
+ }
+ assert.equal(passwordWrites.length,0);
+});
+test('integrated manual-password rejects unauthorized, stale, inactive and unverified administrators',async()=>{
+ for(const change of [
+  ()=>{adminSession=null;},()=>{adminSession.role='student';},()=>{adminSession.authTime=0;},
+  ()=>{adminRecords.get('users/synthetic-admin').data.isActive=false;},
+  ()=>{adminAuthRecords.get('synthetic-admin').emailVerified=false;},
+  ()=>{adminAuthRecords.get('synthetic-admin').disabled=true;},
+  ()=>{adminAuthRecords.get('synthetic-admin').customClaims={role:'student'};},
+  ()=>{adminAuthRecords.get('synthetic-admin').uid='different';}
+ ]){
+  manualFixture();change();const response=await post({action:'admin_set_password',uid,newPassword:'Synthetic!Password123'});
+  assert.ok(response.status>=400);assert.equal(passwordWrites.length,0);
+ }
+});
+test('integrated manual-password rejects privileged, disabled, suspended, unverified and mismatched target identities',async()=>{
+ for(const change of [
+  ()=>{adminAuthRecords.get(uid).customClaims={role:'admin'};},
+  ()=>{adminAuthRecords.get(uid).customClaims={admin:true};},
+  ()=>{adminAuthRecords.get(uid).customClaims={role:'unknown'};},
+  ()=>{adminAuthRecords.get(uid).disabled=true;},
+  ()=>{adminAuthRecords.get(uid).uid='different';},
+  ()=>{adminRecords.get('users/'+uid).data.accountStatus='suspended';},
+  ()=>{adminRecords.get('users/'+uid).data.isActive=false;},
+  ()=>{adminRecords.get('users/'+uid).data.isVerifiedStudent=false;},
+  ()=>{adminRecords.get('users/'+uid).data.role='admin';}
+ ]){
+  manualFixture();change();const response=await post({action:'admin_set_password',uid,newPassword:'Synthetic!Password123'});
+  assert.ok(response.status>=400);assert.equal(passwordWrites.length,0);
+ }
+});
+test('old backend manual action fails explicitly without any password or email mutation',async()=>{
+ manualFixture();legacyBackend=true;
+ const response=await post({action:'admin_set_password',uid,newPassword:'Synthetic!Password123'});
+ assert.equal(response.status,400);assert.match((await response.json()).message,/Unknown email-service action/);
+ assert.equal(passwordWrites.length,0);
 });

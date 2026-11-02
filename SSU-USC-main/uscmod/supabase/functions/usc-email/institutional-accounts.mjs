@@ -103,6 +103,21 @@ export function createInstitutionalAccountService(deps) {
       const target = await deps.get(`users/${uid}`), auth = await deps.authUser(uid);
       if (!target || !['student', 'officer'].includes(target.data.role) || !auth || auth.disabled) throw new Error('A valid student or officer account is required.');
       if (requestedPassword !== undefined && (typeof requestedPassword !== 'string' || !/^(?=.{10,64}$)(?=.*[a-z])(?=.*[A-Z])(?=.*[0-9])(?=.*[^A-Za-z0-9\s])\S+$/.test(requestedPassword))) throw new Error('Use 10–64 characters with uppercase, lowercase, number and special character, without spaces.');
+      if (requestedPassword !== undefined) {
+        // Manual setting must not target suspended, unverified, or privileged identities.
+        const actorAuth = await deps.authUser(user.uid);
+        if (user.disabled === true || admin.data.isActive !== true || !actorAuth || actorAuth.uid !== user.uid
+          || actorAuth.disabled !== false || actorAuth.emailVerified !== true || actorAuth.customClaims?.role !== 'admin') {
+          throw new Error('An enabled, verified, active System Administrator is required.');
+        }
+        const claims = auth.customClaims;
+        if (auth.uid !== uid || auth.disabled !== false || !deps.activeProfile(target.data)
+          || target.data.isActive !== true || target.data.isVerifiedStudent !== true
+          || !claims || typeof claims !== 'object' || Array.isArray(claims)
+          || claims.admin === true || (claims.role !== undefined && !['student','officer'].includes(claims.role))) {
+          throw new Error('An approved active non-administrator student or officer identity is required.');
+        }
+      }
       const temporaryPassword = requestedPassword === undefined ? `Aa1!${deps.randomToken().slice(0,20)}` : requestedPassword;
       await deps.resetAuthPassword(uid, temporaryPassword, timestamp);
       let warning = '';

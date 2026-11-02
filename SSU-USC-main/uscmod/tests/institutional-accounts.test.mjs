@@ -141,6 +141,9 @@ test('institutional linking rejects nonnumeric IDs without publishing an email a
 test('admin-selected password is applied exactly, never persisted, and requires trusted recent admin access', async () => {
   const ctx=setup();ctx.seed('users/admin',{role:'admin',isActive:true,accountStatus:'approved'});
   const admin={uid:'admin',role:'admin',authTime:timestamp/1000};
+  ctx.accounts.set('admin',{uid:'admin',disabled:false,emailVerified:true,customClaims:{role:'admin'}});
+  ctx.accounts.get(ctx.user.uid).customClaims={role:'student'};
+  ctx.seed('users/'+ctx.user.uid,{...ctx.profile,isVerifiedStudent:true});
   const password='Chosen!Password123';
   for (const actor of [ctx.user,{...admin,role:''},{...admin,authTime:0}]) {
     await assert.rejects(ctx.service.resetPassword(actor,ctx.user.uid,password));
