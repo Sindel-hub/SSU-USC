@@ -375,6 +375,7 @@ async function removeCandidateApplication(application) {
   if (candidate) return removeElectionCandidate(candidate);
   if (!canManageCandidates || application.status !== "Under Review") return;
   if (!confirm(`Remove the pending application for ${application.fullName}? This action will be audited.`)) return;
+  if (!confirm(`Are you absolutely sure you want to remove the pending application for ${application.fullName}?`)) return;
   try {
     await callSecure("removeCandidateApplication", {applicantUid:application.id});
     closeCandidatePreview();
@@ -384,7 +385,8 @@ async function removeCandidateApplication(application) {
 
 async function removeElectionCandidate(candidate) {
   if (!canRemoveCandidates || !candidate || candidate.removed) return;
-  if (!confirm(`Remove ${candidate.fullName} from the visible candidate list and future ballots? Existing votes, audit history, and official results will be preserved.`)) return;
+  if (!confirm(`Remove ${candidate.fullName} (${candidate.position || "candidate"}) from this election?`)) return;
+  if (!confirm(`Are you absolutely sure you want to remove ${candidate.fullName}? This will hide this candidate from the Student Dashboard candidate list and future ballot choices. Existing votes, audit history, and official results will be preserved.`)) return;
   try {
     await callSecure("removeElectionCandidate", {electionId, candidateId:candidate.id});
     closeCandidatePreview();
