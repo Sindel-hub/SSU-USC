@@ -145,3 +145,113 @@ The workflow must always be:
 Never skip the Preview or approval stages.
 
 Save these repository-specific working rules in `AGENTS.md` if appropriate, without deleting existing instructions. Treat `AGENTS.md` as project guidance, not as a replacement for GitHub branch protection, Vercel configuration, or other enforceable security controls.
+
+---
+
+## Latest user workflow update — November 2, 2026
+
+The instructions below are the latest user-supplied workflow. They control wherever earlier guidance conflicts. In particular, **APPROVE** alone does not authorize production: only **APPROVE AND DEPLOY**, after review of the actual latest Vercel Preview and its exact commit, can authorize a merge/deployment. Required GitHub reviews, checks and protections must still pass. Production backend changes require separate explicit authorization.
+
+# PERMANENT CODEX WORKFLOW — PREVIEW BEFORE APPROVAL AND DEPLOYMENT
+
+From now on, whenever I ask you to modify, fix, redesign, update, or add features to my SSU-USC website, you must follow a strict **Preview → Review → Approval → Production Deployment** workflow.
+
+## STEP 1 — Make the Requested Changes
+
+1. Analyze my request and examine the relevant project files.
+2. Implement the requested modifications on a separate development branch, never directly on `main`.
+3. Preserve all existing features and functionality unless I explicitly request otherwise.
+4. Run relevant automated tests and fix any issues caused by the changes.
+5. Do not push changes directly to production.
+6. Do not modify production Firebase, Supabase, or other backend services without explicit authorization.
+
+## STEP 2 — Show Me the Changes First
+
+After implementing my request:
+
+1. Provide a clear summary of what was changed.
+2. Show the differences between the original and modified code.
+3. Explain which features were added, removed, or modified.
+4. Identify any potential effects on existing functionality.
+5. Push the changes to a separate GitHub development branch.
+6. Create or update a GitHub Pull Request targeting `main`.
+7. Generate a real Vercel Preview deployment connected to that development branch.
+8. Provide the actual Vercel Preview URL.
+
+**IMPORTANT:** The Preview must display the modified website itself, not just screenshots, descriptions, or code snippets.
+
+I want to open the Preview website, navigate through the pages, click buttons, interact with modules, and visually inspect the changes before deciding whether to approve.
+
+Use isolated staging Firebase and Supabase environments for changes requiring backend functionality. Never use production student data for testing.
+
+## STEP 3 — Wait for My Decision
+
+After showing me the changes and providing the Vercel Preview URL, stop and wait for my decision.
+
+I have three options:
+
+**APPROVE**
+
+If I approve:
+- Confirm that my approval refers to the latest reviewed Preview deployment and its exact commit.
+- Merge the approved Pull Request into `main`, provided all required checks and GitHub protections pass.
+- Allow Vercel to deploy the approved changes to the actual production website.
+- Verify that the live website successfully reflects the approved changes.
+- Provide the production URL and deployment confirmation.
+- Request separate explicit authorization for any required production backend changes.
+
+**REQUEST CHANGES**
+
+If I am not satisfied:
+- Do not merge or publish the changes.
+- Make the corrections I request on the same development branch.
+- Update the existing Pull Request.
+- Generate a new Vercel Preview deployment.
+- Let me review the updated website again.
+- Wait for my approval.
+
+**REJECT**
+
+If I reject:
+- Do not merge, deploy, or publish any changes.
+- Keep the live production website unchanged.
+- Preserve the draft unless I explicitly request its deletion.
+
+## STEP 4 — Deploy Only Approved Changes
+
+Production deployment is strictly prohibited until I explicitly approve the latest reviewed changes.
+
+Do not interpret statements such as "looks good," "okay," or "continue" as production approval.
+
+Only the explicit command **APPROVE AND DEPLOY**, given after I review the actual Vercel Preview, authorizes you to initiate the production merge and deployment.
+
+If the code changes after my approval, require a new Preview and another approval.
+
+## STEP 5 — Verify Production
+
+After an authorized deployment:
+
+1. Confirm that the GitHub Pull Request was merged successfully.
+2. Confirm that Vercel deployed the intended commit to production.
+3. Check the production website for deployment errors.
+4. Report the final deployment status and URL.
+5. If deployment fails, report the issue and provide recovery options without making unauthorized production changes.
+
+## PERMANENT RULES
+
+- Never deploy automatically after completing a modification.
+- Never skip the Preview stage.
+- Never treat a passing test suite as my approval.
+- Never deploy an unreviewed change.
+- Never merge directly into `main` before approval.
+- Never invent a Preview URL or claim a deployment succeeded without verification.
+- If GitHub, Vercel, or staging access is unavailable, stop and explain what needs to be configured.
+- Preserve unrelated work and existing uncommitted changes.
+- Keep this workflow active for all future requests in this project.
+- Record these instructions in the repository's `AGENTS.md`, preserving any existing instructions, so future Codex tasks follow the same process.
+
+## REQUIRED WORKFLOW
+
+**I request changes → Codex modifies the website → Codex tests the changes → Codex shows me what changed → Vercel Preview website → I test and review → I say APPROVE AND DEPLOY → GitHub merges to main → Vercel updates the live website.**
+
+My production website must remain unchanged until I have personally reviewed and explicitly approved the changes.
