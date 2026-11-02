@@ -37,10 +37,10 @@ for(const [name,change] of [
 test('invalid addresses are rejected before any account lookup',async()=>{const h=fixture();h.deps.verifiedAccount=()=>{throw Error('must not query');};assert.equal(await resolveVerifiedGmailAccount(h.deps,'student@example.com'),null);});
 test('provider errors fail closed',async()=>{const h=fixture();h.deps.verifiedAccount=async()=>{throw Error('unavailable');};await assert.rejects(resolveVerifiedGmailAccount(h.deps,'personal@gmail.com'),/unavailable/);});
 
-function browser({verified=true,returnedUid='school-uid',nativeGmail=false}={}){
+function browser({verified=true,returnedUid='school-uid',nativeGmail=false,expectedPassword='correct-password'}={}){
  const h=fixture(),calls=[],requests=[],alerts=[],handlers={},storage=new Map();let resets=0,signouts=0;
  const button={},form={querySelector:()=>button,addEventListener:(event,fn)=>{handlers[event]=fn;},reset:()=>{resets++;}};
- const elements={signinForm:form,signinIdentifier:{value:'personal@gmail.com'},signinPassword:{value:'correct-password'},forgotPasswordBtn:{addEventListener:(event,fn)=>{handlers.recover=fn;}}};
+ const elements={signinForm:form,signinIdentifier:{value:'personal@gmail.com'},signinPassword:{value:'correct-password',addEventListener:(event,fn)=>{handlers['password-'+event]=fn;}},forgotPasswordBtn:{addEventListener:(event,fn)=>{handlers.recover=fn;}}};
  const auth={currentUser:null},location={};
  const aliases=new Map([['id_001234',h.user.email],['email_'+createHash('sha256').update('student@ssu.edu.ph').digest('hex'),h.user.email]]);
  const ctx=vm.createContext({auth,db:{},crypto:webcrypto,TextEncoder,console,location,URL,
@@ -54,7 +54,7 @@ function browser({verified=true,returnedUid='school-uid',nativeGmail=false}={}){
    assert.equal(body.action,'authenticate_gmail');assert.ok(url.startsWith('https://'));
    if(!verified)h.account.verified_email=null;
    const authenticate=createGmailPasswordAuthenticator({...h.deps,consumeBudget:async()=>true,finishDelay:async()=>{},passwordIdentity:async(email,password)=>{
-    if(email!==h.user.email||password!=='correct-password')throw Error('Invalid credentials');
+    if(email!==h.user.email||password!==expectedPassword)throw Error('Invalid credentials');
     return {uid:h.user.uid};
    }});
    const result=await authenticate(body);
@@ -62,15 +62,16 @@ function browser({verified=true,returnedUid='school-uid',nativeGmail=false}={}){
   },
   signInWithEmailAndPassword:async(_auth,email,password)=>{
    calls.push({email,password});
-   if((email!==h.user.email&&!(nativeGmail&&email==='personal@gmail.com'))||password!=='correct-password')throw Object.assign(Error('Wrong password'),{code:'auth/invalid-credential'});
+   if((email!==h.user.email&&!(nativeGmail&&email==='personal@gmail.com'))||password!==expectedPassword)throw Object.assign(Error('Wrong password'),{code:'auth/invalid-credential'});
    const user={uid:returnedUid,email:h.user.email,emailVerified:false,getIdTokenResult:async()=>({claims:{}})};auth.currentUser=user;return {user};
   },
   signOut:async()=>{auth.currentUser=null;signouts++;},
   window:{open:()=>{handlers.recoveryOpened=true;}},
  });
  vm.runInContext(strip(fs.readFileSync(new URL('../shared/supabase-email-service.js',import.meta.url),'utf8')).replaceAll('import.meta.url', JSON.stringify(new URL('../shared/supabase-email-service.js',import.meta.url).href)),ctx);
+ vm.runInContext(strip(fs.readFileSync(new URL('../shared/pasted-password.js',import.meta.url),'utf8')),ctx);
  vm.runInContext(strip(fs.readFileSync(new URL('../index/js/index.js',import.meta.url),'utf8')),ctx);
- return {ctx,calls,requests,alerts,handlers,storage,location,auth,profile:h.profile,resets:()=>resets,signouts:()=>signouts};
+ return {ctx,calls,requests,alerts,handlers,storage,location,auth,elements,profile:h.profile,resets:()=>resets,signouts:()=>signouts};
 }
 test('Gmail requires backend Firebase password proof over HTTPS before the SDK authenticates',async()=>{
  const h=browser();assert.equal((await h.ctx.signInByIdentifier('personal@gmail.com','correct-password')).user.uid,'school-uid');
@@ -94,4 +95,16 @@ test('existing Firebase-native Gmail accounts keep their original direct sign-in
  const h=browser({verified:false,nativeGmail:true});
  assert.equal((await h.ctx.signInByIdentifier('personal@gmail.com','correct-password')).user.uid,'school-uid');
  assert.equal(h.requests.length,0);assert.equal(h.calls.length,1);
+});
+
+for(const identifier of ['001234','student@ssu.edu.ph','personal@gmail.com'])test(`formatted temporary password paste completes existing login route for ${identifier}`,async()=>{
+ const h=browser({expectedPassword:'Abcdefg234!XYz'}),input=h.elements.signinPassword;
+ h.elements.signinIdentifier.value=identifier;if(identifier==='student@ssu.edu.ph')h.profile.institutionalEmailVerified=true;input.selectionStart=0;input.selectionEnd=input.value.length;
+ h.handlers['password-paste']({clipboardData:{getData:()=> ' Abcdefg234!XYz '}});input.value=' Abcdefg234!XYz ';
+ await h.handlers.submit({preventDefault(){}});
+ assert.equal(h.alerts.length,0);assert.equal(h.auth.currentUser.uid,'school-uid');
+ assert.equal(h.location.href,'../dashboard/dashboard.html');
+ const session=JSON.parse(h.storage.get('studentProfile'));assert.equal(session.role,'student');assert.equal(session.uid,'school-uid');
+ if(identifier==='personal@gmail.com'){assert.equal(h.requests.length,2);assert.equal(h.requests.at(-1).password,'Abcdefg234!XYz');}
+ else assert.equal(h.requests.length,0);
 });

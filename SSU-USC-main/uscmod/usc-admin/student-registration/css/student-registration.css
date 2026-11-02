@@ -19,3 +19,5 @@ body.modal-open{overflow:hidden}
 @media print{body.modal-open{overflow:visible}.slip-modal-overlay{position:static;padding:0;background:none}.slip-modal-backdrop,.slip-modal-head,.slip-actions{display:none!important}.slip-modal-card{box-shadow:none;border:0;max-height:none;width:auto}.slip-modal-body{padding:0;background:none}}
 
 .password-recovery-directory-link{display:inline-flex;align-items:center;justify-content:center;border-radius:10px;padding:12px 16px;background:#2256a6;color:#fff;text-decoration:none;font-weight:800}.password-recovery-directory-link:hover{filter:brightness(1.05)}
+
+.copy-temporary-password{display:block;margin-top:10px;padding:9px 14px;border:1px solid #cbd5e1;border-radius:8px;background:#eef4ff;color:#173f79;font:700 14px Arial,sans-serif;letter-spacing:normal;cursor:pointer;min-height:40px}
