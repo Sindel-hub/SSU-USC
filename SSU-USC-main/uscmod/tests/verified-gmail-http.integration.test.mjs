@@ -8,6 +8,7 @@ import http from 'node:http';
 import {stripTypeScriptTypes} from 'node:module';
 import {webcrypto,createHash} from 'node:crypto';
 import {createGmailPasswordAuthenticator} from '../supabase/functions/usc-email/gmail-login.mjs';
+import {createAccountRemovalService} from '../supabase/functions/usc-email/account-removal.mjs';
 import {createInstitutionalAccountService} from '../supabase/functions/usc-email/institutional-accounts.mjs';
 
 const read=path=>fs.readFileSync(new URL('../'+path,import.meta.url),'utf8');
@@ -48,7 +49,7 @@ before(async()=>{
   console:{error(){},warn(){}},atob,btoa,
   Deno:{env:{get(name){if(name==='GMAIL_LOGIN_RATE_LIMIT_SECRET')return 'synthetic-test-only-rate-key-123456789';if(name==='GMAIL_LOGIN_TRUSTED_IP_HEADER')return '';throw Error('Production/environment secrets are forbidden in this test');}},serve(fn){handler=fn;}},
   fetch(){throw Error('External network requests are forbidden in this test');},
-  createGmailPasswordAuthenticator,createInstitutionalAccountService,
+  createGmailPasswordAuthenticator,createInstitutionalAccountService,createAccountRemovalService,
  });
  // Evaluate real helper implementations, then replace only provider adapters.
  vm.runInContext(compile(read('supabase/functions/_shared/usc-email-common.ts')),ctx);
@@ -138,4 +139,9 @@ test('HTTP OPTIONS contract supports cross-origin browser requests without an au
  const response=await fetch(base+'/functions/v1/usc-email',{method:'OPTIONS'});
  assert.equal(response.status,200);assert.match(response.headers.get('Access-Control-Allow-Methods'),/POST/);
  assert.match(response.headers.get('Access-Control-Allow-Headers'),/content-type/);
+});
+
+test('account removal HTTP endpoint rejects missing administrator authentication',async()=>{
+ const before=JSON.stringify(rows);const response=await post({action:'admin_remove_suspended_account',uid});
+ assert.equal(response.ok,false);assert.equal(JSON.stringify(rows),before);assert.equal(providerCalls.length,0);
 });

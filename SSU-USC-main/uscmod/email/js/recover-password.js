@@ -1,5 +1,6 @@
-import { auth } from "../../firebase/firebase-config.js";
-import { sendPasswordResetEmail } from "https://www.gstatic.com/firebasejs/12.12.0/firebase-auth.js";
+import { callPublicEmailAction } from "./email-api.js";
+
+let sending = false;
 
 const form = document.getElementById("recoveryForm");
 const input = document.getElementById("recoveryGmail");
@@ -19,38 +20,40 @@ function setStatus(kind, title, message, icon) {
 
 form?.addEventListener("submit", async (event) => {
   event.preventDefault();
+  if (sending) return;
   const gmail = String(input?.value || "").trim().toLowerCase();
-  if (!gmail) return;
+  if (!/^[a-z0-9.]+(?:\+[a-z0-9._-]+)?@gmail\.com$/.test(gmail)) {
+    setStatus("error", "Check your Gmail address", "Enter the personal @gmail.com address verified in your profile.", "!");
+    return;
+  }
+  sending = true;
 
   if (button) {
     button.disabled = true;
     button.textContent = "Sending…";
   }
 
-  setStatus("", "Sending password reset", "Firebase is preparing your password reset email.", "…");
+  setStatus("", "Sending password reset", "The portal is processing your recovery request.", "…");
 
   try {
-    await sendPasswordResetEmail(auth, gmail);
+    await callPublicEmailAction("recover", { gmail });
 
     setStatus(
       "success",
       "Check your Gmail",
-      "A password reset link has been sent. Please check your inbox or spam folder.",
+      "If this Gmail is verified, recovery is enabled, and sending limits allow it, a reset link will be sent. Check Inbox and Spam. For security, this response does not confirm whether an account exists.",
       "✓"
     );
 
     form.reset();
   } catch (error) {
-    let message = "The password reset request failed.";
-
-    if (error?.code === "auth/user-not-found") {
-      message = "No account is linked to this Gmail address.";
-    } else if (error?.code === "auth/invalid-email") {
-      message = "Please enter a valid Gmail address.";
-    }
+    const message = error?.status === 429
+      ? "Too many recovery requests. Please wait before trying again."
+      : "The recovery service could not process your request. Please try again later or contact the system administrator.";
 
     setStatus("error", "Recovery request failed", message, "!");
   } finally {
+    sending = false;
     if (button) {
       button.disabled = false;
       button.textContent = "Send password reset link";

@@ -75,6 +75,8 @@ export function normalizeUser(docSnap) {
   const status = normalizeStatus(data.accountStatus, data.isActive !== false);
   return {
     uid: docSnap.id,
+    accountRemoved: data.accountRemoved === true,
+    accountRemovalPending: data.accountRemovalPending === true,
     fullName: String(data.fullName || "").trim(),
     email,
     studentId: String(data.studentId || "").trim(),
@@ -676,7 +678,7 @@ async function backfillPreFeatureStudentAnalytics(users = []) {
 
 export function subscribeUsers(callback) {
   return onSnapshot(collection(db, "users"), (snapshot) => {
-    const normalized = snapshot.docs.map(normalizeUser);
+    const normalized = snapshot.docs.map(normalizeUser).filter(user => !user.accountRemoved);
     callback(normalized);
     void backfillPreFeatureStudentAnalytics(normalized);
   }, (error) => callback([], error));

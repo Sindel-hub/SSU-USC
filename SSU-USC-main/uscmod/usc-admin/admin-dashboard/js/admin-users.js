@@ -1,3 +1,4 @@
+import { callStudentEmailService } from "../../../shared/supabase-email-service.js";
 import { institutionalEmailForDisplay } from "../../../shared/account-email.js";
 import { callSecure, auth } from "../../../shared/security-client.js?v=password-reset-fallback-1";
 import { OFFICER_PERMISSION_DEFINITIONS, ALL_OFFICER_PERMISSIONS, DEFAULT_OFFICER_PERMISSIONS, hasKnownOfficerPositionPreset, isBaselineOfficerPermissionList, normalizeOfficerPermissions, permissionsForOfficerPosition } from "../../../shared/officer-permissions.js?v=programs-1";
@@ -110,6 +111,7 @@ const dom = {
   roleRoutePreview: document.getElementById("roleRoutePreview"),
   saveRoleButton: document.getElementById("saveRoleButton"),
   approveUserButton: document.getElementById("approveUserButton"),
+  removeUserButton: document.getElementById("removeUserButton"),
   suspendUserButton: document.getElementById("suspendUserButton"),
   reactivateUserButton: document.getElementById("reactivateUserButton"),
   demoteToStudentButton: document.getElementById("demoteToStudentButton"),
@@ -342,6 +344,7 @@ function fillEditor(user) {
   dom.selectedUserComplaintStatus.textContent = summarizeComplaintStates(complaintSummary);
   dom.selectedUserVoteStatus.textContent = voteSummary ? `Submitted (${formatDateTime(voteSummary.submittedAtMs)})` : 'Not submitted';
   dom.selectedUserLastUpdate.textContent = user.updatedAtMs ? `${formatDateTime(user.updatedAtMs)}${user.lastRoleUpdatedBy ? ` • by ${user.lastRoleUpdatedBy}` : ''}` : '—';
+  dom.roleEditorForm.querySelectorAll('button, input, select, textarea').forEach(control => { control.disabled = false; });
   dom.targetRoleSelect.value = protectedAdmin ? 'student' : user.role;
   dom.officePositionInput.value = user.officePosition || '';
   syncRbacEditorForRole(user.role, user);
@@ -365,6 +368,12 @@ function fillEditor(user) {
   dom.reactivateUserButton.disabled = protectedAdmin || inactiveStanding;
   dom.demoteToStudentButton.disabled = protectedAdmin;
   if (dom.resetUserPasswordButton) dom.resetUserPasswordButton.disabled = protectedAdmin || !['student', 'officer'].includes(user.role);
+  dom.removeUserButton.hidden = protectedAdmin || user.accountStatus !== 'suspended' || user.isActive;
+  dom.removeUserButton.textContent = user.accountRemovalPending ? 'Retry removal & unlink Gmail' : 'Remove account & unlink Gmail';
+  if (user.accountRemovalPending) {
+    dom.roleEditorForm.querySelectorAll('button, input, select, textarea').forEach(control => { control.disabled = true; });
+    dom.removeUserButton.disabled = false;
+  }
   updateRolePreview(protectedAdmin ? 'student' : user.role);
 }
 
@@ -642,6 +651,24 @@ function bind() {
   });
 
   dom.approveUserButton.addEventListener('click', async () => saveSelectedUser({ accountStatus: 'approved', isActive: true, changeReason: dom.roleChangeNote.value.trim() || 'Approved by admin.' }));
+  dom.removeUserButton.addEventListener('click', async () => {
+    const user = getSelectedUser();
+    if (isSaving || !user || isProtectedAdmin(user) || user.accountStatus !== 'suspended' || user.isActive) return;
+    if (!window.confirm(`Remove ${user.fullName || user.studentId || 'this account'} from the directory and unlink its personal Gmail? Sign-in will be disabled. Historical complaints, votes, and audit records will be retained.`)) return;
+    isSaving = true;
+    dom.removeUserButton.disabled = true;
+    try {
+      await callStudentEmailService('admin_remove_suspended_account', {uid:user.uid});
+      selectedUserIds.delete(user.uid);
+      closeUserEditorModal();
+      setFeedback('Account removed and personal Gmail unlinked. Historical records were retained.', 'success');
+    } catch (error) {
+      setFeedback(error?.message || 'Removal failed. The account remains suspended; retry removal.', 'error');
+    } finally {
+      isSaving = false;
+      if (dom.removeUserButton) dom.removeUserButton.disabled = false;
+    }
+  });
   dom.suspendUserButton.addEventListener('click', async () => {
     const user = getSelectedUser();
     if (!user || isProtectedAdmin(user)) return;

@@ -102,3 +102,26 @@ test('dismissal rejects omitted audits, profile changes and unassigned officers'
  await assertFails(dismiss('module',{extra:{fullName:'tampered'}}));await assertFails(dismiss('other'));
  await assertSucceeds(dismiss('reviewer'));
 });
+
+async function seedAdminRemoval(flags={}){
+ await env.withSecurityRulesDisabled(async context=>{
+  const db=context.firestore();await setDoc(doc(db,'users','administrator'),{role:'admin',accountStatus:'approved',isActive:true});
+  await setDoc(doc(db,'users','target'),{role:'student',accountStatus:'approved',isActive:true,studentStanding:'active',studentId:'001',isVerifiedStudent:true,...flags});
+ });
+}
+async function patchRemovalProfile(changes){
+ const db=env.authenticatedContext('administrator',{role:'admin'}).firestore(),batch=writeBatch(db);
+ batch.update(doc(db,'users','target'),changes);return batch.commit();
+}
+test('admin may suspend an active-standing account before removal',async()=>{
+ await seedAdminRemoval();await assertSucceeds(patchRemovalProfile({accountStatus:'suspended',isActive:false}));
+});
+for(const flag of ['accountRemovalPending','accountRemoved'])test(`browser cannot reactivate or change ${flag} accounts`,async()=>{
+ await seedAdminRemoval({[flag]:true,accountStatus:'suspended',isActive:false});
+ await assertFails(patchRemovalProfile({accountStatus:'approved',isActive:true,[flag]:false}));
+ await assertFails(patchRemovalProfile({fullName:'changed'}));
+});
+test('browser cannot forge removal markers or physically delete profiles',async()=>{
+ await seedAdminRemoval();await assertFails(patchRemovalProfile({accountRemoved:true}));await assertFails(patchRemovalProfile({accountRemovalPending:true}));
+ const db=env.authenticatedContext('administrator',{role:'admin'}).firestore();await assertFails(deleteDoc(doc(db,'users','target')));
+});

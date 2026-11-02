@@ -285,7 +285,11 @@ service cloud.firestore {
             && "dashboard.view" in request.resource.data.officerPermissions
             && (!("officerPermissionSource" in request.resource.data)
               || request.resource.data.officerPermissionSource in ["position-default", "custom"])));
-      allow update: if (ownUser(userId) && safeOwnProfileUpdate())
+      allow update: if resource.data.get("accountRemoved", false) == false
+        && resource.data.get("accountRemovalPending", false) == false
+        && request.resource.data.get("accountRemoved", false) == false
+        && request.resource.data.get("accountRemovalPending", false) == false
+        && ((ownUser(userId) && safeOwnProfileUpdate())
         || (isAdmin()
           && resource.data.role != "admin"
           && request.resource.data.role in ["student", "officer"]
@@ -296,7 +300,7 @@ service cloud.firestore {
           && (!("studentStanding" in request.resource.data)
             || request.resource.data.studentStanding in ["active", "leave", "inactive", "graduated", "transferred", "withdrawn", "eliminated"])
           && (!("studentStanding" in request.resource.data)
-            || request.resource.data.isActive == (request.resource.data.studentStanding == "active"))
+            || request.resource.data.isActive == (request.resource.data.studentStanding == "active" && request.resource.data.accountStatus != "suspended"))
           && (!("studentStanding" in request.resource.data)
             || request.resource.data.studentStanding == "active"
             || request.resource.data.isVerifiedStudent == false)
@@ -306,7 +310,7 @@ service cloud.firestore {
               && request.resource.data.officerPermissions.size() <= 16
               && (request.resource.data.role != "officer" || "dashboard.view" in request.resource.data.officerPermissions)))
           && (!("officerPermissionSource" in request.resource.data)
-            || request.resource.data.officerPermissionSource in ["", "position-default", "custom"]));
+            || request.resource.data.officerPermissionSource in ["", "position-default", "custom"])));
       allow delete: if false;
     }
 
