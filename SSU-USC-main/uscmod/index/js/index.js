@@ -1,3 +1,4 @@
+import { GMAIL_RETURN_EMAIL, GMAIL_RETURN_UID, checkGmailReturnAccount } from "../../shared/verified-gmail-return.js";
 import { bindPastedPasswordLogin } from "../../shared/pasted-password.js";
 import { institutionalEmailForDisplay } from "../../shared/account-email.js";
 import { auth, db } from "../../firebase/firebase-config.js";
@@ -7,7 +8,7 @@ import {
 } from "https://www.gstatic.com/firebasejs/12.12.0/firebase-auth.js";
 import { doc, getDoc, runTransaction, serverTimestamp } from "https://www.gstatic.com/firebasejs/12.12.0/firebase-firestore.js";
 import { isActiveStudentStanding, studentStandingLabel } from "../../shared/student-standing.js";
-import { openSupabaseRecoveryPage, authenticateVerifiedGmailLogin } from "../../shared/supabase-email-service.js";
+import { openSupabaseRecoveryPage, authenticateVerifiedGmailLogin, callStudentEmailService } from "../../shared/supabase-email-service.js";
 
 const dom = {
   signinForm: document.getElementById("signinForm"),
@@ -218,6 +219,21 @@ function bindSignin() {
     try {
       const credential = await signInWithPastedPassword(identifier, password);
       const user = credential.user;
+      const returnEmail = sessionStorage.getItem(GMAIL_RETURN_EMAIL);
+      if (returnEmail) {
+        let linked;
+        try {
+          linked = await checkGmailReturnAccount(auth, () => callStudentEmailService("get"), returnEmail);
+        } catch {
+          await cleanupAndAlert("Could not confirm the account linked to your verified Gmail. Please try signing in again.");
+          return;
+        }
+        if (!linked || linked.uid !== user.uid) {
+          await cleanupAndAlert("Sign in to the account linked to the Gmail you just verified. This is a different account.");
+          return;
+        }
+        sessionStorage.setItem(GMAIL_RETURN_UID, linked.uid);
+      }
 
       const token = await user.getIdTokenResult(true);
       const tokenRole = String(token.claims.role || "").toLowerCase();
@@ -283,6 +299,15 @@ function bindRecovery() {
   dom.forgotPasswordBtn?.addEventListener("click", () => {
     openSupabaseRecoveryPage();
   });
+}
+
+const verifiedReturnEmail = sessionStorage.getItem(GMAIL_RETURN_EMAIL);
+if (verifiedReturnEmail && dom.signinIdentifierInput) {
+  dom.signinIdentifierInput.value = verifiedReturnEmail;
+  const note = document.createElement("p");
+  note.textContent = "Sign in to the account linked to the Gmail you just verified using its existing password. You may also use that account’s Student ID or institutional email.";
+  note.setAttribute("role", "status");
+  dom.signinForm?.prepend(note);
 }
 
 const guardMessage = sessionStorage.getItem("authGuardMessage");

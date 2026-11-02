@@ -1,3 +1,4 @@
+import { GMAIL_RETURN_EMAIL, GMAIL_RETURN_UID } from "./verified-gmail-return.js";
 import { institutionalEmailForDisplay } from "./account-email.js";
 import { auth, db } from "../firebase/firebase-config.js";
 import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.12.0/firebase-auth.js";
@@ -156,6 +157,11 @@ async function verifyProtectedPage() {
       unsubscribe();
       if (!user) { resolve(await fail("Please sign in to continue.")); return; }
       try {
+        const expectedReturnUid = sessionStorage.getItem(GMAIL_RETURN_UID);
+        if ((sessionStorage.getItem(GMAIL_RETURN_EMAIL) && !expectedReturnUid) || (expectedReturnUid && user.uid !== expectedReturnUid)) {
+          resolve(await fail("The signed-in account changed. Sign in to the account linked to your verified Gmail."));
+          return;
+        }
         const token = await user.getIdTokenResult();
         const tokenRole = String(token.claims.role || "").toLowerCase();
 
@@ -196,8 +202,14 @@ async function verifyProtectedPage() {
           refreshSession(profile, token.claims, null, role);
         }
 
+        if (auth.currentUser?.uid !== user.uid) {
+          resolve(await fail("The signed-in account changed. Please sign in again."));
+          return;
+        }
         bindIdleExpiry();
         bindProfileAccessWatcher(user.uid, role);
+        sessionStorage.removeItem(GMAIL_RETURN_UID);
+        sessionStorage.removeItem(GMAIL_RETURN_EMAIL);
         settle(true);
         resolve(true);
       } catch (error) {

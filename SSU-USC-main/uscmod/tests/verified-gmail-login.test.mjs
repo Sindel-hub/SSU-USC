@@ -15,7 +15,7 @@ function fixture(){
  const profile={uid:'school-uid',role:'student',studentId:'001234',institutionalEmail:'student@ssu.edu.ph',institutionalEmailVerified:false,schoolProvisioned:true,isActive:true,accountStatus:'approved',studentStanding:'active',college:'Science',fullName:'Example Student'};
  const account={firebase_uid:'school-uid',requested_email:'personal@gmail.com',verified_email:'personal@gmail.com',verified_at:'2026-11-02',recovery:false};
  const user={uid:'school-uid',email:'001234@student.ssu-usc.local',disabled:false};
- const deps={canonicalGmail,verifiedAccount:async()=>account,profile:async()=>profile,activeProfile:p=>p?.schoolProvisioned===true&&p.role==='student'&&p.isActive!==false&&p.accountStatus==='approved'&&p.studentStanding==='active',authUser:async()=>user,authByEmail:async()=>null};
+ const deps={canonicalGmail,verifiedAccount:async()=>account,profile:async()=>profile,activeProfile:p=>p?.schoolProvisioned===true&&['student','officer'].includes(p.role)&&p.isActive!==false&&p.accountStatus==='approved'&&p.studentStanding==='active',authUser:async()=>user,authByEmail:async()=>null};
  return {deps,account,profile,user};
 }
 test('already-verified Gmail resolves the same Firebase UID without recovery being enabled',async()=>{
@@ -37,20 +37,21 @@ for(const [name,change] of [
 test('invalid addresses are rejected before any account lookup',async()=>{const h=fixture();h.deps.verifiedAccount=()=>{throw Error('must not query');};assert.equal(await resolveVerifiedGmailAccount(h.deps,'student@example.com'),null);});
 test('provider errors fail closed',async()=>{const h=fixture();h.deps.verifiedAccount=async()=>{throw Error('unavailable');};await assert.rejects(resolveVerifiedGmailAccount(h.deps,'personal@gmail.com'),/unavailable/);});
 
-function browser({verified=true,returnedUid='school-uid',nativeGmail=false,expectedPassword='correct-password'}={}){
- const h=fixture(),calls=[],requests=[],alerts=[],handlers={},storage=new Map();let resets=0,signouts=0;
- const button={},form={querySelector:()=>button,addEventListener:(event,fn)=>{handlers[event]=fn;},reset:()=>{resets++;}};
+function browser({verified=true,returnedUid='school-uid',nativeGmail=false,expectedPassword='correct-password',returnGmail='',settingsGmail='personal@gmail.com'}={}){
+ const h=fixture(),calls=[],requests=[],alerts=[],handlers={},storage=new Map();let resets=0,signouts=0;if(returnGmail)storage.set('uscVerifiedGmailReturnEmail',returnGmail);
+ const button={},form={prepend:()=>{},querySelector:()=>button,addEventListener:(event,fn)=>{handlers[event]=fn;},reset:()=>{resets++;}};
  const elements={signinForm:form,signinIdentifier:{value:'personal@gmail.com'},signinPassword:{value:'correct-password',addEventListener:(event,fn)=>{handlers['password-'+event]=fn;}},forgotPasswordBtn:{addEventListener:(event,fn)=>{handlers.recover=fn;}}};
  const auth={currentUser:null},location={};
  const aliases=new Map([['id_001234',h.user.email],['email_'+createHash('sha256').update('student@ssu.edu.ph').digest('hex'),h.user.email]]);
  const ctx=vm.createContext({auth,db:{},crypto:webcrypto,TextEncoder,console,location,URL,
-  document:{getElementById:id=>elements[id]||null},alert:msg=>alerts.push(msg),
+  document:{createElement:()=>({setAttribute:()=>{}}),getElementById:id=>elements[id]||null},alert:msg=>alerts.push(msg),
   sessionStorage:{getItem:key=>storage.get(key)||null,setItem:(k,v)=>storage.set(k,v),removeItem:k=>storage.delete(k)},
   institutionalEmailForDisplay,isActiveStudentStanding,studentStandingLabel,
   doc:(_db,...parts)=>parts.join('/'),serverTimestamp:()=>123,runTransaction:async()=>{},
   getDoc:async path=>({exists:()=>path.startsWith('users/')||aliases.has(path.split('/').at(-1)),data:()=>path.startsWith('users/')?h.profile:{authEmail:aliases.get(path.split('/').at(-1))}}),
   fetch:async(url,options)=>{
    const body=JSON.parse(options.body);requests.push({url,...body,headers:options.headers});
+   if(body.action==='get')return {ok:true,status:200,json:async()=>({ok:true,settings:{active:true,verifiedEmail:settingsGmail,accountRole:h.profile.role}})};
    assert.equal(body.action,'authenticate_gmail');assert.ok(url.startsWith('https://'));
    if(!verified)h.account.verified_email=null;
    const authenticate=createGmailPasswordAuthenticator({...h.deps,consumeBudget:async()=>true,finishDelay:async()=>{},passwordIdentity:async(email,password)=>{
@@ -63,12 +64,13 @@ function browser({verified=true,returnedUid='school-uid',nativeGmail=false,expec
   signInWithEmailAndPassword:async(_auth,email,password)=>{
    calls.push({email,password});
    if((email!==h.user.email&&!(nativeGmail&&email==='personal@gmail.com'))||password!==expectedPassword)throw Object.assign(Error('Wrong password'),{code:'auth/invalid-credential'});
-   const user={uid:returnedUid,email:h.user.email,emailVerified:false,getIdTokenResult:async()=>({claims:{}})};auth.currentUser=user;return {user};
+   const user={uid:returnedUid,email:h.user.email,emailVerified:false,getIdToken:async()=> 'synthetic-token',getIdTokenResult:async()=>({claims:{}})};auth.currentUser=user;return {user};
   },
   signOut:async()=>{auth.currentUser=null;signouts++;},
   window:{open:()=>{handlers.recoveryOpened=true;}},
  });
  vm.runInContext(strip(fs.readFileSync(new URL('../shared/supabase-email-service.js',import.meta.url),'utf8')).replaceAll('import.meta.url', JSON.stringify(new URL('../shared/supabase-email-service.js',import.meta.url).href)),ctx);
+ vm.runInContext(strip(fs.readFileSync(new URL('../shared/verified-gmail-return.js',import.meta.url),'utf8')),ctx);
  vm.runInContext(strip(fs.readFileSync(new URL('../shared/pasted-password.js',import.meta.url),'utf8')),ctx);
  vm.runInContext(strip(fs.readFileSync(new URL('../index/js/index.js',import.meta.url),'utf8')),ctx);
  return {ctx,calls,requests,alerts,handlers,storage,location,auth,elements,profile:h.profile,resets:()=>resets,signouts:()=>signouts};
@@ -107,4 +109,19 @@ for(const identifier of ['001234','student@ssu.edu.ph','personal@gmail.com'])tes
  const session=JSON.parse(h.storage.get('studentProfile'));assert.equal(session.role,'student');assert.equal(session.uid,'school-uid');
  if(identifier==='personal@gmail.com'){assert.equal(h.requests.length,2);assert.equal(h.requests.at(-1).password,'Abcdefg234!XYz');}
  else assert.equal(h.requests.length,0);
+});
+
+test('return login rejects a valid password for a different Gmail-linked account',async()=>{
+ const h=browser({returnGmail:'intended@gmail.com'});h.elements.signinIdentifier.value='001234';
+ await h.handlers.submit({preventDefault(){}});
+ assert.equal(h.auth.currentUser,null);assert.equal(h.location.href,undefined);
+ assert.match(h.alerts[0],/different account/);assert.equal(h.storage.has('activeSession'),false);
+ assert.equal(h.storage.get('uscVerifiedGmailReturnEmail'),'intended@gmail.com');
+});
+for(const role of ['student','officer'])test(`return login preserves linked ${role} UID and role`,async()=>{
+ const h=browser({returnGmail:'personal@gmail.com'});h.profile.role=role;
+ await h.handlers.submit({preventDefault(){}});
+ assert.equal(h.alerts.length,0);assert.equal(h.storage.get('uscVerifiedGmailReturnUid'),'school-uid');
+ assert.equal(JSON.parse(h.storage.get('studentProfile')).role,role);
+ assert.equal(h.location.href,role==='officer'?'../usc-admin/overview/overview.html':'../dashboard/dashboard.html');
 });

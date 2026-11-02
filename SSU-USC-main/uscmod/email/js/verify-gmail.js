@@ -1,3 +1,7 @@
+import { auth } from "../../firebase/firebase-config.js";
+import { signOut } from "https://www.gstatic.com/firebasejs/12.12.0/firebase-auth.js";
+import { callStudentEmailService } from "../../shared/supabase-email-service.js";
+import { rememberGmailReturn, returnToLinkedGmailAccount } from "../../shared/verified-gmail-return.js";
 import { callPublicEmailAction } from "./email-api.js";
 
 const TOKEN_KEY = "uscGmailVerificationToken";
@@ -28,6 +32,8 @@ if (validToken(queryToken)) {
   history.replaceState(null, "", `${url.pathname}${url.search}${url.hash}`);
 }
 
+let confirmedEmail = "";
+let returning = false;
 let token = sessionStorage.getItem(TOKEN_KEY) || "";
 if (!validToken(token)) {
   token = "";
@@ -47,9 +53,10 @@ button?.addEventListener("click", async () => {
     token = "";
     setStatus("success", "Gmail verified", `${result.email || "Your Gmail"} is now active for the notification and recovery options you enabled.`, "✓");
     button.hidden = true;
-    if (result.returnUrl && returnButton) {
-      returnButton.href = result.returnUrl;
-      returnButton.textContent = `Return to ${result.profileLabel || "portal"}`;
+    if (returnButton) {
+      confirmedEmail = rememberGmailReturn(result.email, sessionStorage);
+      returnButton.href = "../index/index.html";
+      returnButton.textContent = "Return to linked dashboard";
     }
   } catch (error) {
     setStatus("error", "Verification could not be completed", error?.message || "The verification request failed. Save your Gmail again and request a new link.", "!");
@@ -57,5 +64,25 @@ button?.addEventListener("click", async () => {
       button.disabled = false;
       button.textContent = "Try again";
     }
+  }
+});
+
+returnButton?.addEventListener("click", async (event) => {
+  if (!confirmedEmail) return;
+  event.preventDefault();
+  if (returning) return;
+  returning = true;
+  returnButton.setAttribute("aria-disabled", "true");
+  try {
+    const path = await returnToLinkedGmailAccount({
+      auth, loadSettings: () => callStudentEmailService("get"), signOut,
+      storage: sessionStorage, email: confirmedEmail
+    });
+    window.location.assign(path);
+  } catch (error) {
+    setStatus("error", "Could not check the linked account", error?.message || "Please try again. Your Gmail remains verified.", "!");
+  } finally {
+    returning = false;
+    returnButton.removeAttribute("aria-disabled");
   }
 });
