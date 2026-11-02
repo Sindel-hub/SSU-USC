@@ -1,4 +1,5 @@
--- STAGING FIRST. Execute only against the explicitly approved Supabase project.
+-- Apply only with explicit approval, in one transaction, after target verification.
+-- Canonical migration: migrations/202611030001_gmail_login_rate_limit.sql.
 -- Shared database budgets apply to all Edge instances. No raw emails, IPs or passwords.
 create table if not exists public.gmail_login_rate_limits (
   bucket_key text primary key,
@@ -7,14 +8,14 @@ create table if not exists public.gmail_login_rate_limits (
   expires_at timestamptz not null
 );
 alter table public.gmail_login_rate_limits enable row level security;
-revoke all on table public.gmail_login_rate_limits from public, anon, authenticated;
-grant select, insert, update, delete on public.gmail_login_rate_limits to service_role;
+-- Only the SECURITY DEFINER RPC may access counters; no browser policies.
+revoke all on table public.gmail_login_rate_limits from public, anon, authenticated, service_role;
 
 create or replace function public.consume_gmail_login_budget(p_identity_hash text, p_client_hash text default null)
 returns boolean
 language plpgsql
 security definer
-set search_path = pg_catalog, public
+set search_path = pg_catalog
 as $$
 declare
   window_at timestamptz;
@@ -48,5 +49,9 @@ begin
   return true;
 end;
 $$;
+alter function public.consume_gmail_login_budget(text, text) owner to postgres;
 revoke all on function public.consume_gmail_login_budget(text, text) from public, anon, authenticated;
 grant execute on function public.consume_gmail_login_budget(text, text) to service_role;
+
+-- Make the new RPC visible after the surrounding transaction commits.
+notify pgrst, 'reload schema';
