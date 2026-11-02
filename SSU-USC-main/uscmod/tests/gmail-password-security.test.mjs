@@ -107,3 +107,9 @@ test('real rate-limit hash is keyed, deterministic and contains no raw email or 
  assert.match(first,/^[a-f0-9]{64}$/);assert.equal(first,await ctx.gmailRateLimitHash('identity:verified@gmail.com'));
  assert.notEqual(first,await ctx.gmailRateLimitHash('client:127.0.0.1'));
 });
+
+test('frontend rejects a mapping-precedence backend without an explicit login method',async()=>{
+ const source=fs.readFileSync(new URL('../shared/supabase-email-service.js',import.meta.url),'utf8').replace(/import\s+[\s\S]*?from\s+["'][^"']+["'];/g,'').replace(/export /g,'').replaceAll('import.meta.url',JSON.stringify(import.meta.url));
+ const ctx=vm.createContext({URL,auth:{currentUser:null},fetch:async()=>({ok:true,json:async()=>({ok:true,protocol:'gmail-password-v1',uid:'synthetic',authEmail:'synthetic@example.invalid'})})});
+ vm.runInContext(source,ctx);await assert.rejects(ctx.authenticateVerifiedGmailLogin('verified@gmail.com','synthetic-password'),/could not be verified/);
+});

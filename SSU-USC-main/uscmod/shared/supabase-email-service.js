@@ -44,8 +44,8 @@ export function openSupabaseRecoveryPage() {
 
 export async function authenticateVerifiedGmailLogin(email, password) {
   const result = await callStudentEmailService("authenticate_gmail", { email, password }, { requireSession: false });
-  if (result.protocol !== "gmail-password-v1" || typeof result.uid !== "string" || !result.uid || typeof result.authEmail !== "string" || !result.authEmail) {
+  if (result.protocol !== "gmail-password-v1" || !["verified-gmail", "firebase-native"].includes(result.loginMethod) || typeof result.uid !== "string" || !result.uid || typeof result.authEmail !== "string" || !result.authEmail) {
     throw new Error("The Gmail login could not be verified. Use your Student ID instead.");
   }
-  return { uid: result.uid, authEmail: result.authEmail };
+  return { uid: result.uid, authEmail: result.authEmail, loginMethod: result.loginMethod };
 }
