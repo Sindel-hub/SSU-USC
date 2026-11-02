@@ -6,7 +6,7 @@ import {
 } from "https://www.gstatic.com/firebasejs/12.12.0/firebase-auth.js";
 import { doc, getDoc, runTransaction, serverTimestamp } from "https://www.gstatic.com/firebasejs/12.12.0/firebase-firestore.js";
 import { isActiveStudentStanding, studentStandingLabel } from "../../shared/student-standing.js";
-import { openSupabaseRecoveryPage } from "../../shared/supabase-email-service.js";
+import { openSupabaseRecoveryPage, authenticateVerifiedGmailLogin } from "../../shared/supabase-email-service.js";
 
 const dom = {
   signinForm: document.getElementById("signinForm"),
@@ -23,6 +23,7 @@ function clean(value) { return String(value || "").trim(); }
 function normalizeEmail(value) { return clean(value).toLowerCase(); }
 function normalizeStudentId(value) { return clean(value); }
 function isEmail(value) { return EMAIL_REGEX.test(clean(value)); }
+function isPersonalGmail(value) { return /^[^@\s]+@gmail\.com$/i.test(clean(value)); }
 function isStudentId(value) { return STUDENT_ID_REGEX.test(clean(value)); }
 
 function clearSession() {
@@ -163,6 +164,20 @@ async function resolveLoginCandidates(identifier) {
 }
 
 async function signInByIdentifier(identifier, password) {
+  if (isPersonalGmail(identifier)) {
+    // Preserve existing Firebase-native Gmail accounts, including administrators.
+    try { return await signInSecurely(normalizeEmail(identifier), password); }
+    catch (error) {
+      if (!["auth/invalid-credential", "auth/wrong-password", "auth/user-not-found", "auth/invalid-email"].includes(error?.code)) throw error;
+    }
+    const account = await authenticateVerifiedGmailLogin(normalizeEmail(identifier), password);
+    const credential = await signInSecurely(account.authEmail, password);
+    if (credential.user.uid !== account.uid) {
+      await signOut(auth);
+      throw Object.assign(new Error("The Gmail account could not be verified. Use your Student ID instead."), {code:"auth/invalid-credential"});
+    }
+    return { ...credential, verifiedGmailUid: account.uid };
+  }
   const candidates = await resolveLoginCandidates(identifier);
   let lastError = null;
   for (const email of candidates) {
@@ -210,7 +225,7 @@ function bindSignin() {
         return;
       }
       const profile = profileSnap.data();
-      if (isEmail(identifier) && profile.institutionalEmailVerified === false
+      if (isEmail(identifier) && credential.verifiedGmailUid !== user.uid && profile.institutionalEmailVerified === false
           && !(user.emailVerified === true && normalizeEmail(user.email) === normalizeEmail(profile.institutionalEmail))) {
         await cleanupAndAlert("Sign in with your Student ID, then verify your institutional email in Profile → Account Settings before using email login.");
         return;

@@ -27,7 +27,7 @@ test("action controls remain blocked even when a module itself is viewable", () 
 });
 
 test("officer dashboard cache-busts the read-only RBAC assets", () => {
-  assert.match(overview, /officer-ui\.css\?v=rbac-ui-5/);
+  assert.match(overview, /officer-ui\.css\?v=[a-zA-Z0-9._-]+/);
   assert.match(overview, /officer-rbac\.js\?v=6/);
-  assert.match(overview, /auth-guard\.js\?v=rbac6/);
+  assert.match(overview, /auth-guard\.js\?v=[a-zA-Z0-9._-]+/);
 });

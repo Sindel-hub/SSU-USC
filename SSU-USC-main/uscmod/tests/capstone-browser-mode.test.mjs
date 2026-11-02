@@ -72,7 +72,11 @@ test('student year level and standing are enforced without capstone-mode UI text
   assert.match(studentHtml, /id="studentStanding"/);
   assert.match(studentHtml, /Transferred \/ Changed School/);
   assert.match(studentHtml, /Eliminated \/ Dismissed/);
-  assert.match(studentJs, /eligibilitySelect\.disabled = !active/);
+  assert.match(studentJs, /const active = isActiveStudentStanding\(standing\)/);
+  assert.match(studentJs, /portal access and voting are automatically disabled/);
+  const provisioning = read('shared/browser-provisioning.js');
+  assert.match(provisioning, /isActiveStudentStanding\(studentStanding, enrollmentStatus\)/);
+  assert.match(provisioning, /isActive: standingActive/);
   assert.match(authGuard, /isActiveStudentStanding/);
   assert.match(authGuard, /bindProfileAccessWatcher/);
   assert.match(loginJs, /Portal access is disabled because your student standing/);

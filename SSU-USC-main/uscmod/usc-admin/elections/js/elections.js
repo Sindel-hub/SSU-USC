@@ -1,7 +1,8 @@
+import { effectiveOfficerPermissions } from "../../../shared/officer-permissions.js";
 import { auth, db } from "../../../firebase/firebase-config.js";
 import { callSecure, openPrivateFile, resolveMediaUrl } from "../../../shared/security-client.js";
 import {
-  collection, doc, getDoc, getDocs, deleteDoc
+  collection, doc, getDoc, getDocs
 } from "https://www.gstatic.com/firebasejs/12.12.0/firebase-firestore.js";
 
 const uscAuthAllowed = await (globalThis.USC_AUTH_READY || Promise.resolve(false));
@@ -41,6 +42,8 @@ let candidates = [];
 let turnout = { ballotsCast: 0, eligibleVoters: 0 };
 let departmentTurnout = { totalVoters: 0, departments: [] };
 let trustedClaims = {};
+let canManageCandidates = false;
+let canRemoveCandidates = false;
 
 let scheduleFormDirty = false;
 
@@ -73,7 +76,7 @@ function lifecycleDescription() {
     "Voting Closed": "Voting Closed: no more ballots are accepted. Finalization is required before canvassing.",
     Canvassing: "Canvassing: the election is finalized and authorized canvassers may inspect tallies.",
     "Results Published": "Results Published: official candidate totals are now student-readable.",
-    Archived: "Archived: schedule, candidate records, and election results are locked."
+    Archived: "Archived: official results are preserved. Authorized officers may still manage candidate profiles."
   };
   return map[context.lifecycle] || context.lifecycle;
 }
@@ -257,13 +260,13 @@ function renderStats() {
   const eligible = Number(turnout.eligibleVoters || context?.eligibleVoterCount || 0);
   const percent = eligible > 0 ? Math.min(100, ballots / eligible * 100) : 0;
   if (els.activeElectionCount) els.activeElectionCount.textContent = electionId ? "01" : "00";
-  if (els.candidateCount) els.candidateCount.textContent = String(candidates.length);
+  if (els.candidateCount) els.candidateCount.textContent = String(candidates.filter((c) => !c.removed).length);
   if (els.votesCastCount) els.votesCastCount.textContent = String(ballots);
   if (els.turnoutPercent) els.turnoutPercent.textContent = `${percent.toFixed(1)}%`;
   if (els.turnoutProgressLabel) els.turnoutProgressLabel.textContent = `${ballots} / ${eligible}`;
   if (els.turnoutBar) { els.turnoutBar.style.width = `${percent}%`; els.turnoutBar.textContent = `${percent.toFixed(1)}%`; }
   if (els.turnoutSnapshotText) els.turnoutSnapshotText.textContent = `${ballots} of ${eligible} ballots cast`;
-  if (els.candidateSnapshotText) els.candidateSnapshotText.textContent = `${candidates.length} validated`;
+  if (els.candidateSnapshotText) els.candidateSnapshotText.textContent = `${candidates.filter((c) => !c.removed).length} validated`;
   // Deliberately suppress live candidate totals for ordinary officers.
   if (els.presidentAnalytics) els.presidentAnalytics.innerHTML = `<div class="note-box"><strong>Candidate totals protected</strong><p>${context?.lifecycle === "Voting" ? "Voting is active. Only turnout and system health are shown." : "Candidate tallies are available only to an authorized canvasser after finalization."}</p></div>`;
   if (els.viceAnalytics) els.viceAnalytics.innerHTML = `<div class="note-box"><strong>Secret-ballot administration</strong><p>The officer dashboard never displays which student selected which candidate.</p></div>`;
@@ -368,20 +371,51 @@ async function submitCandidatePreviewDecision(application, decision, trigger) {
 }
 
 async function removeCandidateApplication(application) {
-  if (!confirm(`Remove ${application.fullName || "this candidate"} from the candidate list?`)) return;
+  const candidate = candidates.find((c) => c.id === application.candidateId);
+  if (candidate) return removeElectionCandidate(candidate);
+  if (!canManageCandidates || application.status !== "Under Review") return;
+  if (!confirm(`Remove the pending application for ${application.fullName}? This action will be audited.`)) return;
   try {
-    // Spark-plan compatible removal: no Cloud Function required.
-    // Firestore Security Rules control who can perform this action.
-    const activeElectionId = clean(electionId || "");
-    if (!activeElectionId) throw new Error("No active election selected.");
-
-    await deleteDoc(doc(db, "elections", activeElectionId, "applications", application.id));
-
+    await callSecure("removeCandidateApplication", {applicantUid:application.id});
     closeCandidatePreview();
     await refreshAll();
-  } catch (error) {
-    alert(error.message);
+  } catch (error) { alert(error.message); }
+}
+
+async function removeElectionCandidate(candidate) {
+  if (!canRemoveCandidates || !candidate || candidate.removed) return;
+  if (!confirm(`Remove ${candidate.fullName} from the visible candidate list and future ballots? Existing votes, audit history, and official results will be preserved.`)) return;
+  try {
+    await callSecure("removeElectionCandidate", {electionId, candidateId:candidate.id});
+    closeCandidatePreview();
+    await refreshAll();
+  } catch (error) { alert(error.message); }
+}
+
+function openCandidateEditor(candidate) {
+  if (!canManageCandidates || !candidate || candidate.removed) return;
+  let dialog = $("candidateEditDialog");
+  if (!dialog) {
+    document.body.insertAdjacentHTML("beforeend", `<dialog id="candidateEditDialog" class="candidate-edit-dialog"></dialog>`);
+    dialog = $("candidateEditDialog");
   }
+  const locked = Date.now() >= Number(context?.votingStart || 0) && Date.now() < Number(context?.votingEnd || 0);
+  const fields = [["fullName","Full name",120],["position","Position",80],["department","Department",160],["partylist","Partylist",100],["campaignPhotoUrl","Campaign photo HTTPS URL",1000],["platform","Platform and advocacy",5000]];
+  const positions = ["President","Vice President","Secretary","Treasurer","Auditor","Public Relations Officer","Business Manager","Sgt. at Arms","Department Representative"];
+  dialog.innerHTML = `<form><h3>Edit Candidate</h3><p>Profile changes do not rewrite historical results. Position and department remain fixed while voting is active.</p>${fields.map(([key,label,max]) => `<label class="field">${label}${key === "position" ? `<select name="${key}" ${locked ? "disabled" : ""}>${positions.map((v) => `<option ${v === candidate.position ? "selected" : ""}>${esc(v)}</option>`).join("")}</select>` : key === "platform" ? `<textarea name="${key}" maxlength="${max}">${esc(candidate[key])}</textarea>` : `<input name="${key}" value="${esc(candidate[key])}" maxlength="${max}" ${key === "fullName" ? "required" : ""} ${key === "department" && locked ? "disabled" : ""}>`}</label>`).join("")}<p role="alert" id="candidateEditError"></p><div class="row-actions"><button type="button" class="mini-btn light" data-cancel>Cancel</button><button type="submit" class="mini-btn primary">Save changes</button></div></form>`;
+  dialog.querySelector("[data-cancel]").onclick = () => dialog.close();
+  dialog.querySelector("form").onsubmit = async (event) => {
+    event.preventDefault();
+    const button = dialog.querySelector('[type="submit"]');
+    button.disabled = true;
+    const details = Object.fromEntries(fields.map(([key]) => [key, dialog.querySelector(`[name="${key}"]`).value]));
+    try {
+      await callSecure("updateElectionCandidate", {electionId, candidateId:candidate.id, details});
+      dialog.close();
+      await refreshAll();
+    } catch (error) { $("candidateEditError").textContent = error.message; button.disabled = false; }
+  };
+  dialog.showModal();
 }
 
 async function openCandidatePreview(uid) {
@@ -393,9 +427,10 @@ async function openCandidatePreview(uid) {
 
   const name = clean(application.fullName || "Candidate");
   const initials = name.split(/\s+/).filter(Boolean).slice(0, 2).map((part) => part[0]?.toUpperCase() || "").join("") || "C";
-  const status = clean(application.status || "Under Review");
+  const linkedCandidate = candidates.find((c) => c.id === application.candidateId);
+  const status = linkedCandidate?.removed === true ? "Removed" : clean(application.status || "Under Review");
   const statusKey = status.toLowerCase().replace(/\s+/g, "-");
-  const canReview = Boolean(context?.reviewOpen && status.toLowerCase() === "under review");
+  const canReview = Boolean(canManageCandidates && context?.reviewOpen && status.toLowerCase() === "under review");
   const documents = Array.isArray(application.supportingDocumentPaths) ? application.supportingDocumentPaths : [];
 
   body.innerHTML = `
@@ -432,8 +467,8 @@ async function openCandidatePreview(uid) {
     <div class="candidate-preview-footer-note">${canReview ? `<i class="fa-solid fa-shield-halved"></i> Review the application before recording a decision.` : `<i class="fa-solid fa-lock"></i> ${status.toLowerCase() === "under review" ? "Decisions are available only during the scheduled review window." : `This application is already ${esc(status.toLowerCase())}.`}`}</div>
     <div class="candidate-preview-footer-actions">
       <button class="mini-btn light" type="button" data-candidate-preview-close>Close</button>
-      ${canReview ? `<button class="mini-btn danger candidate-preview-return" type="button" data-preview-decision="reject"><i class="fa-solid fa-rotate-left"></i> Reject</button><button class="mini-btn primary candidate-preview-approve" type="button" data-preview-decision="approve"><i class="fa-solid fa-check"></i> Approve</button>` : ""}
-      ${status.toLowerCase() === "under review" ? `<button class="mini-btn danger" type="button" data-remove-candidate="${esc(application.id)}"><i class="fa-solid fa-trash"></i> Remove</button>` : `<button class="mini-btn danger" type="button" disabled title="Only pending candidates can be removed"><i class="fa-solid fa-trash"></i> Remove</button>`}
+      ${canReview ? `<button class="mini-btn danger candidate-preview-return" type="button" data-rbac-permission="elections.review" data-preview-decision="reject"><i class="fa-solid fa-rotate-left"></i> Reject</button><button class="mini-btn primary candidate-preview-approve" type="button" data-rbac-permission="elections.review" data-preview-decision="approve"><i class="fa-solid fa-check"></i> Approve</button>` : ""}
+      ${((canManageCandidates && application.status === "Under Review") || (canRemoveCandidates && candidates.some((c) => c.id === application.candidateId && !c.removed))) ? `<button class="mini-btn danger" type="button" data-remove-candidate="${esc(application.id)}"><i class="fa-solid fa-trash"></i> Remove</button>` : ""}
     </div>`;
 
   if (dialog.open) dialog.close();
@@ -458,9 +493,11 @@ function renderApplications() {
   if (!els.candidateReviewList) return;
   if (!applications.length) { els.candidateReviewList.innerHTML = `<div class="review-empty-state">No candidate applications exist for this election ID.</div>`; return; }
   els.candidateReviewList.innerHTML = applications.map((a) => {
-    const normalizedStatus = clean(a.status || "Under Review").toLowerCase();
-    const canReview = context?.reviewOpen && normalizedStatus === "under review";
-    const status = esc(a.status || "Under Review");
+    const linkedCandidate = candidates.find((c) => c.id === a.candidateId);
+    const removed = linkedCandidate?.removed === true;
+    const normalizedStatus = removed ? "removed" : clean(a.status || "Under Review").toLowerCase();
+    const canReview = canManageCandidates && context?.reviewOpen && normalizedStatus === "under review";
+    const status = removed ? "Removed" : esc(a.status || "Under Review");
     const statusKey = normalizedStatus.replace(/\s+/g, "-");
     const name = clean(a.fullName || "Candidate");
     const initials = name.split(/\s+/).filter(Boolean).slice(0, 2).map((part) => part[0]?.toUpperCase() || "").join("") || "C";
@@ -495,8 +532,10 @@ function renderApplications() {
           </div>
           <div class="candidate-review-actions">
             <button class="mini-btn ${canReview ? "primary" : "light"} candidate-preview-btn" type="button" data-candidate-preview="${esc(a.id)}"><i class="fa-regular fa-eye" aria-hidden="true"></i><span>${canReview ? "Review application" : "View application"}</span><i class="fa-solid fa-arrow-right candidate-preview-arrow" aria-hidden="true"></i></button>
+            ${canManageCandidates && linkedCandidate && !removed ? `<button class="mini-btn light" type="button" data-edit-reviewed-candidate="${esc(linkedCandidate.id)}"><i class="fa-solid fa-pen" aria-hidden="true"></i> Edit</button>` : ""}
+            ${canRemoveCandidates && normalizedStatus === "approved" && linkedCandidate ? `<button class="mini-btn danger" type="button" data-remove-approved-candidate="${esc(a.id)}" aria-label="Remove approved candidate ${esc(name)}"><i class="fa-solid fa-trash" aria-hidden="true"></i> Remove</button>` : ""}
           </div>
-          ${canReview
+          ${removed ? `<small class="candidate-review-lock-note"><i class="fa-solid fa-box-archive" aria-hidden="true"></i><span><strong>Candidate removed</strong> The approval record, existing votes, and official results are preserved.</span></small>` : canReview
             ? `<small class="candidate-review-lock-note is-ready"><i class="fa-solid fa-circle-check" aria-hidden="true"></i><span><strong>Ready for review</strong> Open the application to approve or reject it.</span></small>`
             : normalizedStatus === "approved"
               ? `<small class="candidate-review-lock-note status-approved"><i class="fa-solid fa-circle-check" aria-hidden="true"></i><span><strong>Application approved</strong> This candidate has already been approved.</span></small>`
@@ -506,6 +545,8 @@ function renderApplications() {
         </div>
       </article>`;
   }).join("");
+  els.candidateReviewList.querySelectorAll("[data-edit-reviewed-candidate]").forEach((btn) => btn.addEventListener("click", () => openCandidateEditor(candidates.find((c) => c.id === btn.dataset.editReviewedCandidate))));
+  els.candidateReviewList.querySelectorAll("[data-remove-approved-candidate]").forEach((btn) => btn.addEventListener("click", () => removeCandidateApplication(applications.find((a) => a.id === btn.dataset.removeApprovedCandidate))));
   els.candidateReviewList.querySelectorAll("[data-private-path]").forEach((btn) => btn.addEventListener("click", () => openPrivateFile(btn.dataset.privatePath).catch((e) => alert(e.message))));
   els.candidateReviewList.querySelectorAll("[data-candidate-photo-preview]").forEach((btn) => btn.addEventListener("click", () => openCandidatePhotoPreview(btn.dataset.candidatePhotoPreview).catch((e) => alert(e.message))));
   els.candidateReviewList.querySelectorAll("[data-candidate-preview]").forEach((btn) => btn.addEventListener("click", () => openCandidatePreview(btn.dataset.candidatePreview).catch((e) => alert(e.message))));
@@ -661,7 +702,7 @@ async function showTallies() {
     ]);
     const counts = new Map();
     ballots.forEach((d)=>Object.values(d.data().selections||{}).forEach((id)=>counts.set(String(id),(counts.get(String(id))||0)+1)));
-    const rows = candidateSnap.docs.filter((d)=>d.data().approved===true).map((d)=>({ ...d.data(), id:d.id, votes:counts.get(d.id)||0 })).sort((a,b)=>clean(a.position).localeCompare(clean(b.position)) || Number(b.votes||0)-Number(a.votes||0));
+    const rows = candidateSnap.docs.filter((d)=>d.data().approved===true).map((d)=>({ ...(d.data().resultIdentity || d.data()), id:d.id, votes:counts.get(d.id)||0 })).sort((a,b)=>clean(a.position).localeCompare(clean(b.position)) || Number(b.votes||0)-Number(a.votes||0));
     alert(rows.map((r)=>`${r.position}: ${r.fullName} — ${Number(r.votes||0)}`).join("\n") || "No tallies recorded.");
   } catch (error) { alert(error.message || "Tallies are not available."); }
 }
@@ -733,6 +774,8 @@ installHardeningPanels();
   const tokenClaims = (await auth.currentUser?.getIdTokenResult(true))?.claims || {};
   const profileSnap = auth.currentUser ? await getDoc(doc(db, "users", auth.currentUser.uid)).catch(() => null) : null;
   const profile = profileSnap?.exists?.() ? profileSnap.data() : {};
+  canManageCandidates = effectiveOfficerPermissions(profile).includes("elections.review") || String(tokenClaims.role || profile.role).toLowerCase() === "admin";
+  canRemoveCandidates = canManageCandidates || effectiveOfficerPermissions(profile).includes("elections.view");
   trustedClaims = {
     ...tokenClaims,
     role: String(tokenClaims.role || profile.role || "").toLowerCase(),

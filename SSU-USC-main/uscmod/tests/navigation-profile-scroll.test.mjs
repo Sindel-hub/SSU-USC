@@ -27,10 +27,12 @@ test("shared profile drawer freezes the dashboard and restores its scroll positi
   assert.match(css, /html\.usc-profile-scroll-locked,body\.usc-profile-scroll-locked/);
 });
 
-test("Audit System guardrails remains sticky on desktop", () => {
-  const css = read("usc-admin/admin-dashboard/css/admin-dashboard.css");
+test("Audit System guardrails remains accessible in the redesigned document flow", () => {
+  const css = read("usc-admin/admin-dashboard/css/audit-modern.css");
   const audit = read("usc-admin/admin-dashboard/audit.html");
-  assert.match(audit, /<h3>System guardrails<\/h3>/);
-  assert.match(audit, /<article class="card sticky-card">/);
-  assert.match(css, /\.sticky-card \{ position: sticky; top: 18px; align-self: start; \}/);
+  assert.match(audit, /<h2 id="auditGuardrailsTitle">System guardrails<\/h2>/);
+  assert.match(audit, /<article class="card audit-guardrails-card" aria-labelledby="auditGuardrailsTitle">/);
+  assert.match(css, /\.audit-guardrails-card \{ grid-column:1\/-1; \}/);
+  assert.match(audit, /id="auditWarningsList"/);
+  assert.doesNotMatch(audit, /class="card sticky-card"/);
 });

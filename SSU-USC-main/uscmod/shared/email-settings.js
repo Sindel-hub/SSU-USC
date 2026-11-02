@@ -31,7 +31,7 @@ export async function initializeEmailSettings(root) {
     </div>
 
     <p class="gmail-card-intro">
-      Add a personal Gmail for recovery and USC email alerts. Your school login stays unchanged.
+      Add a personal Gmail for recovery and USC email alerts. After verification, you can also sign in with this Gmail and your existing password.
     </p>
 
     <div id="gmailState" class="gmail-status-card" data-state="loading" role="status" aria-live="polite">
@@ -49,7 +49,7 @@ export async function initializeEmailSettings(root) {
           <span class="gmail-input-icon" aria-hidden="true"><i class="fa-brands fa-google"></i></span>
           <input id="gmailAddress" type="email" placeholder="ssuuniversitystudentcouncil@gmail.com" autocomplete="email" maxlength="254" required>
         </div>
-        <p class="gmail-field-help">We’ll send a verification link. Recovery and alerts activate after you confirm it.</p>
+        <p class="gmail-field-help">We’ll send a verification link. Gmail login, recovery and alerts activate after you confirm it.</p>
 
         <div class="gmail-preferences-head">
           <div>
@@ -90,7 +90,7 @@ export async function initializeEmailSettings(root) {
 
     <div class="gmail-security-note">
       <i class="fa-solid fa-shield-halved" aria-hidden="true"></i>
-      <p><strong>Your school login stays the same.</strong> This Gmail is only for recovery and enabled alerts.</p>
+      <p><strong>Your school login stays the same.</strong> Your verified Gmail also works with your existing account password; recovery and enabled alerts stay available.</p>
     </div>
 
     <p id="gmailMessage" class="gmail-message" role="status" aria-live="polite"></p>

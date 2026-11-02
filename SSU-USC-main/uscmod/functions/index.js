@@ -169,8 +169,9 @@ async function requireOfficerPermission(request, permission) {
   const profile = await requireActiveRole(request, ["officer", "admin"]);
   if (roleOf(request) === "admin") return profile;
   const permissions = effectiveOfficerPermissionList(profile);
-  if (!permissions.includes(permission)) {
-    throw new HttpsError("permission-denied", `Your assigned USC office does not have permission for ${permission.replaceAll(".", " ")}.`);
+  const alternatives = Array.isArray(permission) ? permission : [permission];
+  if (!alternatives.some((item) => permissions.includes(item))) {
+    throw new HttpsError("permission-denied", `Your assigned USC office does not have permission for ${alternatives.map((item) => item.replaceAll(".", " ")).join(" or ")}.`);
   }
   return profile;
 }
@@ -1150,29 +1151,57 @@ async function syncCandidateReviewCompletion(electionId, actorUid = "") {
 }
 
 
+async function manageElectionCandidate(request, remove = false) {
+  await requireOfficerPermission(request, remove ? ["elections.view", "elections.review"] : "elections.review");
+  requireRecentAuth(request);
+  const electionId = cleanText(request.data?.electionId, 128);
+  const candidateId = cleanText(request.data?.candidateId, 128);
+  if (!electionId || !candidateId || /[/]/.test(electionId + candidateId)) throw new HttpsError("invalid-argument", "Select a valid election and candidate.");
+  const ref = db.doc(`elections/${electionId}/candidates/${candidateId}`);
+  await db.runTransaction(async (tx) => {
+    const electionSnap = await tx.get(db.doc(`elections/${electionId}`));
+    const snap = await tx.get(ref);
+    if (!electionSnap.exists || !snap.exists) throw new HttpsError("not-found", "Candidate or election not found.");
+    const before = snap.data();
+    if (before.removed === true) throw new HttpsError("failed-precondition", "Candidate already removed.");
+    const changes = {};
+    if (remove) changes.removed = true;
+    else {
+      for (const [key, limit] of Object.entries({fullName:120,position:80,department:160,partylist:100,platform:5000,campaignPhotoUrl:1000})) {
+        const value = String(request.data?.details?.[key] ?? before[key] ?? "").trim();
+        if (value.length > limit) throw new HttpsError("invalid-argument", `${key} is too long.`);
+        changes[key] = value;
+      }
+      if (!changes.fullName || !POSITIONS.includes(changes.position)) throw new HttpsError("invalid-argument", "A name and valid position are required.");
+      if (changes.campaignPhotoUrl && !/^https:\/\//i.test(changes.campaignPhotoUrl) && changes.campaignPhotoUrl !== before.campaignPhotoUrl) throw new HttpsError("invalid-argument", "Use an HTTPS photo URL.");
+      if (Date.now() >= toMillis(electionSnap.data().votingStart) && Date.now() < toMillis(electionSnap.data().votingEnd) && (changes.position !== before.position || changes.department !== (before.department || ""))) throw new HttpsError("failed-precondition", "Position and department are fixed while voting is active to preserve ballot assignments.");
+    }
+    if (Date.now() >= toMillis(electionSnap.data().votingStart) && !before.resultIdentity) changes.resultIdentity = before;
+    changes.updatedAt = FieldValue.serverTimestamp();
+    changes.updatedByUid = request.auth.uid;
+    tx.update(ref, changes);
+    tx.set(db.collection("audit_logs").doc(), auditData(request, remove ? "CANDIDATE_REMOVE" : "CANDIDATE_EDIT", ref.path, before, {...before,...changes}));
+  });
+  return {success:true};
+}
+exports.updateElectionCandidate = onCall(callableOptions(), (request) => manageElectionCandidate(request));
+exports.removeElectionCandidate = onCall(callableOptions(), (request) => manageElectionCandidate(request, true));
+
 exports.removeCandidateApplication = onCall(callableOptions(), async (request) => {
   await requireOfficerPermission(request, "elections.review");
   requireRecentAuth(request);
-  const { electionId } = await currentElection();
-  const uid = cleanText(request.data?.applicantUid, 128);
-  if (!uid) throw new HttpsError("invalid-argument", "Applicant UID is required.");
-
-  const appRef = db.doc(`elections/${electionId}/applications/${uid}`);
-  const snap = await appRef.get();
-  if (!snap.exists) throw new HttpsError("not-found", "Candidate application not found.");
-
-  const data = snap.data();
-  await appRef.delete();
-
-  await db.collection("auditLogs").add({
-    action: "REMOVE_CANDIDATE_APPLICATION",
-    target: uid,
-    candidateName: cleanText(data.fullName || "", 200),
-    electionId,
-    createdAt: FieldValue.serverTimestamp()
+  const {electionId} = await currentElection();
+  const applicantUid = cleanText(request.data?.applicantUid, 128);
+  if (!applicantUid || applicantUid.includes("/")) throw new HttpsError("invalid-argument", "Applicant UID required.");
+  const ref = db.doc(`elections/${electionId}/applications/${applicantUid}`);
+  await db.runTransaction(async (tx) => {
+    const snap = await tx.get(ref);
+    if (!snap.exists || snap.data().status !== "Under Review") throw new HttpsError("failed-precondition", "Only pending applications can be deleted. Use candidate management for approved candidates.");
+    tx.delete(ref);
+    tx.set(db.collection("audit_logs").doc(), auditData(request,"CANDIDATE_APPLICATION_REMOVE",ref.path,snap.data(),null));
   });
-
-  return { success: true };
+  await syncCandidateReviewCompletion(electionId, request.auth.uid);
+  return {success:true};
 });
 
 exports.reviewCandidateApplication = onCall(callableOptions({ secrets: [SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY] }), async (request) => {
@@ -1298,7 +1327,7 @@ exports.submitAnonymousBallot = onCall(callableOptions(), async (request) => {
       return [position, ref, await tx.get(ref)];
     }));
     for (const [position, , snap] of candidatePairs) {
-      if (!snap.exists || snap.get("approved") !== true || snap.get("position") !== position) throw new HttpsError("invalid-argument", `The selected ${position} candidate is not valid for this election.`);
+      if (!snap.exists || snap.get("approved") !== true || snap.get("removed") === true || snap.get("position") !== position) throw new HttpsError("invalid-argument", `The selected ${position} candidate is not valid for this election.`);
       if (position === "Department Representative" && cleanText(snap.get("department"), 160) !== voterCollege) {
         throw new HttpsError("permission-denied", "You may only vote for the Department Representative assigned to your verified college.");
       }
@@ -1375,7 +1404,7 @@ exports.publishElectionResults = onCall(callableOptions(), async (request) => {
   const tallyMap = new Map(talliesSnap.docs.map((d) => [d.id, d.data()]));
   // Publish every approved candidate, including candidates who received zero votes.
   const results = candidatesSnap.docs.map((d) => {
-    const candidate = d.data();
+    const candidate = d.data().resultIdentity || d.data();
     const tally = tallyMap.get(d.id) || {};
     return {
       id: d.id,

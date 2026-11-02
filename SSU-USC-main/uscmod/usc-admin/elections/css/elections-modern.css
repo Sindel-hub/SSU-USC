@@ -182,3 +182,9 @@ body.election-management-page .candidate-review-actions .candidate-preview-btn.p
 body.election-management-page .candidate-review-action-title { grid-template-columns:minmax(0,1fr) auto !important; }
 body.election-management-page .candidate-review-action-title > i { display:none !important; }
 body.election-management-page .candidate-file-copy small { font-size:11px !important; }
+
+.candidate-edit-dialog { width:min(580px, 94vw); max-height:90vh; overflow:auto; border:0; border-radius:18px; padding:28px; color:#172b4d; box-shadow:0 24px 80px #0004; }
+.candidate-edit-dialog::backdrop { background:#10243b99; }
+.candidate-edit-dialog .field { display:flex; flex-direction:column; gap:6px; margin:14px 0; }
+.candidate-edit-dialog input, .candidate-edit-dialog select, .candidate-edit-dialog textarea { padding:10px; border:1px solid #ccd5df; border-radius:8px; font:inherit; width:100%; box-sizing:border-box; }
+.candidate-edit-dialog [role="alert"] { color:#b42318; }

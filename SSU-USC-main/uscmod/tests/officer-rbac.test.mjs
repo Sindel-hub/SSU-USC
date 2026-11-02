@@ -83,19 +83,22 @@ test("complaint and election actions enforce function-level permissions", () => 
 
   const electionHtml = read("usc-admin/elections/elections.html");
   assert.match(electionHtml, /data-rbac-permission="elections\.view"/);
-  assert.match(electionHtml, /data-rbac-permission="elections\.review"/);
+  const electionJs = read("usc-admin/elections/js/elections.js");
+  assert.match(electionJs, /data-rbac-permission="elections\.review" data-preview-decision="approve"/);
+  assert.doesNotMatch(electionHtml, /id="candidateReviewCard" data-rbac-permission="elections\.review"/);
   assert.match(electionHtml, /data-rbac-permission="elections\.results"/);
 });
 
 
-test("officer dashboard keeps complaint/election summaries and recent records visible in the read-only model", () => {
+test("officer dashboard keeps complaint analytics, election access and recent records visible in the read-only model", () => {
   const html = read("usc-admin/overview/overview.html");
   const js = read("usc-admin/overview/js/overview.js");
-  assert.match(html, /data-overview-total-complaints/);
-  assert.match(html, /data-overview-complaint-student/);
-  assert.match(html, /data-overview-complaint-administrative/);
-  assert.match(html, /data-overview-complaint-crisis/);
-  assert.match(html, /data-overview-election-registered/);
+  assert.match(html, /data-summary="complaint"/);
+  assert.match(html, /href="\.\.\/elections\/elections\.html"/);
+  assert.match(html, /id="officerOverviewEvents"/);
+  assert.match(html, /id="officerOverviewPrograms"/);
+  assert.match(js, /renderOverviewChart\('complaint'/);
+  assert.match(js, /state\.complaintAnalytics =/);
   assert.doesNotMatch(js, /overviewHasPermission\("complaints\.view"\)/);
   assert.doesNotMatch(js, /Aggregate complaint statistics are available on the dashboard/);
   assert.match(js, /where\("classification","==","Student Level"\)/);

@@ -21,7 +21,14 @@ test("student login records one aggregate sign-in stat per student and upgrades 
   assert.match(login, /signInCount:\s*currentCount \+ 1/);
   assert.match(login, /currentCount === 0 \|\| !current\.firstSignInAt/);
   assert.match(login, /lastSignInAt:\s*serverTimestamp\(\)/);
-  assert.match(loginHtml, /js\/index\.js\?v=3/);
+  // Cache versions change when login features ship; verify the module contract
+  // rather than pinning this analytics test to an obsolete release identifier.
+  const loginModule = loginHtml.match(/<script\b[^>]*\btype="module"[^>]*\bsrc="(js\/index\.js\?[^\"]+)"[^>]*><\/script>/);
+  assert.ok(loginModule, "The login page must load its versioned ES module.");
+  const moduleUrl = new URL(loginModule[1], new URL("../index/index.html", import.meta.url));
+  assert.ok(moduleUrl.searchParams.get("v")?.trim(), "The login module must have a nonempty cache version.");
+  moduleUrl.search = "";
+  assert.ok(fs.existsSync(moduleUrl), "The referenced login module must exist.");
 });
 
 test("sign-in analytics rules keep student writes scoped, officer reads allowed, and admin legacy backfill constrained", () => {

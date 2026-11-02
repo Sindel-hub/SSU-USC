@@ -596,8 +596,9 @@ function browserHasOfficerPermission(profile = {}, role = "", permission = "") {
 
 async function requireBrowserPermission(permission, roles = ["officer", "admin"]) {
   const context = await requireBrowserRole(roles);
-  if (!browserHasOfficerPermission(context.profile, context.role, permission)) {
-    throw new Error(`Your assigned USC office does not have permission for ${permission.replaceAll(".", " ")}.`);
+  const alternatives = Array.isArray(permission) ? permission : [permission];
+  if (!alternatives.some((item) => browserHasOfficerPermission(context.profile, context.role, item))) {
+    throw new Error(`Your assigned USC office does not have permission for ${alternatives.map((item) => item.replaceAll(".", " ")).join(" or ")}.`);
   }
   return context;
 }
@@ -1090,6 +1091,56 @@ async function syncBrowserCandidateReviewCompletion(
   return complete;
 }
 
+async function browserRemoveCandidateApplication(data = {}) {
+  const { user } = await requireBrowserPermission("elections.review");
+  const context = await browserElectionContext();
+  const ref = doc(db,"elections",context.electionId,"applications",String(data.applicantUid));
+  await runTransaction(db, async (tx) => {
+    const snap = await tx.get(ref);
+    if (!snap.exists() || snap.data().status !== "Under Review") throw new Error("Only pending applications can be deleted. Use candidate management for approved candidates.");
+    tx.delete(ref);
+    tx.set(doc(collection(db,"audit_logs")), {actorUid:user.uid, action:"CANDIDATE_APPLICATION_REMOVE",target:ref.path,source:"browser-election-runtime",before:snap.data(),createdAt:serverTimestamp()});
+  });
+  await syncBrowserCandidateReviewCompletion(context.electionId, user.uid);
+  return {success:true};
+}
+
+// Candidate management is independent of the application review window.
+async function browserManageCandidate(data = {}, remove = false) {
+  const { user } = await requireBrowserPermission(remove ? ["elections.view", "elections.review"] : "elections.review");
+  const electionId = String(data.electionId || "");
+  const candidateId = String(data.candidateId || "");
+  if (!electionId || !candidateId || /[/]/.test(electionId + candidateId)) throw new Error("Select a valid election and candidate.");
+  const ref = doc(db, "elections", electionId, "candidates", candidateId);
+  const auditRef = doc(collection(db, "audit_logs"));
+  await runTransaction(db, async (tx) => {
+    const election = await tx.get(doc(db, "elections", electionId));
+    const snap = await tx.get(ref);
+    if (!election.exists() || !snap.exists()) throw new Error("Candidate or election no longer exists.");
+    const before = snap.data();
+    if (before.removed === true) throw new Error("This candidate has already been removed.");
+    const changes = {};
+    if (remove) changes.removed = true;
+    else {
+      for (const [key, limit] of Object.entries({fullName:120, position:80, department:160, partylist:100, platform:5000, campaignPhotoUrl:1000})) {
+        changes[key] = String(data.details?.[key] ?? before[key] ?? "").trim();
+        if (changes[key].length > limit) throw new Error(`${key} exceeds ${limit} characters.`);
+      }
+      if (!changes.fullName || !ELECTION_POSITIONS.includes(changes.position)) throw new Error("A name and valid position are required.");
+      if (changes.campaignPhotoUrl && !/^https:\/\//i.test(changes.campaignPhotoUrl) && changes.campaignPhotoUrl !== before.campaignPhotoUrl) throw new Error("Use an HTTPS photo URL.");
+      if (Date.now() >= toMillis(election.data().votingStart) && Date.now() < toMillis(election.data().votingEnd) && (changes.position !== before.position || changes.department !== (before.department || ""))) throw new Error("Position and department are fixed while voting is active to preserve ballot assignments.");
+    }
+    // Capture the original identity before the first management change during/after voting.
+    if (Date.now() >= toMillis(election.data().votingStart) && !before.resultIdentity) changes.resultIdentity = before;
+    changes.updatedAt = serverTimestamp();
+    changes.updatedByUid = user.uid;
+    changes.managementAuditId = auditRef.id;
+    tx.update(ref, changes);
+    tx.set(auditRef, {actorUid:user.uid, electionId, candidateId, action:remove ? "CANDIDATE_REMOVE" : "CANDIDATE_EDIT", target:ref.path, source:"browser-election-runtime", before, after:{...before,...changes}, createdAt:serverTimestamp()});
+  });
+  return { success:true };
+}
+
 async function browserReviewCandidate(data = {}) {
   const { user } = await requireBrowserPermission("elections.review");
 
@@ -1329,7 +1380,7 @@ async function browserSubmitBallot(data = {}) {
   const voterCollege = String(profile.college || "").trim();
   for (const position of ELECTION_POSITIONS) {
     const candidate = await getDoc(doc(db,"elections",context.electionId,"candidates",String(selections[position])));
-    if (!candidate.exists() || candidate.data().approved !== true || candidate.data().position !== position) throw new Error(`Invalid ${position} candidate selection.`);
+    if (!candidate.exists() || candidate.data().approved !== true || candidate.data().removed === true || candidate.data().position !== position) throw new Error(`Invalid ${position} candidate selection.`);
     if (position === "Department Representative" && String(candidate.data().department||"") !== voterCollege) throw new Error("You may only vote for your verified college representative.");
   }
   const receiptReference = `USC-${randomId("R").slice(-16).toUpperCase()}`;
@@ -1337,6 +1388,10 @@ async function browserSubmitBallot(data = {}) {
   const statusRef = doc(db,"elections",context.electionId,"voterStatus",user.uid);
   await runTransaction(db, async (tx) => {
     const statusSnap = await tx.get(statusRef);
+    for (const position of ELECTION_POSITIONS) {
+      const candidate = await tx.get(doc(db,"elections",context.electionId,"candidates",String(selections[position])));
+      if (!candidate.exists() || candidate.data().removed === true || candidate.data().approved !== true || candidate.data().position !== position) throw new Error("The candidate list changed. Refresh your ballot.");
+    }
     if (statusSnap.exists() && statusSnap.data().hasVoted === true) throw new Error("Your voter record already shows a submitted ballot.");
     tx.set(ballotRef,{ selections:Object.fromEntries(ELECTION_POSITIONS.map((p)=>[p,String(selections[p])])), schemaVersion:2, recordedAt:serverTimestamp() });
     tx.set(statusRef,{ hasVoted:true, studentId, college:voterCollege, votedAt:serverTimestamp(), receiptReference });
@@ -1363,9 +1418,11 @@ async function browserPublishResults() {
   if (!context.finalized) throw new Error("Finalize the election before publishing results.");
   if (Date.now() < Number(context.resultPublicationStart||0)) throw new Error("The result publication schedule has not started.");
   const [candidateSnap, ballotSnap, turnoutSnap] = await Promise.all([getDocs(collection(db,"elections",context.electionId,"candidates")), getDocs(collection(db,"elections",context.electionId,"ballots")), getDoc(doc(db,"elections",context.electionId,"turnout","public"))]);
+  const existingOfficial = await getDoc(doc(db,"elections",context.electionId,"results","official"));
+  if (existingOfficial.exists()) return { electionId:context.electionId, published:true, alreadyPublished:true };
   const counts = new Map();
   ballotSnap.forEach((d)=>Object.values(d.data().selections||{}).forEach((id)=>counts.set(String(id),(counts.get(String(id))||0)+1)));
-  const results = candidateSnap.docs.filter((d)=>d.data().approved===true).map((d)=>({ id:d.id, candidateId:d.id, fullName:d.data().fullName||"", position:d.data().position||"", department:d.data().department||"", partylist:d.data().partylist||"", campaignPhotoUrl:d.data().campaignPhotoUrl||"", votes:counts.get(d.id)||0 })).sort((a,b)=>String(a.position).localeCompare(String(b.position))||b.votes-a.votes);
+  const results = candidateSnap.docs.filter((d)=>d.data().approved===true).map((d)=>({ id:d.id, candidateId:d.id, fullName:(d.data().resultIdentity || d.data()).fullName||"", position:(d.data().resultIdentity || d.data()).position||"", department:(d.data().resultIdentity || d.data()).department||"", partylist:(d.data().resultIdentity || d.data()).partylist||"", campaignPhotoUrl:(d.data().resultIdentity || d.data()).campaignPhotoUrl||"", votes:counts.get(d.id)||0 })).sort((a,b)=>String(a.position).localeCompare(String(b.position))||b.votes-a.votes);
   const batch=writeBatch(db);
   batch.set(doc(db,"elections",context.electionId,"results","official"), { electionId:context.electionId, title:context.title||"USC Election", results, turnout:turnoutSnap.exists()?turnoutSnap.data():{ballotsCast:ballotSnap.size,eligibleVoters:context.eligibleVoterCount||0}, publishedAt:serverTimestamp(), publishedByUid:user.uid });
   batch.update(doc(db,"elections",context.electionId), { resultsPublished:true, lifecycle:"Results Published", resultsPublishedAt:serverTimestamp(), updatedAt:serverTimestamp() });
@@ -1399,6 +1456,9 @@ async function callBrowserMode(name, data) {
   if (name === "importVoterMasterlist") return browserImportRoster(data);
   if (name === "finalizeVoterRosterImport") return browserFinalizeRosterImport(data);
   if (name === "submitCandidateApplication") return browserSubmitCandidateApplication(data);
+  if (name === "removeCandidateApplication") return browserRemoveCandidateApplication(data);
+  if (name === "updateElectionCandidate") return browserManageCandidate(data);
+  if (name === "removeElectionCandidate") return browserManageCandidate(data, true);
   if (name === "reviewCandidateApplication") return browserReviewCandidate(data);
   if (name === "submitAnonymousBallot") return browserSubmitBallot(data);
   if (name === "finalizeElection") return browserFinalizeElection();
