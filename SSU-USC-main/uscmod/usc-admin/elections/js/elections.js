@@ -382,7 +382,7 @@ async function removeCandidateApplication(application) {
 }
 
 async function removeElectionCandidate(candidate) {
-  if (!canManageCandidates || candidate.removed) return;
+  if (!canManageCandidates || !candidate || candidate.removed) return;
   if (!confirm(`Remove ${candidate.fullName} from the visible candidate list and future ballots? Existing votes, audit history, and official results will be preserved.`)) return;
   try {
     await callSecure("removeElectionCandidate", {electionId, candidateId:candidate.id});
@@ -440,7 +440,8 @@ async function openCandidatePreview(uid) {
 
   const name = clean(application.fullName || "Candidate");
   const initials = name.split(/\s+/).filter(Boolean).slice(0, 2).map((part) => part[0]?.toUpperCase() || "").join("") || "C";
-  const status = clean(application.status || "Under Review");
+  const linkedCandidate = candidates.find((c) => c.id === application.candidateId);
+  const status = linkedCandidate?.removed === true ? "Removed" : clean(application.status || "Under Review");
   const statusKey = status.toLowerCase().replace(/\s+/g, "-");
   const canReview = Boolean(context?.reviewOpen && status.toLowerCase() === "under review");
   const documents = Array.isArray(application.supportingDocumentPaths) ? application.supportingDocumentPaths : [];
@@ -505,9 +506,11 @@ function renderApplications() {
   if (!els.candidateReviewList) return;
   if (!applications.length) { els.candidateReviewList.innerHTML = `<div class="review-empty-state">No candidate applications exist for this election ID.</div>`; return; }
   els.candidateReviewList.innerHTML = applications.map((a) => {
-    const normalizedStatus = clean(a.status || "Under Review").toLowerCase();
+    const linkedCandidate = candidates.find((c) => c.id === a.candidateId);
+    const removed = linkedCandidate?.removed === true;
+    const normalizedStatus = removed ? "removed" : clean(a.status || "Under Review").toLowerCase();
     const canReview = context?.reviewOpen && normalizedStatus === "under review";
-    const status = esc(a.status || "Under Review");
+    const status = removed ? "Removed" : esc(a.status || "Under Review");
     const statusKey = normalizedStatus.replace(/\s+/g, "-");
     const name = clean(a.fullName || "Candidate");
     const initials = name.split(/\s+/).filter(Boolean).slice(0, 2).map((part) => part[0]?.toUpperCase() || "").join("") || "C";
@@ -542,8 +545,9 @@ function renderApplications() {
           </div>
           <div class="candidate-review-actions">
             <button class="mini-btn ${canReview ? "primary" : "light"} candidate-preview-btn" type="button" data-candidate-preview="${esc(a.id)}"><i class="fa-regular fa-eye" aria-hidden="true"></i><span>${canReview ? "Review application" : "View application"}</span><i class="fa-solid fa-arrow-right candidate-preview-arrow" aria-hidden="true"></i></button>
+            ${canManageCandidates && normalizedStatus === "approved" && linkedCandidate ? `<button class="mini-btn danger" type="button" data-remove-approved-candidate="${esc(a.id)}" aria-label="Remove approved candidate ${esc(name)}"><i class="fa-solid fa-trash" aria-hidden="true"></i> Remove</button>` : ""}
           </div>
-          ${canReview
+          ${removed ? `<small class="candidate-review-lock-note"><i class="fa-solid fa-box-archive" aria-hidden="true"></i><span><strong>Candidate removed</strong> The approval record, existing votes, and official results are preserved.</span></small>` : canReview
             ? `<small class="candidate-review-lock-note is-ready"><i class="fa-solid fa-circle-check" aria-hidden="true"></i><span><strong>Ready for review</strong> Open the application to approve or reject it.</span></small>`
             : normalizedStatus === "approved"
               ? `<small class="candidate-review-lock-note status-approved"><i class="fa-solid fa-circle-check" aria-hidden="true"></i><span><strong>Application approved</strong> This candidate has already been approved.</span></small>`
@@ -553,6 +557,7 @@ function renderApplications() {
         </div>
       </article>`;
   }).join("");
+  els.candidateReviewList.querySelectorAll("[data-remove-approved-candidate]").forEach((btn) => btn.addEventListener("click", () => removeCandidateApplication(applications.find((a) => a.id === btn.dataset.removeApprovedCandidate))));
   els.candidateReviewList.querySelectorAll("[data-private-path]").forEach((btn) => btn.addEventListener("click", () => openPrivateFile(btn.dataset.privatePath).catch((e) => alert(e.message))));
   els.candidateReviewList.querySelectorAll("[data-candidate-photo-preview]").forEach((btn) => btn.addEventListener("click", () => openCandidatePhotoPreview(btn.dataset.candidatePhotoPreview).catch((e) => alert(e.message))));
   els.candidateReviewList.querySelectorAll("[data-candidate-preview]").forEach((btn) => btn.addEventListener("click", () => openCandidatePreview(btn.dataset.candidatePreview).catch((e) => alert(e.message))));

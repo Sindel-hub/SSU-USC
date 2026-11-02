@@ -104,3 +104,40 @@ test('publication includes removed candidates and uses their historical identity
   assert.equal(official.results[0].fullName,'Original');
   assert.equal(official.results[0].position,'President');
 });
+
+const officerSource=fs.readFileSync(new URL('../usc-admin/elections/js/elections.js',import.meta.url),'utf8');
+function officerHarness({authorized=true,removed=false,confirmRemoval=true}={}){
+  const calls=[];
+  const application={id:'applicant',candidateId:'candidate',status:'Approved',fullName:'Approved Student',position:'President'};
+  const candidate={id:'candidate',approved:true,removed,fullName:application.fullName};
+  const list={innerHTML:'',querySelectorAll:()=>[]};
+  const ctx=vm.createContext({applications:[application],candidates:[candidate],canManageCandidates:authorized,
+    context:{reviewOpen:false,lifecycle:'Archived'},electionId:'e',els:{candidateReviewList:list},
+    clean:v=>String(v??'').trim(),esc:v=>String(v??''),confirm:()=>confirmRemoval,
+    hydrateCandidatePreviewImages:async()=>{},closeCandidatePreview:()=>{},refreshAll:async()=>{},alert:()=>{},
+    callSecure:async(name,data)=>{calls.push({name,data});}
+  });
+  vm.runInContext(officerSource.slice(officerSource.indexOf('async function removeCandidateApplication('),officerSource.indexOf('function renderCandidateManagement(')),ctx);
+  vm.runInContext(officerSource.slice(officerSource.indexOf('function renderApplications('),officerSource.indexOf('function schedulePayload(')),ctx);
+  return {ctx,list,calls,application};
+}
+test('approved application cards expose Remove outside the review window',()=>{
+  const h=officerHarness();h.ctx.renderApplications();assert.match(h.list.innerHTML,/data-remove-approved-candidate="applicant"/);
+});
+test('read-only officers cannot remove approved candidates',async()=>{
+  const h=officerHarness({authorized:false});h.ctx.renderApplications();assert.doesNotMatch(h.list.innerHTML,/data-remove-approved-candidate/);
+  await h.ctx.removeCandidateApplication(h.application);assert.equal(h.calls.length,0);
+});
+test('approved removal uses the candidate soft-removal endpoint, never application deletion',async()=>{
+  const h=officerHarness();await h.ctx.removeCandidateApplication(h.application);
+  assert.equal(h.calls.length,1);assert.equal(h.calls[0].name,'removeElectionCandidate');assert.equal(h.calls[0].data.candidateId,'candidate');
+  assert.equal(h.application.status,'Approved');
+});
+test('cancelled confirmation preserves the approved candidate',async()=>{
+  const h=officerHarness({confirmRemoval:false});await h.ctx.removeCandidateApplication(h.application);assert.equal(h.calls.length,0);
+});
+test('removed approved candidates show historical status without a second Remove action',async()=>{
+  const h=officerHarness({removed:true});h.ctx.renderApplications();assert.match(h.list.innerHTML,/Candidate removed/);
+  assert.doesNotMatch(h.list.innerHTML,/data-remove-approved-candidate/);assert.equal(h.application.status,'Approved');
+  await h.ctx.removeCandidateApplication(h.application);assert.equal(h.calls.length,0);
+});
