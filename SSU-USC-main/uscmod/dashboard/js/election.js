@@ -31,6 +31,8 @@ let application = null;
 let candidates = [];
 let stopCandidateWatch = null;
 let watchedElection = "";
+let activeCandidateId = "";
+let candidateWatchGeneration = 0;
 let voterStatus = null;
 let turnout = { ballotsCast: 0, eligibleVoters: 0 };
 let currentView = "landing";
@@ -106,6 +108,57 @@ function candidatesFor(position) {
   return candidates.filter((c) => c.position === position && c.approved !== false && c.removed !== true && (position !== "Department Representative" || clean(c.department) === clean(student.college)));
 }
 
+function stopWatchingCandidates() {
+  candidateWatchGeneration++;
+  watchedElection = "";
+  stopCandidateWatch?.();
+  stopCandidateWatch = null;
+  candidates = [];
+  if (activeCandidateId) closeCandidateProfile();
+}
+
+function applyCandidateSnapshot(snap, render = true) {
+  candidates = snap.docs.map((d) => ({id:d.id,...d.data()}))
+    .filter((c) => c.approved !== false && c.removed !== true);
+  if (activeCandidateId && !candidates.some((c) => c.id === activeCandidateId)) closeCandidateProfile();
+  if (!render) return;
+  if (currentView === "candidates") renderCandidates();
+  else if (currentView === "ballot") {
+    const selected = [...document.querySelectorAll(".ballot-select")].map((el) => [el.dataset.position,el.value]);
+    renderBallot();
+    for (const el of document.querySelectorAll(".ballot-select")) {
+      const value = selected.find(([position]) => position === el.dataset.position)?.[1];
+      if ([...el.options].some((option) => option.value === value)) el.value = value;
+    }
+  }
+}
+
+async function watchElectionCandidates(electionId, readable) {
+  if (!electionId || !readable) { stopWatchingCandidates(); return; }
+  if (watchedElection === electionId) return;
+  stopWatchingCandidates();
+  watchedElection = electionId;
+  const generation = candidateWatchGeneration;
+  try {
+    // Load first, then subscribe: a slower initial read cannot overwrite a newer
+    // removal event. Subsequent polling leaves the live subscription in charge.
+    const snap = await getDocs(collection(db,"elections",electionId,"candidates"));
+    if (watchedElection !== electionId || candidateWatchGeneration !== generation) return;
+    applyCandidateSnapshot(snap, false);
+    stopCandidateWatch = onSnapshot(collection(db,"elections",electionId,"candidates"), (latest) => {
+      if (watchedElection === electionId && candidateWatchGeneration === generation) applyCandidateSnapshot(latest);
+    }, (error) => {
+      if (watchedElection !== electionId || candidateWatchGeneration !== generation) return;
+      stopWatchingCandidates();
+      if (["candidates","ballot"].includes(currentView)) failClosed(error);
+      console.warn("Candidate updates unavailable:", error);
+    });
+  } catch (error) {
+    if (watchedElection === electionId && candidateWatchGeneration === generation) stopWatchingCandidates();
+    throw error;
+  }
+}
+
 async function loadSecureState() {
   const liveProfileId = student?.uid || auth.currentUser?.uid || "";
   if (liveProfileId) {
@@ -119,6 +172,7 @@ async function loadSecureState() {
   context = await callSecure("getElectionContext");
   const electionId = context.electionId;
   if (!electionId) {
+    stopWatchingCandidates();
     application = null;
     voterStatus = null;
     candidates = [];
@@ -133,33 +187,7 @@ async function loadSecureState() {
   application = appSnap.exists() ? { id: appSnap.id, ...appSnap.data() } : null;
   voterStatus = statusSnap.exists() ? statusSnap.data() : null;
   turnout = turnoutSnap.exists() ? turnoutSnap.data() : { ballotsCast: 0, eligibleVoters: context.eligibleVoterCount || 0 };
-  if (context.candidateVisible && watchedElection !== electionId) {
-    stopCandidateWatch?.();
-    watchedElection = electionId;
-    stopCandidateWatch = onSnapshot(collection(db,"elections",electionId,"candidates"), (snap) => {
-      candidates = snap.docs.map((d) => ({id:d.id,...d.data()})).filter((c) => c.approved !== false && !c.removed);
-      if (currentView === "candidates") renderCandidates();
-      else if (currentView === "ballot") {
-        const selected = [...document.querySelectorAll(".ballot-select")].map((el) => [el.dataset.position,el.value]);
-        renderBallot();
-        for (const el of document.querySelectorAll(".ballot-select")) {
-          const value = selected.find(([position]) => position === el.dataset.position)?.[1];
-          if ([...el.options].some((option) => option.value === value)) el.value = value;
-        }
-      }
-    }, (error) => { console.warn("Candidate updates unavailable:", error); });
-  }
-  if (!context.candidateVisible) {
-    stopCandidateWatch?.();
-    stopCandidateWatch = null;
-    watchedElection = "";
-  }
-  if (context.candidateVisible) {
-    const snap = await getDocs(collection(db, "elections", electionId, "candidates"));
-    candidates = snap.docs.map((d) => ({ id: d.id, ...d.data() })).filter((c) => c.approved !== false && c.removed !== true);
-  } else {
-    candidates = [];
-  }
+  await watchElectionCandidates(electionId, context.candidateVisible || context.votingOpen);
 }
 
 function timeline() {
@@ -665,6 +693,7 @@ function activateCandidateAccordion(grid, activeCard, { lock = false } = {}) {
 
 
 function closeCandidateProfile() {
+  activeCandidateId = "";
   document.querySelector(".candidate-profile-overlay")?.remove();
 
   // Reset any previously opened candidate flashcard state.
@@ -691,6 +720,7 @@ function showCandidateProfile(candidateId) {
   const statement = clean(candidate.statement || "");
 
   closeCandidateProfile();
+  activeCandidateId = candidate.id;
 
   const overlay = document.createElement("div");
   overlay.className = "candidate-profile-overlay";
