@@ -95,14 +95,15 @@ export function createInstitutionalAccountService(deps) {
       await deps.commit(writes);
       return { ok: true, email, message: 'Institutional email verified. Use your Student ID or this email with your existing password.', role: profile.data.role };
     },
-    async resetPassword(user, uid) {
+    async resetPassword(user, uid, requestedPassword) {
       const timestamp = now(); recent(user, timestamp);
       const admin = await deps.get(`users/${user.uid}`);
       if (user.role !== 'admin' || admin?.data?.role !== 'admin' || admin.data.accountStatus !== 'approved' || admin.data.isActive === false) throw new Error('Trusted System Administrator access is required.');
       if (!uid || uid === user.uid || !/^[A-Za-z0-9:_-]{1,128}$/.test(uid)) throw new Error('Select a student or officer account.');
       const target = await deps.get(`users/${uid}`), auth = await deps.authUser(uid);
       if (!target || !['student', 'officer'].includes(target.data.role) || !auth || auth.disabled) throw new Error('A valid student or officer account is required.');
-      const temporaryPassword = `Aa1!${deps.randomToken().slice(0,20)}`;
+      if (requestedPassword !== undefined && (typeof requestedPassword !== 'string' || !/^(?=.{10,64}$)(?=.*[a-z])(?=.*[A-Z])(?=.*[0-9])(?=.*[^A-Za-z0-9\s])\S+$/.test(requestedPassword))) throw new Error('Use 10–64 characters with uppercase, lowercase, number and special character, without spaces.');
+      const temporaryPassword = requestedPassword === undefined ? `Aa1!${deps.randomToken().slice(0,20)}` : requestedPassword;
       await deps.resetAuthPassword(uid, temporaryPassword, timestamp);
       let warning = '';
       try {

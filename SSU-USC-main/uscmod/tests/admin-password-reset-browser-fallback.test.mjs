@@ -9,7 +9,7 @@ const firebaseJson = JSON.parse(fs.readFileSync(new URL('../firebase.json', impo
 test('browser-only runtime falls back to Firebase reset email instead of configuration error', () => {
   assert.match(security, /sendPasswordResetEmail/);
   assert.match(security, /browserSendAdminPasswordResetEmail/);
-  assert.match(security, /name === "adminResetUserPassword" && globalThis\.USC_FREE_SPARK_MODE === true/);
+  assert.match(security, /name === "adminResetUserPassword" \|\| name === "adminSetUserPassword"/);
   assert.match(security, /emailResetSent:\s*true/);
 });
 

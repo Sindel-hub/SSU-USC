@@ -378,6 +378,8 @@ function fillEditor(user) {
 }
 
 function openUser(userId) {
+  document.getElementById("adminNewPassword").value = "";
+  document.getElementById("adminConfirmPassword").value = "";
   selectedUserId = userId;
   fillEditor(getSelectedUser());
   renderTable();
@@ -444,6 +446,13 @@ async function resetSelectedUserPassword() {
   if (isProtectedAdmin(user) || !['student', 'officer'].includes(user.role)) {
     return alert('Only student and officer passwords can be reset from this directory.');
   }
+  const passwordInput = document.getElementById('adminNewPassword');
+  const confirmationInput = document.getElementById('adminConfirmPassword');
+  const newPassword = passwordInput.value;
+  if (newPassword || confirmationInput.value) {
+    if (!/^(?=.{10,64}$)(?=.*[a-z])(?=.*[A-Z])(?=.*[0-9])(?=.*[^A-Za-z0-9\s])\S+$/.test(newPassword)) return alert('Use 10–64 characters with uppercase, lowercase, number and special character, without spaces.');
+    if (newPassword !== confirmationInput.value) return alert('The new passwords do not match.');
+  }
   const display = user.fullName || user.studentId || user.email || 'this user';
   if (!window.confirm(`Issue a new temporary password for ${display}? The previous password will stop working and existing sessions will be revoked.`)) return;
 
@@ -453,10 +462,14 @@ async function resetSelectedUserPassword() {
     button.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Resetting...';
   }
   try {
-    const result = await callSecure('adminResetUserPassword', {
+    const resetAction = newPassword ? 'adminSetUserPassword' : 'adminResetUserPassword';
+    const result = await callSecure(resetAction, {
       uid: user.uid,
+      ...(newPassword ? { newPassword } : {}),
       reason: dom.roleChangeNote?.value.trim() || 'Password reset requested by account holder.'
     });
+    passwordInput.value = '';
+    confirmationInput.value = '';
     if (result?.emailResetSent === true) {
       const email = result.institutionalEmail || user.institutionalEmail || user.email || 'the registered email';
       alert(`Password recovery link sent to ${email}. The user can open that email and choose a new password.`);
@@ -466,7 +479,7 @@ async function resetSelectedUserPassword() {
       setFeedback(`Issued a new temporary password for ${display}.`, 'success');
     }
   } catch (error) {
-    console.error('Admin password reset failed:', error);
+    console.error('Admin password reset failed:', error?.code || 'unknown');
     alert(error.message || 'Unable to reset this password.');
     setFeedback('Password reset failed.', 'error');
   } finally {
