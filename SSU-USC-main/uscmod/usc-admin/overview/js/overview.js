@@ -14,6 +14,7 @@ const state = {
   feeds: { events: false, programs: false, registrations: false, complaints: false },
   programs: [],
   announcements: [],
+  announcementIndex: 0,
   complaints: [],
   eventRegistrations: [],
   programRegistrations: [],
@@ -209,12 +210,16 @@ function syncDashboardLayout() {
 function renderBulletin() {
   const host = document.getElementById("officerBulletinPreview");
   if (!host) return;
-  const item = state.announcements[0];
+  state.announcementIndex = state.announcements.length
+    ? ((Number(state.announcementIndex) || 0) + state.announcements.length) % state.announcements.length
+    : 0;
+  const item = state.announcements[state.announcementIndex];
   if (!item) {
     host.innerHTML = '<div class="reference-empty">No announcement posted yet.</div>';
     syncDashboardLayout(false);
     return;
   }
+  const focusedControl = document.activeElement?.closest?.('[data-officer-bulletin-control]')?.dataset.officerBulletinControl;
   const image = announcementImage(item);
   host.innerHTML = `
     <div class="officer-bulletin-media">
@@ -223,6 +228,13 @@ function renderBulletin() {
         <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="8" cy="8" r="2"/><path d="m3 17 5-5 4 4 4-6 5 7"/></svg>
         <span>${image ? 'Loading image…' : 'No image attached'}</span>
       </div>
+      ${state.announcements.length > 1 ? `
+        <button class="officer-bulletin-nav prev" type="button" data-officer-bulletin-step="-1" data-officer-bulletin-control="prev" aria-label="Previous announcement"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m14 6-6 6 6 6"/></svg></button>
+        <button class="officer-bulletin-nav next" type="button" data-officer-bulletin-step="1" data-officer-bulletin-control="next" aria-label="Next announcement"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m10 6 6 6-6 6"/></svg></button>
+        <div class="officer-bulletin-dots" aria-label="Choose announcement">${state.announcements.map((_, index) => `
+          <button type="button" data-officer-bulletin-index="${index}" data-officer-bulletin-control="slide-${index}" aria-label="Announcement ${index + 1} of ${state.announcements.length}"${index === state.announcementIndex ? ' aria-current="true"' : ''}></button>
+        `).join('')}</div>
+      ` : ''}
     </div>
     <div class="bulletin-copy">
       <time>${escapeHtml(formatDate(item.createdAt || item.publishedAt || item.createdAtMs || item.date))}</time>
@@ -230,6 +242,7 @@ function renderBulletin() {
       <p>${escapeHtml(announcementExcerpt(item.content || item.description || 'Official USC bulletin update.'))}</p>
       <a href="../announcements/announcements.html">Read more</a>
     </div>`;
+  if (focusedControl) host.querySelector(`[data-officer-bulletin-control="${focusedControl}"]`)?.focus({ preventScroll: true });
   syncDashboardLayout(true);
   if (!image) return;
   const imageElement = host.querySelector('.officer-bulletin-media img');
@@ -251,7 +264,66 @@ function renderBulletin() {
   }).catch(showFailure);
 }
 
-function bindAnnouncements(){ onSnapshot(collection(db,"announcements"), snap => { state.announcements=snap.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>(toDate(b.createdAt||b.publishedAt)?.getTime()||0)-(toDate(a.createdAt||a.publishedAt)?.getTime()||0)); setText("[data-overview-announcement-count]",state.announcements.length); renderBulletin(); },()=>renderBulletin()); }
+function selectOfficerAnnouncement(index) {
+  const total = state.announcements.length;
+  if (total < 2) return;
+  state.announcementIndex = ((index % total) + total) % total;
+  renderBulletin();
+}
+
+function bindOfficerBulletinCarousel() {
+  const host = document.getElementById('officerBulletinPreview');
+  if (!host) return;
+  let timer = 0;
+  let touchStart = null;
+  const restart = () => {
+    window.clearInterval(timer);
+    timer = window.setInterval(() => {
+      if (document.hidden || host.matches(':hover, :focus-within') || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+      selectOfficerAnnouncement(state.announcementIndex + 1);
+    }, 6500);
+  };
+  host.addEventListener('click', event => {
+    const button = event.target.closest('[data-officer-bulletin-control]');
+    if (!button) return;
+    selectOfficerAnnouncement(button.dataset.officerBulletinIndex !== undefined
+      ? Number(button.dataset.officerBulletinIndex)
+      : state.announcementIndex + Number(button.dataset.officerBulletinStep));
+    restart();
+  });
+  host.addEventListener('keydown', event => {
+    if (event.altKey || event.ctrlKey || event.metaKey || !['ArrowLeft', 'ArrowRight'].includes(event.key)) return;
+    event.preventDefault();
+    selectOfficerAnnouncement(state.announcementIndex + (event.key === 'ArrowRight' ? 1 : -1));
+    if (!host.contains(document.activeElement)) host.focus({ preventScroll: true });
+    restart();
+  });
+  host.addEventListener('touchstart', event => {
+    const touch = event.changedTouches[0];
+    touchStart = touch ? { x: touch.clientX, y: touch.clientY } : null;
+  }, { passive: true });
+  host.addEventListener('touchend', event => {
+    const touch = event.changedTouches[0];
+    if (!touch || !touchStart) return;
+    const distance = touch.clientX - touchStart.x;
+    const vertical = touch.clientY - touchStart.y;
+    touchStart = null;
+    if (Math.abs(distance) < 45 || Math.abs(vertical) > Math.abs(distance)) return;
+    selectOfficerAnnouncement(state.announcementIndex + (distance < 0 ? 1 : -1));
+    restart();
+  }, { passive: true });
+  window.addEventListener('pagehide', () => window.clearInterval(timer));
+  window.addEventListener('pageshow', restart);
+  restart();
+}
+
+function bindAnnouncements(){ onSnapshot(collection(db,"announcements"), snap => {
+  const currentId = state.announcements[state.announcementIndex]?.id;
+  state.announcements=snap.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>(toDate(b.createdAt||b.publishedAt||b.createdAtMs||b.date)?.getTime()||0)-(toDate(a.createdAt||a.publishedAt||a.createdAtMs||a.date)?.getTime()||0));
+  state.announcementIndex = Math.max(0, state.announcements.findIndex(item => item.id === currentId));
+  setText("[data-overview-announcement-count]",state.announcements.length);
+  renderBulletin();
+},()=>renderBulletin()); }
 
 let calendarOffset = 0;
 function renderCalendar(){
@@ -500,6 +572,7 @@ bindProfileDrawer();
 bindComplaintSummary();
 
 
+bindOfficerBulletinCarousel();
 bindAnnouncements();
 bindEvents();
 bindPrograms();
