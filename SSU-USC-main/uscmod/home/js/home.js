@@ -457,7 +457,9 @@ function getEventsForVisibleMonth() {
 function syncHomeCalendarSelection() {
   if (!homeEventState.events.length) {
     homeEventState.selectedDateKey = "";
-    homeEventState.currentMonth = new Date(getToday().getFullYear(), getToday().getMonth(), 1);
+    if (!homeEventState.currentMonth) {
+      homeEventState.currentMonth = new Date(getToday().getFullYear(), getToday().getMonth(), 1);
+    }
     return;
   }
 
@@ -582,11 +584,10 @@ function renderHomeCalendar() {
     `);
   }
 
-  const remainder = cells.length % 7;
-  if (remainder !== 0) {
-    for (let index = remainder; index < 7; index += 1) {
-      cells.push('<button class="day-cell muted empty" type="button" disabled aria-hidden="true"></button>');
-    }
+  // Reserve six complete weeks plus the weekday header for every month.
+  // Empty cells stay disabled and never represent selectable dates.
+  while (cells.length < 49) {
+    cells.push('<button class="day-cell muted empty" type="button" disabled aria-hidden="true"></button>');
   }
 
   dom.calendarGrid.innerHTML = cells.join("");
