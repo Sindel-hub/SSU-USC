@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>SSU University Student Council - Home</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="./css/home.css?v=21">
+    <link rel="stylesheet" href="./css/home.css?v=22-headlines">
   <script src="../shared/app-config.js?v=7"></script>
 <link rel="stylesheet" href="../shared/announcement-text.css?v=1" />
 </head>
@@ -173,6 +173,11 @@
         </div>
     </footer>
 
-    <script type="module" src="./js/home.js?v=15&amp;paragraphs=1"></script>
+    <script type="module" src="./js/home.js?v=16-headlines"></script>
+    <dialog id="landingAnnouncementDialog" aria-labelledby="landingAnnouncementTitle">
+        <div class="landing-announcement-dialog-head"><span>USC ANNOUNCEMENT</span><button id="closeLandingAnnouncement" type="button" aria-label="Close announcement" autofocus>×</button></div>
+        <div id="landingAnnouncementMedia" hidden></div>
+        <div class="landing-announcement-dialog-copy"><p id="landingAnnouncementMeta"></p><h2 id="landingAnnouncementTitle"></h2><div id="landingAnnouncementBody"></div></div>
+    </dialog>
 </body>
 </html>

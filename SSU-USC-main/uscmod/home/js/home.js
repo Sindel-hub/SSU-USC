@@ -171,102 +171,72 @@ function buildSlide(announcement, role = "active") {
     announcement.imageUrl
   );
 
-  let content = "";
-
-  if (imageUrl) {
-
-    /*
-     * Browser-stored media uses firestore-media://
-     * which is NOT a browser-native image URL.
-     *
-     * Keep it in data-media-ref so hydrateMediaImages()
-     * can reconstruct the actual image.
-     */
-    const imageMarkup =
-      imageUrl.startsWith("firestore-media://")
-        ? `
-          <img
-            data-media-ref="${escapeHtml(imageUrl)}"
-            alt="${escapeHtml(title)}"
-          >
-        `
-        : `
-          <img
-            src="${escapeHtml(imageUrl)}"
-            alt="${escapeHtml(title)}"
-          >
-        `;
-
-    const announcementDescription = safeText(
-      announcement.content || announcement.description || announcement.details,
-      "Official USC announcement."
-    );
-
-    const announcementDate = formatDate(
-      announcement.createdAt || announcement.createdAtMs || announcement.updatedAt || announcement.date
-    );
-
-    content =       `
+  const announcementDate = formatDate(
+    announcement.createdAt || announcement.createdAtMs || announcement.updatedAt || announcement.date
+  );
+  const imageMarkup = imageUrl
+    ? (imageUrl.startsWith("firestore-media://")
+      ? `<img data-media-ref="${escapeHtml(imageUrl)}" alt="${escapeHtml(title)}">`
+      : `<img src="${escapeHtml(imageUrl)}" alt="${escapeHtml(title)}">`)
+    : `<div class="announcement-headline-placeholder"><img src="assets/USClogo.webp" alt=""><span>UNIVERSITY STUDENT COUNCIL</span></div>`;
+  return `
+    <article class="preview-slide ${role}" role="button" tabindex="${role === "active" ? "0" : "-1"}"
+      aria-hidden="${role !== "active"}" aria-haspopup="dialog"
+      data-open-landing-announcement="${escapeHtml(announcement.id || "")}"
+      aria-label="Read announcement: ${escapeHtml(title)}">
       <div class="announcement-poster announcement-poster-with-copy">
-        <div class="announcement-poster-media">
-          ${imageMarkup}
-        </div>
+        <div class="announcement-poster-media">${imageMarkup}</div>
         <div class="announcement-poster-copy">
           <div class="announcement-copy-meta">
-            <span class="announcement-copy-badge">Announcement</span>
+            <span class="announcement-copy-badge">${escapeHtml(safeText(announcement.category, "Announcement"))}</span>
             <span class="announcement-copy-date">${escapeHtml(announcementDate)}</span>
           </div>
-          <h3>${escapeHtml(truncateText(title, 80))}</h3>
-          <p>${escapeHtml(truncateText(announcementDescription, 180))}</p>
+          <h3 title="${escapeHtml(title)}">${escapeHtml(title)}</h3>
         </div>
       </div>
-    `;
-
-  } else {
-
-    content = `
-      <div class="announcement-fallback">
-
-        <div class="announcement-fallback-seals">
-
-          <img
-            src="assets/SSUlogo.webp"
-            alt=""
-            onerror="this.style.display='none'"
-          >
-
-          <img
-            src="assets/USClogo.webp"
-            alt=""
-            onerror="this.style.display='none'"
-          >
-
-        </div>
-
-        <div class="fallback-label">
-          ANNOUNCEMENT
-        </div>
-
-        <h3>
-          ${escapeHtml(
-            truncateText(title, 72)
-          )}
-        </h3>
-
-        <p>${escapeHtml(truncateText(announcement.content, 150))}</p>
-
-      </div>
-    `;
-  }
-
-  return `
-    <article
-      class="preview-slide ${role}"
-      aria-label="${escapeHtml(title)}"
-    >
-      ${content}
     </article>
   `;
+}
+
+function openLandingAnnouncement(id) {
+  const announcement = previewAnnouncements.find(item => item.id === id);
+  const dialog = document.getElementById("landingAnnouncementDialog");
+  if (!announcement || !dialog || dialog.open) return;
+  document.getElementById("landingAnnouncementTitle").textContent = safeText(announcement.title, "USC Announcement");
+  document.getElementById("landingAnnouncementMeta").textContent =
+    `${safeText(announcement.category, "Announcement")} · ${formatDate(announcement.createdAt || announcement.createdAtMs || announcement.updatedAt || announcement.date)}`;
+  document.getElementById("landingAnnouncementBody").textContent = String(announcement.content ?? announcement.description ?? announcement.details ?? "");
+  const media = document.getElementById("landingAnnouncementMedia");
+  media.replaceChildren();
+  const sourceImage = dom.slidesHost.querySelector(".preview-slide.active .announcement-poster-media > img");
+  if (sourceImage) media.append(sourceImage.cloneNode(true));
+  media.hidden = !sourceImage;
+  stopAutoSlide();
+  dialog.showModal();
+  hydrateMediaImages(media).catch(error => console.warn("Unable to load announcement image:", error));
+}
+
+function bindLandingAnnouncementDetails() {
+  const dialog = document.getElementById("landingAnnouncementDialog");
+  if (!dialog) return;
+  dom.slidesHost.addEventListener("click", event => {
+    const card = event.target.closest(".preview-slide.active[data-open-landing-announcement]");
+    if (card) openLandingAnnouncement(card.dataset.openLandingAnnouncement);
+  });
+  dom.slidesHost.addEventListener("keydown", event => {
+    if (!["Enter", " "].includes(event.key)) return;
+    const card = event.target.closest(".preview-slide.active[data-open-landing-announcement]");
+    if (card) { event.preventDefault(); openLandingAnnouncement(card.dataset.openLandingAnnouncement); }
+  });
+  document.getElementById("closeLandingAnnouncement").addEventListener("click", () => dialog.close());
+  dialog.addEventListener("click", event => {
+    const rect = dialog.getBoundingClientRect();
+    if (event.target === dialog && (event.clientX < rect.left || event.clientX > rect.right || event.clientY < rect.top || event.clientY > rect.bottom)) dialog.close();
+  });
+  dialog.addEventListener("close", () => {
+    dom.slidesHost.querySelector(".preview-slide.active")?.focus({ preventScroll: true });
+    restartAutoSlide();
+  });
 }
 
 function buildFallbackSlide() {
@@ -405,7 +375,7 @@ function stopAutoSlide() {
 
 function restartAutoSlide() {
   stopAutoSlide();
-  if (previewAnnouncements.length <= 1) return;
+  if (previewAnnouncements.length <= 1 || document.getElementById("landingAnnouncementDialog")?.open) return;
   previewTimer = window.setInterval(() => changePreviewSlide(1), AUTO_SLIDE_MS);
 }
 
@@ -1045,6 +1015,7 @@ function initLandingAnnouncements() {
     return;
   }
 
+  bindLandingAnnouncementDetails();
   bindDotNavigation();
   bindScrollButton();
   bindSectionStepNavigation();
