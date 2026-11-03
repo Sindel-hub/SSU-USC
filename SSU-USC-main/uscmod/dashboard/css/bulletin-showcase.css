@@ -52,7 +52,7 @@ body.student-app-shell .bulletin-page-main .bulletin-page-feed {
 body.student-app-shell .bulletin-page-main .bulletin-page-feed::before { display: none; }
 body.student-app-shell .bulletin-page-main .bulletin-page-card {
   box-sizing: border-box;
-  height: 500px;
+  height: 540px !important;
   max-height: none;
   min-height: 0;
   border-radius: 16px;
@@ -66,8 +66,8 @@ body.student-app-shell .bulletin-page-main .bulletin-page-card:hover {
   box-shadow: 0 12px 30px #215b7d20;
 }
 body.student-app-shell .bulletin-page-main .bulletin-page-image {
-  flex: 0 0 48%;
-  height: 48%;
+  flex: 0 0 52%;
+  height: 52%;
   background: linear-gradient(145deg, #ccebf7, #edf8fc);
   border-bottom: 1px solid #e5eff4;
 }
@@ -81,11 +81,11 @@ body.student-app-shell .bulletin-page-main .bulletin-page-body {
 }
 body.student-app-shell .bulletin-page-main .bulletin-page-date { margin: 0; color: #738395; font-size: 12px; line-height: 1.5; }
 body.student-app-shell .bulletin-page-main .bulletin-page-body h2 {
-  min-height: 2.8em;
+  min-height: 2.7em;
   margin: 0;
   color: #1c344b;
-  font-size: 18px;
-  line-height: 1.4;
+  font-size: 20px;
+  line-height: 1.35;
   font-weight: 700;
   letter-spacing: -.25px;
   overflow-wrap: anywhere;

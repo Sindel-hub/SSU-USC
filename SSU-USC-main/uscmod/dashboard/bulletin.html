@@ -13,8 +13,9 @@
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
-<link rel="stylesheet" href="css/bulletin-showcase.css?v=1" />
+<link rel="stylesheet" href="css/bulletin-showcase.css?v=2-larger-headlines" />
 <link rel="stylesheet" href="../shared/announcement-text.css?v=1" />
+<link rel="stylesheet" href="css/announcement-reader.css?v=2-scroll" />
 </head>
 <body class="student-app-shell">
 <header class="dashboard-header">
@@ -63,7 +64,21 @@
 </div>
 </div>
 </footer>
-<div class="announcement-modal hidden" id="bulletinModal" role="dialog" aria-modal="true" aria-labelledby="bulletinModalTitle"><div class="announcement-modal-backdrop" data-close=""></div><div class="announcement-modal-dialog"><button class="modal-close" data-close="" type="button" aria-label="Close announcement">×</button><img alt="Announcement" class="modal-image hidden" id="bulletinModalImage"/><div class="modal-meta"><span class="badge live" id="bulletinModalCategory">Official Notice</span><span id="bulletinModalDate">—</span></div><h3 id="bulletinModalTitle"></h3><p class="modal-audience" id="bulletinModalAudience"></p><p id="bulletinModalContent"></p></div></div>
+<div class="announcement-modal hidden" id="bulletinModal" role="dialog" aria-modal="true" aria-labelledby="bulletinModalTitle">
+<div class="announcement-modal-backdrop" data-close=""></div>
+<article class="announcement-modal-dialog announcement-reader">
+  <header class="announcement-reader-toolbar"><div class="announcement-reader-label"><span class="announcement-reader-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5h16v14H4zM8 9h8M8 13h8M8 17h4"/></svg></span><span>Bulletin Board</span></div><button class="modal-close" data-close="" type="button" aria-label="Close announcement">×</button></header>
+  <div class="announcement-reader-scroll">
+  <div class="announcement-reader-media"><img alt="Announcement image" class="modal-image hidden" id="bulletinModalImage"/></div>
+  <div class="announcement-reader-copy">
+    <div class="modal-meta"><span class="badge live" id="bulletinModalCategory">Official Notice</span><span id="bulletinModalDate">—</span></div>
+    <h3 id="bulletinModalTitle"></h3>
+    <p class="modal-audience" id="bulletinModalAudience"></p>
+    <p class="announcement-reader-content" id="bulletinModalContent"></p>
+  </div>
+  </div>
+</article>
+</div>
 <script src="js/notifications.js?v=panel-polish-1" type="module"></script><script src="js/bulletin.js?v=2-glass-showcase-1&amp;paragraphs=1" type="module"></script>
 <script type="module" src="../shared/profile-manager.js?v=supabase-email-1"></script>
 <script src="../shared/student-sidebar-navigation.js"></script>
