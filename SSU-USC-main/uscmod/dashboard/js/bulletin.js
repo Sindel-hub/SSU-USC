@@ -13,6 +13,11 @@ const SESSION_KEY = "activeSession";
 
 let announcements = [];
 let carouselIndex = 0;
+let carouselPhysicalIndex = 0;
+let carouselCloneCount = 0;
+let carouselAnimating = false;
+let carouselTransitionTimer = 0;
+let carouselQueuedDirection = 0;
 let touchStartX = 0;
 let touchStartY = 0;
 let modalReturnFocus = null;
@@ -81,7 +86,7 @@ function visibleCards() {
 }
 
 function maxCarouselIndex() {
-  return Math.max(0, announcements.length - visibleCards());
+  return announcements.length > visibleCards() ? announcements.length - 1 : 0;
 }
 
 function renderDots() {
@@ -102,51 +107,101 @@ function renderDots() {
   });
 }
 
-function applyCarouselPosition({ animate = true } = {}) {
+function stopCarouselTransition() {
+  window.clearTimeout(carouselTransitionTimer);
+  carouselAnimating = false;
+  carouselQueuedDirection = 0;
+}
+
+function updateCarouselVisibility() {
+  feed.querySelectorAll('.bulletin-page-card').forEach((card, index) => {
+    const offscreen = index < carouselPhysicalIndex || index >= carouselPhysicalIndex + visibleCards();
+    card.inert = offscreen;
+    card.setAttribute('aria-hidden', String(offscreen));
+  });
+}
+
+function positionCarouselTrack({ animate = false } = {}) {
+  const card = feed.querySelector('.bulletin-page-card');
+  const style = getComputedStyle(feed);
+  const gap = Number.parseFloat(style.columnGap || style.gap || '0') || 0;
+  const step = card ? card.getBoundingClientRect().width + gap : 0;
+  feed.style.transition = animate ? '' : 'none';
+  feed.style.transform = `translate3d(${-carouselPhysicalIndex * step}px, 0, 0)`;
+  if (!animate) {
+    // Commit the identical boundary image before restoring transitions.
+    void feed.offsetWidth;
+    feed.style.transition = '';
+  }
+}
+
+function finishCarouselTransition() {
+  if (!carouselAnimating) return;
+  carouselAnimating = false;
+  window.clearTimeout(carouselTransitionTimer);
+  // Boundary copies let the last/first transition keep its direction. Rebase
+  // invisibly to the equivalent original cards once that single step finishes.
+  const canonicalIndex = carouselCloneCount + carouselIndex;
+  if (carouselPhysicalIndex !== canonicalIndex) {
+    carouselPhysicalIndex = canonicalIndex;
+    positionCarouselTrack();
+    updateCarouselVisibility();
+  }
+  const queuedDirection = carouselQueuedDirection;
+  carouselQueuedDirection = 0;
+  if (queuedDirection) moveCarousel(queuedDirection);
+}
+
+function applyCarouselPosition({ animate = true, physicalIndex } = {}) {
   if (!feed) return;
 
+  const cloneCount = announcements.length > visibleCards() ? visibleCards() : 0;
+  if (cloneCount !== carouselCloneCount) {
+    renderAnnouncements();
+    return;
+  }
+  stopCarouselTransition();
   const maxIndex = maxCarouselIndex();
   if (maxIndex <= 0) carouselIndex = 0;
   else if (carouselIndex < 0) carouselIndex = maxIndex;
   else if (carouselIndex > maxIndex) carouselIndex = 0;
-  const card = feed.querySelector(".bulletin-page-card");
-  const style = getComputedStyle(feed);
-  const gap = Number.parseFloat(style.columnGap || style.gap || "0") || 0;
-  const step = card ? card.getBoundingClientRect().width + gap : 0;
-
-  if (!animate) feed.style.transition = "none";
-  feed.style.transform = `translate3d(${-carouselIndex * step}px, 0, 0)`;
-  if (!animate) {
-    requestAnimationFrame(() => {
-      feed.style.transition = "";
-    });
-  }
+  carouselPhysicalIndex = physicalIndex ?? (carouselCloneCount + carouselIndex);
+  positionCarouselTrack({ animate });
 
   const isStatic = announcements.length <= visibleCards();
   carousel?.classList.toggle("is-static", isStatic);
   carousel?.classList.toggle("is-single", announcements.length === 1);
   for (const button of [prevButton, nextButton]) if (button) { button.disabled = isStatic; button.hidden = isStatic; }
-  feed.querySelectorAll(".bulletin-page-card").forEach((card, index) => {
-    const offscreen = index < carouselIndex || index >= carouselIndex + visibleCards();
-    card.inert = offscreen;
-    card.setAttribute("aria-hidden", String(offscreen));
-  });
+  updateCarouselVisibility();
   const position = document.getElementById("bulletinPosition");
-  if (position) position.textContent = announcements.length ? `Announcements ${carouselIndex + 1} to ${Math.min(carouselIndex + visibleCards(), announcements.length)} of ${announcements.length}` : "No announcements";
+  const shown = Array.from({ length: Math.min(visibleCards(), announcements.length) }, (_, index) => (carouselIndex + index) % announcements.length + 1);
+  if (position) position.textContent = announcements.length ? `Showing announcements ${shown.join(', ')} of ${announcements.length}` : "No announcements";
   renderDots();
+  if (animate) {
+    carouselAnimating = true;
+    const duration = getComputedStyle(feed).transitionDuration.split(',').reduce((max, value) => Math.max(max, Number.parseFloat(value) * (value.trim().endsWith('ms') ? 1 : 1000) || 0), 0);
+    if (duration > 0) carouselTransitionTimer = window.setTimeout(finishCarouselTransition, duration + 80);
+    else finishCarouselTransition();
+  }
 }
 
 function moveCarousel(direction) {
   const maxIndex = maxCarouselIndex();
   if (maxIndex <= 0) return;
+  if (carouselAnimating) {
+    carouselQueuedDirection = direction > 0 ? 1 : -1;
+    return;
+  }
   carouselIndex = direction > 0
     ? (carouselIndex >= maxIndex ? 0 : carouselIndex + 1)
     : (carouselIndex <= 0 ? maxIndex : carouselIndex - 1);
-  applyCarouselPosition();
+  applyCarouselPosition({ physicalIndex: carouselPhysicalIndex + (direction > 0 ? 1 : -1) });
 }
 
 function renderAnnouncements() {
   if (!feed) return;
+  stopCarouselTransition();
+  carouselCloneCount = announcements.length > visibleCards() ? visibleCards() : 0;
 
   if (!announcements.length) {
     feed.innerHTML = '<div class="bulletin-empty">No announcements have been posted yet.</div>';
@@ -155,14 +210,14 @@ function renderAnnouncements() {
     return;
   }
 
-  feed.innerHTML = announcements.map((announcement) => {
+  const cards = announcements.map((announcement, index) => {
     const excerpt = announcementExcerpt(announcement.content);
     const image = announcement.imageUrl
       ? `<img src="${escapeHtml(announcement.imageUrl)}" alt="${escapeHtml(announcement.title || "USC announcement")}">`
       : '<div class="bulletin-page-placeholder"><i class="fa-regular fa-image"></i></div>';
 
     return `
-      <article class="bulletin-page-card">
+      <article class="bulletin-page-card" data-bulletin-index="${index}">
         <div class="bulletin-page-image">${image}</div>
         <div class="bulletin-page-body">
           <div class="bulletin-page-date">${escapeHtml(formatDate(announcement.createdAt || announcement.createdAtMs))}</div>
@@ -174,7 +229,10 @@ function renderAnnouncements() {
           </button>
         </div>
       </article>`;
-  }).join("");
+  });
+  feed.innerHTML = (carouselCloneCount
+    ? [...cards.slice(-carouselCloneCount), ...cards, ...cards.slice(0, carouselCloneCount)]
+    : cards).join('');
   hydrateMediaImages(feed).catch(() => {});
 
   carouselIndex = Math.min(Math.max(carouselIndex, 0), maxCarouselIndex());
@@ -237,6 +295,9 @@ feed?.addEventListener("click", (event) => {
 
 prevButton?.addEventListener("click", () => moveCarousel(-1));
 nextButton?.addEventListener("click", () => moveCarousel(1));
+feed?.addEventListener('transitionend', event => {
+  if (event.target === feed && event.propertyName === 'transform') finishCarouselTransition();
+});
 
 dotsHost?.addEventListener("click", (event) => {
   const button = event.target.closest?.("[data-carousel-index]");

@@ -68,10 +68,35 @@ body.student-app-shell .bulletin-page-main .bulletin-read-more {
 }
 body.student-app-shell #dashboardHome .slider-dots { top:calc(var(--announcement-media-height) - 18px); }
 body.student-app-shell #dashboardHome .slide-nav { top:calc(var(--announcement-media-height) / 2 - 14px); }
+body.officer-reference-dashboard #officerBulletinPreview .officer-bulletin-nav {
+  position:absolute; top:50%; z-index:2; transform:translateY(-50%);
+  display:grid; place-items:center; width:36px; height:36px; padding:0;
+  border:1px solid #ffffff70; border-radius:50%; background:#153d6570; color:#fff; cursor:pointer;
+}
+body.officer-reference-dashboard #officerBulletinPreview .officer-bulletin-nav.prev { left:8px; }
+body.officer-reference-dashboard #officerBulletinPreview .officer-bulletin-nav.next { right:8px; }
+body.officer-reference-dashboard #officerBulletinPreview .officer-bulletin-nav svg {
+  width:18px; height:18px; fill:none; stroke:currentColor; stroke-width:2; stroke-linecap:round; stroke-linejoin:round;
+}
+body.officer-reference-dashboard #officerBulletinPreview .officer-bulletin-dots {
+  position:absolute; bottom:4px; left:8px; right:8px; z-index:2;
+  display:flex; justify-content:safe center; overflow-x:auto; scrollbar-width:none;
+}
+body.officer-reference-dashboard #officerBulletinPreview .officer-bulletin-dots::-webkit-scrollbar { display:none; }
+body.officer-reference-dashboard #officerBulletinPreview .officer-bulletin-dots button {
+  flex:0 0 24px; display:grid; place-items:center; width:24px; height:24px;
+  padding:0; border:0; border-radius:50%; background:transparent; cursor:pointer;
+}
+body.officer-reference-dashboard #officerBulletinPreview .officer-bulletin-dots button::before {
+  content:""; width:7px; height:7px; border-radius:50%; background:#ffffff80; box-shadow:0 1px 4px #163b6450;
+}
+body.officer-reference-dashboard #officerBulletinPreview .officer-bulletin-dots button[aria-current]::before { width:9px; height:9px; background:#fff; }
+body.officer-reference-dashboard #officerBulletinPreview :is(button, a):focus-visible { outline:3px solid #216bb0; outline-offset:2px; }
 @media(max-width:520px) {
   body.student-app-shell #dashboardHome .bulletin-card,
   body.officer-reference-dashboard #officerBulletinPreview,
   body.student-app-shell .bulletin-page-main .bulletin-page-card {
     --announcement-card-height:600px; --announcement-media-height:280px;
   }
+  body.officer-reference-dashboard #officerBulletinPreview .officer-bulletin-nav { width:44px; height:44px; }
 }

@@ -4,6 +4,22 @@ body.student-app-shell .bulletin-page-main {
   justify-content: safe center;
   padding: 24px 0 !important;
   background: linear-gradient(145deg, #f4fbff, #edf8fc 52%, #f9fcff);
+  height: auto !important;
+  min-height: 0;
+  overflow: hidden !important;
+  scrollbar-gutter: auto;
+}
+/* Let the page accommodate fixed-size cards instead of scrolling the module. */
+@media (min-width: 821px) {
+  body.student-app-shell.bulletin-module-shell .dashboard-layout {
+    height: auto;
+    min-height: calc(100dvh - var(--student-global-header-h, 74px));
+    overflow: visible;
+  }
+  body.student-app-shell.bulletin-module-shell .student-module-column {
+    height: auto;
+    grid-template-rows: minmax(var(--student-module-toolbar-h, 58px), auto) auto;
+  }
 }
 body.student-app-shell .bulletin-page-main .bulletin-carousel {
   --bulletin-visible: 3;
