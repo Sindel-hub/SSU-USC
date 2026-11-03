@@ -3994,12 +3994,5 @@ html {
     #previewSlidesHost .announcement-copy-meta { margin-bottom:7px; }
     .landing-announcement-dialog-copy { padding:20px; }
 }
-/* Remove the old glass frame and single-line headline rule. */
-.announcement-carousel .preview-stage {
-    display:flex; flex-direction:column; gap:12px; padding:0;
-    border:0; border-radius:18px; background:transparent; box-shadow:none;
-    backdrop-filter:none; -webkit-backdrop-filter:none; overflow:visible;
-}
-.announcement-carousel #previewSlidesHost { flex:1 1 auto; min-height:0; height:auto; border:1px solid #dce7f2; border-radius:18px; box-shadow:none; }
-.announcement-carousel .preview-dots { position:static; flex:0 0 20px; min-height:20px; margin:0; transform:none; }
+/* Keep the original glass carousel frame; only the inner headline wraps. */
 #previewSlidesHost .announcement-poster-copy h3 { white-space:normal; }
