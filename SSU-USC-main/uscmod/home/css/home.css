@@ -4062,3 +4062,8 @@ html {
 }
 
 #events-section .events-showcase { position:relative; z-index:1; }
+
+/* The open reader owns wheel/touch scrolling; do not move landing chapters. */
+html.landing-announcement-open,
+html.landing-announcement-open body { overflow:hidden !important; overscroll-behavior:none; }
+#landingAnnouncementDialog .announcement-reader-scroll { touch-action:pan-y; overscroll-behavior:contain; }

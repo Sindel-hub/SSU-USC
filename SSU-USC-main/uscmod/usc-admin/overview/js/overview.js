@@ -1,6 +1,8 @@
+import { announcementExcerpt } from "../../../shared/announcement-excerpt.mjs";
 import { summarizeStudentSignIns } from "./student-signin-model.mjs";
 import { statusBreakdown, renderOverviewChart } from "./overview-charts.js?v=1";
 import { db } from "../../../firebase/firebase-config.js";
+import { resolveMediaUrl } from "../../../shared/security-client.js";
 import { collection, collectionGroup, getCountFromServer, limit, onSnapshot, orderBy, query, where } from "https://www.gstatic.com/firebasejs/12.12.0/firebase-firestore.js";
 
 const uscAuthAllowed = await (globalThis.USC_AUTH_READY || Promise.resolve(false));
@@ -204,7 +206,51 @@ function syncDashboardLayout() {
   // Keep the bulletin column visible, including its genuine empty state.
 }
 
-function renderBulletin(){ const host=document.getElementById("officerBulletinPreview"); if(!host)return; const item=state.announcements[0]; if(!item){host.innerHTML='<div class="reference-empty">No announcement posted yet.</div>'; syncDashboardLayout(false); return;} const image=announcementImage(item); host.innerHTML=`${image?`<img src="${escapeHtml(image)}" alt="${escapeHtml(clean(item.title,'Announcement'))}" onerror="this.style.display='none'">`:''}<div class="bulletin-copy"><time>${escapeHtml(formatDate(item.createdAt||item.publishedAt||item.date))}</time><h3>${escapeHtml(clean(item.title,'USC Announcement'))}</h3><p>${escapeHtml(clean(item.content||item.description,'Official USC bulletin update.').slice(0,180))}</p><a href="../announcements/announcements.html">Read more</a></div>`; syncDashboardLayout(true); }
+function renderBulletin() {
+  const host = document.getElementById("officerBulletinPreview");
+  if (!host) return;
+  const item = state.announcements[0];
+  if (!item) {
+    host.innerHTML = '<div class="reference-empty">No announcement posted yet.</div>';
+    syncDashboardLayout(false);
+    return;
+  }
+  const image = announcementImage(item);
+  host.innerHTML = `
+    <div class="officer-bulletin-media">
+      ${image ? `<img data-media-ref="${escapeHtml(image)}" alt="${escapeHtml(clean(item.title, 'Announcement'))}" hidden>` : ''}
+      <div class="officer-bulletin-image-status" role="status">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="8" cy="8" r="2"/><path d="m3 17 5-5 4 4 4-6 5 7"/></svg>
+        <span>${image ? 'Loading image…' : 'No image attached'}</span>
+      </div>
+    </div>
+    <div class="bulletin-copy">
+      <time>${escapeHtml(formatDate(item.createdAt || item.publishedAt || item.createdAtMs || item.date))}</time>
+      <h3>${escapeHtml(clean(item.title, 'USC Announcement'))}</h3>
+      <p>${escapeHtml(announcementExcerpt(item.content || item.description || 'Official USC bulletin update.'))}</p>
+      <a href="../announcements/announcements.html">Read more</a>
+    </div>`;
+  syncDashboardLayout(true);
+  if (!image) return;
+  const imageElement = host.querySelector('.officer-bulletin-media img');
+  const status = host.querySelector('.officer-bulletin-image-status');
+  const showFailure = () => {
+    if (!imageElement.isConnected) return;
+    imageElement.hidden = true;
+    status.hidden = false;
+    status.querySelector('span').textContent = 'Image unavailable';
+  };
+  imageElement.addEventListener('load', () => {
+    if (!imageElement.isConnected) return;
+    imageElement.hidden = false;
+    status.hidden = true;
+  }, { once: true });
+  imageElement.addEventListener('error', showFailure, { once: true });
+  resolveMediaUrl(image).then(url => {
+    if (imageElement.isConnected) imageElement.src = url;
+  }).catch(showFailure);
+}
+
 function bindAnnouncements(){ onSnapshot(collection(db,"announcements"), snap => { state.announcements=snap.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>(toDate(b.createdAt||b.publishedAt)?.getTime()||0)-(toDate(a.createdAt||a.publishedAt)?.getTime()||0)); setText("[data-overview-announcement-count]",state.announcements.length); renderBulletin(); },()=>renderBulletin()); }
 
 let calendarOffset = 0;

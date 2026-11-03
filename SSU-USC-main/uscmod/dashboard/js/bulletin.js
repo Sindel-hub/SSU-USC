@@ -1,3 +1,4 @@
+import { announcementExcerpt } from "../../shared/announcement-excerpt.mjs";
 import { auth, db } from "../../firebase/firebase-config.js";
 import { collection, limit, onSnapshot, orderBy, query } from "https://www.gstatic.com/firebasejs/12.12.0/firebase-firestore.js";
 import { signOut } from "https://www.gstatic.com/firebasejs/12.12.0/firebase-auth.js";
@@ -155,8 +156,7 @@ function renderAnnouncements() {
   }
 
   feed.innerHTML = announcements.map((announcement) => {
-    const content = String(announcement.content ?? "");
-    const excerpt = content.length > 210 ? `${content.slice(0, 210)}…` : content;
+    const excerpt = announcementExcerpt(announcement.content);
     const image = announcement.imageUrl
       ? `<img src="${escapeHtml(announcement.imageUrl)}" alt="${escapeHtml(announcement.title || "USC announcement")}">`
       : '<div class="bulletin-page-placeholder"><i class="fa-regular fa-image"></i></div>';

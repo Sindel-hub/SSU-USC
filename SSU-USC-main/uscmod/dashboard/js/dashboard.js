@@ -1,3 +1,4 @@
+import { announcementExcerpt } from "../../shared/announcement-excerpt.mjs";
 import { auth, db } from "../../firebase/firebase-config.js";
 import {
   collection,
@@ -281,7 +282,7 @@ function buildAnnouncementCard(announcement) {
             <span class="announcement-date">${escapeHtml(publishedDate)}</span>
           </div>
           <h3>${escapeHtml(title)}</h3>
-          <div class="announcement-copy-panel"><p>${escapeHtml(truncateText(announcement.content, 150))}</p></div>
+          <div class="announcement-copy-panel"><p>${escapeHtml(announcementExcerpt(announcement.content))}</p></div>
           <div class="announcement-footer">
             <button class="announcement-read-more" type="button" data-announcement-id="${escapeHtml(announcement.id)}">Read more</button>
           </div>
