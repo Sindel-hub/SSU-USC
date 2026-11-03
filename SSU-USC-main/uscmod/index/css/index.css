@@ -1068,3 +1068,37 @@ img,svg{max-width:100%}
 @media(prefers-reduced-motion:reduce) {
   .login-page .signin-stack .signin-btn { transition:none; }
 }
+
+/* Light responsive help: non-modal desktop panel, modal on smaller screens. */
+.login-help-dialog {
+  color:#294663; background:#f8fbff; border:1px solid #d7e5f2;
+  backdrop-filter:none; -webkit-backdrop-filter:none;
+  box-shadow:0 12px 36px #0b274533;
+  opacity:0; transform:translateY(6px);
+  transition:opacity .16s ease, transform .16s ease, display .16s allow-discrete, overlay .16s allow-discrete;
+}
+.login-help-dialog[open] { opacity:1; transform:translateY(0); }
+.login-help-heading h2 { color:#173d70; }
+#closeLoginHelp { color:#315b85; background:#edf4fb; border-color:#d6e4f1; }
+#closeLoginHelp:hover { background:#dfeefb; }
+.login-help-dialog > p { color:#627991; border-color:#dfe8f2; }
+@starting-style {
+  .login-help-dialog[open] { opacity:0; transform:translateY(6px); }
+}
+@media(min-width:941px) {
+  .login-help-dialog { position:fixed; inset:auto; margin:0; padding:20px; width:330px; max-width:none; max-height:calc(100dvh - 32px); border-radius:16px; z-index:20; }
+  .login-help-dialog::backdrop { background:transparent; backdrop-filter:none; }
+  .login-help-heading { margin-bottom:14px; gap:12px; }
+  .login-help-heading h2 { font-size:18px; }
+  .login-help-dialog ul { gap:10px; }
+  .login-help-dialog li { font-size:13px; line-height:1.6; }
+  .login-help-dialog > p { margin-top:14px; padding-top:12px; font-size:12px; }
+  .login-help-button[aria-expanded="true"] { background:#edf6ff; color:#315b85; border-color:#d5e5f3; }
+}
+@media(max-width:940px) {
+  .login-help-dialog { width:min(400px,calc(100vw - 32px)); margin:auto; }
+  .login-help-dialog::backdrop { background:#091e3b80; backdrop-filter:blur(3px); }
+}
+@media(prefers-reduced-motion:reduce) {
+  .login-help-dialog { transition:none; transform:none; }
+}
