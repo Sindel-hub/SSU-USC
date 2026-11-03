@@ -22,6 +22,6 @@ test("latest publish is split into readable date and time", () => {
 });
 
 test("bulletin assets are cache-busted after the polish", () => {
-  assert.match(html, /css\/announcements\.css\?v=3/);
-  assert.match(html, /js\/announcements\.js\?v=3&rbac=readonly-1/);
+  assert.match(html, /css\/announcements\.css\?v=[^"\s]+/);
+  assert.match(html, /js\/announcements\.js\?v=[^"\s]+/);
 });

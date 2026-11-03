@@ -155,7 +155,7 @@ function renderAnnouncements() {
   }
 
   feed.innerHTML = announcements.map((announcement) => {
-    const content = clean(announcement.content);
+    const content = String(announcement.content ?? "");
     const excerpt = content.length > 210 ? `${content.slice(0, 210)}…` : content;
     const image = announcement.imageUrl
       ? `<img src="${escapeHtml(announcement.imageUrl)}" alt="${escapeHtml(announcement.title || "USC announcement")}">`
@@ -192,7 +192,7 @@ function openAnnouncement(announcement) {
   document.getElementById("bulletinModalCategory").textContent = clean(announcement.category, "Official Notice");
   document.getElementById("bulletinModalDate").textContent = formatDate(announcement.createdAt || announcement.createdAtMs);
   document.getElementById("bulletinModalAudience").textContent = `Audience: ${clean(announcement.audience, "All students")}`;
-  document.getElementById("bulletinModalContent").textContent = clean(announcement.content);
+  document.getElementById("bulletinModalContent").textContent = String(announcement.content ?? "");
 
   if (announcement.imageUrl) {
     image.src = announcement.imageUrl;

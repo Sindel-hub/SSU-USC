@@ -253,14 +253,7 @@ function buildSlide(announcement, role = "active") {
           )}
         </h3>
 
-        <p>
-          ${escapeHtml(
-            truncateText(
-              announcement.content,
-              150
-            )
-          )}
-        </p>
+        <p>${escapeHtml(truncateText(announcement.content, 150))}</p>
 
       </div>
     `;
