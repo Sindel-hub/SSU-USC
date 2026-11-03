@@ -1045,3 +1045,26 @@ img,svg{max-width:100%}
 @media(max-height:680px) {
   .login-page .bottom-text { margin-top:20px; }
 }
+
+/* Clear feedback for pointer, keyboard and submitted/loading states. */
+.login-page .signin-stack .signin-btn {
+  transition:background-color .18s ease, transform .18s ease;
+}
+.login-page .signin-stack .signin-btn:is(:hover, :focus-visible, :disabled) {
+  background:#173d86;
+  color:#fff;
+  filter:none;
+}
+.login-page .signin-stack .signin-btn:active {
+  background:#102d64;
+  color:#fff;
+  filter:none;
+  transform:translateY(0);
+}
+.login-page .signin-stack .signin-btn:focus-visible {
+  outline:3px solid #a5e5ff;
+  outline-offset:3px;
+}
+@media(prefers-reduced-motion:reduce) {
+  .login-page .signin-stack .signin-btn { transition:none; }
+}
