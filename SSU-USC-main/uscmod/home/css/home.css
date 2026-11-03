@@ -4024,7 +4024,9 @@ html {
 /* Put the existing seal behind the Events composition, retaining its exact
    size, position, opacity, image and transform rules inside About. */
 #about-section { z-index:0; min-height:calc(100svh - var(--header-height)); padding:0; }
-#about-section .feature-strip { min-height:max(300px,calc((100svh - var(--header-height)) / 2)); display:flex; align-items:center; margin:0; }
+#about-section .feature-strip { min-height:max(300px,calc((100svh - var(--header-height) - 52px) / 2)); display:flex; align-items:center; margin:0; }
+/* Preserve the original white separator shown in the approved reference. */
+#about-section .feature-strip + .feature-strip { margin-top:52px; }
 /* Retain the original left-aligned copy, type scale, line height and logo
    clearance. Only balance vertical section spacing. */
 #about-section .feature-inner { padding-block:clamp(24px,4svh,44px); }
