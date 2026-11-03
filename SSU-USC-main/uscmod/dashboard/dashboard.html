@@ -15,6 +15,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
 <link rel="stylesheet" href="../shared/announcement-text.css?v=1" />
+<link rel="stylesheet" href="css/announcement-reader.css?v=1" />
 </head>
 <body class="student-app-shell">
 <header class="dashboard-header">
@@ -208,19 +209,18 @@
 </div>
 </div>
 </footer>
-<div class="announcement-modal hidden" id="dashboardAnnouncementModal">
+<div class="announcement-modal hidden" id="dashboardAnnouncementModal" role="dialog" aria-modal="true" aria-labelledby="dashboardModalTitle">
 <div class="announcement-modal-backdrop" id="dashboardAnnouncementBackdrop"></div>
-<div class="announcement-modal-dialog">
-<button class="modal-close" id="dashboardAnnouncementClose" type="button">×</button>
-<img alt="Announcement image" class="modal-image hidden" id="dashboardModalImage"/>
-<div class="modal-meta">
-<span class="badge live" id="dashboardModalCategory">Official Notice</span>
-<span id="dashboardModalDate">—</span>
-</div>
-<h3 id="dashboardModalTitle"></h3>
-<p class="modal-audience" id="dashboardModalAudience"></p>
-<p id="dashboardModalContent"></p>
-</div>
+<article class="announcement-modal-dialog announcement-reader">
+  <header class="announcement-reader-toolbar"><div class="announcement-reader-label"><span class="announcement-reader-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5h16v14H4zM8 9h8M8 13h8M8 17h4"/></svg></span><span>Bulletin Board</span></div><button class="modal-close" id="dashboardAnnouncementClose" type="button" aria-label="Close announcement">×</button></header>
+  <div class="announcement-reader-media"><img alt="Announcement image" class="modal-image hidden" id="dashboardModalImage"/></div>
+  <div class="announcement-reader-copy">
+    <div class="modal-meta"><span class="badge live" id="dashboardModalCategory">Official Notice</span><span id="dashboardModalDate">—</span></div>
+    <h3 id="dashboardModalTitle"></h3>
+    <p class="modal-audience" id="dashboardModalAudience"></p>
+    <p class="announcement-reader-content" id="dashboardModalContent"></p>
+  </div>
+</article>
 </div>
 <script src="js/notifications.js?v=panel-polish-1" type="module"></script>
 <script src="js/dashboard.js?v=calendar-fixed-1&amp;paragraphs=1" type="module"></script>
