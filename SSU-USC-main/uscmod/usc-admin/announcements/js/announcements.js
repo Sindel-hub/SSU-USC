@@ -254,8 +254,8 @@ function syncPreviewCard() {
     }
 
     if (previewContent) {
-        previewContent.textContent = safeText(
-            announcementContentInput?.value,
+        previewContent.textContent = String(
+            announcementContentInput?.value ||
             "Write your announcement content to preview how students will see it."
         );
     }
@@ -302,7 +302,7 @@ function openAnnouncementModal(announcement) {
     if (modalAnnouncementDate) modalAnnouncementDate.textContent = formatAnnouncementDate(announcement);
     if (modalAnnouncementTitle) modalAnnouncementTitle.textContent = safeText(announcement.title, "Announcement");
     if (modalAnnouncementAudience) modalAnnouncementAudience.textContent = safeText(announcement.audience, "All Students");
-    if (modalAnnouncementContent) modalAnnouncementContent.textContent = safeText(announcement.content, "");
+    if (modalAnnouncementContent) modalAnnouncementContent.textContent = String(announcement.content ?? "");
 
     announcementModal.hidden = false;
     document.body.classList.add("modal-open");
@@ -471,9 +471,9 @@ announcementForm?.addEventListener("submit", async (event) => {
     const title = safeText(announcementTitleInput?.value);
     const category = safeText(announcementCategoryInput?.value, "Official Notice");
     const audience = safeText(announcementAudienceInput?.value, "All Students");
-    const content = safeText(announcementContentInput?.value);
+    const content = String(announcementContentInput?.value ?? "");
 
-    if (!title || !content) {
+    if (!title || !content.trim()) {
         alert("Please complete the announcement title and content.");
         return;
     }

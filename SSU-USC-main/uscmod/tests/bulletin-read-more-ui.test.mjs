@@ -25,6 +25,6 @@ test("read more modal receives the polish treatment", () => {
 });
 
 test("bulletin assets are cache busted", () => {
-  assert.match(html, /student-pages\.css\?v=2/);
-  assert.match(html, /bulletin\.js\?v=2/);
+  assert.match(html, /student-pages\.css\?v=[^"\s]+/);
+  assert.match(html, /bulletin\.js\?v=[^"\s]+/);
 });

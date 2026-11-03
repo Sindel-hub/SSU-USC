@@ -551,7 +551,7 @@ function openAnnouncementModal(announcement) {
   if (modalDate) modalDate.textContent = formatDate(announcement.createdAt || announcement.createdAtMs);
   if (modalTitle) modalTitle.textContent = safeText(announcement.title, "Announcement");
   if (modalAudience) modalAudience.textContent = safeText(announcement.audience, "All students");
-  if (modalContent) modalContent.textContent = safeText(announcement.content, "");
+  if (modalContent) modalContent.textContent = String(announcement.content ?? "");
 
   modal.classList.remove("hidden");
   document.body.classList.add("modal-open");

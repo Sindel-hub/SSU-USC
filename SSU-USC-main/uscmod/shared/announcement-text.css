@@ -1,0 +1,19 @@
+/* Plain-text announcement bodies: preserve authored newlines and blank lines.
+   Excerpt lengths and line clamps remain owned by the existing card layouts. */
+body :is(#previewContent, #modalAnnouncementContent, #dashboardModalContent, #bulletinModalContent),
+body .recent-announcement-excerpt,
+body .announcement-copy-panel p,
+body .bulletin-page-body p,
+body .announcement-poster-copy p,
+body .announcement-fallback p {
+  white-space: pre-wrap !important;
+  overflow-wrap: anywhere;
+  word-break: normal;
+  text-align: start;
+  line-height: 1.7;
+}
+body textarea#announcementContent {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  line-height: 1.7;
+}
