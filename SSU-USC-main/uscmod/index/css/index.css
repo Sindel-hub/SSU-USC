@@ -990,10 +990,10 @@ img,svg{max-width:100%}
 /* Compact sign-in card; preserve the original optical glass and campus image. */
 .login-page .glass-panel {
   width:min(420px,100%); min-width:0; min-height:0; height:auto;
-  max-height:none; padding:34px 34px 28px; border-radius:30px; overflow:visible;
+  max-height:none; padding:40px 34px 32px; border-radius:30px; overflow:visible;
   font-family:"Segoe UI",Tahoma,Geneva,Verdana,sans-serif;
 }
-.login-page .logo-wrap { width:126px; height:126px; margin:4px 0 24px; }
+.login-page .logo-wrap { width:148px; height:148px; margin:4px 0 24px; }
 .login-page .view { width:100%; flex:0 0 auto; }
 .login-page .auth-panel { min-height:0; }
 .login-page .school-account-copy { max-width:none; margin:0 0 24px; }
@@ -1026,12 +1026,22 @@ img,svg{max-width:100%}
 @media(max-width:520px) {
   .login-page { padding:24px 18px; }
   .login-page .glass-panel { width:100%; max-width:380px; padding:30px 24px 26px; border-radius:26px; }
-  .login-page .logo-wrap { width:112px; height:112px; margin-bottom:20px; }
+  .login-page .logo-wrap { width:132px; height:132px; margin-bottom:20px; }
   .login-page .school-account-copy h2 { font-size:21px; }
 }
 @media(max-height:680px) {
   .login-page { padding-block:20px; }
   .login-page .glass-panel { padding-top:24px; padding-bottom:22px; }
-  .login-page .logo-wrap { width:92px; height:92px; margin-bottom:16px; }
+  .login-page .logo-wrap { width:112px; height:112px; margin-bottom:16px; }
   .login-page .school-account-copy { margin-bottom:20px; }
+}
+
+/* Restore the USC motto without widening the approved card. */
+.login-page .bottom-text {
+  width:100%; margin:24px 0 0; padding:0; text-align:center;
+  font-size:clamp(10px,3vw,13px); font-weight:650; line-height:1.5;
+  letter-spacing:-.1px; white-space:normal; color:#f2f8ff;
+}
+@media(max-height:680px) {
+  .login-page .bottom-text { margin-top:20px; }
 }
