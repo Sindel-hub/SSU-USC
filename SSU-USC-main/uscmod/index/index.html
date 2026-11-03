@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>SSU USC Portal - Login</title>
-  <link rel="stylesheet" href="css/index.css?v=5" />
+  <link rel="stylesheet" href="css/index.css?v=6-compact" />
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" />
   <script src="../shared/app-config.js"></script>
 </head>
@@ -21,6 +21,7 @@
 
   <main class="login-page">
     <section class="glass-panel" aria-label="USC school account access">
+      <button id="loginHelpButton" class="login-help-button" type="button" aria-label="Sign-in help" aria-haspopup="dialog" aria-controls="loginHelpDialog"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v6"/><circle cx="12" cy="17" r=".8" fill="currentColor" stroke="none"/></svg></button>
       <button class="logo-wrap" type="button" aria-label="USC portal">
         <img src="assets/USClogo.webp" alt="University Student Council Logo" />
       </button>
@@ -28,19 +29,18 @@
       <div id="signin-view" class="view active">
         <div class="auth-panel">
           <div class="school-account-copy">
-            <span class="school-account-kicker">SCHOOL-PROVIDED ACCOUNT</span>
             <h2>Sign in to SSU USC</h2>
-            <p>Use your institutional email, Student ID, or verified personal Gmail and the password issued by the school.</p>
           </div>
 
           <form class="form-stack signin-stack" id="signinForm">
             <div class="input-box">
-              <i class="fa-regular fa-user" aria-hidden="true"></i>
+              <span class="login-field-icon" aria-hidden="true"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><circle cx="12" cy="8" r="3.5"/><path d="M5 21v-2a7 7 0 0 1 14 0v2"/></svg></span>
+              <label class="login-sr-only" for="signinIdentifier">Student ID or email</label>
               <input
                 type="text"
                 id="signinIdentifier"
                 name="signinIdentifier"
-                placeholder="Institutional Email or Student ID or verified Gmail"
+                placeholder="Student ID or email"
                 autocomplete="username"
                 inputmode="text"
                 required
@@ -48,30 +48,41 @@
             </div>
 
             <div class="input-box password-input-box">
-              <i class="fa-solid fa-lock leading-icon" aria-hidden="true"></i>
+              <span class="login-field-icon" aria-hidden="true"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><rect x="5" y="10" width="14" height="11" rx="3"/><path d="M8 10V7a4 4 0 0 1 8 0v3M12 14v3"/></svg></span>
+              <label class="login-sr-only" for="signinPassword">Password</label>
               <input
                 type="password"
                 id="signinPassword"
                 name="signinPassword"
-                placeholder="School-issued Password"
+                placeholder="Password"
                 autocomplete="current-password"
                 required
               />
               <button class="password-toggle" type="button" data-password-toggle="signinPassword" onclick="return togglePasswordVisibility(this)" aria-label="Show password" aria-pressed="false">
-                <i class="fa-regular fa-eye" aria-hidden="true"></i>
+                <svg class="login-eye" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" aria-hidden="true"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/><path class="login-eye-slash" d="m3 3 18 18"/></svg>
               </button>
             </div>
 
-            <button class="btn btn-blue signin-btn" type="submit">SIGN IN</button>
+            <button class="btn btn-blue signin-btn" type="submit">Sign in</button>
             <button class="account-switch forgot-password-btn" id="forgotPasswordBtn" type="button">Forgot password?</button>
           </form>
         </div>
       </div>
 
-      <div class="bottom-text">Leadership | Excellence | Discipline | Service</div>
+
     </section>
   </main>
 
+  <dialog id="loginHelpDialog" class="login-help-dialog" aria-labelledby="loginHelpTitle">
+    <div class="login-help-heading"><h2 id="loginHelpTitle">Sign-in help</h2><button type="button" id="closeLoginHelp" aria-label="Close sign-in help" autofocus>×</button></div>
+    <ul>
+      <li>Use your institutional email or Student ID, or the personal Gmail verified in your Profile.</li>
+      <li>Enter your current password. New accounts use the school-issued password.</li>
+      <li>Forgot your password? Close this guide and select <strong>Forgot password?</strong></li>
+    </ul>
+    <p>For account access, contact your system administrator.</p>
+  </dialog>
+  <script src="js/login-help.js?v=1" defer></script>
   <script src="../shared/password-visibility.js"></script>
   <script type="module" src="js/index.js?v=numeric-id-1-gmail-login-5"></script>
 </body>
