@@ -217,6 +217,9 @@ function openLandingAnnouncement(id) {
   }
   media.hidden = !sourceImage;
   stopAutoSlide();
+  // Stop any section-scroll animation and keep the page behind the reader still.
+  window.scrollTo({ top: window.scrollY, left: window.scrollX, behavior: "instant" });
+  document.documentElement.classList.add("landing-announcement-open");
   dialog.showModal();
   hydrateMediaImages(media).catch(error => console.warn("Unable to load announcement image:", error));
 }
@@ -239,6 +242,7 @@ function bindLandingAnnouncementDetails() {
     if (event.target === dialog && (event.clientX < rect.left || event.clientX > rect.right || event.clientY < rect.top || event.clientY > rect.bottom)) dialog.close();
   });
   dialog.addEventListener("close", () => {
+    document.documentElement.classList.remove("landing-announcement-open");
     dom.slidesHost.querySelector(".preview-slide.active")?.focus({ preventScroll: true });
     restartAutoSlide();
   });
@@ -672,6 +676,7 @@ function bindScrollButton() {
 }
 
 function bindSectionStepNavigation() {
+  const readerOpen = () => document.getElementById("landingAnnouncementDialog")?.open === true;
   const mobileQuery = window.matchMedia("(max-width: 940px)");
 
   // Wheel/trackpad input needs a short gesture lock because one physical
@@ -800,6 +805,7 @@ function bindSectionStepNavigation() {
   };
 
   window.addEventListener("wheel", (event) => {
+    if (readerOpen()) return; // Native scrolling belongs to the announcement, not landing chapters.
     if (Math.abs(event.deltaY) < 18) return;
 
     // Trackpads emit a stream of wheel events for one physical gesture. Swallow
@@ -818,6 +824,7 @@ function bindSectionStepNavigation() {
   // always means exactly one chapter, and a second immediate swipe can target
   // the next/previous chapter even while the first smooth scroll is finishing.
   window.addEventListener("touchstart", (event) => {
+    if (readerOpen()) { touchCaptured = false; touchStartTarget = null; return; }
     if (!mobileQuery.matches) return;
     const touch = event.changedTouches?.[0];
     if (!touch) return;
@@ -837,6 +844,7 @@ function bindSectionStepNavigation() {
   }, { passive: true });
 
   window.addEventListener("touchmove", (event) => {
+    if (readerOpen()) { touchCaptured = false; touchStartTarget = null; return; }
     if (!mobileQuery.matches) return;
     const touch = event.changedTouches?.[0] || event.touches?.[0];
     if (!touch) return;
@@ -859,6 +867,7 @@ function bindSectionStepNavigation() {
   }, { passive: false });
 
   window.addEventListener("touchend", (event) => {
+    if (readerOpen()) { touchCaptured = false; touchStartTarget = null; return; }
     if (!mobileQuery.matches) return;
     const touch = event.changedTouches?.[0];
     if (touch) {
