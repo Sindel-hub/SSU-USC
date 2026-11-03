@@ -10,7 +10,7 @@
     "deploy:rules": "firebase deploy --only firestore:rules,firestore:indexes",
     "deploy:functions": "echo Not used in browser provisioning mode.",
     "deploy": "firebase deploy --only firestore:rules,firestore:indexes",
-    "test:static": "node --test tests/static-project.test.mjs tests/landing-reader-scroll.test.mjs tests/officer-bulletin-media.test.mjs tests/landing-calendar-stability.test.mjs tests/announcement-formatting.test.mjs tests/bulletin-read-more-ui.test.mjs tests/bulletin-summary-ui.test.mjs",
+    "test:static": "node --test tests/static-project.test.mjs tests/announcement-excerpt.test.mjs tests/landing-reader-scroll.test.mjs tests/officer-bulletin-media.test.mjs tests/landing-calendar-stability.test.mjs tests/announcement-formatting.test.mjs tests/bulletin-read-more-ui.test.mjs tests/bulletin-summary-ui.test.mjs",
     "test:syntax": "node --test tests/js-syntax.test.mjs",
     "test:admin-auth": "node --test tests/mfa-enrollment.test.mjs",
     "test:verify": "node --test tests/admin-verification.test.mjs",

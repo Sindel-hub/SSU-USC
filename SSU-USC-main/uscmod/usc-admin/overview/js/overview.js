@@ -1,3 +1,4 @@
+import { announcementExcerpt } from "../../../shared/announcement-excerpt.mjs";
 import { summarizeStudentSignIns } from "./student-signin-model.mjs";
 import { statusBreakdown, renderOverviewChart } from "./overview-charts.js?v=1";
 import { db } from "../../../firebase/firebase-config.js";
@@ -226,7 +227,7 @@ function renderBulletin() {
     <div class="bulletin-copy">
       <time>${escapeHtml(formatDate(item.createdAt || item.publishedAt || item.createdAtMs || item.date))}</time>
       <h3>${escapeHtml(clean(item.title, 'USC Announcement'))}</h3>
-      <p>${escapeHtml(clean(item.content || item.description, 'Official USC bulletin update.').slice(0, 180))}</p>
+      <p>${escapeHtml(announcementExcerpt(item.content || item.description || 'Official USC bulletin update.'))}</p>
       <a href="../announcements/announcements.html">Read more</a>
     </div>`;
   syncDashboardLayout(true);

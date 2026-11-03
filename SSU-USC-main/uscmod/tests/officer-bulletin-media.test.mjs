@@ -1,3 +1,4 @@
+import { announcementExcerpt } from '../shared/announcement-excerpt.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
@@ -10,7 +11,7 @@ function fixture(item,resolve=async()=> 'blob:synthetic-image'){
  const events={},layout=[],resolved=[];const span={textContent:''},status={hidden:false,querySelector:()=>span};
  const image={hidden:true,isConnected:true,src:'',addEventListener:(event,fn)=>{events[event]=fn;}};
  const host={innerHTML:'',querySelector:selector=>selector.endsWith(' img')?image:status};
- const ctx=vm.createContext({Date,String,document:{getElementById:()=>host},state:{announcements:item?[item]:[]},syncDashboardLayout:value=>layout.push(value),resolveMediaUrl:value=>{resolved.push(value);return resolve(value);}});
+ const ctx=vm.createContext({announcementExcerpt,Date,String,document:{getElementById:()=>host},state:{announcements:item?[item]:[]},syncDashboardLayout:value=>layout.push(value),resolveMediaUrl:value=>{resolved.push(value);return resolve(value);}});
  vm.runInContext(helpers+imageHelper+renderer,ctx);vm.runInContext('renderBulletin()',ctx);
  return {image,status,span,host,events,layout,resolved};
 }
