@@ -59,8 +59,8 @@ body :is(.announcement-modal-dialog, #landingAnnouncementDialog).announcement-re
 }
 
 /* Keep the native landing dialog closed until opened by its existing controller. */
-dialog.announcement-reader:not([open]) { display:none; }
-#landingAnnouncementDialog.announcement-reader { max-width:740px; margin:auto; }
+#landingAnnouncementDialog.announcement-reader:not([open]) { display:none !important; }
+#landingAnnouncementDialog.announcement-reader { position:fixed; inset:0; max-width:740px; margin:auto; }
 body #announcementPreviewCard :is(#previewTitle) { color:#193f64 !important; font-size:26px !important; line-height:1.3 !important; font-weight:700; }
 body #announcementPreviewCard :is(#previewContent),
 body .recent-announcement-excerpt,
