@@ -3948,3 +3948,51 @@ html {
   outline: 3px solid #154f97;
   outline-offset: 3px;
 }
+
+/* Flat landing announcement headlines. These rules do not affect Bulletin views. */
+#previewSlidesHost .announcement-poster-with-copy {
+    display:grid;
+    grid-template-rows:minmax(0,1fr) auto;
+    border-radius:18px;
+    background:#fff;
+    box-shadow:none;
+}
+#previewSlidesHost .announcement-poster-media { min-height:0; background:#edf4fb; }
+#previewSlidesHost .announcement-poster-media > img { width:100%; height:100%; object-fit:cover; display:block; }
+#previewSlidesHost .announcement-poster-copy {
+    position:static; margin:0; min-height:0; padding:15px 18px 17px;
+    border:0; border-top:1px solid #e2eaf3; border-radius:0;
+    background:#fff; box-shadow:none; backdrop-filter:none; -webkit-backdrop-filter:none;
+}
+#previewSlidesHost .announcement-poster-copy::before { display:none; }
+#previewSlidesHost .announcement-copy-meta { display:flex; flex-wrap:wrap; justify-content:space-between; gap:6px 10px; margin:0 0 9px; }
+#previewSlidesHost .announcement-copy-badge { max-width:100%; padding:4px 7px; font-size:10px; line-height:1.3; letter-spacing:.5px; border-radius:5px; background:#edf3fc; overflow-wrap:anywhere; }
+#previewSlidesHost .announcement-copy-date { font-size:11px; line-height:1.6; color:#6d7d92; }
+#previewSlidesHost .announcement-poster-copy h3 {
+    margin:0; color:#173d86; font-family:inherit; font-weight:700; font-size:18px;
+    letter-spacing:-.2px; line-height:1.35; text-align:left; overflow-wrap:anywhere;
+    display:-webkit-box; -webkit-box-orient:vertical; -webkit-line-clamp:2; line-clamp:2; overflow:hidden;
+}
+#previewSlidesHost .preview-slide[role="button"] { cursor:pointer; }
+#previewSlidesHost .preview-slide:focus-visible { outline:3px solid #61c7ef; outline-offset:-4px; }
+#previewSlidesHost .announcement-headline-placeholder { display:flex; align-items:center; justify-content:center; flex-direction:column; gap:16px; width:100%; height:100%; padding:24px; box-sizing:border-box; background:linear-gradient(135deg,#e9f3fc,#dbe9f7); color:#315d88; font-size:11px; font-weight:700; letter-spacing:1px; text-align:center; }
+#previewSlidesHost .announcement-headline-placeholder img { width:90px; height:90px; object-fit:contain; }
+#landingAnnouncementDialog { width:min(720px,calc(100vw - 32px)); max-width:720px; max-height:calc(100dvh - 40px); padding:0; margin:auto; border:1px solid #d9e5f0; border-radius:18px; background:#fff; color:#244362; overflow:auto; overscroll-behavior:contain; box-sizing:border-box; }
+#landingAnnouncementDialog::backdrop { background:#102440b3; backdrop-filter:blur(3px); }
+.landing-announcement-dialog-head { position:sticky; top:0; display:flex; justify-content:space-between; align-items:center; gap:16px; padding:14px 22px; background:#fff; border-bottom:1px solid #e3ebf3; z-index:1; }
+.landing-announcement-dialog-head span { font-size:11px; font-weight:700; letter-spacing:1px; color:#6b7d91; }
+#closeLandingAnnouncement { display:grid; place-items:center; width:40px; height:40px; flex:none; padding:0; border:1px solid #dce7f2; border-radius:10px; background:#f3f8fd; color:#315b84; font-size:25px; cursor:pointer; }
+#closeLandingAnnouncement:focus-visible { outline:3px solid #69b9e6; outline-offset:2px; }
+#landingAnnouncementMedia img { display:block; width:100%; max-height:440px; object-fit:contain; background:#edf4fb; }
+.landing-announcement-dialog-copy { padding:24px; }
+#landingAnnouncementMeta { margin:0 0 12px; color:#6c7e93; font-size:12px; }
+#landingAnnouncementTitle { margin:0 0 20px; color:#173d86; font-size:clamp(20px,3vw,28px); line-height:1.3; overflow-wrap:anywhere; }
+#landingAnnouncementBody { white-space:pre-wrap; overflow-wrap:anywhere; font-size:15px; line-height:1.75; color:#465b72; }
+@media(max-width:640px) {
+    #previewSlidesHost .announcement-poster-copy { padding:12px 14px 14px; }
+    #previewSlidesHost .announcement-poster-copy h3 { font-size:16px; }
+    #previewSlidesHost .announcement-copy-meta { margin-bottom:7px; }
+    .landing-announcement-dialog-copy { padding:20px; }
+}
+/* Keep the original glass carousel frame; only the inner headline wraps. */
+#previewSlidesHost .announcement-poster-copy h3 { white-space:normal; }
