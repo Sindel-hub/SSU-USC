@@ -203,13 +203,18 @@ function openLandingAnnouncement(id) {
   const dialog = document.getElementById("landingAnnouncementDialog");
   if (!announcement || !dialog || dialog.open) return;
   document.getElementById("landingAnnouncementTitle").textContent = safeText(announcement.title, "USC Announcement");
-  document.getElementById("landingAnnouncementMeta").textContent =
-    `${safeText(announcement.category, "Announcement")} · ${formatDate(announcement.createdAt || announcement.createdAtMs || announcement.updatedAt || announcement.date)}`;
+  document.getElementById("landingAnnouncementCategory").textContent = safeText(announcement.category, "Announcement");
+  document.getElementById("landingAnnouncementDate").textContent = formatDate(announcement.createdAt || announcement.createdAtMs || announcement.updatedAt || announcement.date);
+  document.getElementById("landingAnnouncementAudience").textContent = `Audience: ${safeText(announcement.audience, "All Students")}`;
   document.getElementById("landingAnnouncementBody").textContent = String(announcement.content ?? announcement.description ?? announcement.details ?? "");
   const media = document.getElementById("landingAnnouncementMedia");
   media.replaceChildren();
   const sourceImage = dom.slidesHost.querySelector(".preview-slide.active .announcement-poster-media > img");
-  if (sourceImage) media.append(sourceImage.cloneNode(true));
+  if (sourceImage) {
+    const image = sourceImage.cloneNode(true);
+    image.classList.add("modal-image");
+    media.append(image);
+  }
   media.hidden = !sourceImage;
   stopAutoSlide();
   dialog.showModal();

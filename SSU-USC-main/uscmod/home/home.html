@@ -8,6 +8,7 @@
     <link rel="stylesheet" href="./css/home.css?v=26-about-white-separator">
   <script src="../shared/app-config.js?v=7"></script>
 <link rel="stylesheet" href="../shared/announcement-text.css?v=1" />
+<link rel="stylesheet" href="../shared/announcement-reader.css?v=1-unified" />
 </head>
 <body>
     <a class="skip-link" href="#welcome-section">Skip to main content</a>
@@ -173,11 +174,18 @@
         </div>
     </footer>
 
-    <script type="module" src="./js/home.js?v=17-calendar-rows"></script>
-    <dialog id="landingAnnouncementDialog" aria-labelledby="landingAnnouncementTitle">
-        <div class="landing-announcement-dialog-head"><span>USC ANNOUNCEMENT</span><button id="closeLandingAnnouncement" type="button" aria-label="Close announcement" autofocus>×</button></div>
-        <div id="landingAnnouncementMedia" hidden></div>
-        <div class="landing-announcement-dialog-copy"><p id="landingAnnouncementMeta"></p><h2 id="landingAnnouncementTitle"></h2><div id="landingAnnouncementBody"></div></div>
-    </dialog>
+    <script type="module" src="./js/home.js?v=18-shared-reader"></script>
+<dialog id="landingAnnouncementDialog" class="announcement-modal-dialog announcement-reader" aria-labelledby="landingAnnouncementTitle">
+  <header class="announcement-reader-toolbar"><div class="announcement-reader-label"><span class="announcement-reader-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5h16v14H4zM8 9h8M8 13h8M8 17h4"/></svg></span><span>Bulletin Board</span></div><button class="modal-close" id="closeLandingAnnouncement" autofocus type="button" aria-label="Close announcement">×</button></header>
+  <div class="announcement-reader-scroll">
+  <div class="announcement-reader-media" id="landingAnnouncementMedia" hidden></div>
+  <div class="announcement-reader-copy">
+    <div class="modal-meta" id="landingAnnouncementMeta"><span class="badge live" id="landingAnnouncementCategory">Official Notice</span><span id="landingAnnouncementDate">—</span></div>
+    <h3 id="landingAnnouncementTitle"></h3>
+    <p class="modal-audience" id="landingAnnouncementAudience"></p>
+    <p class="announcement-reader-content" id="landingAnnouncementBody"></p>
+  </div>
+  </div>
+</dialog>
 </body>
 </html>

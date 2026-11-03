@@ -1,0 +1,72 @@
+/* Full announcement reader only; feed cards and publishing remain unchanged. */
+body :is(.announcement-modal-dialog, #landingAnnouncementDialog).announcement-reader {
+  box-sizing:border-box; width:min(740px,calc(100vw - 32px),100%); max-height:calc(100dvh - 40px); padding:0 !important;
+  border:1px solid #dfe8f2; border-radius:22px; background:#fff;
+  box-shadow:0 24px 80px #0827433d; overflow:hidden;
+  display:flex; flex-direction:column; gap:0; font-family:"Segoe UI",Tahoma,Geneva,Verdana,sans-serif;
+}
+.announcement-reader-toolbar {
+  position:relative; flex-shrink:0; z-index:12; display:flex; align-items:center; justify-content:space-between;
+  gap:16px; padding:14px 24px; border-bottom:1px solid #e8eef5; background:#fffffffa;
+}
+.announcement-reader-label { display:flex; align-items:center; gap:10px; color:#395d80; font-size:13px; font-weight:600; letter-spacing:.1px; }
+.announcement-reader-icon { width:32px; height:32px; display:grid; place-items:center; border-radius:9px; background:#edf5fd; color:#2b6eac; }
+body :is(.announcement-modal-dialog, #landingAnnouncementDialog).announcement-reader .modal-close {
+  position:static !important; flex:none; width:36px !important; height:36px !important;
+  margin:0 !important; border:1px solid #e0e9f2 !important; border-radius:10px !important;
+  color:#466887 !important; background:#f5f8fc !important; box-shadow:none; font-size:24px !important;
+}
+body :is(.announcement-modal-dialog, #landingAnnouncementDialog).announcement-reader .modal-close:hover { background:#e9f2fc !important; color:#174c87 !important; }
+body :is(.announcement-modal-dialog, #landingAnnouncementDialog).announcement-reader .modal-close:focus-visible { outline:3px solid #7ac8f0; outline-offset:2px; }
+.announcement-reader-media { margin:20px 24px 0; background:#f0f5fa; border:1px solid #e3ebf4; border-radius:14px; overflow:hidden; }
+.announcement-reader-media:has(.modal-image.hidden, .modal-image[hidden]) { display:none; }
+body :is(.announcement-modal-dialog, #landingAnnouncementDialog).announcement-reader .modal-image {
+  width:100% !important; height:auto !important; max-height:360px !important; margin:0 !important;
+  object-fit:contain; display:block; border:0 !important; border-radius:0 !important;
+  background:transparent !important; box-shadow:none;
+}
+.announcement-reader-copy { padding:24px 30px 32px; }
+body :is(.announcement-modal-dialog, #landingAnnouncementDialog).announcement-reader .modal-meta { display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:8px 14px; margin:0 0 16px; color:#41566d; font-size:12px; line-height:1.5; }
+body :is(.announcement-modal-dialog, #landingAnnouncementDialog).announcement-reader .modal-meta .badge { padding:5px 9px; border-radius:6px; background:#edf4ff; color:#3269a4; font-size:10px; line-height:1.5; letter-spacing:.7px; font-weight:700; overflow-wrap:anywhere; }
+body :is(.announcement-modal-dialog, #landingAnnouncementDialog).announcement-reader :is(h2,h3) { margin:0 0 14px; color:#193f64; font-size:clamp(24px,2.6vw,30px) !important; line-height:1.3 !important; letter-spacing:-.4px; font-weight:700; overflow-wrap:anywhere; }
+body :is(.announcement-modal-dialog, #landingAnnouncementDialog).announcement-reader .modal-audience { display:block; width:auto; margin:0 0 22px; padding:0 0 20px; border-bottom:1px solid #e8eef5; border-radius:0; color:#364b60; background:transparent; font-size:12px; line-height:1.6; font-weight:500; overflow-wrap:anywhere; }
+body :is(.announcement-modal-dialog, #landingAnnouncementDialog).announcement-reader :is(#bulletinModalContent, #dashboardModalContent, #modalAnnouncementContent, #landingAnnouncementBody) { margin:0; color:#171c24 !important; font-size:15px !important; line-height:1.8 !important; white-space:pre-wrap; overflow-wrap:anywhere; text-align:start; }
+@media(max-width:560px) {
+  body :is(.announcement-modal-dialog, #landingAnnouncementDialog).announcement-reader { max-height:calc(100dvh - 24px); border-radius:18px; }
+  .announcement-reader-toolbar { padding:12px 16px; }
+  .announcement-reader-media { margin:16px 16px 0; border-radius:10px; }
+  body :is(.announcement-modal-dialog, #landingAnnouncementDialog).announcement-reader .modal-image { max-height:280px !important; }
+  .announcement-reader-copy { padding:20px 20px 26px; }
+  body :is(.announcement-modal-dialog, #landingAnnouncementDialog).announcement-reader :is(h2,h3) { font-size:24px !important; }
+  body :is(.announcement-modal-dialog, #landingAnnouncementDialog).announcement-reader .modal-meta { gap:8px 12px; }
+}
+
+/* Inset scrolling inside the rounded shell; never paint across its corners. */
+.announcement-reader-scroll {
+  min-height:0; flex:1 1 auto; overflow-y:auto; overflow-x:hidden;
+  margin:0 8px 8px; border-radius:0 0 14px 14px;
+  overscroll-behavior:contain; scrollbar-width:thin;
+  scrollbar-color:rgba(23,61,134,.32) transparent;
+}
+.announcement-reader-scroll::-webkit-scrollbar { width:6px; background:transparent; }
+.announcement-reader-scroll::-webkit-scrollbar-track { background:transparent; margin-block:10px; }
+.announcement-reader-scroll::-webkit-scrollbar-thumb { background:rgba(23,61,134,.32); border-radius:999px; }
+.announcement-reader-scroll::-webkit-scrollbar-thumb:hover { background:rgba(23,61,134,.52); }
+.announcement-reader-scroll::-webkit-scrollbar-button { display:none; width:0; height:0; }
+.announcement-reader-scroll::-webkit-scrollbar-corner { background:transparent; }
+@supports selector(::-webkit-scrollbar) {
+  .announcement-reader-scroll { scrollbar-width:auto; scrollbar-color:auto; }
+}
+
+/* Keep the native landing dialog closed until opened by its existing controller. */
+dialog.announcement-reader:not([open]) { display:none; }
+#landingAnnouncementDialog.announcement-reader { max-width:740px; margin:auto; }
+body #announcementPreviewCard :is(#previewTitle) { color:#193f64 !important; font-size:26px !important; line-height:1.3 !important; font-weight:700; }
+body #announcementPreviewCard :is(#previewContent),
+body .recent-announcement-excerpt,
+body.student-app-shell .bulletin-page-main .bulletin-page-body p,
+body.student-app-shell .student-main .announcement-copy-panel p { color:#171c24 !important; }
+body #announcementPreviewCard #previewContent { color:#171c24 !important; font-size:15px !important; line-height:1.8 !important; }
+body .recent-announcement-copy h4 { color:#193f64; font-size:20px !important; line-height:1.35; }
+
+body.student-app-shell .student-main .announcement-card-body h3 { color:#193f64; font-size:20px; line-height:1.35; }
