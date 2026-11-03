@@ -4025,11 +4025,9 @@ html {
    size, position, opacity, image and transform rules inside About. */
 #about-section { z-index:0; min-height:calc(100svh - var(--header-height)); padding:0; }
 #about-section .feature-strip { min-height:max(300px,calc((100svh - var(--header-height)) / 2)); display:flex; align-items:center; margin:0; }
-#about-section .feature-inner { width:min(1180px,92vw); margin-inline:auto; padding:36px 28px; display:flex; justify-content:center; align-items:center; }
-#about-section .about-strip .feature-inner { padding-right:clamp(260px,30vw,440px); }
-#about-section .feature-text { width:100%; max-width:68ch; margin-inline:auto; text-align:center; }
-#about-section .feature-text h2 { margin:0 0 16px; }
-#about-section .feature-text p { margin:0; line-height:1.5; }
+/* Retain the original left-aligned copy, type scale, line height and logo
+   clearance. Only balance vertical section spacing. */
+#about-section .feature-inner { padding-block:clamp(24px,4svh,44px); }
 @media(max-width:980px) {
     #events-section .events-showcase { width:min(760px,100%); grid-template-columns:minmax(0,1fr); gap:24px; padding:28px; }
     #events-section .events-copy-block { text-align:center; }
@@ -4040,8 +4038,7 @@ html {
     /* Existing centered seal occupies this space; do not move or resize it. */
     #about-section { padding-top:281px; }
     #about-section .feature-strip { min-height:0; }
-    #about-section .feature-inner,
-    #about-section .about-strip .feature-inner { padding:40px 22px; }
+    #about-section .feature-inner { padding-block:28px; }
 }
 @media(max-width:640px) {
     #events-section { padding:24px 16px; }
@@ -4054,19 +4051,12 @@ html {
 }
 @media(max-width:520px) {
     #about-section { padding-top:251px; }
-    #about-section .feature-inner,
-    #about-section .about-strip .feature-inner { width:100%; padding:34px 24px; }
+    #about-section .feature-inner { padding-block:24px; }
 }
 @media(max-width:640px) {
     #events-section .calendar-header { grid-template-columns:36px minmax(0,1fr) 36px; gap:4px; height:44px; }
     #events-section #homeCalendarTitle { font-size:clamp(12px,3.8vw,18px); white-space:nowrap; }
     #events-section .calendar-arrow { width:36px; }
 }
-#events-section::after {
-    content:""; position:absolute; top:50%; right:-60px;
-    width:clamp(360px,48vw,680px); aspect-ratio:1;
-    transform:translateY(-50%); z-index:0; opacity:.28;
-    background:url("../assets/USClogo.webp") center / contain no-repeat;
-    pointer-events:none;
-}
+
 #events-section .events-showcase { position:relative; z-index:1; }
