@@ -1,8 +1,11 @@
 /* Landing and Student Events views only. Dashboard/overview calendars are unchanged. */
-.activity-tabs { display:flex; gap:4px; width:fit-content; padding:4px; margin:12px 0; border:1px solid #c8dfef; border-radius:14px; background:#ffffffad; }
-.activity-tabs button { min-height:40px; padding:8px 22px; border:0; border-radius:10px; background:transparent; color:#194d79; font:inherit; font-size:14px; font-weight:600; cursor:pointer; }
-.activity-tabs button[aria-pressed="true"] { background:#215a96; color:white; box-shadow:0 2px 8px #12385620; }
-.activity-tabs button:focus-visible { outline:3px solid #3bc8f2; outline-offset:2px; }
+.activity-tabs { display:flex; gap:16px; width:fit-content; padding:0; margin:8px auto 12px; border:0; background:transparent; }
+.activity-tabs button { position:relative; isolation:isolate; min-height:40px; padding:0 18px; border:0; border-radius:0; background:transparent; color:#fff; font:inherit; font-size:11px; line-height:1.4; font-weight:500; letter-spacing:.04em; text-transform:uppercase; cursor:pointer; }
+.activity-tabs button::before { content:''; position:absolute; z-index:-1; inset:11px 6px; border-radius:999px; background:transparent; }
+.activity-tabs button[aria-pressed="true"] { background:transparent; color:white; box-shadow:none; }
+.activity-tabs button[aria-pressed="true"]::before { background:#6c7038; }
+.activity-tabs button + button::after { content:''; position:absolute; left:-8px; top:14px; bottom:14px; width:1px; background:#ffffffa6; }
+.activity-tabs button:focus-visible { outline:2px solid #3bc8f2; outline-offset:0; border-radius:6px; }
 .activity-legend { display:flex; flex-wrap:wrap; justify-content:center; gap:8px 16px; margin:14px 0 0; color:#426180; font-size:12px; line-height:1.5; }
 .activity-legend span { display:inline-flex; align-items:center; gap:6px; }
 .activity-legend i { width:9px; height:9px; border-radius:50%; }
@@ -68,3 +71,14 @@ body.student-app-shell #eventsUpcomingSection .events-upcoming-calendar,
  body.student-app-shell.events-module-shell #eventsUpcomingSection .events-upcoming-content { grid-template-columns:minmax(0,1fr) !important; grid-template-rows:auto auto; align-content:start; gap:20px; }
 }
 :is(#homeCalendarGrid,#eventsCalendarGrid) .today.selected { outline-offset:-5px !important; }
+
+/* Compact landing calendar; Student calendar proportions stay unchanged. */
+#events-section .calendar-side { align-self:center !important; justify-self:center; box-sizing:border-box; max-width:430px; min-height:0; height:auto; padding:20px; }
+#events-section #homeCalendarGrid { grid-template-rows:24px repeat(6,34px) !important; }
+#events-section .calendar-header { margin-bottom:12px; }
+#events-section #homeCalendarTitle { font-size:20px; }
+#events-section .activity-legend { font-size:11px; }
+@media(max-width:640px) {
+ #events-section .calendar-side { padding:14px; }
+ #events-section #homeCalendarTitle { font-size:18px; }
+}
