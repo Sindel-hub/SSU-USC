@@ -87,6 +87,9 @@ const dom = {
 const announcementsCollection = collection(db, "announcements");
 
 const homeEventState = {
+  sources: {events: [], programs: []},
+  activityType: "event",
+  filterDate: false,
   events: [],
   currentMonth: null,
   selectedDateKey: ""
@@ -529,9 +532,8 @@ function renderHomeEventList() {
   if (!dom.eventList) return;
 
   const monthEvents = getEventsForVisibleMonth();
-  const sortedEvents = [...monthEvents]
-    .sort((left, right) => safeText(left.eventDate).localeCompare(safeText(right.eventDate)))
-    .slice(0, 3);
+  const sortedEvents = monthEvents.filter(item => (item.sourceType || "event") === (homeEventState.activityType || "event") && (!homeEventState.filterDate || item.eventDate === homeEventState.selectedDateKey))
+    .sort((left, right) => safeText(left.eventDate).localeCompare(safeText(right.eventDate)));
 
   if (!sortedEvents.length) {
     dom.eventList.innerHTML = `
@@ -584,7 +586,8 @@ function renderHomeCalendar() {
     const cellDate = new Date(year, month, day);
     const dateKey = normalizeDateKey(cellDate);
     const classNames = ["day-cell"];
-    if (eventDaySet.has(dateKey)) classNames.push("has-event");
+    if (eventDaySet.has(dateKey) && homeEventState.events.some(item => item.eventDate === dateKey && item.sourceType !== 'program')) classNames.push("has-event");
+    if (homeEventState.events.some(item => item.eventDate === dateKey && item.sourceType === 'program')) classNames.push("has-program");
     if (isSameDay(cellDate, today)) classNames.push("today");
     if (homeEventState.selectedDateKey === dateKey) classNames.push("selected");
 
@@ -609,25 +612,29 @@ function refreshHomeEvents() {
 }
 
 function startHomeEventsListener() {
-  const eventsQuery = query(collection(db, "events"), orderBy("eventDate", "asc"));
-
-  onSnapshot(
-    eventsQuery,
-    (snapshot) => {
-      homeEventState.events = snapshot.docs
-        .map((docItem) => ({ id: docItem.id, ...docItem.data() }))
-        .filter((eventItem) => safeText(eventItem.status, "Published") === "Published");
-      if (!homeEventState.currentMonth) {
-        homeEventState.currentMonth = getEventMonthAnchor(homeEventState.events);
-      }
+  for (const [name, sourceType] of [['events', 'event'], ['programs', 'program']]) {
+    onSnapshot(query(collection(db, name), orderBy('eventDate', 'asc')), snapshot => {
+      homeEventState.sources[name] = snapshot.docs.map(item => ({id:item.id,...item.data(),sourceType}))
+        .filter(item => safeText(item.status, 'Published') === 'Published');
+      homeEventState.events = [...homeEventState.sources.events, ...homeEventState.sources.programs]
+        .sort((a,b) => safeText(a.eventDate).localeCompare(safeText(b.eventDate)));
+      if (!homeEventState.currentMonth) homeEventState.currentMonth = getEventMonthAnchor(homeEventState.events);
       refreshHomeEvents();
-    },
-    (error) => {
-      console.error("Landing events listener error:", error);
-      homeEventState.events = [];
+    }, error => {
+      console.warn('Landing activity feed unavailable:', name, error);
+      homeEventState.sources[name] = [];
+      homeEventState.events = [...homeEventState.sources.events, ...homeEventState.sources.programs]
+        .sort((a,b) => safeText(a.eventDate).localeCompare(safeText(b.eventDate)));
       refreshHomeEvents();
-    }
-  );
+    });
+  }
+  document.getElementById('homeActivityTabs')?.addEventListener('click', event => {
+    const button = event.target.closest('[data-activity-type]'); if (!button) return;
+    homeEventState.activityType = button.dataset.activityType;
+    document.querySelectorAll('#homeActivityTabs button').forEach(item => item.setAttribute('aria-pressed', String(item === button)));
+    const render = () => renderHomeEventList();
+    if (globalThis.USC_FADE_ACTIVITY) globalThis.USC_FADE_ACTIVITY(dom.eventList, render); else render();
+  });
 }
 
 function bindDotNavigation() {
@@ -1002,6 +1009,7 @@ function bindLandingHeaderNavigation() {
 function bindHomeCalendarControls() {
   dom.calendarPrev?.addEventListener("click", () => {
     const current = homeEventState.currentMonth || getToday();
+    homeEventState.filterDate = false;
     homeEventState.currentMonth = new Date(current.getFullYear(), current.getMonth() - 1, 1);
     const monthEvents = getEventsForVisibleMonth();
     homeEventState.selectedDateKey = monthEvents.length ? safeText(monthEvents[0].eventDate) : "";
@@ -1010,6 +1018,7 @@ function bindHomeCalendarControls() {
 
   dom.calendarNext?.addEventListener("click", () => {
     const current = homeEventState.currentMonth || getToday();
+    homeEventState.filterDate = false;
     homeEventState.currentMonth = new Date(current.getFullYear(), current.getMonth() + 1, 1);
     const monthEvents = getEventsForVisibleMonth();
     homeEventState.selectedDateKey = monthEvents.length ? safeText(monthEvents[0].eventDate) : "";
@@ -1020,6 +1029,12 @@ function bindHomeCalendarControls() {
     const target = event.target instanceof Element ? event.target.closest("[data-home-calendar-date]") : null;
     if (!target) return;
     homeEventState.selectedDateKey = safeText(target.getAttribute("data-home-calendar-date"));
+    homeEventState.filterDate = true;
+    const matching = getEventsForDate(homeEventState.selectedDateKey);
+    if (matching.length && !matching.some(item => (item.sourceType || 'event') === homeEventState.activityType)) {
+      homeEventState.activityType = matching[0].sourceType || 'event';
+      document.querySelectorAll('#homeActivityTabs button').forEach(item => item.setAttribute('aria-pressed', String(item.dataset.activityType === homeEventState.activityType)));
+    }
     refreshHomeEvents();
   });
 }

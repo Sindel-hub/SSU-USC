@@ -26,6 +26,8 @@ let activeIndex = 0;
 let heroTouchStartX = 0;
 let calendarMonth = null;
 let selectedDateKey = "";
+let activityType = "event";
+let filterActivityDate = false;
 let currentDetailEventId = "";
 let detailBusy = false;
 
@@ -243,6 +245,7 @@ function setEmptyState() {
   if (highlightAction) highlightAction.disabled = true;
   calendarMonth = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
   selectedDateKey = "";
+  filterActivityDate = false;
   renderUpcomingSection();
 }
 
@@ -326,10 +329,9 @@ function eventsForVisibleMonth() {
 function renderUpcomingList() {
   if (!upcomingList) return;
   const monthEvents = eventsForVisibleMonth();
-  let candidates = monthEvents.length ? monthEvents : events;
+  let candidates = monthEvents.filter(item => itemSource(item) === activityType && (!filterActivityDate || clean(item.eventDate) === selectedDateKey));
   candidates = [...candidates]
-    .sort((a, b) => eventSortValue(a) - eventSortValue(b))
-    .slice(0, 3);
+    .sort((a, b) => eventSortValue(a) - eventSortValue(b));
 
   if (!candidates.length) {
     upcomingList.innerHTML = `
@@ -391,14 +393,15 @@ function renderCalendar() {
     const date = new Date(year, month, day);
     const key = normalizeDateKey(date);
     const classes = ["events-calendar-day"];
-    if (eventDates.has(key)) classes.push("has-event");
+    if (eventDates.has(key) && events.some(item => clean(item.eventDate) === key && itemSource(item) === 'event')) classes.push("has-event");
+    if (events.some(item => clean(item.eventDate) === key && itemSource(item) === 'program')) classes.push("has-program");
     if (key === selectedDateKey) classes.push("selected");
     if (date.getTime() === today.getTime()) classes.push("today");
     cells.push(`<button class="${classes.join(" ")}" type="button" data-calendar-date="${key}">${day}</button>`);
   }
 
   const used = firstDay.getDay() + lastDay.getDate();
-  const trailing = (7 - (used % 7)) % 7;
+  const trailing = 42 - used;
   for (let day = 1; day <= trailing; day += 1) {
     cells.push(`<div class="events-calendar-day muted">${day}</div>`);
   }
@@ -650,6 +653,10 @@ calendarGrid?.addEventListener("click", (event) => {
   const dayButton = event.target.closest?.("[data-calendar-date]");
   if (!dayButton) return;
   selectedDateKey = clean(dayButton.dataset.calendarDate);
+  filterActivityDate = true;
+  const dateItems = events.filter(item => clean(item.eventDate) === selectedDateKey);
+  if (dateItems.length && !dateItems.some(item => itemSource(item) === activityType)) activityType = itemSource(dateItems[0]);
+  document.querySelectorAll('#studentActivityTabs button').forEach(item => item.setAttribute('aria-pressed', String(item.dataset.activityType === activityType)));
   const matching = events.find((item) => clean(item.eventDate) === selectedDateKey);
   if (matching) activeIndex = events.findIndex((item) => item.id === matching.id);
   renderUpcomingSection();
@@ -659,6 +666,7 @@ calendarPrev?.addEventListener("click", () => {
   if (!calendarMonth) return;
   calendarMonth = new Date(calendarMonth.getFullYear(), calendarMonth.getMonth() - 1, 1);
   selectedDateKey = "";
+  filterActivityDate = false;
   renderUpcomingSection();
 });
 
@@ -666,6 +674,7 @@ calendarNext?.addEventListener("click", () => {
   if (!calendarMonth) return;
   calendarMonth = new Date(calendarMonth.getFullYear(), calendarMonth.getMonth() + 1, 1);
   selectedDateKey = "";
+  filterActivityDate = false;
   renderUpcomingSection();
 });
 
@@ -738,4 +747,12 @@ document.getElementById("studentLogout")?.addEventListener("click", async () => 
   sessionStorage.clear();
   try { await signOut(auth); } catch {}
   location.replace("../index/index.html");
+});
+
+document.getElementById('studentActivityTabs')?.addEventListener('click', event => {
+  const button = event.target.closest('[data-activity-type]'); if (!button) return;
+  activityType = button.dataset.activityType;
+  document.querySelectorAll('#studentActivityTabs button').forEach(item => item.setAttribute('aria-pressed', String(item === button)));
+  const render = () => renderUpcomingList();
+  if (globalThis.USC_FADE_ACTIVITY) globalThis.USC_FADE_ACTIVITY(upcomingList, render); else render();
 });

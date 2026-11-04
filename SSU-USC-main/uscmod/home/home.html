@@ -9,6 +9,8 @@
   <script src="../shared/app-config.js?v=7"></script>
 <link rel="stylesheet" href="../shared/announcement-text.css?v=1" />
 <link rel="stylesheet" href="../shared/announcement-reader.css?v=2-dialog-visibility" />
+<link rel="stylesheet" href="../shared/activity-calendar.css?v=1" />
+<script type="module" src="../shared/activity-calendar.js?v=1"></script>
 </head>
 <body>
     <a class="skip-link" href="#welcome-section">Skip to main content</a>
@@ -93,7 +95,7 @@
                     <h2 class="section-heading" id="eventsHeading">Upcoming Events</h2>
                     <p class="events-intro">Every event is an opportunity to voice your ideas, learn new skills, and connect with fellow students. Step up and be part of the change.</p>
                 </div>
-                <div class="events-side" id="homeEventList"></div>
+                <div class="activity-tabs" id="homeActivityTabs" role="group" aria-label="Activity type"><button type="button" data-activity-type="event" aria-pressed="true">Events</button><button type="button" data-activity-type="program" aria-pressed="false">Programs</button></div><div class="events-side activity-card-grid" id="homeEventList"></div>
             </div>
 
             <div class="calendar-side calendar-card-polished">
@@ -103,13 +105,9 @@
                     <button class="calendar-arrow" id="homeCalendarNext" type="button" aria-label="Next month"><i class="fa-solid fa-chevron-right" aria-hidden="true"></i></button>
                 </div>
 
-                <div class="calendar-legend home-calendar-legend" aria-hidden="true">
-                    <span><i class="legend-dot event"></i>Event date</span>
-                    <span><i class="legend-dot today"></i>Today</span>
-                    <span><i class="legend-dot selected"></i>Selected</span>
-                </div>
 
-                <div class="calendar-grid" id="homeCalendarGrid"></div>
+
+                <div class="calendar-grid" id="homeCalendarGrid"></div><div class="activity-legend" aria-label="Calendar legend"><span><i class="activity-event"></i>Events</span><span><i class="activity-program"></i>Programs</span><span>Solid outline: selected · Dashed: today</span></div>
             </div>
         </div>
     </section>

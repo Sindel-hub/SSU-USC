@@ -705,7 +705,8 @@ function renderDashboardCalendar() {
     const dateKey = normalizeDateKey(cellDate);
     const classNames = ["day-cell"];
 
-    if (eventDaySet.has(dateKey)) classNames.push("has-event");
+    if (eventDaySet.has(dateKey) && dashboardEventState.events.some(item => item.eventDate === dateKey && item.sourceType !== 'program')) classNames.push("has-event");
+    if (dashboardEventState.events.some(item => item.eventDate === dateKey && item.sourceType === 'program')) classNames.push("has-program");
     if (isSameDay(cellDate, today)) classNames.push("today");
     if (dashboardEventState.selectedDateKey === dateKey) classNames.push("selected");
 
