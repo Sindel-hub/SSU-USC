@@ -1,75 +1,70 @@
-/* Shared calendar standards. Management forms and permissions are untouched. */
-.activity-tabs { display:flex; gap:4px; width:fit-content; padding:4px; margin:18px 0; border:1px solid #c8dfef; border-radius:14px; background:#ffffffad; }
-.activity-tabs button { min-height:40px; padding:8px 22px; border:0; border-radius:10px; background:transparent; color:#194d79; font:inherit; font-size:14px; line-height:1.4; font-weight:600; cursor:pointer; }
+/* Landing and Student Events views only. Dashboard/overview calendars are unchanged. */
+.activity-tabs { display:flex; gap:4px; width:fit-content; padding:4px; margin:12px 0; border:1px solid #c8dfef; border-radius:14px; background:#ffffffad; }
+.activity-tabs button { min-height:40px; padding:8px 22px; border:0; border-radius:10px; background:transparent; color:#194d79; font:inherit; font-size:14px; font-weight:600; cursor:pointer; }
 .activity-tabs button[aria-pressed="true"] { background:#215a96; color:white; box-shadow:0 2px 8px #12385620; }
 .activity-tabs button:focus-visible { outline:3px solid #3bc8f2; outline-offset:2px; }
 .activity-legend { display:flex; flex-wrap:wrap; justify-content:center; gap:8px 16px; margin:14px 0 0; color:#426180; font-size:12px; line-height:1.5; }
 .activity-legend span { display:inline-flex; align-items:center; gap:6px; }
 .activity-legend i { width:9px; height:9px; border-radius:50%; }
 .activity-event { background:#ffe35b; } .activity-program { background:#b795ef; }
-:is(#homeCalendarGrid,#dashboardCalendarGrid,#eventsCalendarGrid) { display:grid; grid-template-columns:repeat(7,minmax(0,1fr)) !important; grid-template-rows:26px repeat(6,40px) !important; gap:5px !important; min-width:0; }
-:is(#homeCalendarGrid,#dashboardCalendarGrid,#eventsCalendarGrid) > * { min-width:0 !important; min-height:0 !important; height:auto !important; margin:0 !important; padding:0 !important; display:grid; place-items:center; }
-#officerCalendarDays { display:grid; grid-template-columns:repeat(7,minmax(0,1fr)); grid-template-rows:repeat(6,34px); gap:4px; }
-#officerCalendarDays > * { min-height:0 !important; height:34px !important; }
-:is(#homeCalendarGrid,#dashboardCalendarGrid,#eventsCalendarGrid,#officerCalendarDays) :is(.has-event,.event-day) { background:#ffe35b !important; color:#173d66 !important; box-shadow:none !important; }
-:is(#homeCalendarGrid,#dashboardCalendarGrid,#eventsCalendarGrid,#officerCalendarDays) .has-program { background:#b795ef !important; color:#202643 !important; box-shadow:none !important; }
-:is(#homeCalendarGrid,#dashboardCalendarGrid,#eventsCalendarGrid,#officerCalendarDays) :is(.has-event,.event-day).has-program { background:linear-gradient(135deg,#ffe35b 50%,#b795ef 50%) !important; }
-:is(#homeCalendarGrid,#dashboardCalendarGrid,#eventsCalendarGrid,#officerCalendarDays) :is(.selected,.focus-day) { outline:2px solid #174e86 !important; outline-offset:-2px; }
-:is(#homeCalendarGrid,#dashboardCalendarGrid,#eventsCalendarGrid,#officerCalendarDays) .today { border:2px dashed #2374aa !important; }
-#events-section .events-showcase { height:650px; box-sizing:border-box; align-items:center; }
-#events-section #homeEventList { display:grid !important; grid-template-columns:repeat(2,minmax(0,1fr)); grid-auto-rows:166px; align-content:start; height:280px !important; min-height:280px !important; gap:12px; overflow:auto; overscroll-behavior:contain; padding:4px 6px 4px 0; }
-#events-section #homeEventList .event-item { min-width:0; height:166px; box-sizing:border-box; padding:16px; margin:0; overflow:hidden; }
+:is(#homeCalendarGrid,#eventsCalendarGrid) { display:grid; grid-template-columns:repeat(7,minmax(0,1fr)) !important; grid-template-rows:26px repeat(6,40px) !important; gap:5px !important; min-width:0; align-items:stretch !important; }
+:is(#homeCalendarGrid,#eventsCalendarGrid) > * { min-width:0 !important; min-height:0 !important; height:auto !important; margin:0 !important; padding:0 !important; display:grid; place-items:center; align-self:stretch !important; }
+:is(#homeCalendarGrid,#eventsCalendarGrid) .has-event { background:#ffe35b !important; color:#173d66 !important; box-shadow:none !important; }
+:is(#homeCalendarGrid,#eventsCalendarGrid) .has-program { background:#b795ef !important; color:#202643 !important; box-shadow:none !important; }
+/* The primary fill follows the active category; a secondary dot preserves mixed dates. */
+:is(#homeCalendarGrid,#eventsCalendarGrid) :is(.has-event,.has-program)::after { display:none !important; }
+:is(#homeCalendarGrid,#eventsCalendarGrid) .has-both { position:relative; }
+:is(#homeCalendarGrid,#eventsCalendarGrid) .has-both::after { content:''; display:block !important; position:absolute; width:6px; height:6px; bottom:3px; left:calc(50% - 3px); border-radius:50%; border:1px solid #fff; }
+:is(#homeCalendarGrid,#eventsCalendarGrid) .has-both.has-event::after { background:#9261d8; }
+:is(#homeCalendarGrid,#eventsCalendarGrid) .has-both.has-program::after { background:#ffe35b; }
+:is(#homeCalendarGrid,#eventsCalendarGrid) .selected { outline:2px solid #174e86 !important; outline-offset:-2px; }
+:is(#homeCalendarGrid,#eventsCalendarGrid) .selected:not(.has-event):not(.has-program) { background:#eaf4ff !important; color:#173d66 !important; }
+:is(#homeCalendarGrid,#eventsCalendarGrid) .today { border:2px dashed #2374aa !important; }
+#events-section .events-showcase { height:auto; min-height:0; box-sizing:border-box; align-items:stretch; }
+#events-section .events-overview { gap:12px; }
+#events-section .section-heading { font-size:clamp(32px,3vw,44px); }
+#events-section #homeEventList,body.student-app-shell #eventsUpcomingList { display:grid !important; grid-template-columns:minmax(0,1fr); grid-auto-rows:128px; align-content:center; height:408px !important; min-height:408px !important; max-height:408px !important; gap:12px; overflow:auto !important; overscroll-behavior:contain; padding:0 6px 0 0; box-sizing:border-box; }
+#events-section #homeEventList .event-item { display:block; position:relative; min-width:0; height:128px; box-sizing:border-box; padding:12px 16px; margin:0; overflow:hidden; }
+#events-section #homeEventList .event-text { min-width:0; max-width:none; padding-left:8px; }
 #events-section #homeEventList .event-date-box { display:none; }
-#events-section #homeEventList h3 { font-size:17px; line-height:1.35; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
-#events-section #homeEventList .event-description-kicker { display:none; }
-#events-section #homeEventList .event-facts { font-size:12px; }
-body.student-app-shell #eventsUpcomingList { display:grid !important; grid-template-columns:repeat(2,minmax(0,1fr)); grid-auto-rows:210px; height:340px !important; min-height:340px !important; max-height:340px !important; overflow:auto !important; align-content:start; gap:12px; padding:4px 8px 4px 0; overscroll-behavior:contain; }
-body.student-app-shell #eventsUpcomingList .events-upcoming-card { display:flex; flex-direction:column; box-sizing:border-box; height:210px; min-height:0; margin:0; overflow:hidden; }
-#eventsUpcomingList .events-upcoming-card-select { min-width:0; flex:1; overflow:hidden; }
-#eventsUpcomingList .events-upcoming-card-foot { flex:0 0 auto; }
-#eventsUpcomingList .events-upcoming-card-copy strong { display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; font-size:16px; }
-#eventsUpcomingList .events-upcoming-card-copy > span { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-body.student-app-shell #eventsUpcomingSection .events-upcoming-content { height:650px !important; min-height:650px !important; box-sizing:border-box; align-items:center; }
+#events-section #homeEventList h3 { font-size:16px; line-height:1.25; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; margin:4px 0; }
+#events-section #homeEventList .event-description-kicker { display:block; overflow:hidden; white-space:nowrap; text-overflow:ellipsis; font-size:11px; line-height:1.4; }
+#events-section #homeEventList .event-facts { display:grid; gap:3px; font-size:12px; line-height:1.4; }
+body.student-app-shell #eventsUpcomingList .events-upcoming-card { display:flex; flex-direction:column; box-sizing:border-box; height:128px; min-height:0; margin:0; overflow:hidden; }
+#eventsUpcomingList .events-upcoming-card-select { min-width:0; flex:1; overflow:hidden; padding:8px 14px; }
+#eventsUpcomingList .events-upcoming-card-copy { min-width:0; }
+#eventsUpcomingList .events-upcoming-card-copy strong { display:-webkit-box; -webkit-line-clamp:1; -webkit-box-orient:vertical; overflow:hidden; font-size:15px; line-height:1.25; }
+#eventsUpcomingList .events-upcoming-card-copy > small { font-size:10px; line-height:1.3; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+#eventsUpcomingList .events-upcoming-card-copy > span { display:block; font-size:12px; line-height:1.3; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+#eventsUpcomingList .events-upcoming-card-foot { flex:0 0 44px; min-height:44px; box-sizing:border-box; padding:4px 12px; display:flex; flex-wrap:nowrap; align-items:center; gap:8px; }
+#eventsUpcomingList .events-registration-chip { min-width:0; max-width:52%; overflow:hidden; white-space:nowrap; text-overflow:ellipsis; font-size:10px; }
+#eventsUpcomingList .events-participate-link { white-space:nowrap; font-size:12px; min-height:36px; }
+body.student-app-shell #eventsUpcomingSection .events-upcoming-content { height:auto !important; min-height:0 !important; box-sizing:border-box; align-items:stretch; grid-template-columns:minmax(0,.9fr) minmax(0,1.3fr); padding:64px 24px 24px; }
+body.student-app-shell #eventsUpcomingSection .events-upcoming-calendar { box-sizing:border-box; width:100%; min-width:0; }
+body.student-app-shell #eventsUpcomingHeading { font-size:32px; line-height:1.2; margin-bottom:12px; }
+body.student-app-shell .events-upcoming-copy > p { font-size:14px; line-height:1.6; margin-bottom:12px; }
+.activity-card-grid.activity-many { align-content:start !important; }
 .activity-card-grid { scrollbar-width:thin; scrollbar-color:#759fc16b transparent; }
-.activity-card-grid .activity-fade { transition:opacity .22s ease !important; transform:none !important; opacity:1; }
-.activity-card-grid .activity-fade.activity-out { opacity:.12; }
+.activity-card-grid .activity-fade { transition:opacity .12s linear !important; transform:none !important; opacity:var(--activity-opacity,1); }
 .activity-card-grid.activity-switch { animation:activity-appear .22s ease; }
 @keyframes activity-appear { from {opacity:.25} to {opacity:1} }
-@media(max-width:1100px) {
- #events-section #homeEventList,body.student-app-shell #eventsUpcomingList { grid-template-columns:minmax(0,1fr); }
+@media(min-width:1101px) {
+ #events-section #homeEventList.activity-many,body.student-app-shell #eventsUpcomingList.activity-many { grid-template-columns:repeat(2,minmax(0,1fr)); }
 }
 @media(max-width:900px) {
- #events-section .events-showcase { height:960px; }
- body.student-app-shell #eventsUpcomingSection .events-upcoming-content { height:960px !important; min-height:960px !important; grid-template-columns:minmax(0,1fr) !important; gap:20px; }
+ #events-section .events-showcase { height:auto; grid-template-rows:auto auto; align-content:start; }
  #events-section .calendar-side { padding:18px; }
+ body.student-app-shell.events-module-shell #eventsUpcomingSection .events-upcoming-content { height:auto !important; min-height:0 !important; grid-template-columns:minmax(0,1fr) !important; grid-template-rows:auto auto; align-content:start; gap:20px; }
 }
 @media(prefers-reduced-motion:reduce) {
  .activity-card-grid .activity-fade { opacity:1 !important; transition:none !important; }
  .activity-card-grid.activity-switch { animation:none; }
 }
-#officerCalendarDays button { border:0; border-radius:7px; padding:0; background:transparent; font:inherit; color:inherit; cursor:pointer; }
-body.officer-reference-dashboard #officerOverviewEvents,body.officer-reference-dashboard #officerOverviewPrograms { height:260px; max-height:260px; box-sizing:border-box; overflow-y:auto; overscroll-behavior:contain; }
-#events-section #homeEventList .event-item { display:block; position:relative; }
-#events-section #homeEventList .event-text { min-width:0; width:auto; max-width:none; padding-left:8px; }
-#events-section #homeEventList .event-description-kicker { display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; font-size:11px; line-height:1.4; margin-bottom:5px; }
-#events-section #homeEventList .event-facts { display:grid; gap:4px; }
-body.student-app-shell #eventsUpcomingSection .events-upcoming-calendar { box-sizing:border-box; width:100%; min-width:0; }
-@media(max-width:900px) {
- body.student-app-shell.events-module-shell #eventsUpcomingSection .events-upcoming-content { height:1100px !important; min-height:1100px !important; grid-template-rows:auto auto; align-content:start; }
- body.student-app-shell #eventsUpcomingList { height:280px !important; min-height:280px !important; max-height:280px !important; }
+#eventsUpcomingList .events-upcoming-card-foot { flex-direction:row; }
+body.student-app-shell #eventsUpcomingSection .events-upcoming-calendar,
+#events-section .calendar-side { align-self:stretch !important; display:flex; flex-direction:column; justify-content:space-between; }
+
+@media(max-width:1100px) {
+ body.student-app-shell.events-module-shell #eventsUpcomingSection .events-upcoming-content { grid-template-columns:minmax(0,1fr) !important; grid-template-rows:auto auto; align-content:start; gap:20px; }
 }
-@media(min-width:901px) {
- body.student-app-shell #eventsUpcomingSection .events-upcoming-content { height:760px !important; min-height:760px !important; }
- body.student-app-shell #eventsUpcomingHeading { font-size:32px; line-height:1.2; margin-bottom:12px; }
- body.student-app-shell .events-upcoming-copy > p { font-size:14px; line-height:1.6; margin-bottom:14px; }
-}
-@media(max-width:900px) {
- #events-section .events-showcase { height:1100px; grid-template-rows:auto auto; align-content:center; }
- #events-section .events-overview { gap:14px; }
- #events-section .activity-tabs { margin:8px 0; }
- #events-section #homeEventList { height:240px !important; min-height:240px !important; }
-}
-/* Let the six-week calendar determine the shared row height, never the feed. */
-body.officer-reference-dashboard #officerOverviewEvents { contain:size; height:auto; max-height:none; min-height:0; align-self:stretch; }
-:is(#homeCalendarGrid,#dashboardCalendarGrid,#eventsCalendarGrid,#officerCalendarDays) .selected:not(.has-event):not(.event-day):not(.has-program) { background:#eaf4ff !important; color:#173d66 !important; }
-:is(#homeCalendarGrid,#dashboardCalendarGrid,#eventsCalendarGrid,#officerCalendarDays) :is(.has-event,.event-day,.has-program)::after { display:none !important; }
+:is(#homeCalendarGrid,#eventsCalendarGrid) .today.selected { outline-offset:-5px !important; }

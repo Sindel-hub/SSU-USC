@@ -344,20 +344,17 @@ function renderCalendar(){
   for(let d=1;d<=total;d++){
     const classes=[];
     if(eventDays.has(d)) classes.push('event-day');
-    if(state.programs.some(item=>{const date=getEventDate(item);return date&&date.getFullYear()===y&&date.getMonth()===m&&date.getDate()===d;})) classes.push('has-program');
     if(today.getDate()===d && today.getMonth()===m && today.getFullYear()===y) classes.push('today');
     if(focusDate===d) classes.push('focus-day');
-    const key = `${y}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
-    if(state.selectedActivityDate === key) classes.push('selected');
-    cells.push(`<button type="button" data-overview-date="${key}" class="${classes.join(' ')}" aria-label="${key}">${d}</button>`);
+    cells.push(`<span class="${classes.join(' ')}">${d}</span>`);
   }
   let nextDay=1;
-  while(cells.length<42)cells.push(`<span class="muted">${nextDay++}</span>`);
+  while(cells.length<35)cells.push(`<span class="muted">${nextDay++}</span>`);
   daysEl.innerHTML=cells.join('');
 }
 function overviewRecordRows(records, counts, kind) {
   const today = new Date(); today.setHours(0,0,0,0);
-  const upcoming = records.filter(item => { const date = getEventDate(item); if(!date)return false; const key = `${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,'0')}-${String(date.getDate()).padStart(2,'0')}`;return state.selectedActivityDate ? key === state.selectedActivityDate : date >= today; });
+  const upcoming = records.filter(item => { const date = getEventDate(item); return date && date >= today; }).slice(0,4);
   if (!upcoming.length) return `<div class="overview-record-empty">No upcoming ${kind}.</div>`;
   return upcoming.map(item => `<a class="overview-record-row" href="../${kind}/${kind}.html"><time>${escapeHtml(formatDate(getEventDate(item)))}</time><strong>${escapeHtml(clean(item.title || item.name,'Untitled'))}</strong><span>${escapeHtml(formatTimeRange(item))} · ${escapeHtml(clean(item.venue || item.location,'Venue to be announced'))}</span>${kind === 'programs' ? `<span>${escapeHtml(clean(item.hostOrganization || item.organizer || item.partnerOrganization,'External partner'))}</span>` : ''}<small>${escapeHtml(registrationStatus(item).label)} · ${state.feeds.registrations === true ? `${counts.get(item.id) || 0} portal registrations` : state.feeds.registrations === "error" ? "Registration data unavailable" : "Loading registrations…"}</small></a>`).join('');
 }
@@ -378,7 +375,6 @@ function renderEvents(){
 function renderPrograms(){
   const host=document.getElementById('officerOverviewPrograms');
   if (host) host.innerHTML=overviewRecordRows(state.programs,programRegistrationCounts(),'programs');
-  renderCalendar();
 }
 
 function bindEvents(){ onSnapshot(collection(db,"events"), snap => { state.feeds.events=true;state.events=snap.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>(getEventDate(a)?.getTime()||Infinity)-(getEventDate(b)?.getTime()||Infinity)); const today=new Date();today.setHours(0,0,0,0);const upcomingCount=state.events.filter(e=>{const d=getEventDate(e);return d&&d>=today;}).length; setText("[data-overview-upcoming-events]",upcomingCount); renderEvents(); renderEventParticipationAnalytics(); },()=>{state.feeds.events="error";state.events=[];setText("[data-overview-upcoming-events]",0);renderEvents();renderEventParticipationAnalytics();}); }
@@ -587,11 +583,5 @@ bindStudentSignInAnalytics();
 setInterval(() => { renderEventParticipationAnalytics(); renderProgramParticipationAnalytics(); }, 30000);
 
 for (const [label, step] of [['Previous month',-1],['Next month',1]]) {
-  document.querySelector(`.calendar-head button[aria-label="${label}"]`)?.addEventListener('click',()=>{ calendarOffset += step; state.selectedActivityDate = ""; renderEvents(); renderPrograms(); });
+  document.querySelector(`.calendar-head button[aria-label="${label}"]`)?.addEventListener('click',()=>{ calendarOffset += step; renderCalendar(); });
 }
-
-document.getElementById('officerCalendarDays')?.addEventListener('click', event => {
-  const button = event.target.closest('[data-overview-date]'); if (!button) return;
-  state.selectedActivityDate = button.dataset.overviewDate;
-  renderEvents(); renderPrograms();
-});

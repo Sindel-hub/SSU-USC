@@ -333,12 +333,13 @@ function renderUpcomingList() {
   candidates = [...candidates]
     .sort((a, b) => eventSortValue(a) - eventSortValue(b));
 
+  upcomingList.classList.toggle('activity-many', candidates.length >= 4);
   if (!candidates.length) {
     upcomingList.innerHTML = `
       <div class="events-upcoming-empty">
         <i class="fa-regular fa-calendar"></i>
-        <strong>No upcoming events or programs yet</strong>
-        <span>University events and outside-university programs will appear here automatically.</span>
+        <strong>No ${activityType === "program" ? "programs" : "events"} for this selection</strong>
+        <span>Try another month or switch activity type.</span>
       </div>`;
     return;
   }
@@ -393,8 +394,11 @@ function renderCalendar() {
     const date = new Date(year, month, day);
     const key = normalizeDateKey(date);
     const classes = ["events-calendar-day"];
-    if (eventDates.has(key) && events.some(item => clean(item.eventDate) === key && itemSource(item) === 'event')) classes.push("has-event");
-    if (events.some(item => clean(item.eventDate) === key && itemSource(item) === 'program')) classes.push("has-program");
+    const hasEvent = events.some(item => clean(item.eventDate) === key && itemSource(item) === 'event');
+    const hasProgram = events.some(item => clean(item.eventDate) === key && itemSource(item) === 'program');
+    if (hasEvent && activityType === 'event') classes.push('has-event');
+    if (hasProgram && activityType === 'program') classes.push('has-program');
+    if (hasEvent && hasProgram) classes.push('has-both');
     if (key === selectedDateKey) classes.push("selected");
     if (date.getTime() === today.getTime()) classes.push("today");
     cells.push(`<button class="${classes.join(" ")}" type="button" data-calendar-date="${key}">${day}</button>`);
@@ -753,6 +757,6 @@ document.getElementById('studentActivityTabs')?.addEventListener('click', event 
   const button = event.target.closest('[data-activity-type]'); if (!button) return;
   activityType = button.dataset.activityType;
   document.querySelectorAll('#studentActivityTabs button').forEach(item => item.setAttribute('aria-pressed', String(item === button)));
-  const render = () => renderUpcomingList();
+  const render = () => renderUpcomingSection();
   if (globalThis.USC_FADE_ACTIVITY) globalThis.USC_FADE_ACTIVITY(upcomingList, render); else render();
 });

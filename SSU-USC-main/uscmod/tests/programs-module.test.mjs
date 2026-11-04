@@ -19,7 +19,10 @@ test('student Events / Programs module merges event and program collections with
   const html = read('dashboard/events.html');
   const js = read('dashboard/js/events.js');
   assert.match(html, /Events \/ Programs/);
-  assert.match(html, /Upcoming Events &amp; Programs/);
+  assert.match(html, /id="eventsUpcomingHeading">Upcoming Events<\/h2>/);
+  assert.match(html, /id="studentActivityTabs"/);
+  assert.match(html, /data-activity-type="event"/);
+  assert.match(html, /data-activity-type="program"/);
   assert.match(js, /bindSourceFeed\("events", "event"\)/);
   assert.match(js, /bindSourceFeed\("programs", "program"\)/);
   assert.match(js, /EXTERNAL PROGRAM PARTICIPATION/);

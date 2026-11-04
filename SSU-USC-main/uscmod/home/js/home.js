@@ -535,13 +535,14 @@ function renderHomeEventList() {
   const sortedEvents = monthEvents.filter(item => (item.sourceType || "event") === (homeEventState.activityType || "event") && (!homeEventState.filterDate || item.eventDate === homeEventState.selectedDateKey))
     .sort((left, right) => safeText(left.eventDate).localeCompare(safeText(right.eventDate)));
 
+  dom.eventList.classList.toggle('activity-many', sortedEvents.length >= 4);
   if (!sortedEvents.length) {
     dom.eventList.innerHTML = `
       <div class="events-empty">
         <div class="events-empty-card">
           <i class="fa-regular fa-calendar"></i>
-          <h3>No events scheduled</h3>
-          <p>When officers publish an event, it will appear here automatically.</p>
+          <h3>No ${homeEventState.activityType === "program" ? "programs" : "events"} scheduled</h3>
+          <p>Try another month or activity type.</p>
         </div>
       </div>
     `;
@@ -586,8 +587,11 @@ function renderHomeCalendar() {
     const cellDate = new Date(year, month, day);
     const dateKey = normalizeDateKey(cellDate);
     const classNames = ["day-cell"];
-    if (eventDaySet.has(dateKey) && homeEventState.events.some(item => item.eventDate === dateKey && item.sourceType !== 'program')) classNames.push("has-event");
-    if (homeEventState.events.some(item => item.eventDate === dateKey && item.sourceType === 'program')) classNames.push("has-program");
+    const hasEvent = homeEventState.events.some(item => item.eventDate === dateKey && item.sourceType !== 'program');
+    const hasProgram = homeEventState.events.some(item => item.eventDate === dateKey && item.sourceType === 'program');
+    if (hasEvent && (homeEventState.activityType || 'event') === 'event') classNames.push('has-event');
+    if (hasProgram && homeEventState.activityType === 'program') classNames.push('has-program');
+    if (hasEvent && hasProgram) classNames.push('has-both');
     if (isSameDay(cellDate, today)) classNames.push("today");
     if (homeEventState.selectedDateKey === dateKey) classNames.push("selected");
 
@@ -632,7 +636,7 @@ function startHomeEventsListener() {
     const button = event.target.closest('[data-activity-type]'); if (!button) return;
     homeEventState.activityType = button.dataset.activityType;
     document.querySelectorAll('#homeActivityTabs button').forEach(item => item.setAttribute('aria-pressed', String(item === button)));
-    const render = () => renderHomeEventList();
+    const render = () => { renderHomeCalendar(); renderHomeEventList(); };
     if (globalThis.USC_FADE_ACTIVITY) globalThis.USC_FADE_ACTIVITY(dom.eventList, render); else render();
   });
 }
@@ -685,6 +689,7 @@ function bindScrollButton() {
 function bindSectionStepNavigation() {
   const readerOpen = () => document.getElementById("landingAnnouncementDialog")?.open === true;
   const mobileQuery = window.matchMedia("(max-width: 940px)");
+  const activityScroll = target => target instanceof Element && Boolean(target.closest('.activity-card-grid'));
 
   // Wheel/trackpad input needs a short gesture lock because one physical
   // trackpad swipe can emit dozens of wheel events. Touch input does not use
@@ -812,7 +817,7 @@ function bindSectionStepNavigation() {
   };
 
   window.addEventListener("wheel", (event) => {
-    if (readerOpen()) return; // Native scrolling belongs to the announcement, not landing chapters.
+    if (readerOpen() || activityScroll(event.target)) return; // Readers and activity lists own their native scrolling.
     if (Math.abs(event.deltaY) < 18) return;
 
     // Trackpads emit a stream of wheel events for one physical gesture. Swallow
@@ -831,7 +836,7 @@ function bindSectionStepNavigation() {
   // always means exactly one chapter, and a second immediate swipe can target
   // the next/previous chapter even while the first smooth scroll is finishing.
   window.addEventListener("touchstart", (event) => {
-    if (readerOpen()) { touchCaptured = false; touchStartTarget = null; return; }
+    if (readerOpen() || activityScroll(event.target) || activityScroll(touchStartTarget)) { touchCaptured = false; touchStartTarget = null; return; }
     if (!mobileQuery.matches) return;
     const touch = event.changedTouches?.[0];
     if (!touch) return;
@@ -851,7 +856,7 @@ function bindSectionStepNavigation() {
   }, { passive: true });
 
   window.addEventListener("touchmove", (event) => {
-    if (readerOpen()) { touchCaptured = false; touchStartTarget = null; return; }
+    if (readerOpen() || activityScroll(event.target) || activityScroll(touchStartTarget)) { touchCaptured = false; touchStartTarget = null; return; }
     if (!mobileQuery.matches) return;
     const touch = event.changedTouches?.[0] || event.touches?.[0];
     if (!touch) return;
@@ -874,7 +879,7 @@ function bindSectionStepNavigation() {
   }, { passive: false });
 
   window.addEventListener("touchend", (event) => {
-    if (readerOpen()) { touchCaptured = false; touchStartTarget = null; return; }
+    if (readerOpen() || activityScroll(event.target) || activityScroll(touchStartTarget)) { touchCaptured = false; touchStartTarget = null; return; }
     if (!mobileQuery.matches) return;
     const touch = event.changedTouches?.[0];
     if (touch) {

@@ -3,8 +3,8 @@ const motion = matchMedia('(prefers-reduced-motion: reduce)');
 for (const list of document.querySelectorAll('.activity-card-grid')) {
   const tracked = new Set();
   const observer = new IntersectionObserver(entries => {
-    for (const entry of entries) entry.target.classList.toggle('activity-out', !motion.matches && entry.intersectionRatio < .12);
-  }, {root:list,threshold:[0,.12,1]});
+    for (const entry of entries) entry.target.style.setProperty('--activity-opacity', motion.matches ? '1' : String(Math.max(.15, Math.min(1, entry.intersectionRatio / .8))));
+  }, {root:null,threshold:Array.from({length:21},(_,index)=>index/20)});
   const sync = () => {
     for (const item of tracked) if (!list.contains(item)) { observer.unobserve(item); tracked.delete(item); }
     for (const item of list.children) if (!tracked.has(item)) { item.classList.add('activity-fade'); observer.observe(item); tracked.add(item); }
@@ -13,7 +13,7 @@ for (const list of document.querySelectorAll('.activity-card-grid')) {
     list.classList.add('activity-switch');
   };
   new MutationObserver(sync).observe(list,{childList:true});
-  motion.addEventListener('change', () => { for (const item of tracked) item.classList.remove('activity-out'); });
+  motion.addEventListener('change', () => { for (const item of tracked) item.style.removeProperty('--activity-opacity'); });
   sync();
 }
 const switches = new WeakMap();
