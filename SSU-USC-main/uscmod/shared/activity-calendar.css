@@ -82,3 +82,23 @@ body.student-app-shell #eventsUpcomingSection .events-upcoming-calendar,
  #events-section .calendar-side { padding:14px; }
  #events-section #homeCalendarTitle { font-size:18px; }
 }
+/* Keep the whole landing composition compact, including sparse event lists. */
+#events-section .events-showcase { width:min(940px,100%); gap:24px; padding:24px; }
+#events-section .events-overview { gap:8px; }
+#events-section .section-heading { font-size:32px; margin-bottom:10px; }
+#events-section .events-intro { font-size:14px; line-height:1.45; }
+#events-section .activity-tabs { margin:4px auto 8px; }
+#events-section #homeEventList { height:360px !important; min-height:360px !important; max-height:360px !important; grid-auto-rows:112px; align-content:start; }
+#events-section #homeEventList .event-item { height:112px; padding:8px 12px; }
+#events-section #homeEventList h3 { font-size:15px; line-height:1.2; margin:2px 0; }
+#events-section #homeEventList .event-description-kicker { font-size:10px; line-height:1.2; }
+#events-section #homeEventList .event-facts { font-size:11px; line-height:1.2; gap:2px; }
+#events-section .calendar-side { max-width:360px; padding:16px; }
+#events-section #homeCalendarGrid { grid-template-rows:22px repeat(6,32px) !important; }
+#events-section .calendar-header { grid-template-columns:32px minmax(0,1fr) 32px; min-height:36px; gap:4px; margin-bottom:10px; }
+#events-section .calendar-arrow { width:32px; height:32px; }
+#events-section #homeCalendarTitle { font-size:18px; }
+@media(max-width:640px) {
+ #events-section .events-showcase { padding:18px 14px; gap:18px; }
+ #events-section #homeCalendarTitle { font-size:clamp(13px,3.8vw,18px); }
+}
