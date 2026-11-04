@@ -71,3 +71,5 @@ body.student-app-shell #eventsUpcomingSection .events-upcoming-calendar { box-si
 }
 /* Let the six-week calendar determine the shared row height, never the feed. */
 body.officer-reference-dashboard #officerOverviewEvents { contain:size; height:auto; max-height:none; min-height:0; align-self:stretch; }
+:is(#homeCalendarGrid,#dashboardCalendarGrid,#eventsCalendarGrid,#officerCalendarDays) .selected:not(.has-event):not(.event-day):not(.has-program) { background:#eaf4ff !important; color:#173d66 !important; }
+:is(#homeCalendarGrid,#dashboardCalendarGrid,#eventsCalendarGrid,#officerCalendarDays) :is(.has-event,.event-day,.has-program)::after { display:none !important; }
