@@ -1,0 +1,47 @@
+/* Student Events composition, sized for the public landing page. */
+#events-section .events-showcase {
+  width:min(900px,100%); min-height:0; height:auto; padding:20px;
+  display:grid; grid-template-columns:minmax(0,.9fr) minmax(0,1.3fr);
+  gap:24px; align-items:stretch;
+}
+#events-section .events-overview { align-self:start; gap:8px; }
+#events-section .activity-tabs { margin:0 auto; }
+#events-section .events-eyebrow { display:none; }
+#events-section .section-heading { font-size:32px; line-height:1.2; margin:0 0 12px; }
+#events-section .events-intro { font-size:14px; line-height:1.6; margin:0; }
+#events-section #homeEventList {
+  height:396px !important; min-height:396px !important; max-height:396px !important;
+  grid-auto-rows:124px; gap:12px !important; align-content:start; padding:0 4px 0 0;
+}
+#events-section #homeEventList .event-item {
+  box-sizing:border-box; min-height:0 !important; height:124px; max-height:124px;
+  margin:0 !important; padding:10px 14px; border:1px solid #dce7f0; border-radius:8px;
+  background:#fff; box-shadow:none !important; transform:none !important;
+}
+#events-section #homeEventList .event-accent {
+  position:absolute; left:14px; top:12px; bottom:12px; width:3px; min-height:0;
+  border-radius:2px; background:#2866e7;
+}
+#events-section #homeEventList .external-program .event-accent { background:#8943e9; }
+#events-section #homeEventList .event-text { padding-left:10px; }
+#events-section #homeEventList .event-description-kicker { font-size:11px; line-height:1.2; margin:0; }
+#events-section #homeEventList h3 { font-size:15px; line-height:1.2; margin:2px 0; font-weight:700; }
+#events-section #homeEventList .event-facts { font-size:12px; line-height:1.2; gap:2px; }
+#events-section .calendar-side {
+  align-self:stretch !important; justify-self:stretch; width:100%; max-width:none; min-height:0;
+  height:auto; padding:20px; border-radius:8px; display:flex; flex-direction:column;
+  justify-content:space-between;
+}
+#events-section .calendar-header { grid-template-columns:36px minmax(0,1fr) 36px; min-height:40px; gap:4px; margin-bottom:14px; }
+#events-section .calendar-arrow { width:36px; height:36px; }
+#events-section #homeCalendarTitle { font-size:20px; }
+#events-section #homeCalendarGrid { grid-template-rows:26px repeat(6,36px) !important; }
+@media(max-width:900px) {
+  #events-section .events-showcase { grid-template-columns:minmax(0,1fr); grid-template-rows:auto auto; padding:20px; gap:20px; }
+  #events-section .calendar-side { padding:18px; }
+}
+@media(max-width:400px) {
+  #events-section .events-showcase { padding:16px 12px; }
+  #events-section .section-heading { font-size:28px; }
+  #events-section #homeCalendarTitle { font-size:18px; }
+}

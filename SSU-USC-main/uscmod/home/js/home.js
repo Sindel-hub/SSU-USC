@@ -510,14 +510,14 @@ function buildHomeEventItem(eventItem, isHighlighted = false) {
   );
 
   return `
-    <article class="event-item ${isHighlighted ? "highlighted" : ""}">
+    <article class="event-item ${eventItem.sourceType === "program" ? "external-program" : "university-event"} ${isHighlighted ? "highlighted" : ""}">
       <span class="event-accent" aria-hidden="true"></span>
       <div class="event-text">
         <span class="event-description-kicker">${escapeHtml(description)}</span>
-        <h3>${escapeHtml(safeText(eventItem.title, "Untitled Event"))}</h3>
+        <h3 title="${escapeHtml(safeText(eventItem.title, "Untitled Event"))}">${escapeHtml(safeText(eventItem.title, "Untitled Event"))}</h3>
         <div class="event-facts">
-          <span><i class="fa-regular fa-calendar" aria-hidden="true"></i>${escapeHtml(formatDate(eventItem.eventDate))}</span>
-          <span><i class="fa-solid fa-location-dot" aria-hidden="true"></i>${escapeHtml(safeText(eventItem.venue, "Venue to be announced"))}</span>
+          <span>${escapeHtml(formatDate(eventItem.eventDate))}</span>
+          <span>Venue: ${escapeHtml(safeText(eventItem.venue, "Venue to be announced"))}</span>
         </div>
       </div>
       <div class="event-date-box" aria-label="${escapeHtml(monthLabel)} ${escapeHtml(dayLabel)}">
