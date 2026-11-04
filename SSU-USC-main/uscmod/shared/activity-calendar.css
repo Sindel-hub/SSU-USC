@@ -1,0 +1,104 @@
+/* Landing and Student Events views only. Dashboard/overview calendars are unchanged. */
+.activity-tabs { display:flex; gap:16px; width:fit-content; padding:0; margin:8px auto 12px; border:0; background:transparent; }
+.activity-tabs button { position:relative; isolation:isolate; min-height:40px; padding:0 18px; border:0; border-radius:0; background:transparent; color:#fff; font:inherit; font-size:11px; line-height:1.4; font-weight:500; letter-spacing:.04em; text-transform:uppercase; cursor:pointer; }
+.activity-tabs button::before { content:''; position:absolute; z-index:-1; inset:11px 6px; border-radius:999px; background:transparent; }
+.activity-tabs button[aria-pressed="true"] { background:transparent; color:white; box-shadow:none; }
+.activity-tabs button[aria-pressed="true"]::before { background:#6c7038; }
+.activity-tabs button + button::after { content:''; position:absolute; left:-8px; top:14px; bottom:14px; width:1px; background:#ffffffa6; }
+.activity-tabs button:focus-visible { outline:2px solid #3bc8f2; outline-offset:0; border-radius:6px; }
+.activity-legend { display:flex; flex-wrap:wrap; justify-content:center; gap:8px 16px; margin:14px 0 0; color:#426180; font-size:12px; line-height:1.5; }
+.activity-legend span { display:inline-flex; align-items:center; gap:6px; }
+.activity-legend i { width:9px; height:9px; border-radius:50%; }
+.activity-event { background:#ffe35b; } .activity-program { background:#b795ef; }
+:is(#homeCalendarGrid,#eventsCalendarGrid) { display:grid; grid-template-columns:repeat(7,minmax(0,1fr)) !important; grid-template-rows:26px repeat(6,40px) !important; gap:5px !important; min-width:0; align-items:stretch !important; }
+:is(#homeCalendarGrid,#eventsCalendarGrid) > * { min-width:0 !important; min-height:0 !important; height:auto !important; margin:0 !important; padding:0 !important; display:grid; place-items:center; align-self:stretch !important; }
+:is(#homeCalendarGrid,#eventsCalendarGrid) .has-event { background:#ffe35b !important; color:#173d66 !important; box-shadow:none !important; }
+:is(#homeCalendarGrid,#eventsCalendarGrid) .has-program { background:#b795ef !important; color:#202643 !important; box-shadow:none !important; }
+/* The primary fill follows the active category; a secondary dot preserves mixed dates. */
+:is(#homeCalendarGrid,#eventsCalendarGrid) :is(.has-event,.has-program)::after { display:none !important; }
+:is(#homeCalendarGrid,#eventsCalendarGrid) .has-both { position:relative; }
+:is(#homeCalendarGrid,#eventsCalendarGrid) .has-both::after { content:''; display:block !important; position:absolute; width:6px; height:6px; bottom:3px; left:calc(50% - 3px); border-radius:50%; border:1px solid #fff; }
+:is(#homeCalendarGrid,#eventsCalendarGrid) .has-both.has-event::after { background:#9261d8; }
+:is(#homeCalendarGrid,#eventsCalendarGrid) .has-both.has-program::after { background:#ffe35b; }
+:is(#homeCalendarGrid,#eventsCalendarGrid) .selected { outline:2px solid #174e86 !important; outline-offset:-2px; }
+:is(#homeCalendarGrid,#eventsCalendarGrid) .selected:not(.has-event):not(.has-program) { background:#eaf4ff !important; color:#173d66 !important; }
+:is(#homeCalendarGrid,#eventsCalendarGrid) .today { border:2px dashed #2374aa !important; }
+#events-section .events-showcase { height:auto; min-height:0; box-sizing:border-box; align-items:stretch; }
+#events-section .events-overview { gap:12px; }
+#events-section .section-heading { font-size:clamp(32px,3vw,44px); }
+#events-section #homeEventList,body.student-app-shell #eventsUpcomingList { display:grid !important; grid-template-columns:minmax(0,1fr); grid-auto-rows:128px; align-content:center; height:408px !important; min-height:408px !important; max-height:408px !important; gap:12px; overflow:auto !important; overscroll-behavior:contain; padding:0 6px 0 0; box-sizing:border-box; }
+#events-section #homeEventList .event-item { display:block; position:relative; min-width:0; height:128px; box-sizing:border-box; padding:12px 16px; margin:0; overflow:hidden; }
+#events-section #homeEventList .event-text { min-width:0; max-width:none; padding-left:8px; }
+#events-section #homeEventList .event-date-box { display:none; }
+#events-section #homeEventList h3 { font-size:16px; line-height:1.25; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; margin:4px 0; }
+#events-section #homeEventList .event-description-kicker { display:block; overflow:hidden; white-space:nowrap; text-overflow:ellipsis; font-size:11px; line-height:1.4; }
+#events-section #homeEventList .event-facts { display:grid; gap:3px; font-size:12px; line-height:1.4; }
+body.student-app-shell #eventsUpcomingList .events-upcoming-card { display:flex; flex-direction:column; box-sizing:border-box; height:128px; min-height:0; margin:0; overflow:hidden; }
+#eventsUpcomingList .events-upcoming-card-select { min-width:0; flex:1; overflow:hidden; padding:8px 14px; }
+#eventsUpcomingList .events-upcoming-card-copy { min-width:0; }
+#eventsUpcomingList .events-upcoming-card-copy strong { display:-webkit-box; -webkit-line-clamp:1; -webkit-box-orient:vertical; overflow:hidden; font-size:15px; line-height:1.25; }
+#eventsUpcomingList .events-upcoming-card-copy > small { font-size:10px; line-height:1.3; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+#eventsUpcomingList .events-upcoming-card-copy > span { display:block; font-size:12px; line-height:1.3; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+#eventsUpcomingList .events-upcoming-card-foot { flex:0 0 44px; min-height:44px; box-sizing:border-box; padding:4px 12px; display:flex; flex-wrap:nowrap; align-items:center; gap:8px; }
+#eventsUpcomingList .events-registration-chip { min-width:0; max-width:52%; overflow:hidden; white-space:nowrap; text-overflow:ellipsis; font-size:10px; }
+#eventsUpcomingList .events-participate-link { white-space:nowrap; font-size:12px; min-height:36px; }
+body.student-app-shell #eventsUpcomingSection .events-upcoming-content { height:auto !important; min-height:0 !important; box-sizing:border-box; align-items:stretch; grid-template-columns:minmax(0,.9fr) minmax(0,1.3fr); padding:64px 24px 24px; }
+body.student-app-shell #eventsUpcomingSection .events-upcoming-calendar { box-sizing:border-box; width:100%; min-width:0; }
+body.student-app-shell #eventsUpcomingHeading { font-size:32px; line-height:1.2; margin-bottom:12px; }
+body.student-app-shell .events-upcoming-copy > p { font-size:14px; line-height:1.6; margin-bottom:12px; }
+.activity-card-grid.activity-many { align-content:start !important; }
+.activity-card-grid { scrollbar-width:thin; scrollbar-color:#759fc16b transparent; }
+.activity-card-grid .activity-fade { transition:opacity .12s linear !important; transform:none !important; opacity:var(--activity-opacity,1); }
+.activity-card-grid.activity-switch { animation:activity-appear .22s ease; }
+@keyframes activity-appear { from {opacity:.25} to {opacity:1} }
+@media(min-width:1101px) {
+ #events-section #homeEventList.activity-many,body.student-app-shell #eventsUpcomingList.activity-many { grid-template-columns:repeat(2,minmax(0,1fr)); }
+}
+@media(max-width:900px) {
+ #events-section .events-showcase { height:auto; grid-template-rows:auto auto; align-content:start; }
+ #events-section .calendar-side { padding:18px; }
+ body.student-app-shell.events-module-shell #eventsUpcomingSection .events-upcoming-content { height:auto !important; min-height:0 !important; grid-template-columns:minmax(0,1fr) !important; grid-template-rows:auto auto; align-content:start; gap:20px; }
+}
+@media(prefers-reduced-motion:reduce) {
+ .activity-card-grid .activity-fade { opacity:1 !important; transition:none !important; }
+ .activity-card-grid.activity-switch { animation:none; }
+}
+#eventsUpcomingList .events-upcoming-card-foot { flex-direction:row; }
+body.student-app-shell #eventsUpcomingSection .events-upcoming-calendar,
+#events-section .calendar-side { align-self:stretch !important; display:flex; flex-direction:column; justify-content:space-between; }
+
+@media(max-width:1100px) {
+ body.student-app-shell.events-module-shell #eventsUpcomingSection .events-upcoming-content { grid-template-columns:minmax(0,1fr) !important; grid-template-rows:auto auto; align-content:start; gap:20px; }
+}
+:is(#homeCalendarGrid,#eventsCalendarGrid) .today.selected { outline-offset:-5px !important; }
+
+/* Compact landing calendar; Student calendar proportions stay unchanged. */
+#events-section .calendar-side { align-self:center !important; justify-self:center; box-sizing:border-box; max-width:430px; min-height:0; height:auto; padding:20px; }
+#events-section #homeCalendarGrid { grid-template-rows:24px repeat(6,34px) !important; }
+#events-section .calendar-header { margin-bottom:12px; }
+#events-section #homeCalendarTitle { font-size:20px; }
+#events-section .activity-legend { font-size:11px; }
+@media(max-width:640px) {
+ #events-section .calendar-side { padding:14px; }
+ #events-section #homeCalendarTitle { font-size:18px; }
+}
+/* Keep the whole landing composition compact, including sparse event lists. */
+#events-section .events-showcase { width:min(940px,100%); gap:24px; padding:24px; }
+#events-section .events-overview { gap:8px; }
+#events-section .section-heading { font-size:32px; margin-bottom:10px; }
+#events-section .events-intro { font-size:14px; line-height:1.45; }
+#events-section .activity-tabs { margin:4px auto 8px; }
+#events-section #homeEventList { height:360px !important; min-height:360px !important; max-height:360px !important; grid-auto-rows:112px; align-content:start; }
+#events-section #homeEventList .event-item { height:112px; padding:8px 12px; }
+#events-section #homeEventList h3 { font-size:15px; line-height:1.2; margin:2px 0; }
+#events-section #homeEventList .event-description-kicker { font-size:10px; line-height:1.2; }
+#events-section #homeEventList .event-facts { font-size:11px; line-height:1.2; gap:2px; }
+#events-section .calendar-side { max-width:360px; padding:16px; }
+#events-section #homeCalendarGrid { grid-template-rows:22px repeat(6,32px) !important; }
+#events-section .calendar-header { grid-template-columns:32px minmax(0,1fr) 32px; min-height:36px; gap:4px; margin-bottom:10px; }
+#events-section .calendar-arrow { width:32px; height:32px; }
+#events-section #homeCalendarTitle { font-size:18px; }
+@media(max-width:640px) {
+ #events-section .events-showcase { padding:18px 14px; gap:18px; }
+ #events-section #homeCalendarTitle { font-size:clamp(13px,3.8vw,18px); }
+}

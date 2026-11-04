@@ -45,6 +45,7 @@
       stopWheel();
       return;
     }
+    if (event.target.closest?.('.activity-card-grid')) { stopWheel(); return; }
     const delta = event.deltaY * (event.deltaMode === 1 ? 16 : event.deltaMode === 2 ? frame.clientHeight : 1);
     if (nestedCanScroll(event.target, delta) ||
         (delta > 0 ? frame.scrollTop >= limit() - 1 : frame.scrollTop <= 1)) {

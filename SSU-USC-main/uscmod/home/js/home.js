@@ -87,6 +87,9 @@ const dom = {
 const announcementsCollection = collection(db, "announcements");
 
 const homeEventState = {
+  sources: {events: [], programs: []},
+  activityType: "event",
+  filterDate: false,
   events: [],
   currentMonth: null,
   selectedDateKey: ""
@@ -507,14 +510,14 @@ function buildHomeEventItem(eventItem, isHighlighted = false) {
   );
 
   return `
-    <article class="event-item ${isHighlighted ? "highlighted" : ""}">
+    <article class="event-item ${eventItem.sourceType === "program" ? "external-program" : "university-event"} ${isHighlighted ? "highlighted" : ""}">
       <span class="event-accent" aria-hidden="true"></span>
       <div class="event-text">
         <span class="event-description-kicker">${escapeHtml(description)}</span>
-        <h3>${escapeHtml(safeText(eventItem.title, "Untitled Event"))}</h3>
+        <h3 title="${escapeHtml(safeText(eventItem.title, "Untitled Event"))}">${escapeHtml(safeText(eventItem.title, "Untitled Event"))}</h3>
         <div class="event-facts">
-          <span><i class="fa-regular fa-calendar" aria-hidden="true"></i>${escapeHtml(formatDate(eventItem.eventDate))}</span>
-          <span><i class="fa-solid fa-location-dot" aria-hidden="true"></i>${escapeHtml(safeText(eventItem.venue, "Venue to be announced"))}</span>
+          <span>${escapeHtml(formatDate(eventItem.eventDate))}</span>
+          <span>Venue: ${escapeHtml(safeText(eventItem.venue, "Venue to be announced"))}</span>
         </div>
       </div>
       <div class="event-date-box" aria-label="${escapeHtml(monthLabel)} ${escapeHtml(dayLabel)}">
@@ -529,17 +532,17 @@ function renderHomeEventList() {
   if (!dom.eventList) return;
 
   const monthEvents = getEventsForVisibleMonth();
-  const sortedEvents = [...monthEvents]
-    .sort((left, right) => safeText(left.eventDate).localeCompare(safeText(right.eventDate)))
-    .slice(0, 3);
+  const sortedEvents = monthEvents.filter(item => (item.sourceType || "event") === (homeEventState.activityType || "event") && (!homeEventState.filterDate || item.eventDate === homeEventState.selectedDateKey))
+    .sort((left, right) => safeText(left.eventDate).localeCompare(safeText(right.eventDate)));
 
+  dom.eventList.classList.toggle('activity-many', sortedEvents.length >= 4);
   if (!sortedEvents.length) {
     dom.eventList.innerHTML = `
       <div class="events-empty">
         <div class="events-empty-card">
           <i class="fa-regular fa-calendar"></i>
-          <h3>No events scheduled</h3>
-          <p>When officers publish an event, it will appear here automatically.</p>
+          <h3>No ${homeEventState.activityType === "program" ? "programs" : "events"} scheduled</h3>
+          <p>Try another month or activity type.</p>
         </div>
       </div>
     `;
@@ -584,7 +587,11 @@ function renderHomeCalendar() {
     const cellDate = new Date(year, month, day);
     const dateKey = normalizeDateKey(cellDate);
     const classNames = ["day-cell"];
-    if (eventDaySet.has(dateKey)) classNames.push("has-event");
+    const hasEvent = homeEventState.events.some(item => item.eventDate === dateKey && item.sourceType !== 'program');
+    const hasProgram = homeEventState.events.some(item => item.eventDate === dateKey && item.sourceType === 'program');
+    if (hasEvent && (homeEventState.activityType || 'event') === 'event') classNames.push('has-event');
+    if (hasProgram && homeEventState.activityType === 'program') classNames.push('has-program');
+    if (hasEvent && hasProgram) classNames.push('has-both');
     if (isSameDay(cellDate, today)) classNames.push("today");
     if (homeEventState.selectedDateKey === dateKey) classNames.push("selected");
 
@@ -609,25 +616,29 @@ function refreshHomeEvents() {
 }
 
 function startHomeEventsListener() {
-  const eventsQuery = query(collection(db, "events"), orderBy("eventDate", "asc"));
-
-  onSnapshot(
-    eventsQuery,
-    (snapshot) => {
-      homeEventState.events = snapshot.docs
-        .map((docItem) => ({ id: docItem.id, ...docItem.data() }))
-        .filter((eventItem) => safeText(eventItem.status, "Published") === "Published");
-      if (!homeEventState.currentMonth) {
-        homeEventState.currentMonth = getEventMonthAnchor(homeEventState.events);
-      }
+  for (const [name, sourceType] of [['events', 'event'], ['programs', 'program']]) {
+    onSnapshot(query(collection(db, name), orderBy('eventDate', 'asc')), snapshot => {
+      homeEventState.sources[name] = snapshot.docs.map(item => ({id:item.id,...item.data(),sourceType}))
+        .filter(item => safeText(item.status, 'Published') === 'Published');
+      homeEventState.events = [...homeEventState.sources.events, ...homeEventState.sources.programs]
+        .sort((a,b) => safeText(a.eventDate).localeCompare(safeText(b.eventDate)));
+      if (!homeEventState.currentMonth) homeEventState.currentMonth = getEventMonthAnchor(homeEventState.events);
       refreshHomeEvents();
-    },
-    (error) => {
-      console.error("Landing events listener error:", error);
-      homeEventState.events = [];
+    }, error => {
+      console.warn('Landing activity feed unavailable:', name, error);
+      homeEventState.sources[name] = [];
+      homeEventState.events = [...homeEventState.sources.events, ...homeEventState.sources.programs]
+        .sort((a,b) => safeText(a.eventDate).localeCompare(safeText(b.eventDate)));
       refreshHomeEvents();
-    }
-  );
+    });
+  }
+  document.getElementById('homeActivityTabs')?.addEventListener('click', event => {
+    const button = event.target.closest('[data-activity-type]'); if (!button) return;
+    homeEventState.activityType = button.dataset.activityType;
+    document.querySelectorAll('#homeActivityTabs button').forEach(item => item.setAttribute('aria-pressed', String(item === button)));
+    const render = () => { renderHomeCalendar(); renderHomeEventList(); };
+    if (globalThis.USC_FADE_ACTIVITY) globalThis.USC_FADE_ACTIVITY(dom.eventList, render); else render();
+  });
 }
 
 function bindDotNavigation() {
@@ -678,6 +689,7 @@ function bindScrollButton() {
 function bindSectionStepNavigation() {
   const readerOpen = () => document.getElementById("landingAnnouncementDialog")?.open === true;
   const mobileQuery = window.matchMedia("(max-width: 940px)");
+  const activityScroll = target => target instanceof Element && Boolean(target.closest('.activity-card-grid'));
 
   // Wheel/trackpad input needs a short gesture lock because one physical
   // trackpad swipe can emit dozens of wheel events. Touch input does not use
@@ -805,7 +817,7 @@ function bindSectionStepNavigation() {
   };
 
   window.addEventListener("wheel", (event) => {
-    if (readerOpen()) return; // Native scrolling belongs to the announcement, not landing chapters.
+    if (readerOpen() || activityScroll(event.target)) return; // Readers and activity lists own their native scrolling.
     if (Math.abs(event.deltaY) < 18) return;
 
     // Trackpads emit a stream of wheel events for one physical gesture. Swallow
@@ -824,7 +836,7 @@ function bindSectionStepNavigation() {
   // always means exactly one chapter, and a second immediate swipe can target
   // the next/previous chapter even while the first smooth scroll is finishing.
   window.addEventListener("touchstart", (event) => {
-    if (readerOpen()) { touchCaptured = false; touchStartTarget = null; return; }
+    if (readerOpen() || activityScroll(event.target) || activityScroll(touchStartTarget)) { touchCaptured = false; touchStartTarget = null; return; }
     if (!mobileQuery.matches) return;
     const touch = event.changedTouches?.[0];
     if (!touch) return;
@@ -844,7 +856,7 @@ function bindSectionStepNavigation() {
   }, { passive: true });
 
   window.addEventListener("touchmove", (event) => {
-    if (readerOpen()) { touchCaptured = false; touchStartTarget = null; return; }
+    if (readerOpen() || activityScroll(event.target) || activityScroll(touchStartTarget)) { touchCaptured = false; touchStartTarget = null; return; }
     if (!mobileQuery.matches) return;
     const touch = event.changedTouches?.[0] || event.touches?.[0];
     if (!touch) return;
@@ -867,7 +879,7 @@ function bindSectionStepNavigation() {
   }, { passive: false });
 
   window.addEventListener("touchend", (event) => {
-    if (readerOpen()) { touchCaptured = false; touchStartTarget = null; return; }
+    if (readerOpen() || activityScroll(event.target) || activityScroll(touchStartTarget)) { touchCaptured = false; touchStartTarget = null; return; }
     if (!mobileQuery.matches) return;
     const touch = event.changedTouches?.[0];
     if (touch) {
@@ -1002,6 +1014,7 @@ function bindLandingHeaderNavigation() {
 function bindHomeCalendarControls() {
   dom.calendarPrev?.addEventListener("click", () => {
     const current = homeEventState.currentMonth || getToday();
+    homeEventState.filterDate = false;
     homeEventState.currentMonth = new Date(current.getFullYear(), current.getMonth() - 1, 1);
     const monthEvents = getEventsForVisibleMonth();
     homeEventState.selectedDateKey = monthEvents.length ? safeText(monthEvents[0].eventDate) : "";
@@ -1010,6 +1023,7 @@ function bindHomeCalendarControls() {
 
   dom.calendarNext?.addEventListener("click", () => {
     const current = homeEventState.currentMonth || getToday();
+    homeEventState.filterDate = false;
     homeEventState.currentMonth = new Date(current.getFullYear(), current.getMonth() + 1, 1);
     const monthEvents = getEventsForVisibleMonth();
     homeEventState.selectedDateKey = monthEvents.length ? safeText(monthEvents[0].eventDate) : "";
@@ -1020,6 +1034,12 @@ function bindHomeCalendarControls() {
     const target = event.target instanceof Element ? event.target.closest("[data-home-calendar-date]") : null;
     if (!target) return;
     homeEventState.selectedDateKey = safeText(target.getAttribute("data-home-calendar-date"));
+    homeEventState.filterDate = true;
+    const matching = getEventsForDate(homeEventState.selectedDateKey);
+    if (matching.length && !matching.some(item => (item.sourceType || 'event') === homeEventState.activityType)) {
+      homeEventState.activityType = matching[0].sourceType || 'event';
+      document.querySelectorAll('#homeActivityTabs button').forEach(item => item.setAttribute('aria-pressed', String(item.dataset.activityType === homeEventState.activityType)));
+    }
     refreshHomeEvents();
   });
 }

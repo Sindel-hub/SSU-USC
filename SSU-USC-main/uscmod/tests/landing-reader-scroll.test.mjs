@@ -27,3 +27,14 @@ test('reader swipes are not cancelled and landing swipe navigation resumes after
  const f=fixture();f.handlers.touchstart(f.event(0,500));const move=f.event(0,100);f.handlers.touchmove(move);f.handlers.touchend(f.event(0,100));assert.equal(move.prevented,false);assert.equal(f.steps.length,0);
  f.dialog.open=false;f.handlers.touchstart(f.event(0,500));const pageMove=f.event(0,100);f.handlers.touchmove(pageMove);f.handlers.touchend(f.event(0,100));assert.equal(pageMove.prevented,true);assert.equal(f.steps.length,1);
 });
+
+test('activity list wheel input stays native even while landing chapter navigation is locked',()=>{
+ const f=fixture(false);f.handlers.wheel(f.event());assert.equal(f.steps.length,1);
+ const input=f.event();input.target.closest=selector=>selector==='.activity-card-grid'?{}:null;
+ f.handlers.wheel(input);assert.equal(input.prevented,false);assert.equal(f.steps.length,1);
+});
+test('activity list touch gestures never trigger a landing chapter jump',()=>{
+ const f=fixture(false),start=f.event(0,500);start.target.closest=selector=>selector==='.activity-card-grid'?{}:null;
+ f.handlers.touchstart(start);const move=f.event(0,100);f.handlers.touchmove(move);f.handlers.touchend(f.event(0,100));
+ assert.equal(move.prevented,false);assert.equal(f.steps.length,0);
+});

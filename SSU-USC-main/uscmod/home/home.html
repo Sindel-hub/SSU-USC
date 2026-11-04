@@ -9,6 +9,9 @@
   <script src="../shared/app-config.js?v=7"></script>
 <link rel="stylesheet" href="../shared/announcement-text.css?v=1" />
 <link rel="stylesheet" href="../shared/announcement-reader.css?v=2-dialog-visibility" />
+<link rel="stylesheet" href="../shared/activity-calendar.css?v=4" />
+<script type="module" src="../shared/activity-calendar.js?v=2"></script>
+<link rel="stylesheet" href="css/activity-layout.css?v=1" />
 </head>
 <body>
     <a class="skip-link" href="#welcome-section">Skip to main content</a>
@@ -91,9 +94,9 @@
                 <div class="events-copy-block">
                     <span class="events-eyebrow">USC CAMPUS CALENDAR</span>
                     <h2 class="section-heading" id="eventsHeading">Upcoming Events</h2>
-                    <p class="events-intro">Every event is an opportunity to voice your ideas, learn new skills, and connect with fellow students. Step up and be part of the change.</p>
+                    <p class="events-intro">Explore university events, external programs, training, outreach, and student activities.</p>
                 </div>
-                <div class="events-side" id="homeEventList"></div>
+                <div class="activity-tabs" id="homeActivityTabs" role="group" aria-label="Activity type"><button type="button" data-activity-type="event" aria-pressed="true">Events</button><button type="button" data-activity-type="program" aria-pressed="false">Programs</button></div><div class="events-side activity-card-grid" id="homeEventList"></div>
             </div>
 
             <div class="calendar-side calendar-card-polished">
@@ -103,13 +106,9 @@
                     <button class="calendar-arrow" id="homeCalendarNext" type="button" aria-label="Next month"><i class="fa-solid fa-chevron-right" aria-hidden="true"></i></button>
                 </div>
 
-                <div class="calendar-legend home-calendar-legend" aria-hidden="true">
-                    <span><i class="legend-dot event"></i>Event date</span>
-                    <span><i class="legend-dot today"></i>Today</span>
-                    <span><i class="legend-dot selected"></i>Selected</span>
-                </div>
 
-                <div class="calendar-grid" id="homeCalendarGrid"></div>
+
+                <div class="calendar-grid" id="homeCalendarGrid"></div><div class="activity-legend" aria-label="Calendar legend"><span><i class="activity-event"></i>Events</span><span><i class="activity-program"></i>Programs</span><span>Solid outline: selected · Dashed: today</span></div>
             </div>
         </div>
     </section>
@@ -174,7 +173,7 @@
         </div>
     </footer>
 
-    <script type="module" src="./js/home.js?v=19-reader-scroll"></script>
+    <script type="module" src="./js/home.js?v=19-reader-scroll&amp;activity-layout=2"></script>
 <dialog id="landingAnnouncementDialog" class="announcement-modal-dialog announcement-reader" aria-labelledby="landingAnnouncementTitle">
   <header class="announcement-reader-toolbar"><div class="announcement-reader-label"><span class="announcement-reader-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5h16v14H4zM8 9h8M8 13h8M8 17h4"/></svg></span><span>Bulletin Board</span></div><button class="modal-close" id="closeLandingAnnouncement" autofocus type="button" aria-label="Close announcement">×</button></header>
   <div class="announcement-reader-scroll">
