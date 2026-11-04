@@ -156,8 +156,8 @@ function renderSavedSchedule() {
   setText("savedElectionId", hasSchedule ? electionId : "Not configured");
   setText("savedElectionPhase", lifecycle);
   setText("currentScheduleStatus", hasSchedule ? lifecycle : "Not configured");
-  setText("currentScheduleDescription", hasSchedule ? "This saved schedule is active in the election workflow." : "Create an election schedule to begin.");
-  setText("savedScheduleUpdated", hasSchedule ? "Use Edit Schedule to update dates, or Extend Voting Time to move the closing time later." : "No active schedule is currently saved.");
+  setText("currentScheduleDescription", hasSchedule ? "Active election schedule." : "Create an election schedule to begin.");
+  setText("savedScheduleUpdated", hasSchedule ? "Times shown in local time." : "No active schedule is currently saved.");
   const state = $("savedScheduleState");
   if (state) {
     state.innerHTML = hasSchedule
@@ -273,6 +273,15 @@ function renderStats() {
   const ballots = Number(turnout.ballotsCast || 0);
   const eligible = Number(turnout.eligibleVoters || context?.eligibleVoterCount || 0);
   const percent = eligible > 0 ? Math.min(100, ballots / eligible * 100) : 0;
+  // Presentation only: reuse aggregate turnout; never expose candidate choices.
+  const pie = $("electionTurnoutPie");
+  if (pie) {
+    pie.style.background = eligible > 0
+      ? `conic-gradient(#35bce3 0% ${percent}%, #e5edf5 ${percent}% 100%)` : '#e5edf5';
+    pie.setAttribute('aria-label', eligible > 0 ? `${ballots} voted; ${Math.max(0, eligible - ballots)} not yet voted` : 'No eligible voter data');
+  }
+  const chartStatus = $("electionTurnoutChartStatus");
+  if (chartStatus) chartStatus.textContent = eligible > 0 ? `${percent.toFixed(1)}% turnout · ${ballots} of ${eligible}` : 'No eligible voter data';
   if (els.activeElectionCount) els.activeElectionCount.textContent = electionId ? "01" : "00";
   if (els.candidateCount) els.candidateCount.textContent = String(candidates.filter((c) => !c.removed).length);
   if (els.votesCastCount) els.votesCastCount.textContent = String(ballots);

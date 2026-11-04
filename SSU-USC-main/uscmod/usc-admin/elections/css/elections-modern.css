@@ -213,3 +213,38 @@ body.election-management-page .candidate-review-actions .mini-btn:focus-visible 
 }
 
 body.election-management-page .candidate-review-actions [data-delete-removed-candidate] { flex:1 1 100%; width:100%; }
+
+/* Election overview: the same white panels and cyan analytics as Officer modules. */
+body.election-management-page .hero { grid-template-columns:minmax(0,1.6fr) minmax(250px,1fr) !important; align-items:stretch; gap:18px !important; }
+body.election-management-page .hero-left,
+body.election-management-page .election-turnout-chart { min-width:0; padding:22px; background:#fff; border:1px solid var(--election-border); border-radius:16px; }
+body.election-management-page .election-analytics-heading { margin:14px 0 0; font-size:18px; color:#23496d; }
+body.election-management-page .stats { grid-template-columns:repeat(2,minmax(0,1fr)) !important; }
+body.election-management-page .stat-card { min-height:104px !important; background:linear-gradient(180deg,#79d9f3,#5fc9e9) !important; border:0 !important; }
+body.election-management-page .stat-label { color:#174f78 !important; font-size:14px !important; font-weight:600; }
+body.election-management-page .stat-value { color:#1754a6 !important; font-size:30px !important; }
+body.election-management-page .election-turnout-chart { display:flex; flex-direction:column; align-items:center; justify-content:center; gap:16px; margin:0; }
+body.election-management-page .election-turnout-chart h2 { font-size:18px; margin:0; color:#23496d; align-self:flex-start; }
+body.election-management-page .election-turnout-pie { width:180px; height:180px; flex:0 0 180px; border-radius:50%; background:#e5edf5; }
+body.election-management-page .election-turnout-chart p { margin:0; font-size:14px; color:#385673; text-align:center; }
+body.election-management-page .election-turnout-legend { display:flex; gap:16px; flex-wrap:wrap; font-size:13px; color:#385673; }
+body.election-management-page .election-turnout-legend span { display:flex; align-items:center; gap:6px; }
+body.election-management-page .election-turnout-legend i { width:9px; height:9px; background:#35bce3; border-radius:50%; }
+body.election-management-page .election-turnout-legend span:last-child i { background:#e5edf5; }
+body.election-management-page .side-panel { grid-column:1/-1; }
+body.election-management-page .election-schedule-workspace { align-items:stretch; }
+body.election-management-page .schedule-control-card .card-body { display:flex; flex-direction:column; gap:16px; }
+body.election-management-page .schedule-control-actions { margin:0; }
+body.election-management-page .schedule-action { min-height:48px; align-items:center; }
+body.election-management-page .schedule-summary-panel { margin:0; }
+body.election-management-page .schedule-summary-row small { font-size:12px; overflow-wrap:anywhere; }
+body.election-management-page .saved-phase-copy strong { font-size:14px; }
+body.election-management-page .current-schedule-box p { margin:4px 0 0; }
+@media(max-width:1000px) {
+  body.election-management-page .election-schedule-workspace { grid-template-columns:minmax(0,1fr); }
+}
+@media(max-width:650px) {
+  body.election-management-page .hero { grid-template-columns:minmax(0,1fr) !important; }
+  body.election-management-page .hero-left,body.election-management-page .election-turnout-chart { padding:18px; }
+  body.election-management-page .card-head,body.election-management-page .card-body { padding:16px !important; }
+}
