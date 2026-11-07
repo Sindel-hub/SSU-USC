@@ -28,6 +28,6 @@ To roll back the UI, revert this PR. The chart record is retained; no destructiv
 
 ## Adjusting an upload
 
-After choosing an image, officers can zoom from 100% to 300%, drag to reposition with mouse/touch, use horizontal/vertical sliders (including keyboard arrows), or reset the framing. The preview uses the full posted-image canvas; controls overlay it to preserve its crop ratio. Resize redraws the preview while retaining the selected offsets.
+After choosing an image, officers can zoom from 1% to 300%, drag to reposition with mouse/touch, use horizontal/vertical sliders (including keyboard arrows), reset the framing, or use **Fit whole image** to show the complete chart. Zooming below the fill level adds a white background around the image; this framing is preserved on publish. The preview uses the full posted-image canvas; controls overlay it to preserve its crop ratio. Resize redraws the preview while retaining the selected offsets.
 
 Publishing bakes that framing into the existing bounded WebP `imageData` payload. Failed publishing keeps the original selected image and framing controls available for retry. Cancel or Back discards the draft without changing the posted image. This revision introduces no Firestore fields, rule changes, indexes, or backend deployment requirements beyond the existing chart setup.

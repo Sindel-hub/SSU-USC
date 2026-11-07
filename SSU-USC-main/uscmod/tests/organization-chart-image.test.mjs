@@ -34,3 +34,14 @@ test('framing export keeps the existing bounded WebP payload contract',()=>{
  assert.deepEqual(qualities,[.9,.8,.7]);
  assert.throws(()=>scope.encodeChartCanvas({toDataURL:()=> 'data:image/webp;base64,'+'A'.repeat(900000)}),/too detailed/);
 });
+
+test('zoom-out fits the whole image and leaves proportional canvas space',()=>{
+ const scope=vm.createContext({});vm.runInContext(helpers,scope);
+ assert.equal(scope.chartFitZoom(400,1600,800,400),12);
+ const fit=scope.chartCropRect(400,1600,800,400,.12,50,50);
+ assert.ok(fit.width>=400&&fit.height>=1600);
+ assert.ok(fit.x<=0&&fit.y<=0);
+ const out=scope.chartCropRect(800,400,800,400,.25,50,50);
+ assert.equal(out.width,3200);assert.equal(out.height,1600);
+ assert.equal(out.x,-1200);assert.equal(out.y,-600);
+});

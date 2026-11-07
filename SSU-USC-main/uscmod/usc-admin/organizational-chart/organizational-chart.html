@@ -134,9 +134,10 @@
   </div></header>
   <p class="org-image-hint">JPG, PNG or WebP · up to 5 MB</p>
   <div class="org-image-adjust" data-org-adjust hidden>
-    <label>Zoom <output data-org-zoom-value>100%</output><input data-org-zoom type="range" min="100" max="300" step="5" value="100"></label>
+    <label>Zoom <output data-org-zoom-value>100%</output><input data-org-zoom type="range" min="1" max="300" step="1" value="100"></label>
     <label>Horizontal position<input data-org-x type="range" min="0" max="100" step="1" value="50"></label>
     <label>Vertical position<input data-org-y type="range" min="0" max="100" step="1" value="50"></label>
+    <button type="button" data-org-fit>Fit whole image</button>
     <button type="button" data-org-reset>Reset framing</button>
   </div>
 <figure class="org-image-frame" aria-label="University Student Council organizational chart">
@@ -161,6 +162,6 @@
 <script type="module" src="../shared/js/admin-auth.js?v=rbac4"></script>
 <script type="module" src="../../shared/profile-manager.js?v=registered-name-2&amp;refinements=1"></script>
   <script type="module" src="../shared/js/officer-rbac.js?v=6"></script>
-<script type="module" src="../../shared/organization-chart-image.js?v=3"></script>
+<script type="module" src="../../shared/organization-chart-image.js?v=4"></script>
 </body>
 </html>

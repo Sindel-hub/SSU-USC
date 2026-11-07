@@ -30,11 +30,17 @@ export function encodeChartCanvas(canvas) {
 
 export function chartCropRect(width, height, targetWidth, targetHeight, zoom = 1, x = 50, y = 50) {
   const bounded = (value, min, max) => Math.max(min, Math.min(max, Number(value) || min));
-  const scale = Math.max(targetWidth / width, targetHeight / height) * bounded(zoom, 1, 3);
-  const cropWidth = Math.min(width, targetWidth / scale);
-  const cropHeight = Math.min(height, targetHeight / scale);
+  const scale = Math.max(targetWidth / width, targetHeight / height) * bounded(zoom, .01, 3);
+  const cropWidth = targetWidth / scale;
+  const cropHeight = targetHeight / scale;
   return { x: (width - cropWidth) * bounded(x, 0, 100) / 100,
     y: (height - cropHeight) * bounded(y, 0, 100) / 100, width: cropWidth, height: cropHeight };
+}
+
+export function chartFitZoom(width, height, targetWidth, targetHeight) {
+  const fit = Math.min(targetWidth / width, targetHeight / height);
+  const cover = Math.max(targetWidth / width, targetHeight / height);
+  return Math.max(1, Math.min(100, Math.floor(fit / cover * 100)));
 }
 
 const image = document.querySelector("[data-org-image]");
@@ -63,7 +69,9 @@ function renderCrop() {
   cropCanvas.height = Math.max(1, Math.round(height * scale));
   const crop = chartCropRect(cropSource.naturalWidth, cropSource.naturalHeight, width, height,
     Number(zoomControl.value) / 100, xControl.value, yControl.value);
-  cropCanvas.getContext("2d").drawImage(cropSource, crop.x, crop.y, crop.width, crop.height, 0, 0, cropCanvas.width, cropCanvas.height);
+  const context = cropCanvas.getContext("2d");
+  context.fillStyle = "#fff"; context.fillRect(0, 0, cropCanvas.width, cropCanvas.height);
+  context.drawImage(cropSource, crop.x, crop.y, crop.width, crop.height, 0, 0, cropCanvas.width, cropCanvas.height);
   image.hidden = true; placeholder.hidden = true; cropCanvas.hidden = false; adjustPanel.hidden = false;
   document.querySelector("[data-org-zoom-value]").textContent = zoomControl.value + "%";
 }
@@ -104,6 +112,12 @@ async function start() {
     controls();
     for (const control of [zoomControl, xControl, yControl]) control.addEventListener("input", renderCrop);
     document.querySelector("[data-org-reset]").addEventListener("click", resetCrop);
+    document.querySelector("[data-org-fit]").addEventListener("click", () => {
+      if (!cropSource) return;
+      const frame = image.parentElement;
+      zoomControl.value = String(chartFitZoom(cropSource.naturalWidth, cropSource.naturalHeight, frame.clientWidth, frame.clientHeight));
+      xControl.value = "50"; yControl.value = "50"; renderCrop();
+    });
     let drag = null;
     cropCanvas.addEventListener("pointerdown", event => {
       if (busy || !selected || event.button !== 0) return;
@@ -114,7 +128,7 @@ async function start() {
       if (!drag || busy) return;
       const frame = image.parentElement;
       const crop = chartCropRect(cropSource.naturalWidth, cropSource.naturalHeight, frame.clientWidth, frame.clientHeight, Number(zoomControl.value) / 100);
-      const move = (delta, viewportSize, cropSize, sourceSize, initial) => sourceSize > cropSize
+      const move = (delta, viewportSize, cropSize, sourceSize, initial) => Math.abs(sourceSize - cropSize) > .01
         ? Math.max(0, Math.min(100, initial - delta / viewportSize * cropSize / (sourceSize - cropSize) * 100)) : initial;
       xControl.value = String(move(event.clientX - drag.x, frame.clientWidth, crop.width, cropSource.naturalWidth, drag.offsetX));
       yControl.value = String(move(event.clientY - drag.y, frame.clientHeight, crop.height, cropSource.naturalHeight, drag.offsetY));
