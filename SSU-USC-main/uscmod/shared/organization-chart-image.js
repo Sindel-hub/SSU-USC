@@ -31,6 +31,8 @@ const editor = document.querySelector("[data-org-editor]");
 const input = document.querySelector("[data-org-file]");
 const save = document.querySelector("[data-org-save]");
 const cancel = document.querySelector("[data-org-cancel]");
+const update = document.querySelector("[data-org-update]");
+const back = document.querySelector("[data-org-back]");
 let published = "", selected = "", busy = false;
 function announce(message, error = false) { status.textContent = message; status.dataset.error = String(error); }
 function show(value) {
@@ -38,7 +40,15 @@ function show(value) {
   image.hidden = !safe; placeholder.hidden = safe;
   if (safe) image.src = value; else image.removeAttribute("src");
 }
-function controls() { input.disabled = busy; save.disabled = busy || !selected; cancel.disabled = busy || !selected; }
+function controls() { input.disabled = busy; save.disabled = busy || !selected; cancel.disabled = busy || !selected; if (back) back.disabled = busy; }
+function editing(active) {
+  editor.classList.toggle("is-editing", active);
+  update.hidden = active;
+  if (!active) { selected = ""; show(published); }
+  announce("");
+  controls();
+  if (active) input.focus(); else update.focus();
+}
 async function start() {
   if (!image) return;
   if (editor) {
@@ -51,6 +61,9 @@ async function start() {
       announce("Only active, approved officers can publish the chart.", true); return;
     }
     document.querySelector("[data-org-controls]").hidden = false;
+    update.hidden = false;
+    update.addEventListener("click", () => { if (!busy) editing(true); });
+    back.addEventListener("click", () => { if (!busy) editing(false); });
     controls();
     input.addEventListener("change", async () => {
       const file = input.files?.[0]; if (!file) return;
@@ -65,7 +78,7 @@ async function start() {
       busy = true; controls(); announce("Publishing chart…");
       try {
         await setDoc(doc(db, "organization_chart", "current"), { imageData: selected, updatedAt: serverTimestamp() });
-        published = selected; selected = ""; show(published); announce("Organizational chart published.");
+        published = selected; selected = ""; show(published); editing(false); announce("Organizational chart published.");
       } catch (error) {
         announce(error.code === "permission-denied" ? "Chart publishing is not enabled yet. Please contact the system administrator." : "Unable to publish. Your image preview is kept; please retry.", true);
       } finally { busy = false; controls(); }

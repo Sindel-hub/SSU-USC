@@ -2,6 +2,8 @@
 
 Student, public landing-page and officer chart pages share a fixed image panel. The old role cards are replaced by a clearly marked placeholder until an officer publishes an image. Images use `object-fit: cover` to fill the canvas edge to edge without internal scrolling. The aspect ratio is preserved, so edges may be cropped when the image and panel proportions differ. Student/public readers have no outer inset around the image.
 
+Officers first see the posted chart in the same edge-to-edge reader panel. **Update chart** opens the existing uploader; **Back to chart** leaves that view, and successful publication returns automatically to the posted chart. Failed saves stay in the uploader for retry.
+
 Active, approved officers and authorized administrators can choose a JPG/PNG/WebP (up to 5 MB), inspect a local preview, cancel, or publish. The browser re-encodes to WebP at a maximum dimension of 2048 pixels and a maximum data URL length of 900,000 characters. One bounded Firestore document stores the temporary chart; no Supabase/Storage deployment or upload ticket is required.
 
 ## Data and authorization

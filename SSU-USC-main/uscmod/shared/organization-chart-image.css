@@ -29,3 +29,15 @@ body.student-app-shell .student-page-main.org-image-main:not([data-org-editor]),
 .student-page-main.org-image-main:not([data-org-editor]) { position:relative;padding:0!important;gap:0; }
 .org-image-main:not([data-org-editor]) .org-image-frame { border:0;border-radius:inherit; }
 .org-image-main:not([data-org-editor]) .org-image-status:not(:empty) { position:absolute;z-index:2;left:12px;right:12px;bottom:12px;padding:8px 12px;border-radius:8px;background:#fffffff0; }
+
+/* Officers enter on the same edge-to-edge posted chart as student readers. */
+body.officer-app-shell .main.org-image-main[data-org-editor]:not(.is-editing) { position:relative;padding:0!important;gap:0; }
+.org-image-main[data-org-editor]:not(.is-editing) .org-image-toolbar,
+.org-image-main[data-org-editor]:not(.is-editing) .org-image-hint { display:none; }
+.org-image-main[data-org-editor]:not(.is-editing) .org-image-frame { border:0;border-radius:inherit; }
+.org-image-main[data-org-editor]:not(.is-editing) .org-image-status:not(:empty) { position:absolute;z-index:2;left:12px;right:12px;bottom:12px;padding:8px 12px;border-radius:8px;background:#fffffff0; }
+.org-chart-update,.org-chart-back { border:1px solid #bdd4e8;border-radius:10px;padding:10px 16px;min-height:42px;background:#fff;color:#1a5484;font:inherit;font-size:14px;cursor:pointer; }
+.org-chart-update { position:absolute;z-index:3;top:16px;right:16px;box-shadow:0 3px 12px #163c6020; }
+.org-chart-update[hidden] { display:none; }
+.org-chart-update:focus-visible,.org-chart-back:focus-visible { outline:2px solid #238eba;outline-offset:3px; }
+.org-chart-back:disabled { opacity:.5;cursor:default; }

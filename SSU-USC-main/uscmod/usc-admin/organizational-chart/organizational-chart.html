@@ -17,7 +17,7 @@
   <script type="module" src="../../shared/auth-guard.js?v=rbac7"></script>
 <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet" />
 <link rel="stylesheet" href="../../shared/scrollbars.css?v=2" />
-<link rel="stylesheet" href="../../shared/organization-chart-image.css?v=2">
+<link rel="stylesheet" href="../../shared/organization-chart-image.css?v=3">
 </head>
 <body class="officer-app-shell org-management-page">
 <div class="page"><div class="app-shell">
@@ -127,7 +127,8 @@
     </aside>
 
     <section class="main officer-org-main org-image-main" data-org-editor>
-  <header class="org-image-toolbar"><h1>Organizational Chart</h1><div class="org-image-controls" data-org-controls hidden>
+  <button type="button" class="org-chart-update" data-org-update hidden>Update chart</button>
+  <header class="org-image-toolbar"><h1>Update organizational chart</h1><button type="button" class="org-chart-back" data-org-back>Back to chart</button><div class="org-image-controls" data-org-controls hidden>
     <label class="org-image-upload">Choose image<input type="file" data-org-file accept="image/jpeg,image/png,image/webp" disabled></label>
     <button type="button" data-org-save disabled>Publish image</button><button type="button" data-org-cancel disabled>Cancel</button>
   </div></header>
@@ -153,6 +154,6 @@
 <script type="module" src="../shared/js/admin-auth.js?v=rbac4"></script>
 <script type="module" src="../../shared/profile-manager.js?v=registered-name-2&amp;refinements=1"></script>
   <script type="module" src="../shared/js/officer-rbac.js?v=6"></script>
-<script type="module" src="../../shared/organization-chart-image.js?v=1"></script>
+<script type="module" src="../../shared/organization-chart-image.js?v=2"></script>
 </body>
 </html>
