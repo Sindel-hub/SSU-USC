@@ -16,8 +16,9 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
 <link rel="stylesheet" href="css/complaint-modern.css?v=2" />
-<link rel="stylesheet" href="../shared/mobile-usability.css?v=3" />
+<link rel="stylesheet" href="../shared/mobile-usability.css?v=4" />
 <link rel="stylesheet" href="../shared/scrollbars.css?v=1" />
+<style>.classification-help summary{display:flex;align-items:center;gap:10px;cursor:pointer;font-weight:700;color:#244a70;min-height:44px;list-style:none}.classification-help summary::-webkit-details-marker{display:none}.classification-info-icon{display:grid;place-items:center;width:26px;height:26px;border-radius:50%;background:#e5f1ff;color:#245b91}.classification-help[open] summary{margin-bottom:16px}.classification-help summary:focus-visible{outline:2px solid #2469a0;outline-offset:4px}</style>
 </head>
 <body class="student-app-shell complaint-student-shell">
 <header class="dashboard-header">
@@ -36,7 +37,7 @@
       <a class="student-nav-link" href="../dashboard/election.html"><i class="fa-regular fa-building"></i><span>Election</span></a>
       <a class="student-nav-link" href="../dashboard/events.html"><i class="fa-regular fa-calendar"></i><span>Events / Programs</span></a>
       <a class="student-nav-link" href="../dashboard/organizational-chart.html"><i class="fa-solid fa-users"></i><span>Organizational Chart</span></a>
-      <a class="student-nav-link active" href="complaint.html"><i class="fa-solid fa-hand-holding-heart"></i><span>Student Complaint</span></a>
+      <a class="student-nav-link active" href="complaint.html"><i class="fa-solid fa-hand-holding-heart"></i><span>Student Complaint/Feedbacks</span></a>
       <a class="student-nav-link" href="https://drive.google.com/file/d/1SFp-SHhVKCHcHlWLwMxSQe1bdbLRuLMG/preview" target="_blank" rel="noopener noreferrer"><i class="fa-solid fa-book-open"></i><span>Student Handbook</span></a>
       <a class="student-nav-link" href="../dashboard/tracklist.html"><i class="fa-solid fa-clipboard-check"></i><span>Student Tracklist</span></a>
     </nav>
@@ -62,7 +63,7 @@
               <div class="complaint-intro-icon"><i class="fa-solid fa-circle-exclamation"></i></div>
               <div>
                 <h2>Submit a Complaint</h2>
-                <p>Tell us what happened. The USC will review your concern and share updates through your Student Tracklist.</p>
+
               </div>
             </div>
             <form class="complaint-form redesigned" id="complaintForm">
@@ -98,14 +99,14 @@
           </section>
           <aside class="complaint-side-stack">
             <section class="side-info-card"><h3>What happens next</h3><p><strong>You submit first.</strong> After submission, the USC reviews the case, assigns a classification, and sends official feedback. Students do not reply inside the complaint thread.</p><a class="complaint-track-link" href="../dashboard/tracklist.html">View Student Tracklist <span aria-hidden="true">→</span></a></section>
-            <section class="side-classification-card">
-              <h3>Classification Levels</h3>
+            <details class="side-classification-card classification-help">
+              <summary><span class="classification-info-icon" aria-hidden="true">!</span> Classification Levels</summary>
               <div class="classification-guide-list">
                 <div class="classification-guide-item student-level"><strong>Student Level</strong><span>Concerns that can be handled within student or USC support channels.</span></div>
                 <div class="classification-guide-item administrative-level"><strong>Administrative Level</strong><span>Concerns that require coordination with a department, office, or university administrator.</span></div>
                 <div class="classification-guide-item crisis-level"><strong>Crisis Level</strong><span>Urgent safety, welfare, or serious-risk concerns that require immediate escalation.</span></div>
               </div>
-            </section>
+            </details>
             <section class="side-status-card"><h3>Complaint Status</h3><div class="status-list modern"><div class="status-item"><span class="dot submitted"></span><span>Submitted</span></div><div class="status-item"><span class="dot review"></span><span>Under Review</span></div><div class="status-item"><span class="dot progress"></span><span>In Progress</span></div><div class="status-item"><span class="dot resolved"></span><span>Resolved</span></div><div class="status-item"><span class="dot closed"></span><span>Closed</span></div></div></section>
           </aside>
         </div>
@@ -133,7 +134,7 @@
 
 <script type="module" src="../dashboard/js/notifications.js?v=unread-count-2&amp;mobile=1"></script>
 <script type="module" src="js/complaints.js?v=modern-form-1-cooldown-1"></script>
-<script type="module" src="../shared/profile-manager.js?v=registered-name-2"></script>
+<script type="module" src="../shared/profile-manager.js?v=registered-name-2&amp;refinements=1"></script>
 <script src="../shared/student-sidebar-navigation.js"></script>
 </body>
 </html>

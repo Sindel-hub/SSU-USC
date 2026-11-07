@@ -1102,3 +1102,7 @@ img,svg{max-width:100%}
 @media(prefers-reduced-motion:reduce) {
   .login-help-dialog { transition:none; transform:none; }
 }
+
+/* Center the existing card without changing its dimensions or authentication UI. */
+.login-page { justify-content:center; padding-inline:18px; }
+.login-page .glass-panel { margin-inline:auto; }

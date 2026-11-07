@@ -80,12 +80,14 @@ service cloud.firestore {
       return signedIn() && get(/databases/$(database)/documents/users/$(uid())).data.studentId == studentId;
     }
     function safeOwnProfileUpdate() {
-      return request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+      return (resource.data.role != "student" || !request.resource.data.diff(resource.data).affectedKeys().hasAny(["fullName"]))
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
           "fullName", "profilePhoto", "profileUpdatedAt", "updatedAt", "updatedAtMs", "mustChangePassword"
         ])
-        && request.resource.data.fullName is string
-        && request.resource.data.fullName.size() >= 2
-        && request.resource.data.fullName.size() <= 120
+        && (!request.resource.data.diff(resource.data).affectedKeys().hasAny(["fullName"])
+            || (request.resource.data.fullName is string
+                && request.resource.data.fullName.size() >= 2
+                && request.resource.data.fullName.size() <= 120))
         && (!("profilePhoto" in request.resource.data)
             || (request.resource.data.profilePhoto is string
                 && request.resource.data.profilePhoto.size() <= 400000));
