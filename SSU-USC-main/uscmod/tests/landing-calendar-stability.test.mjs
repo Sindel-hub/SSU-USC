@@ -20,6 +20,11 @@ test('actual calendar always reserves six weeks with correct dates across leap y
   assert.equal((html.match(/data-home-calendar-date=/g)||[]).length,new Date(year,month+1,0).getDate());
   const prefix=html.slice(0,html.indexOf('data-home-calendar-date='));
   assert.equal((prefix.match(/disabled aria-hidden="true"/g)||[]).length,new Date(year,month,1).getDay());
+  const muted=[...html.matchAll(/class="day-cell muted"[^>]*>(\d+)<\/button>/g)].map(match=>Number(match[1]));
+  const leading=new Date(year,month,1).getDay();
+  const previousLast=new Date(year,month,0).getDate();
+  assert.deepEqual(muted.slice(0,leading),Array.from({length:leading},(_,i)=>previousLast-leading+i+1));
+  assert.deepEqual(muted.slice(leading),Array.from({length:42-leading-new Date(year,month+1,0).getDate()},(_,i)=>i+1));
  }
 });
 test('empty event calendar preserves the month selected through navigation',()=>{
