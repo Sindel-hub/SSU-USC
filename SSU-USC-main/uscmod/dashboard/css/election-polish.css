@@ -15,3 +15,21 @@
 #electionApp .election-reference-actions button { min-width:160px;min-height:42px;padding:10px 24px;border-radius:9px;font-size:12px;text-transform:uppercase;letter-spacing:.06em; }
 #electionApp .election-reference-actions button:disabled { opacity:1;background:#4ac8ec;color:white; }
 @media(max-width:600px) { #electionApp .election-reference-landing { padding:36px 20px;min-height:620px; } #electionApp .election-reference-intro { margin-top:26px; } #electionApp .election-reference-intro p { font-size:14px;line-height:1.65; } }
+
+/* Stable front page; schedule lives in a solid, accessible dialog. */
+#electionApp:has(.election-reference-landing) { overflow:hidden!important; }
+#electionApp .election-reference-landing { height:clamp(580px,calc(100svh - 170px),760px);min-height:0;box-sizing:border-box;padding:38px 28px; }
+#electionApp .election-reference-intro { margin-top:24px; }
+#electionApp .election-front-card .election-reference-logo { width:clamp(100px,11vw,140px);margin-bottom:16px; }
+.election-view-schedule { position:absolute;right:28px;top:22px;z-index:3;border:0;background:transparent;color:white;text-decoration:underline;font:inherit;font-size:12px;padding:8px;cursor:pointer; }
+#electionApp #landingCandidates { background:#36b5de;border:1px solid #60ccec;color:#fff;font-weight:700; }
+#electionApp #landingCandidates:hover { background:#269fc7; }
+.election-schedule-dialog { width:min(760px,calc(100% - 32px));max-height:85dvh;box-sizing:border-box;padding:30px;border:1px solid #ccdeec;border-radius:18px;background:#fff;color:#193c60;box-shadow:0 18px 60px #09223a40; }
+.election-schedule-dialog::backdrop { background:#102a4566; }
+.schedule-close { display:block;margin:0 0 12px auto;width:36px;height:36px;border:0;border-radius:8px;background:#edf4fb;color:#245d92;font-size:26px;cursor:pointer; }
+.election-schedule-dialog .election-public-schedule { background:white;box-shadow:none;backdrop-filter:none;border:0;padding:0;color:#193c60; }
+.election-schedule-dialog .election-public-schedule-grid { grid-template-columns:repeat(2,minmax(0,1fr));overflow:visible; }
+.election-schedule-dialog .election-public-schedule-phase { background:#f2f7fc;border:1px solid #d4e2ef; }
+.election-schedule-dialog .election-public-schedule :is(h3,strong) { color:#194c80; }
+.election-schedule-dialog .election-public-schedule :is(span,i) { color:#496d8d; }
+@media(max-width:600px) { #electionApp .election-reference-landing { height:740px;min-height:0;padding:54px 20px 24px; } #electionApp .election-reference-intro p { font-size:13px;line-height:1.5; } #electionApp .election-front-card h2 { font-size:18px; } .election-view-schedule { top:12px;right:16px; } .election-schedule-dialog { padding:20px; } .election-schedule-dialog .election-public-schedule-grid { grid-template-columns:1fr; } }
