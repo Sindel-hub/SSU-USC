@@ -677,7 +677,7 @@ function scrollToSection(section) {
   // chapter lands flush against the bottom edge of the header.
   window.scrollTo({
     top: getSectionScrollTop(section),
-    behavior: "smooth",
+    behavior: window.matchMedia("(max-width: 940px)").matches ? "instant" : "smooth",
   });
 }
 
@@ -694,23 +694,10 @@ function bindSectionStepNavigation() {
   const mobileQuery = window.matchMedia("(max-width: 940px)");
   const activityScroll = target => target instanceof Element && Boolean(target.closest('.activity-card-grid'));
 
-  // Wheel/trackpad input needs a short gesture lock because one physical
-  // trackpad swipe can emit dozens of wheel events. Touch input does not use
-  // this lock: each touchstart -> touchend sequence already represents one
-  // deliberate swipe, so blocking it only makes rapid swipes feel laggy.
+  // Keep desktop chapter stepping; mobile wheel and touch input stays native.
   let wheelLocked = false;
   let wheelUnlockTimer = 0;
   let wheelLockStartedAt = 0;
-
-  let touchStartY = 0;
-  let touchStartX = 0;
-  let touchLastY = 0;
-  let touchLastX = 0;
-  let touchStartTarget = null;
-  let touchStartIndex = 0;
-  let touchCaptured = false;
-  let touchTargetIndex = null;
-  let lastTouchStepAt = 0;
 
   const getSections = () => {
     // Mobile is intentionally a four-chapter story. The announcement preview
@@ -801,12 +788,6 @@ function bindSectionStepNavigation() {
 
     if (inputType === "wheel") {
       lockWheelNavigation();
-    } else {
-      // Record the destination immediately. If the user swipes again before
-      // the smooth scroll has visually finished, the next swipe starts from
-      // this destination rather than re-detecting the partially scrolled page.
-      touchTargetIndex = nextIndex;
-      lastTouchStepAt = performance.now();
     }
 
     scrollToSection(nextSection);
@@ -820,7 +801,7 @@ function bindSectionStepNavigation() {
   };
 
   window.addEventListener("wheel", (event) => {
-    if (readerOpen() || activityScroll(event.target)) return; // Readers and activity lists own their native scrolling.
+    if (mobileQuery.matches || readerOpen() || activityScroll(event.target)) return; // Readers and activity lists own their native scrolling.
     if (Math.abs(event.deltaY) < 18) return;
 
     // Trackpads emit a stream of wheel events for one physical gesture. Swallow
@@ -835,84 +816,10 @@ function bindSectionStepNavigation() {
     if (tryWheelStep(direction, event.target)) event.preventDefault();
   }, { passive: false });
 
-  // Touch navigation is intentionally lock-free. A completed finger swipe
-  // always means exactly one chapter, and a second immediate swipe can target
-  // the next/previous chapter even while the first smooth scroll is finishing.
-  window.addEventListener("touchstart", (event) => {
-    if (readerOpen() || activityScroll(event.target) || activityScroll(touchStartTarget)) { touchCaptured = false; touchStartTarget = null; return; }
-    if (!mobileQuery.matches) return;
-    const touch = event.changedTouches?.[0];
-    if (!touch) return;
+  // Mobile touch gestures remain native, including swipes beginning on the calendar.
 
-    const sections = getSections();
-    const now = performance.now();
-    const hasFreshTarget = Number.isInteger(touchTargetIndex)
-      && touchTargetIndex >= 0
-      && touchTargetIndex < sections.length
-      && now - lastTouchStepAt < 900;
-
-    touchStartY = touchLastY = touch.clientY;
-    touchStartX = touchLastX = touch.clientX;
-    touchStartTarget = event.target;
-    touchStartIndex = hasFreshTarget ? touchTargetIndex : getNearestSectionIndex(sections);
-    touchCaptured = false;
-  }, { passive: true });
-
-  window.addEventListener("touchmove", (event) => {
-    if (readerOpen() || activityScroll(event.target) || activityScroll(touchStartTarget)) { touchCaptured = false; touchStartTarget = null; return; }
-    if (!mobileQuery.matches) return;
-    const touch = event.changedTouches?.[0] || event.touches?.[0];
-    if (!touch) return;
-
-    touchLastY = touch.clientY;
-    touchLastX = touch.clientX;
-    const deltaY = touchStartY - touchLastY;
-    const deltaX = touchStartX - touchLastX;
-    const direction = deltaY > 0 ? 1 : -1;
-
-    // Capture as soon as the intent is clearly vertical so native momentum
-    // does not begin fighting the section transition.
-    if (Math.abs(deltaY) < 7 || Math.abs(deltaY) <= Math.abs(deltaX) * 1.10) return;
-
-    const sections = getSections();
-    if (!canStepFrom(sections, touchStartIndex, direction, touchStartTarget)) return;
-
-    touchCaptured = true;
-    if (event.cancelable) event.preventDefault();
-  }, { passive: false });
-
-  window.addEventListener("touchend", (event) => {
-    if (readerOpen() || activityScroll(event.target) || activityScroll(touchStartTarget)) { touchCaptured = false; touchStartTarget = null; return; }
-    if (!mobileQuery.matches) return;
-    const touch = event.changedTouches?.[0];
-    if (touch) {
-      touchLastY = touch.clientY;
-      touchLastX = touch.clientX;
-    }
-
-    const deltaY = touchStartY - touchLastY;
-    const deltaX = touchStartX - touchLastX;
-    const isVerticalSwipe = Math.abs(deltaY) >= 36 && Math.abs(deltaY) > Math.abs(deltaX) * 1.10;
-
-    if (touchCaptured && isVerticalSwipe) {
-      const direction = deltaY > 0 ? 1 : -1;
-      stepFromIndex(getSections(), touchStartIndex, direction, touchStartTarget, "touch");
-    }
-
-    touchCaptured = false;
-    touchStartTarget = null;
-  }, { passive: true });
-
-  window.addEventListener("touchcancel", () => {
-    touchCaptured = false;
-    touchStartTarget = null;
-  }, { passive: true });
-
-  // If the viewport changes enough to alter the mobile/desktop section model,
-  // discard the remembered touch destination and re-detect it on the next swipe.
+  // Discard desktop momentum locks when the viewport changes.
   mobileQuery.addEventListener?.("change", () => {
-    touchTargetIndex = null;
-    lastTouchStepAt = 0;
     wheelLocked = false;
     window.clearTimeout(wheelUnlockTimer);
   });
@@ -1001,7 +908,7 @@ function bindLandingHeaderNavigation() {
   });
 
   document.addEventListener("click", (event) => {
-    if (!(event.target instanceof Node) || header.contains(event.target)) return;
+    if (!(event.target instanceof Node) || (nav.contains(event.target) || toggle.contains(event.target))) return;
     closeNav();
   });
 

@@ -685,7 +685,7 @@ if (sendReplyBtn) {
 
 
 document.getElementById("openComplaintInboxBtn")?.addEventListener("click", () => {
-  document.getElementById("complaintInbox")?.scrollIntoView({ behavior: "smooth", block: "start" });
+  document.getElementById("complaintInbox")?.scrollIntoView({ behavior: window.matchMedia("(max-width: 940px)").matches ? "instant" : "smooth", block: "start" });
 });
 
 // Native dialogs provide focus containment, Escape dismissal and a modal backdrop.
