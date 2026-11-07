@@ -1365,16 +1365,13 @@ body.student-app-shell .announcement-modal-dialog #bulletinModalContent {
   body.student-app-shell .student-sidebar .student-nav-link { color: #123450; }
   body.student-app-shell .student-sidebar .student-nav-link.active { color: #fff; }
 }
-/* Exact top-to-bottom sidebar palette; Dashboard remains visually pinned. */
+/* Highlight only the active module. */
 .student-sidebar {
   background: linear-gradient(180deg, #acf5ff 7%, #49ccfe 33%, #00adef 100%);
 }
 .student-sidebar::before { background: none; }
 .student-sidebar .student-nav-link { font-weight: 400; }
-.student-sidebar .student-nav-link.active,
-.student-sidebar .student-nav-link[href="dashboard.html"],
-.student-sidebar .student-nav-link[href="../dashboard/dashboard.html"],
-.student-sidebar .student-nav-link[href="#dashboardHome"] {
+.student-sidebar .student-nav-link.active {
   color: #fff;
   /* 55% tinted glass; highlights affect the surface, not label opacity. */
   background: linear-gradient(90deg, rgba(255,255,255,.12), rgba(255,255,255,.02)), rgba(20, 48, 85, .55);

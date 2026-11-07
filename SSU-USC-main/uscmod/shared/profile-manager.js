@@ -95,7 +95,7 @@ function normalizeProfile(raw = {}) {
   return {
     ...raw,
     uid: String(raw?.uid || "").trim(),
-    fullName: String(raw?.fullName || raw?.name || "").trim(),
+    fullName: String(raw?.fullName || [raw?.firstName, raw?.middleName, raw?.lastName, raw?.suffix].filter(Boolean).join(" ") || (role !== "student" ? raw?.name : "") || "").trim(),
     email,
     studentId: String(raw?.studentId || "").trim(),
     role,
@@ -174,7 +174,7 @@ function setAvatarImage(element, profile) {
 
 function applyProfileToPage(profile) {
   if (!profile) return;
-  const name = profile.fullName || profile.email || (profile.role === "student" ? "Student" : "USC Officer");
+  const name = profile.fullName || (profile.role === "student" ? "Student" : "USC Officer");
 
   document.querySelectorAll("#dashboardUserName, [data-admin-name], #adminName, .admin-name").forEach((element) => {
     element.textContent = name;
@@ -649,7 +649,7 @@ function setPreviewPhoto(photo, profile) {
 }
 
 function fillDrawer(profile) {
-  const name = profile.fullName || profile.email || "User";
+  const name = profile.fullName || "Name unavailable";
   const role = profile.role === "admin" ? "Administrator" : profile.role === "officer" ? "Officer" : "Student";
   const drawer = document.getElementById("uscProfileDrawer");
   if (drawer) drawer.dataset.profileRole = profile.role || "student";
@@ -657,6 +657,7 @@ function fillDrawer(profile) {
   document.getElementById("uscProfileDisplayName").textContent = name;
   document.getElementById("uscProfileDisplayRole").textContent = roleLabel(profile);
   document.getElementById("uscProfileFullName").value = profile.fullName || "";
+  document.getElementById("uscProfileFullName").placeholder = "Full name unavailable";
   document.getElementById("uscProfileEmail").value = profile.email || "Not Linked";
   document.getElementById("uscProfileStudentId").value = profile.studentId || "Not available";
   document.getElementById("uscProfileRole").value = role;
@@ -905,10 +906,10 @@ async function logoutFromProfile() {
 
 async function refreshProfileFromFirestore() {
   const stored = readStoredProfile();
-  if (!stored?.uid) return;
+  if (!auth.currentUser?.uid || stored?.uid !== auth.currentUser.uid) return;
   try {
-    const snapshot = await getDoc(doc(db, "users", stored.uid));
-    if (!snapshot.exists()) return;
+    const snapshot = await getDoc(doc(db, "users", auth.currentUser.uid));
+    if (auth.currentUser?.uid !== stored.uid || !snapshot.exists()) return;
     const fresh = normalizeProfile({ ...stored, ...snapshot.data(), uid: stored.uid });
     saveStoredProfile(fresh);
     applyProfileToPage(fresh);
@@ -975,7 +976,7 @@ window.addEventListener("pagehide", unlockBackgroundScroll, { once: true });
 function initialize() {
   if (sessionStorage.getItem(SESSION_FLAG_KEY) !== "true") return;
   const stored = readStoredProfile();
-  if (!stored?.uid) return;
+  if (!auth.currentUser?.uid || stored?.uid !== auth.currentUser.uid) return;
   currentProfile = normalizeProfile(stored);
   applyProfileToPage(currentProfile);
   const trigger = createProfileTrigger();
