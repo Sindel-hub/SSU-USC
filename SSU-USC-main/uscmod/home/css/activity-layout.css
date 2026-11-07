@@ -10,7 +10,7 @@
 #events-section .section-heading { font-size:clamp(30px,3.2vw,46px); line-height:1.2; margin:0 0 12px; }
 #events-section .events-intro { font-size:14px; line-height:1.6; margin:0; }
 #events-section #homeEventList {
-  height:396px !important; min-height:396px !important; max-height:396px !important;
+  height:328px !important; min-height:328px !important; max-height:328px !important;
   grid-auto-rows:124px; gap:12px !important; align-content:start; padding:0 4px 0 0;
 }
 #events-section #homeEventList .event-item {
@@ -28,11 +28,11 @@
 #events-section #homeEventList h3 { font-size:15px; line-height:1.2; margin:2px 0; font-weight:700; }
 #events-section #homeEventList .event-facts { font-size:12px; line-height:1.2; gap:2px; }
 #events-section .calendar-side {
-  align-self:stretch !important; justify-self:stretch; width:100%; max-width:none; min-height:0;
+  align-self:start !important; justify-self:stretch; width:100%; max-width:none; min-height:0;
   height:auto; padding:20px; border-radius:8px; display:flex; flex-direction:column;
-  justify-content:space-between;
+  justify-content:flex-start; gap:12px;
 }
-#events-section .calendar-header { grid-template-columns:36px minmax(0,1fr) 36px; min-height:40px; gap:4px; margin-bottom:14px; }
+#events-section .calendar-header { grid-template-columns:36px minmax(0,1fr) 36px; min-height:40px; gap:4px; margin-bottom:0; }
 #events-section .calendar-arrow { width:36px; height:36px; }
 #events-section #homeCalendarTitle { font-size:20px; }
 #events-section #homeCalendarGrid { grid-template-rows:26px repeat(6,36px) !important; }
