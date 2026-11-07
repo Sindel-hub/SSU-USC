@@ -23,3 +23,10 @@
     background:transparent !important;
   }
 }
+
+/* Keep internal thumbs clear of rounded container corners, on both axes.
+   Viewport scrollbars retain their normal full-length track. */
+@supports selector(::-webkit-scrollbar) {
+  *:not(html):not(body)::-webkit-scrollbar-track:vertical { margin-top:16px !important; margin-bottom:16px !important; }
+  *:not(html):not(body)::-webkit-scrollbar-track:horizontal { margin-left:16px !important; margin-right:16px !important; }
+}

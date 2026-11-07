@@ -343,6 +343,7 @@ function renderElectionBlockingState(message, reason = "closed") {
 function renderLanding() {
   const entering = currentView !== "landing";
   if (entering) app.scrollTo({ top: 0, behavior: "instant" });
+  app.classList.remove("election-candidates-active");
   currentView = "landing";
   app.classList.remove("election-ineligible-active");
   const eligibility = electionActionEligibility();
@@ -621,24 +622,24 @@ function candidateGalleryHeading(position) {
     "Secretary": "The Secretaries",
     "Treasurer": "The Treasurers",
     "Auditor": "The Auditors",
-    "Public Relations Officer": "The Public Relations Officers",
+    "Public Relations Officer (PRO)": "The Public Relations Officers",
     "Business Manager": "The Business Managers",
-    "Sergeant at Arms": "The Sergeants at Arms",
+    "Sgt. at Arms": "The Sergeants at Arms",
     "Department Representative": "Department Representatives"
   };
   return labels[position] || position;
 }
 
-function candidateSlantCard(candidate) {
+function candidateGalleryCard(candidate) {
   const candidatePhoto = photo(candidate);
   const party = clean(candidate.partylist || "Independent");
   const department = clean(candidate.department || candidate.college || "");
   const platform = clean(candidate.platform || "No platform statement provided.");
-  return `<button class="candidate-slant-card" type="button"
+  return `<button class="election-candidate-card" type="button"
     data-candidate-id="${esc(candidate.id)}"
     aria-label="Select ${esc(candidate.fullName)}">
       <img src="${esc(candidatePhoto)}" data-media-ref="${esc(candidatePhoto)}" alt="Campaign photo of ${esc(candidate.fullName)}" onerror="this.src='assets/USClogo.webp'">
-      <span class="candidate-slant-caption">
+      <span class="election-candidate-caption">
         <strong>${esc(candidate.fullName)}</strong>
         <span>${esc(party)}${department ? ` · ${esc(department)}` : ""}</span>
         <small>${esc(platform)}</small>
@@ -652,60 +653,21 @@ function candidateGalleryGroup(position, rows) {
     ? `${candidateGalleryHeading(position)} · ${esc(student.college)}`
     : candidateGalleryHeading(position);
 
-  const chunks = [];
-  for (let index = 0; index < rows.length; index += 4) {
-    chunks.push(rows.slice(index, index + 4));
-  }
-
-  return `<section class="candidate-view-section" data-position="${esc(position)}">
-    <h2>${heading}</h2>
-    ${chunks.map((chunk) => `<div class="candidate-slant-grid candidate-slant-grid-four" data-candidate-accordion data-candidate-count="${chunk.length}">
-      ${chunk.map(candidateSlantCard).join("")}
-    </div>`).join("")}
+  return `<section class="election-candidate-section" id="candidate-position-${POSITION_ORDER.indexOf(position)}" data-position="${esc(position)}">
+    <h2 class="election-position-title">${heading}</h2>
+    ${Array.from({ length: Math.ceil(rows.length / 4) }, (_, index) => `<div class="election-candidate-grid">${rows.slice(index * 4, index * 4 + 4).map(candidateGalleryCard).join("")}</div>`).join("")}
   </section>`;
-}
-
-function clearCandidateAccordion(grid, { unlock = false } = {}) {
-  if (!grid) return;
-  if (unlock) delete grid.dataset.lockedCandidate;
-  if (grid.dataset.lockedCandidate && !unlock) return;
-  grid.classList.remove("is-accordion-active");
-  grid.querySelectorAll(".candidate-slant-card").forEach((card) => {
-    card.classList.remove("is-expanded", "is-collapsed");
-    card.setAttribute("aria-expanded", "false");
-  });
-}
-
-function activateCandidateAccordion(grid, activeCard, { lock = false } = {}) {
-  if (!grid || !activeCard) return;
-  const cards = [...grid.querySelectorAll(".candidate-slant-card")];
-  if (!cards.length) return;
-  if (lock) grid.dataset.lockedCandidate = clean(activeCard.dataset.candidateId);
-  grid.classList.add("is-accordion-active");
-  cards.forEach((card) => {
-    const expanded = card === activeCard;
-    card.classList.toggle("is-expanded", expanded);
-    card.classList.toggle("is-collapsed", !expanded);
-    card.setAttribute("aria-expanded", expanded ? "true" : "false");
-  });
 }
 
 
 function closeCandidateProfile() {
   activeCandidateId = "";
-  document.querySelector(".candidate-profile-overlay")?.remove();
-
-  // Reset any previously opened candidate flashcard state.
-  // Without this, the previous candidate remains locked after closing the modal.
-  document.querySelectorAll("[data-candidate-accordion]").forEach((grid) => {
-    clearCandidateAccordion(grid, { unlock: true });
-    delete grid.dataset.lockedCandidate;
-  });
-
-  document.querySelectorAll(".candidate-slant-card").forEach((card) => {
-    card.classList.remove("is-expanded", "is-collapsed");
-    card.setAttribute("aria-expanded", "false");
-  });
+  const overlay = document.querySelector(".candidate-profile-overlay");
+  const returnId = overlay?.dataset?.returnFocus;
+  if (overlay?.dataset?.previousOverflow !== undefined) document.body.style.overflow = overlay.dataset.previousOverflow;
+  overlay?.remove();
+  if (returnId) [...document.querySelectorAll("[data-candidate-id]")]
+    .find((card) => card.dataset.candidateId === returnId)?.focus();
 }
 
 function showCandidateProfile(candidateId) {
@@ -724,7 +686,7 @@ function showCandidateProfile(candidateId) {
   const overlay = document.createElement("div");
   overlay.className = "candidate-profile-overlay";
   overlay.innerHTML = `
-    <div class="candidate-profile-modal" role="dialog" aria-modal="true">
+    <div class="candidate-profile-modal" role="dialog" aria-modal="true" aria-labelledby="candidateProfileName">
       <button class="candidate-profile-close" type="button" aria-label="Close">
         <i class="fa-solid fa-xmark"></i>
       </button>
@@ -733,7 +695,7 @@ function showCandidateProfile(candidateId) {
       </div>
       <div class="candidate-profile-body">
         <div class="candidate-profile-avatar">${esc((candidate.fullName || "C").slice(0,1).toUpperCase())}</div>
-        <h2>${esc(candidate.fullName || "Candidate")}</h2>
+        <h2 id="candidateProfileName">${esc(candidate.fullName || "Candidate")}</h2>
         <p class="candidate-profile-position">${esc(candidate.position || "")}</p>
         <div class="candidate-profile-tags">
           <span>${esc(party)}</span>
@@ -753,7 +715,22 @@ function showCandidateProfile(candidateId) {
       </div>
     </div>`;
 
+  overlay.dataset.previousOverflow = document.body.style.overflow;
+  overlay.dataset.returnFocus = candidate.id;
+  document.body.style.overflow = "hidden";
   document.body.appendChild(overlay);
+  overlay.querySelector('.candidate-profile-close')?.focus();
+  overlay.addEventListener("keydown", (event) => {
+    if (event.key === "Escape") { event.preventDefault(); closeCandidateProfile(); return; }
+    if (event.key === "Tab") {
+      const controls = [...overlay.querySelectorAll('button,a[href],[tabindex="0"]')];
+      if (controls.length) {
+        event.preventDefault();
+        const index = controls.indexOf(document.activeElement);
+        controls[(index + (event.shiftKey ? -1 : 1) + controls.length) % controls.length].focus();
+      }
+    }
+  });
 
   hydrateMediaImages(overlay).catch(() => {});
 
@@ -769,47 +746,74 @@ function showCandidateProfile(candidateId) {
   });
 }
 
-function wireCandidateFlashcardFlow() {
-  app.querySelectorAll("[data-candidate-accordion]").forEach((grid) => {
-    const cards = [...grid.querySelectorAll(".candidate-slant-card")];
-    if (!cards.length) return;
+function wireCandidateGallery() {
+  wireCandidateGallery.scrollController?.abort();
+  const controller = new AbortController();
+  wireCandidateGallery.scrollController = controller;
+  const options = { signal: controller.signal, passive: true };
+  const sections = [...app.querySelectorAll(".election-candidate-section")];
+  const motion = matchMedia("(prefers-reduced-motion: reduce)");
+  const top = section => Math.max(0, app.scrollTop + section.getBoundingClientRect().top - app.getBoundingClientRect().top - 18);
+  let destination = null;
+  let origin = 0;
+  let direction = 0;
+  const navigate = (index, from, delta) => {
+    if (!sections[index]) return;
+    destination = index; origin = from; direction = delta;
+    app.scrollTo({ top: top(sections[index]), behavior: motion.matches ? "instant" : "smooth" });
+  };
+  const move = (delta, position = app.scrollTop) => {
+    if (destination !== null) {
+      if (delta !== direction) navigate(origin, destination, delta);
+      return true;
+    }
+    let index = 0;
+    sections.forEach((section, i) => { if (top(section) <= position + 3) index = i; });
+    // Keep native scrolling available inside positions containing multiple rows.
+    if (delta > 0 && sections[index + 1]) {
+      if (position < top(sections[index + 1]) - app.clientHeight - 2) return false;
+      navigate(index + 1, index, delta); return true;
+    }
+    if (delta < 0) {
+      if (position > top(sections[index]) + 3) {
+        navigate(index, index, delta); return true;
+      }
+      if (index > 0) { navigate(index - 1, index, delta); return true; }
+      if (position > 0) { app.scrollTo({ top: 0, behavior: "smooth" }); return true; }
+    }
+    return false;
+  };
+  app.addEventListener("wheel", event => {
+    if (motion.matches || event.ctrlKey || event.shiftKey || !event.cancelable ||
+        Math.abs(event.deltaX) > Math.abs(event.deltaY) || Math.abs(event.deltaY) < 16 ||
+        event.target.closest?.('[role="dialog"],input,textarea,select')) return;
+    if (move(Math.sign(event.deltaY))) event.preventDefault();
+  }, { signal: controller.signal, passive: false });
+  app.addEventListener("scrollend", () => { destination = null; }, options);
+  let touch = null;
+  app.addEventListener("touchstart", event => {
+    destination = null;
+    const point = event.touches[0];
+    touch = point ? { x: point.clientX, y: point.clientY, top: app.scrollTop } : null;
+  }, options);
+  app.addEventListener("touchend", event => {
+    const point = event.changedTouches[0];
+    if (touch && point && !motion.matches) {
+      const dy = touch.y - point.clientY;
+      if (Math.abs(dy) > 48 && Math.abs(dy) > Math.abs(touch.x - point.clientX) * 1.2) move(Math.sign(dy), touch.top);
+    }
+    touch = null;
+  }, options);
+  app.addEventListener("touchcancel", () => { touch = null; }, options);
 
-    cards.forEach((card) => {
-      card.setAttribute("aria-expanded", "false");
-
-      /* Hover/focus expansion is handled by CSS so the row does not constantly
-         collapse/reflow underneath the pointer. Clicking still locks a card open. */
-      card.addEventListener("click", (event) => {
-        event.preventDefault();
-        const id = clean(card.dataset.candidateId);
-        showCandidateProfile(id);
-        if (grid.dataset.lockedCandidate === id) {
-          clearCandidateAccordion(grid, { unlock: true });
-          return;
-        }
-        activateCandidateAccordion(grid, card, { lock: true });
-      });
-    });
-
-    grid.addEventListener("mouseleave", () => clearCandidateAccordion(grid));
-    grid.addEventListener("focusout", () => {
-      requestAnimationFrame(() => {
-        if (!grid.contains(document.activeElement)) clearCandidateAccordion(grid);
-      });
-    });
-  });
-
-  app.addEventListener("click", (event) => {
-    if (event.target.closest?.(".candidate-slant-card")) return;
-    app.querySelectorAll("[data-candidate-accordion]").forEach((grid) => {
-      clearCandidateAccordion(grid, { unlock: true });
-    });
-  }, { once: true });
+  app.querySelectorAll("[data-candidate-id]").forEach((card) => card.addEventListener("click", () => showCandidateProfile(clean(card.dataset.candidateId))));
 }
 
 function renderCandidates() {
   if (!context?.candidateVisible) return renderLanding();
+  const entering = currentView !== "candidates";
   currentView = "candidates";
+  app.classList?.add("election-candidates-active");
 
   const grouped = POSITION_ORDER.map((position) => (
     candidateGalleryGroup(position, candidatesFor(position))
@@ -819,27 +823,25 @@ function renderCandidates() {
     ? "Already Voted"
     : (context.votingOpen ? "Vote Now!" : "Voting Not Open");
 
-  app.innerHTML = `<section class="candidate-view-shell">
-    <div class="candidate-view-background" aria-hidden="true"></div>
-    <div class="candidate-view-content">
-      <div class="candidate-view-topline">
-        <h1 class="candidate-view-label">Candidates</h1>
+  app.innerHTML = `<section class="election-candidate-gallery">
+    <div class="election-candidate-background" aria-hidden="true"></div>
+    <div class="election-candidate-content">
+      <div class="election-candidate-toolbar"><h2>Candidates</h2>
         <button class="candidate-gallery-back" id="backCandidates" type="button">
           <i class="fa-solid fa-arrow-left"></i><span>Back</span>
         </button>
       </div>
-      <div class="candidate-vote-zone" aria-label="Voting status">
+      ${grouped || '<div class="candidate-gallery-empty">No approved candidates are published.</div>'}
+    </div>
+      <div class="election-candidate-vote" aria-label="Voting status">
         <button class="candidate-vote-button ${voterStatus?.hasVoted ? "already-voted" : (!context.votingOpen ? "voting-closed" : "")}" id="floatingVoteStatus" ${!context.votingOpen || voterStatus?.hasVoted ? "disabled" : ""}>${esc(status)}</button>
       </div>
-      ${grouped || '<div class="candidate-gallery-empty">No approved candidates are published.</div>'}
-      <div class="candidate-gallery-scroll-cue" aria-hidden="true">
-        <span>Scroll down</span><i class="fa-solid fa-chevron-down"></i>
-      </div>
-    </div>
+    <div class="election-section-cue" aria-hidden="true">Scroll down <span>⌄</span></div>
   </section>`;
 
+  if (entering) app.scrollTo({ top: 0, behavior: "instant" });
   hydrateMediaImages(app).catch(() => {});
-  wireCandidateFlashcardFlow();
+  wireCandidateGallery();
 
   document.getElementById("backCandidates")?.addEventListener("click", renderLanding);
   document.getElementById("floatingVoteStatus")?.addEventListener("click", () => {
@@ -849,6 +851,7 @@ function renderCandidates() {
 
 function renderBallot() {
   if (!context?.votingOpen || voterStatus?.hasVoted) return renderLanding();
+  app.classList.remove("election-candidates-active");
   currentView = "ballot";
   const positionMarkup = POSITION_ORDER.map((position) => {
     const rows = candidatesFor(position);

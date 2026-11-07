@@ -33,3 +33,50 @@
 .election-schedule-dialog .election-public-schedule :is(h3,strong) { color:#194c80; }
 .election-schedule-dialog .election-public-schedule :is(span,i) { color:#496d8d; }
 @media(max-width:600px) { #electionApp .election-reference-landing { height:740px;min-height:0;padding:38px 20px 40px; } #electionApp .election-reference-intro p { font-size:13px;line-height:1.5; } #electionApp .election-front-card h2 { font-size:18px; } .election-view-schedule { top:12px;right:16px; } .election-schedule-dialog { padding:20px; } .election-schedule-dialog .election-public-schedule-grid { grid-template-columns:1fr; } }
+
+/* Preserve the original slanted accordion presentation and section flow. */
+#electionApp.election-candidates-active { --candidate-frame-height:max(460px,calc(100dvh - 170px));height:calc(100dvh - 170px);min-height:460px;overflow-y:auto!important;scroll-behavior:smooth!important;scroll-snap-type:none;background:#226a91; }
+.election-candidate-gallery { scroll-snap-align:start;position:relative;isolation:isolate;min-height:100%;background:#226a91; }
+.election-candidate-background { position:sticky;top:0;height:var(--candidate-frame-height);margin-bottom:calc(0px - var(--candidate-frame-height));pointer-events:none;filter:blur(7px);background:linear-gradient(#008fc577,#162b4177),url('../assets/HomeLogo.webp') center/cover; }
+.election-candidate-content { position:relative;padding:24px clamp(20px,3vw,40px) 0;color:white; }
+.election-candidate-toolbar { display:flex;align-items:center;justify-content:space-between; }
+.election-candidate-toolbar h2 { margin:0;font-size:22px;color:white; }
+.election-candidate-section { min-height:calc(100dvh - 240px);box-sizing:border-box;padding:32px 20px 110px;scroll-snap-align:start;scroll-margin-top:18px; }
+.election-position-title { text-align:center;margin:0 0 36px;color:white;font-size:30px; }
+.election-candidate-grid { --portrait-width:clamp(150px,17vw,240px);display:flex;justify-content:center;gap:8px;margin:0 auto 28px;max-width:1100px; }
+.election-candidate-card { position:relative;flex:0 1 var(--portrait-width);min-width:0;height:360px;padding:0;border:1px solid #456a81;border-radius:0;background:#071d2d;overflow:hidden;cursor:pointer;text-align:left;font:inherit;transform:skewX(-7deg);transition:flex-basis .55s cubic-bezier(.22,.61,.36,1); }
+.election-candidate-card img { position:absolute;left:-24px;top:0;width:calc(var(--portrait-width) + 48px);max-width:none;height:100%;object-fit:cover;background:#e6f0f7;transform:skewX(7deg); }
+.election-candidate-caption { position:absolute;left:var(--portrait-width);right:auto;width:280px;top:0;bottom:0;box-sizing:border-box;padding:24px;display:flex;flex-direction:column;justify-content:center;gap:12px;background:#071d2d;color:white;transform:skewX(7deg);opacity:0;overflow:hidden;transition:opacity .3s ease; }
+.election-candidate-caption strong { font-size:20px;line-height:1.25;overflow-wrap:break-word;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden; }
+.election-candidate-caption > span { font-size:14px;line-height:1.5;color:#d2e8f6; }
+.election-candidate-caption small { font-size:14px;line-height:1.5;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;border-top:1px solid #ffffff33;padding-top:12px; }
+@media(hover:hover) { .election-candidate-card:hover,.election-candidate-card:focus-visible { flex-basis:calc(var(--portrait-width) + 280px);flex-shrink:0; } .election-candidate-card:is(:hover,:focus-visible) .election-candidate-caption { opacity:1;transform:skewX(7deg);transition-delay:.15s; } }
+.election-candidate-card:focus-visible { outline:3px solid #53cbf3;outline-offset:3px; }
+.election-candidate-vote { position:sticky;bottom:40px;z-index:10;display:flex;justify-content:center;height:48px;margin-top:-88px;pointer-events:none; }
+#electionApp .election-candidate-vote .candidate-vote-button { pointer-events:auto;background:#36b5de!important;color:white;min-width:190px; }
+.election-section-cue { position:sticky;bottom:6px;text-align:center;color:#dcecf5;font-size:10px;height:32px;pointer-events:none; }
+.election-section-cue span { display:block;font-size:22px;line-height:18px; }
+.candidate-profile-overlay { align-items:flex-start!important;overflow-y:auto!important;scrollbar-width:none;padding:24px 16px!important; }
+.candidate-profile-overlay::-webkit-scrollbar { display:none; }
+.candidate-profile-overlay .candidate-profile-modal { display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.2fr);width:min(960px,100%)!important;height:auto!important;max-height:none!important;overflow:visible!important;margin-block:auto;animation:none; }
+.candidate-profile-overlay .candidate-profile-cover { position:relative;height:auto!important;min-height:400px;align-self:stretch;border-radius:24px 0 0 24px; }
+.candidate-profile-overlay .candidate-profile-cover img { position:absolute;inset:0;display:block;width:100%!important;height:100%!important;max-height:none;object-fit:cover!important;object-position:center top; }
+.candidate-profile-overlay .candidate-profile-avatar { display:none; }
+.candidate-profile-overlay .candidate-profile-body { min-width:0;padding:28px!important;overflow:visible; }
+.candidate-profile-overlay .candidate-profile-body h2 { margin:0 32px 16px 0;overflow-wrap:anywhere; }
+.candidate-profile-overlay .candidate-profile-section p { white-space:pre-wrap;overflow-wrap:anywhere; }
+@media(max-width:600px) { #electionApp.election-candidates-active { --candidate-frame-height:max(460px,calc(100dvh - 245px));height:calc(100dvh - 245px);min-height:460px; } .election-candidate-section { min-height:calc(100dvh - 265px);padding:28px 0 100px; } .election-position-title { font-size:25px; } .election-candidate-grid { --portrait-width:190px;justify-content:flex-start;overflow-x:auto;padding:0 18px 12px;scroll-snap-type:x proximity; } .election-candidate-card { flex:0 0 190px;height:340px;scroll-snap-align:center; } .election-candidate-card:only-child { margin-inline:auto; } .candidate-profile-overlay .candidate-profile-modal { grid-template-columns:1fr; } .candidate-profile-overlay .candidate-profile-cover { height:340px!important;min-height:0;border-radius:24px 24px 0 0; } }
+@media(prefers-reduced-motion:reduce) { #electionApp.election-candidates-active { scroll-behavior:auto!important;scroll-snap-type:none; } .election-candidate-card,.election-candidate-caption,.candidate-profile-overlay { transition:none!important;animation:none!important; } }
+
+/* Clip the scroller and overscan the blur so no base-color strips show. */
+body.student-app-shell #electionApp.election-candidates-active { padding:0!important;border:0;border-radius:18px;clip-path:inset(0 round 18px);background:linear-gradient(#008fc577,#162b4177),url('../assets/HomeLogo.webp') center/cover no-repeat; }
+.election-candidate-background { filter:none;background:none;overflow:hidden; }
+.election-candidate-background::before { content:"";position:absolute;inset:-24px;background:linear-gradient(#008fc577,#162b4177),url('../assets/HomeLogo.webp') center/cover no-repeat;filter:blur(7px); }
+#electionApp.election-candidates-active::-webkit-scrollbar-track { margin-block:18px;background:transparent; }
+#electionApp.election-candidates-active::-webkit-scrollbar-thumb { border-radius:999px; }
+
+/* The entry panel and its backdrop share one fixed frame, without outer gutters. */
+body.student-app-shell #electionApp:has(> .election-reference-landing) { height:clamp(580px,calc(100svh - 170px),760px)!important;min-height:0;padding:0!important;border:0!important;scrollbar-gutter:auto;overflow:hidden!important;border-radius:18px;clip-path:inset(0 round 18px); }
+#electionApp > .election-reference-landing { height:100%!important;min-height:0;flex:1 1 auto;width:100%;border-radius:0; }
+#electionApp .election-reference-landing-bg { inset:-40px;width:auto;height:auto;transform:none; }
+@media(max-width:600px) { body.student-app-shell #electionApp:has(> .election-reference-landing) { height:740px!important; } }
