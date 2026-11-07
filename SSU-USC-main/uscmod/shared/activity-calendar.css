@@ -44,7 +44,7 @@ body.student-app-shell #eventsUpcomingList .events-upcoming-card { display:flex;
 #eventsUpcomingList .events-participate-link { white-space:nowrap; font-size:12px; min-height:36px; }
 body.student-app-shell #eventsUpcomingSection .events-upcoming-content { height:auto !important; min-height:0 !important; box-sizing:border-box; align-items:stretch; grid-template-columns:minmax(0,.9fr) minmax(0,1.3fr); padding:64px 24px 24px; }
 body.student-app-shell #eventsUpcomingSection .events-upcoming-calendar { box-sizing:border-box; width:100%; min-width:0; }
-body.student-app-shell #eventsUpcomingHeading { font-size:32px; line-height:1.2; margin-bottom:12px; }
+body.student-app-shell #eventsUpcomingHeading { font-size:clamp(30px,3.2vw,46px); line-height:1.2; margin-bottom:12px; }
 body.student-app-shell .events-upcoming-copy > p { font-size:14px; line-height:1.6; margin-bottom:12px; }
 .activity-card-grid.activity-many { align-content:start !important; }
 .activity-card-grid { scrollbar-width:thin; scrollbar-color:#759fc16b transparent; }
