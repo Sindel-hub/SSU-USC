@@ -207,41 +207,10 @@ function detailsCard() {
   </aside>`;
 }
 
-let registrationProgressValue = 0;
-function candidateProgress(step, draft = {}) {
-  const completed = [
-    step > 1, Boolean(draft.position), Boolean(draft.photoFile),
-    Boolean(clean(draft.platform)), Boolean(clean(draft.statement)),
-    Boolean(draft.supportingFiles?.length)
-  ].filter(Boolean).length;
-  // The final segment completes when the student reaches review.
-  return step === 4 ? 100 : Math.round(completed / 7 * 100);
-}
-
-function updateRegistrationProgress() {
-  const progress = document.getElementById("candidateRegistrationProgress");
-  if (!progress) return;
-  registrationProgressValue = candidateProgress(candidateRegistrationStep, candidateDraft);
-  progress.setAttribute("aria-valuenow", String(registrationProgressValue));
-  progress.querySelector(".candidate-progress-fill").style.width = registrationProgressValue + "%";
-  document.getElementById("candidateProgressLabel").textContent = registrationProgressValue + "% complete";
-}
-
-function validateSupportingFiles(files = []) {
-  if (!files.length) return "Add at least one supporting document before continuing.";
-  if (files.length > 8) return "Upload up to 8 supporting documents.";
-  for (const file of files) {
-    if (file.size > 5 * 1024 * 1024) return file.name + " is larger than 5MB.";
-    if (!/\.(pdf|jpe?g|png)$/i.test(file.name)) return "Supporting documents must be PDF, JPG or PNG files.";
-  }
-  return "";
-}
-
 function candidateStepper(step) {
-  const labels = ["Your details", "Candidacy", "Documents", "Review"];
-  return `<div class="candidate-progress-meta"><span>Step ${step} of 4</span><span id="candidateProgressLabel">${registrationProgressValue}% complete</span></div>
-    <div id="candidateRegistrationProgress" class="candidate-progress-track" role="progressbar" aria-label="Registration completion" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${registrationProgressValue}"><span class="candidate-progress-fill" style="width:${registrationProgressValue}%"></span></div>
-    <div class="candidate-registration-stepper" aria-label="Candidate registration progress">${labels.map((label, index) => `<div class="candidate-registration-step ${index + 1 < step ? "done" : ""} ${index + 1 === step ? "active" : ""}" ${index + 1 === step ? 'aria-current="step"' : ""}><span>${index + 1}</span><small>${label}</small></div>`).join("")}</div>`;
+  return `<div class="candidate-registration-stepper" aria-label="Candidate registration progress">
+    ${[1,2,3,4].map((number) => `<div class="candidate-registration-step ${number < step ? "done" : ""} ${number === step ? "active" : ""}"><span>${number}</span></div>`).join("")}
+  </div>`;
 }
 
 function registrationShell(step, body) {
@@ -348,11 +317,11 @@ function renderElectionBlockingState(message, reason = "closed") {
   app.innerHTML = `<section class="election-reference-landing" data-election-state="${esc(reason)}">
     <div class="election-reference-landing-bg" aria-hidden="true"></div><div class="election-reference-landing-shade" aria-hidden="true"></div>
     <div class="election-ineligible-stack"><div class="election-reference-landing-content election-front-card" role="status">
-      <div class="election-ineligible-status"><span class="election-ineligible-status-dot"></span>${esc(statusLabel)}</div>
-      <img class="election-reference-logo" src="assets/USClogo.webp" alt="University Student Council seal">
-      <span class="election-ineligible-kicker">Your student council. Your voice.</span>
-      <h2>Every voice shapes our future.</h2><p>${esc(message)}</p><p class="election-front-note">${esc(footerCopy)}</p>
-      <div class="election-reference-actions"><button class="election-reference-primary" type="button" disabled>${esc(statusLabel)}</button></div>
+<img class="election-reference-logo" src="assets/USClogo.webp" alt="University Student Council seal">
+        <h2>SSU UNIVERSITY STUDENT COUNCIL</h2>
+        <div class="election-reference-motto">LEADERSHIP | EXCELLENCE | DISCIPLINE | SERVICE</div>
+        <div class="election-reference-intro"><h3>A Legacy of Student Leadership</h3><p>The University Student Council elections are the heartbeat of student representation at Samar State University. For decades, the USC has stood as the vital bridge between the student body and the university administration. Participating in these elections is more than just a democratic exercise; it is a commitment to continuing a long-standing tradition of proactive leadership. By choosing our representatives, we ensure that student welfare, campus initiatives, and academic excellence remain at the forefront of SSU’s growth.</p></div><p class="election-phase-copy">${esc(message)}</p>
+      <div class="election-reference-actions"><button class="election-reference-primary" type="button" disabled>Closed</button></div>
     </div>${electionSchedulePreview()}</div></section>`;
 }
 
@@ -360,7 +329,6 @@ function renderLanding() {
   const entering = currentView !== "landing";
   if (entering) app.scrollTo({ top: 0, behavior: "instant" });
   currentView = "landing";
-  app.classList?.remove("election-candidates-active");
   app.classList.remove("election-ineligible-active");
   const eligibility = electionActionEligibility();
   if (!eligibility.allowed) {
@@ -388,7 +356,7 @@ function renderLanding() {
     const label = hasApplication
       ? "Already Registered"
       : candidacyApproved
-        ? "Register as Candidate"
+        ? "Register Now!"
         : "Candidacy Approval Required";
     applicationAction = `<button type="button" class="election-reference-primary" id="landingApplication" ${(!hasApplication && !candidacyApproved) ? "disabled" : ""}>${esc(label)}</button>`;
   }
@@ -402,11 +370,10 @@ function renderLanding() {
     <div class="election-reference-landing-shade" aria-hidden="true"></div>
     <div class="election-ineligible-stack">
       <div class="election-reference-landing-content election-front-card">
-        <div class="election-ineligible-status"><span class="election-ineligible-status-dot"></span>${esc(context?.lifecycle || "Election open")}</div>
-        <img class="election-reference-logo" src="assets/USClogo.webp" alt="University Student Council seal">
-        <span class="election-ineligible-kicker">Your student council. Your voice.</span>
-        <h2>${context?.candidateVisible ? "Meet your next student leaders." : "Step forward. Lead the change."}</h2>
-        <p>${esc(phaseMessage())}</p>
+<img class="election-reference-logo" src="assets/USClogo.webp" alt="University Student Council seal">
+        <h2>SSU UNIVERSITY STUDENT COUNCIL</h2>
+        <div class="election-reference-motto">LEADERSHIP | EXCELLENCE | DISCIPLINE | SERVICE</div>
+        <div class="election-reference-intro"><h3>A Legacy of Student Leadership</h3><p>The University Student Council elections are the heartbeat of student representation at Samar State University. For decades, the USC has stood as the vital bridge between the student body and the university administration. Participating in these elections is more than just a democratic exercise; it is a commitment to continuing a long-standing tradition of proactive leadership. By choosing our representatives, we ensure that student welfare, campus initiatives, and academic excellence remain at the forefront of SSU’s growth.</p></div><p class="election-phase-copy">${esc(phaseMessage())}</p>
         <div class="election-reference-actions">
           ${applicationAction}
           ${secondaryActions.join("")}
@@ -427,12 +394,8 @@ function renderLanding() {
 
 function renderRegistration(step = 1, resetDraft = false) {
   if (!electionActionEligibility().allowed || !context?.registrationOpen || student?.candidacyApproved !== true) return renderLanding();
-  if (resetDraft || !candidateDraft) {
-    candidateDraft = createCandidateDraft();
-    registrationProgressValue = 0;
-  }
+  if (resetDraft || !candidateDraft) candidateDraft = createCandidateDraft();
   currentView = "registration";
-  app.classList?.remove("election-candidates-active");
   candidateRegistrationStep = Math.max(1, Math.min(4, Number(step) || 1));
 
   const standing = clean(student.studentStandingLabel || student.studentStanding || student.enrollmentStatus, "Active / Enrolled");
@@ -496,9 +459,9 @@ function renderRegistration(step = 1, resetDraft = false) {
           <label>Statement of Intent<textarea id="candidateStatement" maxlength="1600" placeholder="Explain why you want to serve the student body.">${esc(candidateDraft.statement)}</textarea><small><span id="statementCount">${candidateDraft.statement.length}</span> / 1600</small></label>
         </div>
         <div class="candidate-documents-panel">
-          <span class="candidate-field-label">Supporting Documents <em>Required · at least one</em></span>
+          <span class="candidate-field-label">Supporting Documents <em>(Optional)</em></span>
           <label class="candidate-document-upload" for="supportingDocuments">
-            <input id="supportingDocuments" aria-required="true" type="file" multiple accept=".pdf,image/jpeg,image/png">
+            <input id="supportingDocuments" type="file" multiple accept=".pdf,image/jpeg,image/png">
             <i class="fa-solid fa-plus"></i><strong>Add Document</strong>
           </label>
           <div class="candidate-selected-docs">${candidateDraft.supportingFiles.length ? candidateDraft.supportingFiles.map((f) => `<span><i class="fa-regular fa-file"></i>${esc(f.name)}</span>`).join("") : ""}</div>
@@ -526,7 +489,6 @@ function renderRegistration(step = 1, resetDraft = false) {
   }
 
   app.innerHTML = registrationShell(candidateRegistrationStep, body);
-  requestAnimationFrame(updateRegistrationProgress);
   wireRegistrationDetailsButton();
   document.getElementById("candidateBack")?.addEventListener("click", () => renderRegistration(candidateRegistrationStep - 1));
 
@@ -535,13 +497,6 @@ function renderRegistration(step = 1, resetDraft = false) {
   }
 
   if (candidateRegistrationStep === 2) {
-    document.getElementById("candidatePosition")?.addEventListener("change", (event) => {
-      candidateDraft.position = event.target.value;
-      updateRegistrationProgress();
-    });
-    document.getElementById("candidateParty")?.addEventListener("input", (event) => {
-      candidateDraft.partylist = event.target.value;
-    });
     const photoInput = document.getElementById("campaignPhoto");
     photoInput?.addEventListener("change", () => {
       const file = photoInput.files?.[0];
@@ -570,18 +525,15 @@ function renderRegistration(step = 1, resetDraft = false) {
     const statement = document.getElementById("candidateStatement");
     const docsInput = document.getElementById("supportingDocuments");
     const updateCounts = () => {
-      candidateDraft.platform = platform?.value || "";
-      candidateDraft.statement = statement?.value || "";
-      updateRegistrationProgress();
       const pc = document.getElementById("platformCount"); if (pc) pc.textContent = String(platform?.value.length || 0);
       const sc = document.getElementById("statementCount"); if (sc) sc.textContent = String(statement?.value.length || 0);
     };
     platform?.addEventListener("input", updateCounts);
     statement?.addEventListener("input", updateCounts);
     docsInput?.addEventListener("change", () => {
-      const selected = [...(docsInput.files || [])];
-      const fileError = validateSupportingFiles(selected);
-      if (fileError) { document.getElementById("candidateStepMessage").textContent = fileError; return; }
+      const selected = [...(docsInput.files || [])].slice(0, 8);
+      const tooLarge = selected.find((file) => file.size > 5 * 1024 * 1024);
+      if (tooLarge) { document.getElementById("candidateStepMessage").textContent = `${tooLarge.name} is larger than 5MB.`; return; }
       candidateDraft.supportingFiles = selected;
       candidateDraft.platform = platform?.value || candidateDraft.platform;
       candidateDraft.statement = statement?.value || candidateDraft.statement;
@@ -593,8 +545,6 @@ function renderRegistration(step = 1, resetDraft = false) {
       const statementValue = clean(statement?.value);
       if (!platformValue) { message.textContent = "Add your platform and advocacy before continuing."; return; }
       if (!statementValue) { message.textContent = "Add your statement of intent before continuing."; return; }
-      const fileError = validateSupportingFiles(candidateDraft.supportingFiles);
-      if (fileError) { message.textContent = fileError; return; }
       candidateDraft.platform = platformValue;
       candidateDraft.statement = statementValue;
       renderRegistration(4);
@@ -613,8 +563,6 @@ async function submitApplication() {
   button.disabled = true;
   message.textContent = "Server-verifying registration window and securely uploading files...";
   try {
-    const documentError = validateSupportingFiles(candidateDraft.supportingFiles);
-    if (documentError) throw new Error(documentError);
     context = await callSecure("getElectionContext");
     if (!context.registrationOpen) throw new Error("Candidate registration is no longer open according to server time.");
     if (!candidateDraft.photoFile) throw new Error("Campaign photo is required.");
@@ -646,7 +594,6 @@ ${candidateDraft.statement}`.slice(0, 4000);
 function renderApplicationStatus() {
   if (!application) return renderLanding();
   currentView = "status";
-  app.classList?.remove("election-candidates-active");
   app.innerHTML = `<section class="registration-card" style="max-width:850px;margin:35px auto"><div class="registration-tip"><i class="fa-solid fa-circle-info"></i><div><strong>Application Status: ${esc(application.status || "Under Review")}</strong><span>Private supporting documents are not exposed on public candidate pages.</span></div></div><div class="registration-body"><div class="review-grid"><div class="review-panel"><h4>Candidate</h4><p><strong>${esc(application.fullName || student.fullName)}</strong><br>${esc(application.studentId || student.studentId)}<br>${esc(application.program || student.program || "")}</p></div><div class="review-panel"><h4>Position</h4><p>${esc(application.position)}</p>${application.department ? `<h4>Verified College</h4><p>${esc(application.department)}</p>` : ""}<h4>Party</h4><p>${esc(application.partylist || "Independent")}</p></div><div class="review-panel"><h4>Review</h4><p>${esc(application.reviewNote || "No review note has been posted.")}</p></div></div><div class="registration-actions"><button class="btn-back" id="backFromStatus">Back</button>${context?.candidateVisible ? '<button class="btn-next" id="viewCandidatesFromStatus">View Candidates</button>' : ""}</div></div></section>`;
   document.getElementById("backFromStatus")?.addEventListener("click", renderLanding);
   document.getElementById("viewCandidatesFromStatus")?.addEventListener("click", renderCandidates);
@@ -667,16 +614,16 @@ function candidateGalleryHeading(position) {
   return labels[position] || position;
 }
 
-function candidateGalleryCard(candidate) {
+function candidateSlantCard(candidate) {
   const candidatePhoto = photo(candidate);
   const party = clean(candidate.partylist || "Independent");
   const department = clean(candidate.department || candidate.college || "");
   const platform = clean(candidate.platform || "No platform statement provided.");
-  return `<button class="election-candidate-card" type="button"
+  return `<button class="candidate-slant-card" type="button"
     data-candidate-id="${esc(candidate.id)}"
     aria-label="Select ${esc(candidate.fullName)}">
       <img src="${esc(candidatePhoto)}" data-media-ref="${esc(candidatePhoto)}" alt="Campaign photo of ${esc(candidate.fullName)}" onerror="this.src='assets/USClogo.webp'">
-      <span class="election-candidate-caption">
+      <span class="candidate-slant-caption">
         <strong>${esc(candidate.fullName)}</strong>
         <span>${esc(party)}${department ? ` · ${esc(department)}` : ""}</span>
         <small>${esc(platform)}</small>
@@ -690,21 +637,60 @@ function candidateGalleryGroup(position, rows) {
     ? `${candidateGalleryHeading(position)} · ${esc(student.college)}`
     : candidateGalleryHeading(position);
 
-  return `<section class="election-candidate-section" id="candidate-position-${POSITION_ORDER.indexOf(position)}" data-position="${esc(position)}">
-    <header class="candidate-position-heading"><span>Candidate lineup</span><h2>${heading}</h2><p>${rows.length} ${rows.length === 1 ? "candidate" : "candidates"}</p></header>
-    <div class="election-candidate-grid">${rows.map(candidateGalleryCard).join("")}</div>
+  const chunks = [];
+  for (let index = 0; index < rows.length; index += 4) {
+    chunks.push(rows.slice(index, index + 4));
+  }
+
+  return `<section class="candidate-view-section" data-position="${esc(position)}">
+    <h2>${heading}</h2>
+    ${chunks.map((chunk) => `<div class="candidate-slant-grid candidate-slant-grid-four" data-candidate-accordion data-candidate-count="${chunk.length}">
+      ${chunk.map(candidateSlantCard).join("")}
+    </div>`).join("")}
   </section>`;
+}
+
+function clearCandidateAccordion(grid, { unlock = false } = {}) {
+  if (!grid) return;
+  if (unlock) delete grid.dataset.lockedCandidate;
+  if (grid.dataset.lockedCandidate && !unlock) return;
+  grid.classList.remove("is-accordion-active");
+  grid.querySelectorAll(".candidate-slant-card").forEach((card) => {
+    card.classList.remove("is-expanded", "is-collapsed");
+    card.setAttribute("aria-expanded", "false");
+  });
+}
+
+function activateCandidateAccordion(grid, activeCard, { lock = false } = {}) {
+  if (!grid || !activeCard) return;
+  const cards = [...grid.querySelectorAll(".candidate-slant-card")];
+  if (!cards.length) return;
+  if (lock) grid.dataset.lockedCandidate = clean(activeCard.dataset.candidateId);
+  grid.classList.add("is-accordion-active");
+  cards.forEach((card) => {
+    const expanded = card === activeCard;
+    card.classList.toggle("is-expanded", expanded);
+    card.classList.toggle("is-collapsed", !expanded);
+    card.setAttribute("aria-expanded", expanded ? "true" : "false");
+  });
 }
 
 
 function closeCandidateProfile() {
   activeCandidateId = "";
-  const overlay = document.querySelector(".candidate-profile-overlay");
-  const returnId = overlay?.dataset?.returnFocus;
-  if (overlay?.dataset?.previousOverflow !== undefined) document.body.style.overflow = overlay.dataset.previousOverflow;
-  overlay?.remove();
-  if (returnId) [...document.querySelectorAll("[data-candidate-id]")]
-    .find((card) => card.dataset.candidateId === returnId)?.focus();
+  document.querySelector(".candidate-profile-overlay")?.remove();
+
+  // Reset any previously opened candidate flashcard state.
+  // Without this, the previous candidate remains locked after closing the modal.
+  document.querySelectorAll("[data-candidate-accordion]").forEach((grid) => {
+    clearCandidateAccordion(grid, { unlock: true });
+    delete grid.dataset.lockedCandidate;
+  });
+
+  document.querySelectorAll(".candidate-slant-card").forEach((card) => {
+    card.classList.remove("is-expanded", "is-collapsed");
+    card.setAttribute("aria-expanded", "false");
+  });
 }
 
 function showCandidateProfile(candidateId) {
@@ -723,7 +709,7 @@ function showCandidateProfile(candidateId) {
   const overlay = document.createElement("div");
   overlay.className = "candidate-profile-overlay";
   overlay.innerHTML = `
-    <div class="candidate-profile-modal" role="dialog" aria-modal="true" aria-labelledby="candidateProfileName">
+    <div class="candidate-profile-modal" role="dialog" aria-modal="true">
       <button class="candidate-profile-close" type="button" aria-label="Close">
         <i class="fa-solid fa-xmark"></i>
       </button>
@@ -732,7 +718,7 @@ function showCandidateProfile(candidateId) {
       </div>
       <div class="candidate-profile-body">
         <div class="candidate-profile-avatar">${esc((candidate.fullName || "C").slice(0,1).toUpperCase())}</div>
-        <h2 id="candidateProfileName">${esc(candidate.fullName || "Candidate")}</h2>
+        <h2>${esc(candidate.fullName || "Candidate")}</h2>
         <p class="candidate-profile-position">${esc(candidate.position || "")}</p>
         <div class="candidate-profile-tags">
           <span>${esc(party)}</span>
@@ -752,22 +738,7 @@ function showCandidateProfile(candidateId) {
       </div>
     </div>`;
 
-  overlay.dataset.previousOverflow = document.body.style.overflow;
-  overlay.dataset.returnFocus = candidate.id;
-  document.body.style.overflow = "hidden";
   document.body.appendChild(overlay);
-  overlay.querySelector('.candidate-profile-close')?.focus();
-  overlay.addEventListener("keydown", (event) => {
-    if (event.key === "Escape") { event.preventDefault(); closeCandidateProfile(); return; }
-    if (event.key === "Tab") {
-      const controls = [...overlay.querySelectorAll('button,a[href],[tabindex="0"]')];
-      if (controls.length) {
-        event.preventDefault();
-        const index = controls.indexOf(document.activeElement);
-        controls[(index + (event.shiftKey ? -1 : 1) + controls.length) % controls.length].focus();
-      }
-    }
-  });
 
   hydrateMediaImages(overlay).catch(() => {});
 
@@ -783,33 +754,47 @@ function showCandidateProfile(candidateId) {
   });
 }
 
-function wireCandidateGallery() {
-  wireCandidateGallery.observer?.disconnect();
-  if (typeof IntersectionObserver !== "undefined") {
-    const observer = new IntersectionObserver((entries) => {
-      const reducedMotion = matchMedia("(prefers-reduced-motion: reduce)").matches;
-      entries.forEach((entry) => entry.target.style.setProperty("--candidate-reveal", reducedMotion
-        ? "1" : String(Math.max(.25, Math.min(1, entry.intersectionRatio * 3)))));
-    }, { root: app, threshold: [0, .1, .25, .5, .75, 1] });
-    app.querySelectorAll(".election-candidate-card").forEach((card) => observer.observe(card));
-    wireCandidateGallery.observer = observer;
-  }
-  app.querySelectorAll("[data-scroll-position]").forEach((button) => button.addEventListener("click", () => {
-    const target = document.getElementById("candidate-position-" + button.dataset.scrollPosition);
-    if (!target) return;
-    app.scrollTo({
-      top: app.scrollTop + target.getBoundingClientRect().top - app.getBoundingClientRect().top - 64,
-      behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "instant" : "smooth"
+function wireCandidateFlashcardFlow() {
+  app.querySelectorAll("[data-candidate-accordion]").forEach((grid) => {
+    const cards = [...grid.querySelectorAll(".candidate-slant-card")];
+    if (!cards.length) return;
+
+    cards.forEach((card) => {
+      card.setAttribute("aria-expanded", "false");
+
+      /* Hover/focus expansion is handled by CSS so the row does not constantly
+         collapse/reflow underneath the pointer. Clicking still locks a card open. */
+      card.addEventListener("click", (event) => {
+        event.preventDefault();
+        const id = clean(card.dataset.candidateId);
+        showCandidateProfile(id);
+        if (grid.dataset.lockedCandidate === id) {
+          clearCandidateAccordion(grid, { unlock: true });
+          return;
+        }
+        activateCandidateAccordion(grid, card, { lock: true });
+      });
     });
-  }));
-  app.querySelectorAll("[data-candidate-id]").forEach((card) => card.addEventListener("click", () => showCandidateProfile(clean(card.dataset.candidateId))));
+
+    grid.addEventListener("mouseleave", () => clearCandidateAccordion(grid));
+    grid.addEventListener("focusout", () => {
+      requestAnimationFrame(() => {
+        if (!grid.contains(document.activeElement)) clearCandidateAccordion(grid);
+      });
+    });
+  });
+
+  app.addEventListener("click", (event) => {
+    if (event.target.closest?.(".candidate-slant-card")) return;
+    app.querySelectorAll("[data-candidate-accordion]").forEach((grid) => {
+      clearCandidateAccordion(grid, { unlock: true });
+    });
+  }, { once: true });
 }
 
 function renderCandidates() {
   if (!context?.candidateVisible) return renderLanding();
-  const entering = currentView !== "candidates";
   currentView = "candidates";
-  app.classList?.add("election-candidates-active");
 
   const grouped = POSITION_ORDER.map((position) => (
     candidateGalleryGroup(position, candidatesFor(position))
@@ -819,18 +804,18 @@ function renderCandidates() {
     ? "Already Voted"
     : (context.votingOpen ? "Vote Now!" : "Voting Not Open");
 
-  app.innerHTML = `<section class="election-candidate-gallery">
-    <div class="election-candidate-background" aria-hidden="true"></div>
-    <div class="election-candidate-content">
-      <div class="election-candidate-toolbar">
+  app.innerHTML = `<section class="candidate-view-shell">
+    <div class="candidate-view-background" aria-hidden="true"></div>
+    <div class="candidate-view-content">
+      <div class="candidate-view-topline">
+        <h1 class="candidate-view-label">Candidates</h1>
         <button class="candidate-gallery-back" id="backCandidates" type="button">
           <i class="fa-solid fa-arrow-left"></i><span>Back</span>
         </button>
       </div>
-      <div class="election-candidate-vote" aria-label="Voting status">
+      <div class="candidate-vote-zone" aria-label="Voting status">
         <button class="candidate-vote-button ${voterStatus?.hasVoted ? "already-voted" : (!context.votingOpen ? "voting-closed" : "")}" id="floatingVoteStatus" ${!context.votingOpen || voterStatus?.hasVoted ? "disabled" : ""}>${esc(status)}</button>
       </div>
-      <nav class="candidate-position-nav" aria-label="Candidate positions">${POSITION_ORDER.filter((position) => candidatesFor(position).length).map((position) => `<button type="button" data-scroll-position="${POSITION_ORDER.indexOf(position)}">${esc(position)}</button>`).join("")}</nav>
       ${grouped || '<div class="candidate-gallery-empty">No approved candidates are published.</div>'}
       <div class="candidate-gallery-scroll-cue" aria-hidden="true">
         <span>Scroll down</span><i class="fa-solid fa-chevron-down"></i>
@@ -838,9 +823,8 @@ function renderCandidates() {
     </div>
   </section>`;
 
-  if (entering) app.scrollTo({ top: 0, behavior: "instant" });
   hydrateMediaImages(app).catch(() => {});
-  wireCandidateGallery();
+  wireCandidateFlashcardFlow();
 
   document.getElementById("backCandidates")?.addEventListener("click", renderLanding);
   document.getElementById("floatingVoteStatus")?.addEventListener("click", () => {
@@ -851,7 +835,6 @@ function renderCandidates() {
 function renderBallot() {
   if (!context?.votingOpen || voterStatus?.hasVoted) return renderLanding();
   currentView = "ballot";
-  app.classList?.remove("election-candidates-active");
   const positionMarkup = POSITION_ORDER.map((position) => {
     const rows = candidatesFor(position);
     return `<div class="form-field full"><label>${esc(position)}${position === "Department Representative" ? ` · ${esc(student.college)}` : ""}</label><select class="ballot-select" data-position="${esc(position)}" required><option value="">Select candidate</option>${rows.map((c) => `<option value="${esc(c.id)}">${esc(c.fullName)}${c.partylist ? ` · ${esc(c.partylist)}` : ""}</option>`).join("")}</select>${!rows.length ? '<small class="field-help">No eligible approved candidate is available for this position.</small>' : ""}</div>`;
@@ -898,7 +881,6 @@ function resultRows(results) {
 async function renderResults() {
   if (!context?.resultsVisible) return renderLanding();
   currentView = "results";
-  app.classList?.remove("election-candidates-active");
   app.innerHTML = `<div class="page-loading"><i class="fa-solid fa-spinner fa-spin"></i><br>Loading published official results...</div>`;
   try {
     const snap = await getDoc(doc(db, "elections", context.electionId, "results", "official"));
