@@ -1,0 +1,36 @@
+/* Mobile-only navigation and native scrolling; desktop rules are untouched. */
+.mobile-university-name { display:none; }
+@media(max-width:940px) {
+  html, body { scroll-behavior:auto !important; scroll-snap-type:none !important; overscroll-behavior-y:auto; }
+  .snap-section { scroll-snap-align:none !important; scroll-snap-stop:normal !important; }
+  .top-header .main-nav { left:auto !important; right:12px !important; width:50vw !important; max-width:50vw; transition:none !important; transform:none !important; }
+  .top-header .nav-links { box-sizing:border-box; grid-template-columns:minmax(0,1fr) !important; }
+  .top-header :is(.nav-link,.nav-login) { white-space:normal; height:auto; padding:10px !important; line-height:1.4; }
+  .top-header :is(.nav-link,.nav-login) span { overflow-wrap:anywhere; }
+  .brand-copy .mobile-university-name { display:block !important; font-size:clamp(10px,2.7vw,13px); font-weight:600; line-height:1.3; letter-spacing:0; margin:0 0 3px; }
+  #about-section .feature-text h2 { font-size:clamp(28px,7vw,36px) !important; line-height:1.15; margin-bottom:12px; }
+  #about-section .feature-text p { font-size:16px !important; line-height:1.6 !important; }
+  #homeEventList, body.student-app-shell #eventsUpcomingList {
+    touch-action:pan-y pinch-zoom;
+    overscroll-behavior-y:auto !important;
+    -webkit-overflow-scrolling:touch;
+  }
+  :is(.calendar-side,.events-upcoming-calendar) { touch-action:auto; overscroll-behavior-y:auto; }
+  :is(.activity-card-grid,.student-nav,.events-page-main,.calendar-side,.events-upcoming-calendar) { scrollbar-width:thin !important; scrollbar-color:rgba(88,125,155,.5) transparent !important; }
+  :is(.activity-card-grid,.student-nav,.events-page-main,.calendar-side,.events-upcoming-calendar)::-webkit-scrollbar { display:block !important; width:3px !important; height:3px !important; }
+  :is(.activity-card-grid,.student-nav,.events-page-main,.calendar-side,.events-upcoming-calendar)::-webkit-scrollbar-thumb { border-radius:8px; background:rgba(88,125,155,.5); }
+  :is(.activity-card-grid,.student-nav,.events-page-main,.calendar-side,.events-upcoming-calendar)::-webkit-scrollbar-track { background:transparent; }
+  :is(.activity-card-grid,.student-nav,.events-page-main,.calendar-side,.events-upcoming-calendar)::-webkit-scrollbar-button { display:none !important; width:0 !important; height:0 !important; }
+}
+@media(max-width:820px) {
+  body.student-app-shell .student-sidebar .student-nav { display:flex !important; align-items:stretch; overflow:auto hidden !important; scroll-snap-type:none !important; scroll-behavior:auto !important; }
+  body.student-app-shell .student-sidebar .student-nav-link { display:flex; flex:0 0 88px !important; width:88px; min-width:0 !important; flex-direction:column; justify-content:flex-start !important; align-items:center; gap:6px !important; padding:10px 5px !important; white-space:normal !important; transform:none !important; }
+  body.student-app-shell .student-sidebar .student-nav-link span { display:block !important; font-size:11px !important; line-height:1.3; text-align:center; width:100%; overflow-wrap:normal; white-space:normal; }
+  body.student-app-shell .student-sidebar .student-nav-link i { flex:none; font-size:17px; min-height:20px; }
+  body.student-app-shell .dashboard-brand-copy { display:block !important; min-width:0; }
+  body.student-app-shell .dashboard-brand-copy .mobile-university-name { display:block !important; font-size:clamp(11px,3vw,14px); font-weight:700; line-height:1.3; white-space:normal; }
+  body.student-app-shell .dashboard-brand-copy strong { display:block; font-size:9px !important; line-height:1.3; white-space:normal; }
+  body.student-app-shell .dashboard-brand-copy > span:not(.mobile-university-name) { display:none !important; }
+  body.events-module-shell .events-page-main { scroll-behavior:auto !important; }
+  .events-snap-track, .events-snap-viewport, .events-snap-section, .student-module-column, .student-page-main { scroll-snap-type:none !important; animation:none !important; transition:none !important; }
+}

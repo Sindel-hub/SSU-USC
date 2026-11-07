@@ -6,6 +6,7 @@
   if (!frame || !highlight || !upcoming) return;
 
   const motion = matchMedia('(prefers-reduced-motion: reduce)');
+  const mobile = matchMedia('(max-width: 820px)');
   let animation = 0;
   let target = 0;
   let direction = 0;
@@ -38,7 +39,7 @@
   };
   frame.addEventListener('wheel', event => {
     // Leave zoom, horizontal gestures, touchpad micro-deltas, and form controls native.
-    if (event.defaultPrevented || !event.cancelable || motion.matches || event.ctrlKey || event.shiftKey ||
+    if (event.defaultPrevented || !event.cancelable || motion.matches || mobile.matches || event.ctrlKey || event.shiftKey ||
         Math.abs(event.deltaX) > Math.abs(event.deltaY) || !event.deltaY ||
         event.target.closest?.('input, textarea, select, [contenteditable="true"], [role="dialog"]') ||
         (event.deltaMode === 0 && Math.abs(event.deltaY) < 16)) {
@@ -63,11 +64,12 @@
   }, { passive: false });
   for (const name of ['pointerdown', 'touchstart', 'keydown']) frame.addEventListener(name, stopWheel, { passive: true });
   motion.addEventListener?.('change', stopWheel);
+  mobile.addEventListener?.('change', stopWheel);
 
   const sectionTop = section => frame.scrollTop + section.getBoundingClientRect().top - frame.getBoundingClientRect().top - frame.clientTop;
   const navigate = section => {
     stopWheel();
-    frame.scrollTo({ top: sectionTop(section), behavior: motion.matches ? 'instant' : 'smooth' });
+    frame.scrollTo({ top: sectionTop(section), behavior: motion.matches || mobile.matches ? 'instant' : 'smooth' });
   };
   document.getElementById('eventsScrollDown')?.addEventListener('click', () => navigate(upcoming));
   document.getElementById('eventsScrollUp')?.addEventListener('click', () => navigate(highlight));

@@ -177,7 +177,7 @@ function openUser(userId) {
   selectedUserId = userId;
   fillPanel(getSelectedUser());
   renderList();
-  if (window.matchMedia('(max-width: 1100px)').matches) dom.queueDetailPanel?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  if (window.matchMedia('(max-width: 1100px)').matches) dom.queueDetailPanel?.scrollIntoView({ behavior: window.matchMedia("(max-width: 940px)").matches ? "instant" : "smooth", block: 'start' });
 }
 
 async function handleAction(type) {

@@ -450,7 +450,7 @@ clearAnnouncementBtn?.addEventListener("click", () => {
 
 scrollToFormBtn?.addEventListener("click", () => {
     document.getElementById("announcementFormCard")?.scrollIntoView({
-        behavior: "smooth",
+        behavior: window.matchMedia("(max-width: 940px)").matches ? "instant" : "smooth",
         block: "start"
     });
 });

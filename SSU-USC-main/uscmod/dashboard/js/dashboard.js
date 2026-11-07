@@ -812,7 +812,7 @@ function bindDashboardEventControls() {
     dashboardEventState.currentMonth = new Date(date.getFullYear(), date.getMonth(), 1);
     dashboardEventState.selectedDateKey = safeText(nextEvent.eventDate);
     refreshDashboardEvents();
-    document.getElementById("eventsSection")?.scrollIntoView({ behavior: "smooth", block: "start" });
+    document.getElementById("eventsSection")?.scrollIntoView({ behavior: window.matchMedia("(max-width: 940px)").matches ? "instant" : "smooth", block: "start" });
   });
 
   grid?.addEventListener("click", (event) => {
@@ -958,7 +958,7 @@ function bindStudentModuleTitleNavigation() {
       const mainRect = main.getBoundingClientRect();
       const targetRect = target.getBoundingClientRect();
       const targetTop = main.scrollTop + (targetRect.top - mainRect.top) - 10;
-      main.scrollTo({ top: Math.max(0, targetTop), behavior: "smooth" });
+      main.scrollTo({ top: Math.max(0, targetTop), behavior: window.matchMedia("(max-width: 940px)").matches ? "instant" : "smooth" });
     });
   });
 }

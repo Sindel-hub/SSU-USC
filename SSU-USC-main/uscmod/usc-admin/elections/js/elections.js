@@ -870,6 +870,6 @@ $("archiveElectionBtn")?.addEventListener("click", () => lifecycleAction("archiv
 els.viewFullTallyBtn?.addEventListener("click", showTallies);
 els.exportSummaryBtn?.addEventListener("click", exportSummary);
 $("openScheduleManagerBtn")?.addEventListener("click", () => openScheduleEditor(context?.scheduleComplete ? "edit" : "create"));
-$("scrollToCandidateReviewBtn")?.addEventListener("click", () => document.getElementById("candidateReviewCard")?.scrollIntoView({behavior:"smooth",block:"start"}));
+$("scrollToCandidateReviewBtn")?.addEventListener("click", () => document.getElementById("candidateReviewCard")?.scrollIntoView({behavior: window.matchMedia("(max-width: 940px)").matches ? "instant" : "smooth",block:"start"}));
 await refreshAll();
 setInterval(() => refreshAll().catch(console.error), 30000);

@@ -217,7 +217,7 @@ document.getElementById('notificationList')?.addEventListener('click',event=>{
   const set=readSet();set.add(row.dataset.notificationId);saveRead(set);render();
   const href=row.dataset.href;
   if(href){
-    if(href.startsWith('#')){document.querySelector(href)?.scrollIntoView({behavior:'smooth'});setPanelOpen(false);}
+    if(href.startsWith('#')){document.querySelector(href)?.scrollIntoView({behavior: window.matchMedia("(max-width: 940px)").matches ? "instant" : "smooth"});setPanelOpen(false);}
     else window.location.href=href;
   }
 });
