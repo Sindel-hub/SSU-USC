@@ -74,3 +74,9 @@ body.student-app-shell #electionApp.election-candidates-active { padding:0!impor
 .election-candidate-background::before { content:"";position:absolute;inset:-24px;background:linear-gradient(#008fc577,#162b4177),url('../assets/HomeLogo.webp') center/cover no-repeat;filter:blur(7px); }
 #electionApp.election-candidates-active::-webkit-scrollbar-track { margin-block:18px;background:transparent; }
 #electionApp.election-candidates-active::-webkit-scrollbar-thumb { border-radius:999px; }
+
+/* The entry panel and its backdrop share one fixed frame, without outer gutters. */
+body.student-app-shell #electionApp:has(> .election-reference-landing) { height:clamp(580px,calc(100svh - 170px),760px)!important;min-height:0;padding:0!important;border:0!important;scrollbar-gutter:auto;overflow:hidden!important;border-radius:18px;clip-path:inset(0 round 18px); }
+#electionApp > .election-reference-landing { height:100%!important;min-height:0;flex:1 1 auto;width:100%;border-radius:0; }
+#electionApp .election-reference-landing-bg { inset:-40px;width:auto;height:auto;transform:none; }
+@media(max-width:600px) { body.student-app-shell #electionApp:has(> .election-reference-landing) { height:740px!important; } }
