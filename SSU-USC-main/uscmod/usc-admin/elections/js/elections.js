@@ -631,7 +631,13 @@ async function saveSchedule() {
     electionId = result.electionId;
     msg(`Election ${result.electionId} saved. Lifecycle: ${result.lifecycle}.`, "success");
     scheduleFormDirty = false;
-    await refreshAll(true);
+    try {
+      await refreshAll(true);
+    } catch (refreshError) {
+      console.warn("Schedule saved but dashboard refresh failed:", refreshError);
+      msg(`Election ${result.electionId} was saved. The dashboard could not refresh; close this window and reload the page to see it.`, "success");
+      return;
+    }
     setTimeout(closeScheduleEditor, 350);
   } catch (error) {
     msg(error.message || "Unable to save schedule.", "error");
