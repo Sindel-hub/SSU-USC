@@ -17,7 +17,7 @@
   <script type="module" src="../../shared/auth-guard.js?v=rbac7"></script>
 <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet" />
 <link rel="stylesheet" href="../../shared/scrollbars.css?v=2" />
-<link rel="stylesheet" href="../../shared/organization-chart-image.css?v=3">
+<link rel="stylesheet" href="../../shared/organization-chart-image.css?v=5">
 </head>
 <body class="officer-app-shell org-management-page">
 <div class="page"><div class="app-shell">
@@ -132,10 +132,18 @@
     <label class="org-image-upload">Choose image<input type="file" data-org-file accept="image/jpeg,image/png,image/webp" disabled></label>
     <button type="button" data-org-save disabled>Publish image</button><button type="button" data-org-cancel disabled>Cancel</button>
   </div></header>
-  <p class="org-image-hint">JPG, PNG or WebP · up to 5 MB</p>
+  <p class="org-image-hint">JPG, PNG or WebP · up to 5 MB. Hover over tools or tap the image to reveal controls while adjusting.</p>
+  <div class="org-image-adjust" data-org-adjust hidden>
+    <label>Zoom <output data-org-zoom-value>100%</output><input data-org-zoom type="range" min="1" max="300" step="1" value="100"></label>
+    <label>Horizontal position<input data-org-x type="range" min="0" max="100" step="1" value="50"></label>
+    <label>Vertical position<input data-org-y type="range" min="0" max="100" step="1" value="50"></label>
+    <button type="button" data-org-fit>Fit whole image</button>
+    <button type="button" data-org-reset>Reset framing</button>
+  </div>
 <figure class="org-image-frame" aria-label="University Student Council organizational chart">
   <div class="org-image-placeholder" data-org-placeholder><i class="fa-solid fa-sitemap" aria-hidden="true"></i><strong>Organizational Chart</strong><span>Chart image coming soon</span></div>
   <img data-org-image alt="University Student Council organizational chart" hidden>
+  <canvas data-org-crop hidden role="img" aria-label="Image framing preview. Drag to reposition, or use the zoom and position controls."></canvas>
 </figure><p class="org-image-status" data-org-status role="status" aria-live="polite"></p>
 </section>
   </main>
@@ -154,6 +162,6 @@
 <script type="module" src="../shared/js/admin-auth.js?v=rbac4"></script>
 <script type="module" src="../../shared/profile-manager.js?v=registered-name-2&amp;refinements=1"></script>
   <script type="module" src="../shared/js/officer-rbac.js?v=6"></script>
-<script type="module" src="../../shared/organization-chart-image.js?v=2"></script>
+<script type="module" src="../../shared/organization-chart-image.js?v=5"></script>
 </body>
 </html>
