@@ -579,8 +579,10 @@ function renderHomeCalendar() {
   const weekdayLabels = ["S", "M", "T", "W", "T", "F", "S"];
   const cells = weekdayLabels.map((label) => `<div class="day-name">${label}</div>`);
 
+  const previousMonthLast = new Date(year, month, 0).getDate();
   for (let index = 0; index < firstDay.getDay(); index += 1) {
-    cells.push('<button class="day-cell muted empty" type="button" disabled aria-hidden="true"></button>');
+    const day = previousMonthLast - firstDay.getDay() + index + 1;
+    cells.push(`<button class="day-cell muted" type="button" disabled aria-hidden="true">${day}</button>`);
   }
 
   for (let day = 1; day <= lastDay.getDate(); day += 1) {
@@ -601,9 +603,10 @@ function renderHomeCalendar() {
   }
 
   // Reserve six complete weeks plus the weekday header for every month.
-  // Empty cells stay disabled and never represent selectable dates.
+  // Adjacent-month dates are decorative and remain disabled.
+  let nextMonthDay = 1;
   while (cells.length < 49) {
-    cells.push('<button class="day-cell muted empty" type="button" disabled aria-hidden="true"></button>');
+    cells.push(`<button class="day-cell muted" type="button" disabled aria-hidden="true">${nextMonthDay++}</button>`);
   }
 
   dom.calendarGrid.innerHTML = cells.join("");
