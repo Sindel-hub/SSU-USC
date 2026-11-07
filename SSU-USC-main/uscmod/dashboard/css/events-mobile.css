@@ -97,7 +97,7 @@
   }
   body.student-app-shell.events-module-shell #eventsUpcomingHeading {
     margin:0 0 12px !important;
-    font-size:clamp(24px,6vw,30px) !important;
+    font-size:clamp(32px,6vw,36px) !important;
     line-height:1.2 !important;
     overflow-wrap:anywhere;
   }
