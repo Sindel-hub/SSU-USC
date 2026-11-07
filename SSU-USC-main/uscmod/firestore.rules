@@ -557,13 +557,12 @@ service cloud.firestore {
         && request.resource.data.votingEnd <= request.resource.data.resultPublicationStart
         && request.resource.data.resultPublicationStart < request.resource.data.resultPublicationEnd;
       allow update: if officerHasPermission("elections.view")
-        && resource.data.archived != true
+        && resource.data.get("archived", false) != true
         && (!request.resource.data.diff(resource.data).affectedKeys().hasAny([
             "registrationStart", "registrationEnd", "applicationReviewStart", "applicationReviewEnd",
             "candidatePublicationStart", "candidatePublicationEnd", "votingStart", "votingEnd",
             "resultPublicationStart", "resultPublicationEnd", "title"
-          ]) || (officerHasPermission("elections.view")
-            && resource.data.get("finalized", false) == false
+          ]) || (resource.data.get("finalized", false) == false
             && resource.data.get("resultsPublished", false) == false
             && resource.data.get("archived", false) == false
             && request.resource.data.title is string
@@ -592,19 +591,12 @@ service cloud.firestore {
           ))
         && (!request.resource.data.diff(resource.data).affectedKeys().hasAny(["candidateReviewComplete", "candidateReviewCompletedAt", "candidateReviewCompletedByUid"]) || officerHasPermission("elections.review"))
         && (!request.resource.data.diff(resource.data).affectedKeys().hasAny(["finalized", "resultsPublished", "finalizedAt", "finalizedByUid", "resultsPublishedAt"]) || officerHasPermission("elections.results"))
-        && (request.resource.data.finalized == resource.data.finalized || isCanvasser())
-        && (request.resource.data.resultsPublished == resource.data.resultsPublished || isCanvasser())
-        && (request.resource.data.archived == resource.data.archived || isAdmin())
-        && (request.resource.data.archived != true || request.resource.data.resultsPublished == true)
-        && (request.resource.data.resultsPublished != true || request.resource.data.finalized == true)
-        && (request.resource.data.finalized != true || request.time >= resource.data.votingEnd)
-        && (!request.resource.data.diff(resource.data).affectedKeys().hasAny([
-            "registrationStart", "registrationEnd", "applicationReviewStart", "applicationReviewEnd",
-            "candidatePublicationStart", "candidatePublicationEnd", "votingStart", "votingEnd",
-            "resultPublicationStart", "resultPublicationEnd"
-          ])
-          || officerHasPermission("elections.view")
-          || isAdmin());
+        && (request.resource.data.get("finalized", false) == resource.data.get("finalized", false) || isCanvasser())
+        && (request.resource.data.get("resultsPublished", false) == resource.data.get("resultsPublished", false) || isCanvasser())
+        && (request.resource.data.get("archived", false) == resource.data.get("archived", false) || isAdmin())
+        && (request.resource.data.get("archived", false) != true || request.resource.data.get("resultsPublished", false) == true)
+        && (request.resource.data.get("resultsPublished", false) != true || request.resource.data.get("finalized", false) == true)
+        && (request.resource.data.get("finalized", false) != true || request.time >= resource.data.votingEnd);
       allow delete: if false;
 
       match /rosterImports/{importId} {

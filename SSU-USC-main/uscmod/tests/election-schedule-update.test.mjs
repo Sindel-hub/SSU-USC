@@ -78,3 +78,11 @@ test('optional cloud save preserves review status and existing ballot records',a
 test('optional cloud save also refuses published-result and stale-version updates',async()=>{
  for(const flags of [{resultsPublished:true},{scheduleVersion:5}]){const h=cloudSave(flags);await assert.rejects(h.run());assert.equal(h.records.size,3);}
 });
+
+function scheduleEditor({saveFails=false}={}){
+ const source=fs.readFileSync(new URL('../usc-admin/elections/js/elections.js',import.meta.url),'utf8'),messages=[];
+ const ctx=vm.createContext({els:{saveElectionSettingsBtn:{},electionTitleInput:{value:'Election'}},setButtonState(){},msg:(...args)=>messages.push(args),clean:x=>String(x||''),$:()=>({value:'usc-test'}),scheduleEditorMode:'create',scheduleEditorOriginal:null,scheduleEditorVersion:null,schedulePayload:()=>schedule,callSecure:async()=>{if(saveFails)throw Error('Missing or insufficient permissions.');return{electionId:'usc-test',lifecycle:'Scheduled'}},refreshAll:async()=>{throw Error('Missing or insufficient permissions.')},console:{warn(){}},setTimeout(){throw Error('Must keep saved message visible')},closeScheduleEditor(){}});
+ vm.runInContext(source.slice(source.indexOf('async function saveSchedule'),source.indexOf('async function deleteCurrentSchedule')),ctx);return{ctx,messages};
+}
+test('successful schedule save is not reported as denied when dashboard refresh fails',async()=>{const f=scheduleEditor();await f.ctx.saveSchedule();assert.match(f.messages.at(-1)[0],/was saved/);assert.equal(f.messages.at(-1)[1],'success');assert.equal(f.ctx.scheduleFormDirty,false)});
+test('a denied schedule save remains an error rather than claiming success',async()=>{const f=scheduleEditor({saveFails:true});await f.ctx.saveSchedule();assert.equal(f.messages.at(-1)[0],'Missing or insufficient permissions.');assert.equal(f.messages.at(-1)[1],'error')});
