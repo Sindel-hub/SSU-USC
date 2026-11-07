@@ -654,8 +654,8 @@ function candidateGalleryGroup(position, rows) {
     : candidateGalleryHeading(position);
 
   return `<section class="election-candidate-section" id="candidate-position-${POSITION_ORDER.indexOf(position)}" data-position="${esc(position)}">
-    <header class="candidate-position-heading"><span>Candidate lineup</span><h2>${heading}</h2><p>${rows.length} ${rows.length === 1 ? "candidate" : "candidates"}</p></header>
-    <div class="election-candidate-grid">${rows.map(candidateGalleryCard).join("")}</div>
+    <h2 class="election-position-title">${heading}</h2>
+    ${Array.from({ length: Math.ceil(rows.length / 4) }, (_, index) => `<div class="election-candidate-grid">${rows.slice(index * 4, index * 4 + 4).map(candidateGalleryCard).join("")}</div>`).join("")}
   </section>`;
 }
 
@@ -747,24 +747,6 @@ function showCandidateProfile(candidateId) {
 }
 
 function wireCandidateGallery() {
-  wireCandidateGallery.observer?.disconnect();
-  if (typeof IntersectionObserver !== "undefined") {
-    const observer = new IntersectionObserver((entries) => {
-      const reducedMotion = matchMedia("(prefers-reduced-motion: reduce)").matches;
-      entries.forEach((entry) => entry.target.style.setProperty("--candidate-reveal", reducedMotion
-        ? "1" : String(Math.max(.25, Math.min(1, entry.intersectionRatio * 3)))));
-    }, { root: app, threshold: [0, .1, .25, .5, .75, 1] });
-    app.querySelectorAll(".election-candidate-card").forEach((card) => observer.observe(card));
-    wireCandidateGallery.observer = observer;
-  }
-  app.querySelectorAll("[data-scroll-position]").forEach((button) => button.addEventListener("click", () => {
-    const target = document.getElementById("candidate-position-" + button.dataset.scrollPosition);
-    if (!target) return;
-    app.scrollTo({
-      top: app.scrollTop + target.getBoundingClientRect().top - app.getBoundingClientRect().top - 64,
-      behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "instant" : "smooth"
-    });
-  }));
   app.querySelectorAll("[data-candidate-id]").forEach((card) => card.addEventListener("click", () => showCandidateProfile(clean(card.dataset.candidateId))));
 }
 
@@ -785,20 +767,17 @@ function renderCandidates() {
   app.innerHTML = `<section class="election-candidate-gallery">
     <div class="election-candidate-background" aria-hidden="true"></div>
     <div class="election-candidate-content">
-      <div class="election-candidate-toolbar">
+      <div class="election-candidate-toolbar"><h2>Candidates</h2>
         <button class="candidate-gallery-back" id="backCandidates" type="button">
           <i class="fa-solid fa-arrow-left"></i><span>Back</span>
         </button>
       </div>
+      ${grouped || '<div class="candidate-gallery-empty">No approved candidates are published.</div>'}
+    </div>
       <div class="election-candidate-vote" aria-label="Voting status">
         <button class="candidate-vote-button ${voterStatus?.hasVoted ? "already-voted" : (!context.votingOpen ? "voting-closed" : "")}" id="floatingVoteStatus" ${!context.votingOpen || voterStatus?.hasVoted ? "disabled" : ""}>${esc(status)}</button>
       </div>
-      <nav class="candidate-position-nav" aria-label="Candidate positions">${POSITION_ORDER.filter((position) => candidatesFor(position).length).map((position) => `<button type="button" data-scroll-position="${POSITION_ORDER.indexOf(position)}">${esc(position)}</button>`).join("")}</nav>
-      ${grouped || '<div class="candidate-gallery-empty">No approved candidates are published.</div>'}
-      <div class="candidate-gallery-scroll-cue" aria-hidden="true">
-        <span>Scroll down</span><i class="fa-solid fa-chevron-down"></i>
-      </div>
-    </div>
+    <div class="election-section-cue" aria-hidden="true">Scroll down <span>⌄</span></div>
   </section>`;
 
   if (entering) app.scrollTo({ top: 0, behavior: "instant" });
