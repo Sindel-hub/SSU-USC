@@ -107,3 +107,7 @@
 .events-scroll-reveal { opacity:var(--section-reveal,1); transform:translateY(calc(8px - var(--section-reveal,1)*8px)); transition:opacity .12s linear,transform .12s linear; }
 #eventsUpcomingList .activity-fade { transform:translateY(calc(8px - var(--activity-opacity,1)*8px)) !important; }
 @media(prefers-reduced-motion:reduce) { .events-scroll-reveal { opacity:1!important;transform:none!important;transition:none!important; } #eventsUpcomingList .activity-fade { transform:none!important; } }
+
+/* Match the landing chapter transition while preserving nested native scrolling. */
+body.events-module-shell #eventsPageMain { scroll-behavior:smooth !important; }
+@media(prefers-reduced-motion:reduce) { body.events-module-shell #eventsPageMain { scroll-behavior:auto !important; } }
