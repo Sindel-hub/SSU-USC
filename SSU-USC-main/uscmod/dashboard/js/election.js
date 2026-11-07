@@ -751,6 +751,14 @@ function wireCandidateGallery() {
   const controller = new AbortController();
   wireCandidateGallery.scrollController = controller;
   const options = { signal: controller.signal, passive: true };
+  // Size the sticky backdrop from the actual grid row, including on resize.
+  const sizeBackdrop = () => app.style.setProperty("--candidate-frame-height", `${app.clientHeight}px`);
+  sizeBackdrop();
+  if (typeof ResizeObserver !== "undefined") {
+    const observer = new ResizeObserver(sizeBackdrop);
+    observer.observe(app);
+    controller.signal.addEventListener("abort", () => observer.disconnect(), { once: true });
+  }
   const sections = [...app.querySelectorAll(".election-candidate-section")];
   const motion = matchMedia("(prefers-reduced-motion: reduce)");
   const top = section => Math.max(0, app.scrollTop + section.getBoundingClientRect().top - app.getBoundingClientRect().top - 18);
