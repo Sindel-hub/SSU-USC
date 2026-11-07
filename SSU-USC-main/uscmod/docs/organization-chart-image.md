@@ -25,3 +25,9 @@ To roll back the UI, revert this PR. The chart record is retained; no destructiv
 - `npm test`: includes file validation/preparation and shared chart-page regression coverage.
 - `npm run test:organization-chart-rules`: uses a demo project and Firestore emulator only.
 - Chromium fixture uses actual pages and module with synthetic Firebase responses: selection/cancel, failed publish and retry, persistence to the student/public readers, full-image fitting, and fixed scroll-free containers at 320/390/768/1440px. No production records are used.
+
+## Adjusting an upload
+
+After choosing an image, officers can zoom from 100% to 300%, drag to reposition with mouse/touch, use horizontal/vertical sliders (including keyboard arrows), or reset the framing. The preview uses the full posted-image canvas; controls overlay it to preserve its crop ratio. Resize redraws the preview while retaining the selected offsets.
+
+Publishing bakes that framing into the existing bounded WebP `imageData` payload. Failed publishing keeps the original selected image and framing controls available for retry. Cancel or Back discards the draft without changing the posted image. This revision introduces no Firestore fields, rule changes, indexes, or backend deployment requirements beyond the existing chart setup.
