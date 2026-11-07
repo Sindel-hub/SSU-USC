@@ -303,46 +303,46 @@ function electionSchedulePreview() {
   </section>`;
 }
 
+function wireLandingSchedule() {
+  document.getElementById("viewElectionSchedule")?.addEventListener("click", () => {
+    const dialog = document.createElement("dialog");
+    dialog.className = "election-schedule-dialog";
+    dialog.setAttribute("aria-label", "Election schedule");
+    dialog.innerHTML = `<button class="schedule-close" aria-label="Close schedule" autofocus>×</button>${electionSchedulePreview() || '<h2>Election Schedule</h2><p>No schedule has been published yet.</p>'}`;
+    document.body.appendChild(dialog);
+    dialog.querySelector(".schedule-close").addEventListener("click", () => dialog.close());
+    dialog.addEventListener("click", (event) => { if (event.target === dialog) { const rect = dialog.getBoundingClientRect(); if (event.clientX < rect.left || event.clientX > rect.right || event.clientY < rect.top || event.clientY > rect.bottom) dialog.close(); } });
+    dialog.addEventListener("close", () => { dialog.remove(); document.getElementById("viewElectionSchedule")?.focus(); }, { once: true });
+    dialog.showModal();
+  });
+}
+
 function renderElectionBlockingState(message, reason = "closed") {
   app.classList.add("election-ineligible-active");
 
   const lifecycle = clean(context?.lifecycle);
   const statusLabel = lifecycle || (reason === "closed" ? "Election inactive" : "Election access");
-  const supportingCopy = lifecycle
-    ? phaseMessage()
-    : "Candidate profiles, voting, and official election results will appear here once the election period opens.";
   const footerCopy = lifecycle === "Archived"
     ? "This election cycle is no longer active."
     : context?.scheduleComplete
       ? "Follow the official schedule below for the next election phase."
       : "Check back during the official election schedule.";
 
-  app.innerHTML = `<section class="election-page-shell election-page-ineligible" data-election-state="${esc(reason)}">
-    <div class="election-hero election-ineligible-hero">
-      <div class="election-ineligible-stack">
-        <div class="election-ineligible-overlay-message election-ineligible-polish" role="status" aria-live="polite">
-          <div class="election-ineligible-status">
-            <span class="election-ineligible-status-dot" aria-hidden="true"></span>
-            <span>${esc(statusLabel)}</span>
-          </div>
-          <div class="election-ineligible-icon" aria-hidden="true">
-            <i class="fa-solid fa-lock"></i>
-          </div>
-          <span class="election-ineligible-kicker">SSU University Student Council</span>
-          <h2>${esc(message)}</h2>
-          <p>${esc(supportingCopy)}</p>
-          <div class="election-ineligible-note">
-            <i class="fa-regular fa-calendar" aria-hidden="true"></i>
-            <span>${esc(footerCopy)}</span>
-          </div>
-        </div>
-        ${electionSchedulePreview()}
-      </div>
-    </div>
-  </section>`;
+  app.innerHTML = `<section class="election-reference-landing" data-election-state="${esc(reason)}">
+    <button type="button" id="viewElectionSchedule" class="election-view-schedule">View Schedule</button><div class="election-reference-landing-bg" aria-hidden="true"></div><div class="election-reference-landing-shade" aria-hidden="true"></div>
+    <div class="election-ineligible-stack"><div class="election-reference-landing-content election-front-card" role="status">
+<img class="election-reference-logo" src="assets/USClogo.webp" alt="University Student Council seal">
+        <h2>SSU UNIVERSITY STUDENT COUNCIL</h2>
+        <div class="election-reference-motto">LEADERSHIP | EXCELLENCE | DISCIPLINE | SERVICE</div>
+        <div class="election-reference-intro"><h3>A Legacy of Student Leadership</h3><p>The University Student Council elections are the heartbeat of student representation at Samar State University. For decades, the USC has stood as the vital bridge between the student body and the university administration. Participating in these elections is more than just a democratic exercise; it is a commitment to continuing a long-standing tradition of proactive leadership. By choosing our representatives, we ensure that student welfare, campus initiatives, and academic excellence remain at the forefront of SSU’s growth.</p></div><p class="election-phase-copy">${esc(message)}</p>
+      <div class="election-reference-actions"><button class="election-reference-primary" type="button" disabled>Closed</button></div>
+    </div></div></section>`;
+  wireLandingSchedule();
 }
 
 function renderLanding() {
+  const entering = currentView !== "landing";
+  if (entering) app.scrollTo({ top: 0, behavior: "instant" });
   currentView = "landing";
   app.classList.remove("election-ineligible-active");
   const eligibility = electionActionEligibility();
@@ -371,7 +371,7 @@ function renderLanding() {
     const label = hasApplication
       ? "Already Registered"
       : candidacyApproved
-        ? "Register as Candidate"
+        ? "Register Now!"
         : "Candidacy Approval Required";
     applicationAction = `<button type="button" class="election-reference-primary" id="landingApplication" ${(!hasApplication && !candidacyApproved) ? "disabled" : ""}>${esc(label)}</button>`;
   }
@@ -381,24 +381,23 @@ function renderLanding() {
   if (context?.resultsVisible) secondaryActions.push(`<button type="button" class="election-reference-secondary" id="landingResults">View Results</button>`);
 
   app.innerHTML = `<section class="election-reference-landing">
-    <div class="election-reference-landing-bg" aria-hidden="true"></div>
+    <button type="button" id="viewElectionSchedule" class="election-view-schedule">View Schedule</button><div class="election-reference-landing-bg" aria-hidden="true"></div>
     <div class="election-reference-landing-shade" aria-hidden="true"></div>
     <div class="election-ineligible-stack">
-      <div class="election-reference-landing-content">
-        <div class="election-ineligible-status"><span class="election-ineligible-status-dot"></span>${esc(context?.lifecycle || "Election open")}</div>
-        <img class="election-reference-logo" src="assets/USClogo.webp" alt="University Student Council seal">
-        <span class="election-ineligible-kicker">SSU University Student Council</span>
-        <h2>${esc(context?.title || "USC Election")}</h2>
-        <p>${esc(phaseMessage())}</p>
+      <div class="election-reference-landing-content election-front-card">
+<img class="election-reference-logo" src="assets/USClogo.webp" alt="University Student Council seal">
+        <h2>SSU UNIVERSITY STUDENT COUNCIL</h2>
+        <div class="election-reference-motto">LEADERSHIP | EXCELLENCE | DISCIPLINE | SERVICE</div>
+        <div class="election-reference-intro"><h3>A Legacy of Student Leadership</h3><p>The University Student Council elections are the heartbeat of student representation at Samar State University. For decades, the USC has stood as the vital bridge between the student body and the university administration. Participating in these elections is more than just a democratic exercise; it is a commitment to continuing a long-standing tradition of proactive leadership. By choosing our representatives, we ensure that student welfare, campus initiatives, and academic excellence remain at the forefront of SSU’s growth.</p></div>${context?.lifecycle === "Published" ? "" : `<p class="election-phase-copy">${esc(phaseMessage())}</p>`}
         <div class="election-reference-actions">
           ${applicationAction}
           ${secondaryActions.join("")}
         </div>
       </div>
-      ${electionSchedulePreview()}
     </div>
   </section>`;
 
+  wireLandingSchedule();
   document.getElementById("landingApplication")?.addEventListener("click", () => {
     if (application) renderApplicationStatus();
     else if (context?.registrationOpen && student?.candidacyApproved === true) renderRegistration(1, true);
