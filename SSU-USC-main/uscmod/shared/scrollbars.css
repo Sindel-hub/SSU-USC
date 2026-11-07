@@ -1,0 +1,25 @@
+/* Shared thumb-only scrollbars. Do not change overflow or input handling. */
+* {
+  scrollbar-width:thin;
+  scrollbar-color:rgba(88,125,155,.5) transparent;
+}
+/* Chromium's standard scrollbar properties override its custom pseudo-elements.
+   Reset them here so the button-free custom scrollbar actually takes effect. */
+@supports selector(::-webkit-scrollbar) {
+  * { scrollbar-width:auto !important; scrollbar-color:auto !important; }
+  *::-webkit-scrollbar { width:6px; height:6px; }
+  *::-webkit-scrollbar-track, *::-webkit-scrollbar-corner { background:transparent; }
+  *::-webkit-scrollbar-thumb { background:rgba(88,125,155,.5); border-radius:999px; }
+  *::-webkit-scrollbar-button,
+  *::-webkit-scrollbar-button:single-button,
+  *::-webkit-scrollbar-button:double-button,
+  *::-webkit-scrollbar-button:horizontal,
+  *::-webkit-scrollbar-button:vertical {
+    display:none !important;
+    width:0 !important;
+    height:0 !important;
+    border:0 !important;
+    padding:0 !important;
+    background:transparent !important;
+  }
+}

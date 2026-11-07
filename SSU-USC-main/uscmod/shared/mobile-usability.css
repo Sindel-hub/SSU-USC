@@ -16,7 +16,7 @@
     -webkit-overflow-scrolling:touch;
   }
   :is(.calendar-side,.events-upcoming-calendar) { touch-action:auto; overscroll-behavior-y:auto; }
-  :is(.activity-card-grid,.student-nav,.events-page-main,.calendar-side,.events-upcoming-calendar) { scrollbar-width:thin !important; scrollbar-color:rgba(88,125,155,.5) transparent !important; }
+  :is(.activity-card-grid,.student-nav,.events-page-main,.calendar-side,.events-upcoming-calendar) { scrollbar-width:thin; scrollbar-color:rgba(88,125,155,.5) transparent; }
   :is(.activity-card-grid,.student-nav,.events-page-main,.calendar-side,.events-upcoming-calendar)::-webkit-scrollbar { display:block !important; width:3px !important; height:3px !important; }
   :is(.activity-card-grid,.student-nav,.events-page-main,.calendar-side,.events-upcoming-calendar)::-webkit-scrollbar-thumb { border-radius:8px; background:rgba(88,125,155,.5); }
   :is(.activity-card-grid,.student-nav,.events-page-main,.calendar-side,.events-upcoming-calendar)::-webkit-scrollbar-track { background:transparent; }
