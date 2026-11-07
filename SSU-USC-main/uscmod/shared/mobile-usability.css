@@ -34,3 +34,5 @@
   body.events-module-shell .events-page-main { scroll-behavior:auto !important; }
   .events-snap-track, .events-snap-viewport, .events-snap-section, .student-module-column, .student-page-main { scroll-snap-type:none !important; animation:none !important; transition:none !important; }
 }
+
+@media(max-width:820px) { body.student-app-shell .student-sidebar .student-nav-link span { overflow-wrap:anywhere; } }

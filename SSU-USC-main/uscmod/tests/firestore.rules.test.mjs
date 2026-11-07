@@ -34,7 +34,8 @@ test("student may update only display profile fields, never role or eligibility"
   await env.clearFirestore();
   await seed("users/u1", { uid:"u1", studentId:"123456", email:"u1@gmail.com", role:"student", accountStatus:"approved", isVerifiedStudent:true, fullName:"Old", profilePhoto:"" });
   const db=env.authenticatedContext("u1",{role:"student",verifiedStudent:true}).firestore();
-  await assertSucceeds(updateDoc(doc(db,"users/u1"),{fullName:"New"}));
+  await assertFails(updateDoc(doc(db,"users/u1"),{fullName:"New"}));
+  await assertSucceeds(updateDoc(doc(db,"users/u1"),{profilePhoto:""}));
   await assertFails(updateDoc(doc(db,"users/u1"),{role:"admin"}));
   await assertFails(updateDoc(doc(db,"users/u1"),{studentId:"999999"}));
 });
@@ -129,7 +130,7 @@ test("student profile update still works when an older profile has no profilePho
   await env.clearFirestore();
   await seed("users/u6", { uid:"u6", studentId:"111111", email:"u6@gmail.com", role:"student", accountStatus:"approved", isActive:true, isVerifiedStudent:true, fullName:"Old Name" });
   const db=env.authenticatedContext("u6",{role:"student",verifiedStudent:true}).firestore();
-  await assertSucceeds(updateDoc(doc(db,"users/u6"),{fullName:"Updated Name"}));
+  await assertSucceeds(updateDoc(doc(db,"users/u6"),{profilePhoto:""}));
 });
 
 test("officers cannot bypass the audited complaint mutation function with direct Firestore updates", async () => {
@@ -138,4 +139,22 @@ test("officers cannot bypass the audited complaint mutation function with direct
   await seed("complaints/c6",{studentUid:"u6",studentId:"111111",studentEmail:"u6@gmail.com",status:"Submitted"});
   const officer=env.authenticatedContext("o6",{role:"officer"}).firestore();
   await assertFails(updateDoc(doc(officer,"complaints/c6"),{status:"Resolved"}));
+});
+
+test("student names remain immutable in mixed updates and photo edits still work without a registered name", async () => {
+  await env.clearFirestore();
+  await seed("users/name-lock",{uid:"name-lock",role:"student",fullName:"Registered Student",accountStatus:"approved",isActive:true});
+  const db=env.authenticatedContext("name-lock").firestore();
+  await assertFails(updateDoc(doc(db,"users/name-lock"),{fullName:"Changed Name",profilePhoto:""}));
+  await assertSucceeds(updateDoc(doc(db,"users/name-lock"),{profilePhoto:""}));
+  await seed("users/no-name",{uid:"no-name",role:"student",accountStatus:"approved",isActive:true});
+  const older=env.authenticatedContext("no-name").firestore();
+  await assertSucceeds(updateDoc(doc(older,"users/no-name"),{profilePhoto:""}));
+  await assertFails(updateDoc(doc(older,"users/no-name"),{fullName:"New Name"}));
+});
+test("officer self-profile name editing remains permitted", async () => {
+  await env.clearFirestore();
+  await seed("users/name-officer",{uid:"name-officer",role:"officer",fullName:"Officer Name",accountStatus:"approved",isActive:true});
+  const db=env.authenticatedContext("name-officer").firestore();
+  await assertSucceeds(updateDoc(doc(db,"users/name-officer"),{fullName:"Updated Officer"}));
 });

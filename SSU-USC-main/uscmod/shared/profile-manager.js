@@ -657,6 +657,7 @@ function fillDrawer(profile) {
   document.getElementById("uscProfileDisplayName").textContent = name;
   document.getElementById("uscProfileDisplayRole").textContent = roleLabel(profile);
   document.getElementById("uscProfileFullName").value = profile.fullName || "";
+  document.getElementById("uscProfileFullName").readOnly = profile.role === "student";
   document.getElementById("uscProfileFullName").placeholder = "Full name unavailable";
   document.getElementById("uscProfileEmail").value = profile.email || "Not Linked";
   document.getElementById("uscProfileStudentId").value = profile.studentId || "Not available";
@@ -775,13 +776,14 @@ async function saveProfile(event) {
 
   const nameInput = document.getElementById("uscProfileFullName");
   const saveButton = document.getElementById("uscProfileSave");
-  const fullName = String(nameInput?.value || "").trim().replace(/\s+/g, " ");
-  if (fullName.length < 2) {
+  const studentNameLocked = currentProfile.role === "student";
+  const fullName = studentNameLocked ? currentProfile.fullName : String(nameInput?.value || "").trim().replace(/\s+/g, " ");
+  if (!studentNameLocked && fullName.length < 2) {
     setMessage("Please enter your full name.", "error");
     nameInput?.focus();
     return;
   }
-  if (fullName.length > 80) {
+  if (!studentNameLocked && fullName.length > 80) {
     setMessage("Full name must be 80 characters or fewer.", "error");
     return;
   }
@@ -801,7 +803,7 @@ async function saveProfile(event) {
 
   try {
     await updateDoc(doc(db, "users", activeUid), {
-      fullName,
+      ...(studentNameLocked ? {} : {fullName}),
       profilePhoto: safePhotoSource(pendingPhoto),
       profileUpdatedAt: serverTimestamp()
     });
