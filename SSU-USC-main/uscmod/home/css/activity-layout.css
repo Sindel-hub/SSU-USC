@@ -7,7 +7,7 @@
 #events-section .events-overview { align-self:start; gap:8px; }
 #events-section .activity-tabs { margin:0 auto; }
 #events-section .events-eyebrow { display:none; }
-#events-section .section-heading { font-size:32px; line-height:1.2; margin:0 0 12px; }
+#events-section .section-heading { font-size:clamp(30px,3.2vw,46px); line-height:1.2; margin:0 0 12px; }
 #events-section .events-intro { font-size:14px; line-height:1.6; margin:0; }
 #events-section #homeEventList {
   height:396px !important; min-height:396px !important; max-height:396px !important;
@@ -40,8 +40,11 @@
   #events-section .events-showcase { grid-template-columns:minmax(0,1fr); grid-template-rows:auto auto; padding:20px; gap:20px; }
   #events-section .calendar-side { padding:18px; }
 }
+@media(max-width:820px) {
+  #events-section .section-heading { font-size:clamp(32px,6vw,36px); }
+}
 @media(max-width:400px) {
   #events-section .events-showcase { padding:16px 12px; }
-  #events-section .section-heading { font-size:28px; }
+  #events-section .section-heading { font-size:32px; }
   #events-section #homeCalendarTitle { font-size:18px; }
 }
