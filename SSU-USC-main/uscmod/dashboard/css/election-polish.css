@@ -80,3 +80,15 @@ body.student-app-shell #electionApp:has(> .election-reference-landing) { height:
 #electionApp > .election-reference-landing { height:100%!important;min-height:0;flex:1 1 auto;width:100%;border-radius:0; }
 #electionApp .election-reference-landing-bg { inset:-40px;width:auto;height:auto;transform:none; }
 @media(max-width:600px) { body.student-app-shell #electionApp:has(> .election-reference-landing) { height:740px!important; } }
+
+/* Match the entry backdrop's frame, overscan, blur and unblurred overlay. */
+body.student-app-shell #electionApp.election-candidates-active { --candidate-frame-height:clamp(580px,calc(100svh - 170px),760px);height:clamp(580px,calc(100svh - 170px),760px);min-height:0; }
+.election-candidate-background::before { inset:-40px;background:url('../assets/HomeLogo.webp') center/cover no-repeat;filter:blur(12px); }
+.election-candidate-background::after { content:"";position:absolute;inset:0;background:linear-gradient(180deg,#008fc577,#28547355 55%,#162b4177); }
+.election-candidate-section { min-height:calc(var(--candidate-frame-height) - 70px); }
+@media(max-width:600px) { body.student-app-shell #electionApp.election-candidates-active { --candidate-frame-height:740px;height:740px; } }
+
+/* Fill the dashboard grid's remaining row so both columns end together. */
+@media(min-width:821px) {
+  body.student-app-shell #electionApp:is(.election-candidates-active,:has(> .election-reference-landing)) { height:100%!important;min-height:0;align-self:stretch; }
+}
