@@ -14,7 +14,7 @@
 />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
 <link rel="stylesheet" href="../../shared/profile-manager.css" />
-<link rel="stylesheet" href="css/elections-modern.css?v=1-election-polish-2" />
+<link rel="stylesheet" href="css/elections-modern.css?v=1-election-polish-2&amp;registration-cleanup=1" />
   <script src="../../shared/app-config.js"></script>
   <script type="module" src="../../shared/auth-guard.js?v=rbac7"></script>
 <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet" />
@@ -288,6 +288,10 @@
                   <button class="schedule-action create" id="createNewScheduleBtn" type="button" data-rbac-permission="elections.view"><i class="fa-solid fa-plus"></i><span><strong>Create New Schedule</strong></span></button>
                 </div>
 
+                <div class="schedule-summary-panel" id="legacyRegistrationNotice" hidden style="display:none">
+                  <p id="legacyRegistrationText"></p>
+                  <button type="button" class="schedule-action danger" id="clearLegacyRegistrationsBtn">Clear previous registrations</button>
+                </div>
                 <div class="schedule-summary-panel">
                   <h4>Schedule Summary</h4>
                   <div id="scheduleSummaryList" class="schedule-summary-list"></div>
@@ -447,7 +451,7 @@
 </footer>
 
     <script src="../shared/js/nav-active.js?v=7"></script>
-  <script type="module" src="js/elections.js?v=candidate-photo-viewer-polish-2&amp;layout=2&amp;mobile=1"></script>
+  <script type="module" src="js/elections.js?v=candidate-photo-viewer-polish-2&amp;layout=2&amp;mobile=1&amp;registration-cleanup=1"></script>
   <script type="module" src="../shared/js/admin-auth.js?v=rbac4"></script>
 <script type="module" src="../../shared/profile-manager.js?v=registered-name-2&amp;refinements=1"></script>
   <script type="module" src="../shared/js/officer-rbac.js?v=6"></script>

@@ -409,7 +409,7 @@ async function removeCandidateApplication(application) {
 async function removeElectionCandidate(candidate) {
   if (!canRemoveCandidates || !candidate || candidate.removed) return;
   if (!confirm(`Remove ${candidate.fullName} (${candidate.position || "candidate"}) from this election?`)) return;
-  if (!confirm(`Are you absolutely sure you want to remove ${candidate.fullName}? This will hide this candidate from the Student Dashboard candidate list and future ballot choices. Existing votes, audit history, and official results will be preserved.`)) return;
+  if (!confirm(`Are you absolutely sure you want to remove ${candidate.fullName}? This will hide this candidate from the Student Dashboard candidate list and future ballot choices. The linked candidacy registration will be cleared. Existing votes, audit history, and official results will be preserved.`)) return;
   try {
     await callSecure("removeElectionCandidate", {electionId, candidateId:candidate.id});
     closeCandidatePreview();
@@ -419,7 +419,7 @@ async function removeElectionCandidate(candidate) {
 
 async function deleteRemovedCandidate(candidate) {
   if (!canRemoveCandidates || !candidate || candidate.removed !== true || candidate.managementHidden === true) return;
-  if (!confirm(`Delete ${candidate.fullName || "this candidate"} from Candidate Review? The card will disappear from this module. Approval records, votes, official results, and audit history will be retained.`)) return;
+  if (!confirm(`Delete ${candidate.fullName || "this candidate"} from Candidate Review? The card will disappear from this module. The linked candidacy registration will also be cleared. Votes, official results, and audit history will be retained.`)) return;
   try {
     await callSecure("dismissElectionCandidate", {electionId, candidateId:candidate.id});
     closeCandidatePreview();
@@ -643,7 +643,7 @@ async function saveSchedule() {
 async function deleteCurrentSchedule() {
   if (!electionId || !context?.scheduleComplete) return alert("There is no saved schedule to delete.");
   if (context.finalized || context.resultsPublished || context.archived) return alert("A finalized, published-result, or archived election schedule cannot be deleted.");
-  if (!confirm("Delete the current saved election schedule? The action will be recorded in the audit trail. Candidate and turnout records are preserved, but there will be no active schedule until a new one is saved.")) return;
+  if (!confirm("Delete the current saved election schedule? The action will be recorded in the audit trail. Candidate registrations will be cleared and candidates removed from the active list. Recorded votes, turnout and student accounts will be preserved.")) return;
   const buttons = [$("deleteCurrentScheduleBtn"), $("deleteScheduleFromEditorBtn")];
   buttons.forEach((button) => setButtonState(button, true));
   try {
@@ -652,9 +652,13 @@ async function deleteCurrentSchedule() {
     context = null;
     electionId = "";
     scheduleFormDirty = false;
-    await refreshAll(true);
+    try{await refreshAll(true);}
+    catch(error){console.warn("Election deletion completed but refresh failed:",error);alert("The schedule and candidate registrations were cleared. Reload the page to refresh the dashboard.");}
   } catch (error) {
     alert(error.message || "Unable to delete the schedule.");
+  } finally {
+    buttons.forEach(button=>setButtonState(button,false));
+    renderSavedSchedule();
   }
 }
 
@@ -783,6 +787,24 @@ function exportSummary() {
 
 async function refreshAll(forceSchedule = false) {
   await loadContext();
+  const legacyNotice=$("legacyRegistrationNotice");if(legacyNotice){legacyNotice.hidden=true;legacyNotice.style.display="none";}
+  if(electionId){
+    try{
+      const selectedId=electionId,preview=await callSecure("repairElectionRegistrations",{electionId:selectedId});
+      const notice=$("legacyRegistrationNotice"),button=$("clearLegacyRegistrationsBtn");
+      if(notice){notice.hidden=!preview.pending;notice.style.display=preview.pending?"block":"none";}
+      if(preview.pending){
+        $("legacyRegistrationText").textContent=`${preview.pending} registration(s) from before the previous schedule deletion remain. Current-cycle registrations and votes will be preserved.`;
+        if(button)button.onclick=async()=>{
+          if(!confirm(`Clear ${preview.pending} previous-cycle candidacy registration(s) for ${selectedId}? Votes and current-cycle submissions will be preserved.`))return;
+          setButtonState(button,true);
+          try{await callSecure("repairElectionRegistrations",{electionId:selectedId,confirmCleanup:true,cutoff:preview.cutoff});await refreshAll(true);}
+          catch(error){alert(error.message||"Unable to clear previous registrations.");}
+          finally{setButtonState(button,false);}
+        };
+      }
+    }catch(error){console.warn("Previous election registrations could not be checked:",error);}
+  }
   await loadData();
 
   const masterlistCard = $("masterlistImportCard");

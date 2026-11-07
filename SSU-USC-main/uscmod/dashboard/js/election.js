@@ -5,7 +5,7 @@ import {
   doc,
   getDoc,
   getDocs,
-  onSnapshot
+  deleteDoc, onSnapshot
 } from "https://www.gstatic.com/firebasejs/12.12.0/firebase-firestore.js";
 import { signOut } from "https://www.gstatic.com/firebasejs/12.12.0/firebase-auth.js";
 
@@ -184,7 +184,18 @@ async function loadSecureState() {
     getDoc(doc(db, "elections", electionId, "voterStatus", student.uid)),
     getDoc(doc(db, "elections", electionId, "turnout", "public"))
   ]);
-  application = appSnap.exists() ? { id: appSnap.id, ...appSnap.data() } : null;
+  // Older deletions left approved applications pointing at removed/missing candidates.
+  // Rules permit this cleanup only for the authenticated student's own stale approval.
+  if(appSnap.exists() && appSnap.data().status === "Approved" && appSnap.data().candidateId){
+    try {
+      const candidate=await getDoc(doc(db,"elections",electionId,"candidates",appSnap.data().candidateId));
+      if(!candidate.exists() || candidate.data().removed===true){
+        await deleteDoc(doc(db,"elections",electionId,"applications",student.uid));
+        application=null;
+      }else application={id:appSnap.id,...appSnap.data()};
+    }catch(error){ console.warn("Unable to check previous candidacy registration:",error);application={id:appSnap.id,...appSnap.data()}; }
+  }else application=appSnap.exists()?{id:appSnap.id,...appSnap.data()}:null;
+
   voterStatus = statusSnap.exists() ? statusSnap.data() : null;
   turnout = turnoutSnap.exists() ? turnoutSnap.data() : { ballotsCast: 0, eligibleVoters: context.eligibleVoterCount || 0 };
   await watchElectionCandidates(electionId, context.candidateVisible || context.votingOpen);

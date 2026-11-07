@@ -829,10 +829,13 @@ async function browserSaveElectionSchedule(data = {}, emergency = false) {
   const schedule = normalizedSchedule(data.schedule || {});
   const electionRef = doc(db, "elections", electionId);
   const pointerRef = doc(db, "election_config", "current");
-  return runTransaction(db, async (tx) => {
+  try { return await runTransaction(db, async (tx) => {
     const [existing, current] = await Promise.all([tx.get(electionRef), tx.get(pointerRef)]);
     const before = existing.exists() ? existing.data() : null;
 
+    if ((before?.registrationCleanupPending === true || (before?.scheduleDeleted === true && !before?.registrationCleanupCompletedAt))) {
+      const error=new Error("Election registration cleanup is pending.");error.code="registration-cleanup-pending";throw error;
+    }
     if (before?.finalized === true || before?.archived === true || before?.resultsPublished === true) {
       throw new Error("A finalized, published-result, or archived election cannot be rescheduled.");
     }
@@ -896,8 +899,81 @@ async function browserSaveElectionSchedule(data = {}, emergency = false) {
     emergencyChangeRecorded: emergency
   };
   });
+  } catch(error) {
+    if(error.code!=="registration-cleanup-pending")throw error;
+    await cleanupDeletedElectionRegistrations(electionId,user);
+    return browserSaveElectionSchedule(data,emergency);
+  }
 }
 
+async function cleanupDeletedElectionRegistrations(electionId,user) {
+  const ref=doc(db,"elections",electionId);
+  const tokenRef=doc(collection(db,"audit_logs"));
+  const token=await runTransaction(db,async tx=>{
+    const current=await tx.get(ref);
+    if(!current.exists() || current.data().scheduleDeleted!==true)return null;
+    const id=current.data().registrationCleanupId || tokenRef.id;
+    if(!current.data().registrationCleanupId)tx.update(ref,{registrationCleanupId:id});
+    return id;
+  });
+  if(!token)return;
+  const cleanupCurrent=state=>state.exists() && state.data().scheduleDeleted===true && state.data().registrationCleanupId===token;
+  const candidates=await getDocs(collection(db,"elections",electionId,"candidates"));
+  // Retain historical identities for existing ballots/results, but remove every
+  // candidate from the active election and management views.
+  for(const entry of candidates.docs){
+    if(entry.data().removed!==true){
+      try{await browserManageCandidate({electionId,candidateId:entry.id,cleanupToken:token},true);}
+      catch(error){const now=await getDoc(entry.ref);if(!now.exists()||now.data().removed===true){}else throw error;}
+    }
+    if(entry.data().managementHidden!==true)await browserManageCandidate({electionId,candidateId:entry.id,cleanupToken:token},false,true);
+  }
+  const applications=await getDocs(collection(db,"elections",electionId,"applications"));
+  for(let i=0;i<applications.docs.length;i+=200){
+    await runTransaction(db,async tx=>{
+      if(!cleanupCurrent(await tx.get(ref)))return;
+      const chunk=applications.docs.slice(i,i+200);
+      await Promise.all(chunk.map(entry=>tx.get(entry.ref)));
+      for(const entry of chunk)tx.delete(entry.ref);
+    });
+  }
+  await runTransaction(db,async tx=>{
+    if(!cleanupCurrent(await tx.get(ref)))return;
+    tx.update(ref,{candidateReviewComplete:false,registrationCleanupPending:false,registrationCleanupCompletedAt:serverTimestamp(),updatedAt:serverTimestamp()});
+    tx.set(doc(collection(db,"audit_logs")),{actorUid:user.uid,actorEmail:user.email||"",action:"ELECTION_SCHEDULE_DELETE",target:ref.path,source:"browser-election-runtime",details:{registrationCleanupComplete:true,applicationsDeleted:applications.size,candidatesRemoved:candidates.size},createdAt:serverTimestamp()});
+  });
+}
+
+async function browserRepairElectionRegistrations(data={}) {
+  const {user}=await requireBrowserPermission("elections.view");
+  const electionId=String(data.electionId||"");if(!electionId||electionId.includes("/"))throw new Error("Select an election.");
+  const ref=doc(db,"elections",electionId),snapshot=await getDoc(ref);
+  if(!snapshot.exists())return {repaired:0};
+  const before=snapshot.data(),cutoff=toMillis(before.scheduleDeletedAt);
+  if(!cutoff||before.scheduleDeleted===true||toMillis(before.registrationCleanupCompletedAt)>=cutoff||toMillis(before.legacyRegistrationRepairCompletedAt)>=cutoff)return{repaired:0};
+  const applications=await getDocs(collection(db,"elections",electionId,"applications"));
+  const stale=applications.docs.filter(entry=>{const time=toMillis(entry.data().submittedAt);return time>0&&time<=cutoff});
+  if(data.confirmCleanup!==true)return{repaired:0,pending:stale.length,cutoff};
+  if(data.cutoff!==undefined&&Number(data.cutoff)!==cutoff)throw new Error("The schedule changed. Refresh before clearing previous registrations.");
+  for(const entry of stale){
+    const candidateId=entry.data().status==="Approved"?entry.data().candidateId:null;
+    if(candidateId && !String(candidateId).includes("/")){
+      const candidate=await getDoc(doc(db,"elections",electionId,"candidates",candidateId));
+      if(candidate.exists()){
+        if(candidate.data().removed!==true)await browserManageCandidate({electionId,candidateId},true);
+        await browserManageCandidate({electionId,candidateId},false,true);
+      }
+    }
+    await runTransaction(db,async tx=>{
+      const [current,app]=await Promise.all([tx.get(ref),tx.get(entry.ref)]);
+      if(!current.exists()||toMillis(current.data().scheduleDeletedAt)!==cutoff||current.data().scheduleDeleted===true||!app.exists())return;
+      const submitted=toMillis(app.data().submittedAt);if(!submitted||submitted>cutoff)return;
+      tx.delete(entry.ref);tx.set(doc(collection(db,"audit_logs")),{actorUid:user.uid,action:"ELECTION_SCHEDULE_DELETE",target:ref.path,source:"browser-election-runtime",details:{legacyRegistrationRepair:true,applicationId:entry.id},createdAt:serverTimestamp()});
+    });
+  }
+  await runTransaction(db,async tx=>{const current=await tx.get(ref);if(current.exists()&&toMillis(current.data().scheduleDeletedAt)===cutoff&&current.data().scheduleDeleted!==true)tx.update(ref,{legacyRegistrationRepairCompletedAt:serverTimestamp()})});
+  return{repaired:stale.length};
+}
 
 async function browserDeleteElectionSchedule(data = {}) {
   const { user } = await requireBrowserPermission("elections.view");
@@ -905,31 +981,18 @@ async function browserDeleteElectionSchedule(data = {}) {
   if (!electionId) throw new Error("No election schedule was selected.");
   const electionRef = doc(db, "elections", electionId);
   const pointerRef = doc(db, "election_config", "current");
-  const [existing, pointer] = await Promise.all([getDoc(electionRef), getDoc(pointerRef)]);
-  if (!existing.exists()) throw new Error("The election schedule no longer exists.");
-  const before = existing.data();
-  if (before.finalized === true || before.resultsPublished === true || before.archived === true) {
-    throw new Error("A finalized, published-result, or archived election schedule cannot be deleted.");
-  }
-  const batch = writeBatch(db);
-  batch.set(electionRef, {
-    scheduleDeleted: true,
-    scheduleDeletedAt: serverTimestamp(),
-    scheduleDeletedByUid: user.uid,
-    lifecycle: "Draft",
-    updatedAt: serverTimestamp()
-  }, { merge: true });
-  if (pointer.exists() && String(pointer.data()?.electionId || "") === electionId) batch.delete(pointerRef);
-  batch.set(doc(collection(db, "audit_logs")), {
-    actorUid: user.uid,
-    actorEmail: user.email || "",
-    action: "ELECTION_SCHEDULE_DELETE",
-    target: `elections/${electionId}`,
-    source: "browser-election-runtime",
-    details: { preservedElectionRecord: true },
-    createdAt: serverTimestamp()
+  const cleanupId=doc(collection(db,"audit_logs")).id;
+  await runTransaction(db,async tx=>{
+    const [existing,pointer]=await Promise.all([tx.get(electionRef),tx.get(pointerRef)]);
+    if(!existing.exists())throw new Error("The election schedule no longer exists.");
+    const before=existing.data();
+    if(before.finalized===true || before.resultsPublished===true || before.archived===true)throw new Error("A finalized, published-result, or archived election schedule cannot be deleted.");
+    tx.set(electionRef,{registrationCleanupId:before.scheduleDeleted && before.registrationCleanupId?before.registrationCleanupId:cleanupId,scheduleDeleted:true,registrationCleanupPending:true,candidateReviewComplete:false,scheduleDeletedAt:serverTimestamp(),scheduleDeletedByUid:user.uid,lifecycle:"Draft",updatedAt:serverTimestamp()},{merge:true});
+    if(pointer.exists() && pointer.data().electionId===electionId)tx.delete(pointerRef);
+    tx.set(doc(collection(db,"audit_logs")),{actorUid:user.uid,actorEmail:user.email||"",action:"ELECTION_SCHEDULE_DELETE",target:electionRef.path,source:"browser-election-runtime",details:{registrationCleanupPending:true,preservedVotes:true},createdAt:serverTimestamp()});
   });
-  await batch.commit();
+  try{await cleanupDeletedElectionRegistrations(electionId,user);}
+  catch(error){const failure=new Error(`The schedule is closed, but candidacy cleanup could not finish. Retry the deletion to continue. ${error.message||""}`);failure.code=error.code;failure.cause=error;throw failure;}
   return { electionId, deleted: true };
 }
 
@@ -1115,13 +1178,17 @@ async function browserManageCandidate(data = {}, remove = false, dismiss = false
   if (!electionId || !candidateId || /[/]/.test(electionId + candidateId)) throw new Error("Select a valid election and candidate.");
   const ref = doc(db, "elections", electionId, "candidates", candidateId);
   const auditRef = doc(collection(db, "audit_logs"));
+  const linked=(remove || dismiss) ? await getDocs(query(collection(db,"elections",electionId,"applications"),where("candidateId","==",candidateId))) : {docs:[]};
   await runTransaction(db, async (tx) => {
     const election = await tx.get(doc(db, "elections", electionId));
     const snap = await tx.get(ref);
     if (!election.exists() || !snap.exists()) throw new Error("Candidate or election no longer exists.");
+    if(data.cleanupToken && (election.data().scheduleDeleted!==true || election.data().registrationCleanupId!==data.cleanupToken))return;
     const before = snap.data();
+    const applications=await Promise.all(linked.docs.map(entry=>tx.get(entry.ref)));
+    for(let index=0;index<applications.length;index++)if(applications[index].exists() && applications[index].data().status==="Approved" && applications[index].data().candidateId===candidateId)tx.delete(linked.docs[index].ref);
     if (dismiss && before.removed !== true) throw new Error("Remove the candidate before deleting it from Candidate Review.");
-    if (dismiss && before.managementHidden === true) return;
+    if (dismiss && before.managementHidden === true && !linked.docs.length) return;
     if (!dismiss && before.removed === true) throw new Error("This candidate has already been removed.");
     const changes = {};
     if (dismiss) changes.managementHidden = true;
@@ -1455,6 +1522,7 @@ async function callBrowserMode(name, data) {
   if (name === "provisionSchoolAccounts") return provisionStudentAccounts(Array.isArray(data?.rows) ? data.rows : []);
   if (name === "activateVerifiedStudent") return { ok: true, browserMode: true };
   if (name === "saveElectionSchedule") return browserSaveElectionSchedule(data, false);
+  if (name === "repairElectionRegistrations") return browserRepairElectionRegistrations(data);
   if (name === "deleteElectionSchedule") return browserDeleteElectionSchedule(data);
   if (name === "emergencyUpdateElectionSchedule") return browserSaveElectionSchedule(data, true);
     if (name === "startVoterRosterImport") return browserStartRosterImport(data);

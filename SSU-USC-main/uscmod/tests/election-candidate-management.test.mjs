@@ -23,14 +23,17 @@ function harness({started = false, completed = false, denied = false, auditFails
     toMillis:(v)=>v, serverTimestamp:()=>123,
     collection:(_db,...parts)=>ref(parts.join('/')),
     doc:(first,...parts)=>first.path ? ref(`${first.path}/audit-${++sequence}`) : ref(parts.join('/')),
+    where:(field,op,value)=>({field,value}),query:(reference,...filters)=>({...reference,filters}),
+    getDocs:async reference=>({docs:[...records].filter(([path,data])=>path.startsWith(reference.path+'/') && path.slice(reference.path.length+1).indexOf('/')<0 && reference.filters.every(f=>data[f.field]===f.value)).map(([path])=>({ref:ref(path)}))}),
     runTransaction:async (_db,fn)=>{
       const changes=[];
       await fn({
         get:async (r)=>({exists:()=>records.has(r.path), data:()=>records.get(r.path)}),
+        delete:r=>changes.push([r.path,null]),
         update:(r,data)=>changes.push([r.path,{...records.get(r.path),...data}]),
         set:(r,data)=>{if(auditFails) throw Error('audit unavailable');changes.push([r.path,data]);}
       });
-      for (const [path,data] of changes) records.set(path,data);
+      for (const [path,data] of changes) data===null?records.delete(path):records.set(path,data);
     }
   });
   vm.runInContext(source.slice(source.indexOf("async function requireBrowserPermission("),source.indexOf("function timestampFromInput(")),ctx);

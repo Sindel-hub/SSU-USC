@@ -248,3 +248,8 @@ body.election-management-page .current-schedule-box p { margin:4px 0 0; }
   body.election-management-page .hero-left,body.election-management-page .election-turnout-chart { padding:18px; }
   body.election-management-page .card-head,body.election-management-page .card-body { padding:16px !important; }
 }
+/* One-time legacy cleanup remains readable in narrow schedule sidebars. */
+#legacyRegistrationNotice { min-width:0; }
+#legacyRegistrationNotice[hidden] { display:none !important; }
+#legacyRegistrationText { overflow-wrap:anywhere; }
+#clearLegacyRegistrationsBtn { box-sizing:border-box; width:100%; min-width:0; height:auto; padding:10px; white-space:normal; overflow-wrap:anywhere; font-family:inherit; font-size:14px; font-weight:600; line-height:1.4; text-align:center; justify-content:center; }

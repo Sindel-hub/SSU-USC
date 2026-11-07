@@ -557,13 +557,13 @@ service cloud.firestore {
         && request.resource.data.votingEnd <= request.resource.data.resultPublicationStart
         && request.resource.data.resultPublicationStart < request.resource.data.resultPublicationEnd;
       allow update: if officerHasPermission("elections.view")
-        && resource.data.archived != true
+        && resource.data.get("archived", false) != true
+        && (request.resource.data.get("scheduleDeleted",false) == true || request.resource.data.get("registrationCleanupPending",false) == false)
         && (!request.resource.data.diff(resource.data).affectedKeys().hasAny([
             "registrationStart", "registrationEnd", "applicationReviewStart", "applicationReviewEnd",
             "candidatePublicationStart", "candidatePublicationEnd", "votingStart", "votingEnd",
             "resultPublicationStart", "resultPublicationEnd", "title"
-          ]) || (officerHasPermission("elections.view")
-            && resource.data.get("finalized", false) == false
+          ]) || (resource.data.get("finalized", false) == false
             && resource.data.get("resultsPublished", false) == false
             && resource.data.get("archived", false) == false
             && request.resource.data.title is string
@@ -590,21 +590,15 @@ service cloud.firestore {
             && request.resource.data.votingEnd <= request.resource.data.resultPublicationStart
             && request.resource.data.resultPublicationStart < request.resource.data.resultPublicationEnd
           ))
-        && (!request.resource.data.diff(resource.data).affectedKeys().hasAny(["candidateReviewComplete", "candidateReviewCompletedAt", "candidateReviewCompletedByUid"]) || officerHasPermission("elections.review"))
+        && (!request.resource.data.diff(resource.data).affectedKeys().hasAny(["candidateReviewComplete", "candidateReviewCompletedAt", "candidateReviewCompletedByUid"]) || officerHasPermission("elections.review")
+          || (request.resource.data.get("scheduleDeleted",false) == true && request.resource.data.candidateReviewComplete == false))
         && (!request.resource.data.diff(resource.data).affectedKeys().hasAny(["finalized", "resultsPublished", "finalizedAt", "finalizedByUid", "resultsPublishedAt"]) || officerHasPermission("elections.results"))
-        && (request.resource.data.finalized == resource.data.finalized || isCanvasser())
-        && (request.resource.data.resultsPublished == resource.data.resultsPublished || isCanvasser())
-        && (request.resource.data.archived == resource.data.archived || isAdmin())
-        && (request.resource.data.archived != true || request.resource.data.resultsPublished == true)
-        && (request.resource.data.resultsPublished != true || request.resource.data.finalized == true)
-        && (request.resource.data.finalized != true || request.time >= resource.data.votingEnd)
-        && (!request.resource.data.diff(resource.data).affectedKeys().hasAny([
-            "registrationStart", "registrationEnd", "applicationReviewStart", "applicationReviewEnd",
-            "candidatePublicationStart", "candidatePublicationEnd", "votingStart", "votingEnd",
-            "resultPublicationStart", "resultPublicationEnd"
-          ])
-          || officerHasPermission("elections.view")
-          || isAdmin());
+        && (request.resource.data.get("finalized", false) == resource.data.get("finalized", false) || isCanvasser())
+        && (request.resource.data.get("resultsPublished", false) == resource.data.get("resultsPublished", false) || isCanvasser())
+        && (request.resource.data.get("archived", false) == resource.data.get("archived", false) || isAdmin())
+        && (request.resource.data.get("archived", false) != true || request.resource.data.get("resultsPublished", false) == true)
+        && (request.resource.data.get("resultsPublished", false) != true || request.resource.data.get("finalized", false) == true)
+        && (request.resource.data.get("finalized", false) != true || request.time >= resource.data.votingEnd);
       allow delete: if false;
 
       match /rosterImports/{importId} {
@@ -639,7 +633,8 @@ service cloud.firestore {
 
       match /applications/{applicantUid} {
         allow read: if ownUser(applicantUid) || isOfficerOrAdmin();
-        allow create: if schoolStudent()
+        allow create: if electionDoc(electionId).get("scheduleDeleted",false) == false
+          && schoolStudent()
           && ownProfile().candidacyApproved == true
           && applicantUid == uid()
           && request.time >= electionDoc(electionId).registrationStart
@@ -648,7 +643,8 @@ service cloud.firestore {
           && request.resource.data.studentId == ownProfile().studentId
           && request.resource.data.status == "Under Review"
           && request.resource.data.position in ["President", "Vice President", "Secretary", "Treasurer", "Auditor", "Public Relations Officer", "Business Manager", "Sgt. at Arms", "Department Representative"];
-        allow update: if officerHasPermission("elections.review")
+        allow update: if electionDoc(electionId).get("scheduleDeleted",false) == false
+          && officerHasPermission("elections.review")
           && request.time >= electionDoc(electionId).applicationReviewStart
           && request.time < electionDoc(electionId).applicationReviewEnd
           && resource.data.status == "Under Review"
@@ -656,12 +652,25 @@ service cloud.firestore {
 
         // Authorized election reviewers may manually remove pending candidate applications.
         // This supports the officer "Remove Candidate" action while keeping access controlled.
-        allow delete: if officerHasPermission("elections.review")
-          && resource.data.status == "Under Review";
+        allow delete: if (ownUser(applicantUid) && resource.data.status == "Approved" && resource.data.get("candidateId", "") != ""
+            && (!exists(/databases/$(database)/documents/elections/$(electionId)/candidates/$(resource.data.candidateId))
+              || get(/databases/$(database)/documents/elections/$(electionId)/candidates/$(resource.data.candidateId)).data.get("removed",false) == true))
+          || (officerHasPermission("elections.review") && resource.data.status == "Under Review")
+          || (officerHasPermission("elections.view") && (electionDoc(electionId).get("scheduleDeleted",false) == true
+            || (electionDoc(electionId).get("scheduleDeletedAt",null) is timestamp && resource.data.get("submittedAt",null) is timestamp && resource.data.submittedAt <= electionDoc(electionId).scheduleDeletedAt)))
+          || ((officerHasPermission("elections.view") || officerHasPermission("elections.review"))
+            && resource.data.status == "Approved"
+            && resource.data.get("candidateId", "") != ""
+            && getAfter(/databases/$(database)/documents/elections/$(electionId)/candidates/$(resource.data.candidateId)).data.get("removed",false) == true
+            && getAfter(/databases/$(database)/documents/elections/$(electionId)/candidates/$(resource.data.candidateId)).data.updatedByUid == uid()
+            && getAfter(/databases/$(database)/documents/elections/$(electionId)/candidates/$(resource.data.candidateId)).data.updatedAt == request.time);
       }
 
       match /candidates/{candidateId} {
   allow read: if isOfficerOrAdmin()
+    || (signedIn() && exists(/databases/$(database)/documents/elections/$(electionId)/applications/$(uid()))
+      && get(/databases/$(database)/documents/elections/$(electionId)/applications/$(uid())).data.status == "Approved"
+      && get(/databases/$(database)/documents/elections/$(electionId)/applications/$(uid())).data.get("candidateId", "") == candidateId)
     || (
       signedIn()
       && (
@@ -669,7 +678,8 @@ service cloud.firestore {
         || votingOpenByServer(electionId)
       )
     );
-        allow create: if officerHasPermission("elections.review")
+        allow create: if electionDoc(electionId).get("scheduleDeleted",false) == false
+          && officerHasPermission("elections.review")
           && request.time >= electionDoc(electionId).applicationReviewStart
           && request.time < electionDoc(electionId).applicationReviewEnd
           && request.resource.data.candidateId == candidateId
@@ -714,7 +724,6 @@ service cloud.firestore {
         // candidate. Votes, result identity and application records cannot change.
         allow update: if (officerHasPermission("elections.view") || officerHasPermission("elections.review"))
           && resource.data.get("removed", false) == true
-          && resource.data.get("managementHidden", false) == false
           && request.resource.data.managementHidden == true
           && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
             "managementHidden", "updatedAt", "updatedByUid", "managementAuditId"

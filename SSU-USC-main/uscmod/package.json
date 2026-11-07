@@ -10,7 +10,7 @@
     "deploy:rules": "firebase deploy --only firestore:rules,firestore:indexes",
     "deploy:functions": "echo Not used in browser provisioning mode.",
     "deploy": "firebase deploy --only firestore:rules,firestore:indexes",
-    "test:static": "node --test tests/general-ui-account.test.mjs tests/mobile-navigation.test.mjs tests/static-project.test.mjs tests/announcement-excerpt.test.mjs tests/announcement-carousel.test.mjs tests/landing-reader-scroll.test.mjs tests/officer-bulletin-media.test.mjs tests/landing-calendar-stability.test.mjs tests/activity-calendar.test.mjs tests/announcement-formatting.test.mjs tests/bulletin-read-more-ui.test.mjs tests/bulletin-summary-ui.test.mjs",
+    "test:static": "node --test tests/election-registration-cleanup.test.mjs tests/general-ui-account.test.mjs tests/mobile-navigation.test.mjs tests/static-project.test.mjs tests/announcement-excerpt.test.mjs tests/announcement-carousel.test.mjs tests/landing-reader-scroll.test.mjs tests/officer-bulletin-media.test.mjs tests/landing-calendar-stability.test.mjs tests/activity-calendar.test.mjs tests/announcement-formatting.test.mjs tests/bulletin-read-more-ui.test.mjs tests/bulletin-summary-ui.test.mjs",
     "test:syntax": "node --test tests/js-syntax.test.mjs",
     "test:admin-auth": "node --test tests/mfa-enrollment.test.mjs",
     "test:verify": "node --test tests/admin-verification.test.mjs",
