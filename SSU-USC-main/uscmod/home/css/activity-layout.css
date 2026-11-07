@@ -1,8 +1,8 @@
 /* Student Events composition, sized for the public landing page. */
 #events-section .events-showcase {
-  width:min(900px,100%); min-height:0; height:auto; padding:20px;
+  width:min(900px,100%); min-height:0; height:auto; padding:28px;
   display:grid; grid-template-columns:minmax(0,.9fr) minmax(0,1.3fr);
-  gap:24px; align-items:stretch;
+  gap:16px; align-items:stretch;
 }
 #events-section .events-overview { align-self:start; gap:8px; }
 #events-section .activity-tabs { margin:0 auto; }
@@ -10,7 +10,7 @@
 #events-section .section-heading { font-size:clamp(30px,3.2vw,46px); line-height:1.2; margin:0 0 12px; }
 #events-section .events-intro { font-size:14px; line-height:1.6; margin:0; }
 #events-section #homeEventList {
-  height:328px !important; min-height:328px !important; max-height:328px !important;
+  height:260px !important; min-height:260px !important; max-height:260px !important;
   grid-auto-rows:124px; gap:12px !important; align-content:start; padding:0 4px 0 0;
 }
 #events-section #homeEventList .event-item {
@@ -28,10 +28,11 @@
 #events-section #homeEventList h3 { font-size:15px; line-height:1.2; margin:2px 0; font-weight:700; }
 #events-section #homeEventList .event-facts { font-size:12px; line-height:1.2; gap:2px; }
 #events-section .calendar-side {
-  align-self:start !important; justify-self:stretch; width:100%; max-width:none; min-height:0;
-  height:auto; padding:20px; border-radius:8px; display:flex; flex-direction:column;
+  align-self:stretch !important; justify-self:stretch; width:100%; max-width:none; min-height:0;
+  height:auto; padding:28px; border-radius:8px; display:flex; flex-direction:column;
   justify-content:flex-start; gap:12px;
 }
+#events-section .calendar-side .activity-legend { margin-top:auto; }
 #events-section .calendar-header { grid-template-columns:36px minmax(0,1fr) 36px; min-height:40px; gap:4px; margin-bottom:0; }
 #events-section .calendar-arrow { width:36px; height:36px; }
 #events-section #homeCalendarTitle { font-size:20px; }
