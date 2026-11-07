@@ -85,9 +85,10 @@ function show(value) {
   image.hidden = !safe; placeholder.hidden = safe;
   if (safe) image.src = value; else image.removeAttribute("src");
 }
-function controls() { input.disabled = busy; save.disabled = busy || !selected; cancel.disabled = busy || !selected; if (back) back.disabled = busy; adjustPanel?.querySelectorAll("input,button").forEach(control => { control.disabled = busy; }); }
+function controls() { editor?.setAttribute("aria-busy", String(busy)); input.disabled = busy; save.disabled = busy || !selected; cancel.disabled = busy || !selected; if (back) back.disabled = busy; adjustPanel?.querySelectorAll("input,button").forEach(control => { control.disabled = busy; }); }
 function editing(active) {
   editor.classList.toggle("is-editing", active);
+  editor.classList.remove("org-controls-touch");
   update.hidden = active;
   if (!active) { selected = ""; cropSource = null; show(published); }
   announce("");
@@ -118,9 +119,15 @@ async function start() {
       zoomControl.value = String(chartFitZoom(cropSource.naturalWidth, cropSource.naturalHeight, frame.clientWidth, frame.clientHeight));
       xControl.value = "50"; yControl.value = "50"; renderCrop();
     });
+    document.addEventListener("keydown", event => {
+      if (["Tab", "ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown"].includes(event.key)) editor.classList.add("org-controls-keyboard");
+    });
+    editor.addEventListener("pointerdown", () => editor.classList.remove("org-controls-keyboard"));
     let drag = null;
+    let gestureStart = null;
     cropCanvas.addEventListener("pointerdown", event => {
       if (busy || !selected || event.button !== 0) return;
+      gestureStart = { x: event.clientX, y: event.clientY };
       drag = { x: event.clientX, y: event.clientY, offsetX: Number(xControl.value), offsetY: Number(yControl.value) };
       cropCanvas.setPointerCapture(event.pointerId); cropCanvas.classList.add("is-dragging");
     });
@@ -134,6 +141,10 @@ async function start() {
       yControl.value = String(move(event.clientY - drag.y, frame.clientHeight, crop.height, cropSource.naturalHeight, drag.offsetY));
       renderCrop();
     });
+    cropCanvas.addEventListener("pointerup", event => {
+      if (event.pointerType !== "mouse" && gestureStart && Math.hypot(event.clientX - gestureStart.x, event.clientY - gestureStart.y) < 8) editor.classList.toggle("org-controls-touch");
+      gestureStart = null;
+    });
     for (const name of ["pointerup", "pointercancel", "lostpointercapture"]) cropCanvas.addEventListener(name, () => { drag = null; cropCanvas.classList.remove("is-dragging"); });
     const observer = new ResizeObserver(renderCrop); observer.observe(image.parentElement);
     window.addEventListener("pagehide", event => { if (!event.persisted) observer.disconnect(); });
@@ -144,7 +155,7 @@ async function start() {
         const next = await encodeChartImage(file);
         const decoded = new Image(); decoded.src = next; await decoded.decode();
         selected = next; cropSource = decoded; resetCrop();
-        announce("Drag the image or use the controls to adjust its framing, then publish.");
+        announce(matchMedia("(hover: none)").matches ? "Drag to adjust. Tap the image to show or hide controls." : "Drag to adjust. Hover over the top or bottom tools to reveal them.");
       }
       catch (error) { announce(error.message || "Unable to read that image.", true); }
       finally { busy = false; input.value = ""; controls(); }
