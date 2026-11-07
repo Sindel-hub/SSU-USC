@@ -157,6 +157,19 @@ service cloud.firestore {
     // delivery logs were migrated to Supabase. No Firebase client access is
     // granted to the legacy email collections anymore.
 
+    // Temporary public chart image, editable only by active approved officers/admins.
+    match /organization_chart/{chartId} {
+      allow get: if chartId == "current";
+      allow list, delete: if false;
+      allow create, update: if chartId == "current" && isOfficerOrAdmin()
+        && request.resource.data.keys().hasAll(["imageData", "updatedAt"])
+        && request.resource.data.keys().hasOnly(["imageData", "updatedAt"])
+        && request.resource.data.imageData is string
+        && request.resource.data.imageData.size() <= 900000
+        && request.resource.data.imageData.matches('data:image/webp;base64,[A-Za-z0-9+/=]+')
+        && request.resource.data.updatedAt == request.time;
+    }
+
     match /announcements/{announcementId} {
       allow read: if true;
       allow create, update, delete: if officerHasPermission("bulletin.manage");

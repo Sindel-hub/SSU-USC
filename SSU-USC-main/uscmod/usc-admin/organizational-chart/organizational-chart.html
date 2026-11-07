@@ -17,6 +17,7 @@
   <script type="module" src="../../shared/auth-guard.js?v=rbac7"></script>
 <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet" />
 <link rel="stylesheet" href="../../shared/scrollbars.css?v=2" />
+<link rel="stylesheet" href="../../shared/organization-chart-image.css?v=1">
 </head>
 <body class="officer-app-shell org-management-page">
 <div class="page"><div class="app-shell">
@@ -125,53 +126,17 @@
       <button class="nav-btn logout-btn" type="button" onclick="logoutOfficer()"><span class="icon"><i class="fa-solid fa-right-from-bracket"></i></span><span>Logout</span></button>
     </aside>
 
-    <section class="main officer-org-main">
-      <section class="officer-org-card">
-        <div class="officer-org-bg"></div>
-        <div class="officer-org-shade"></div>
-        <div class="officer-org-content">
-          <div class="org-title-block module-hero-heading">
-            <span class="module-hero-icon" aria-hidden="true"><i class="fa-solid fa-sitemap"></i></span>
-            <div>
-              <span class="module-hero-kicker">COUNCIL STRUCTURE CENTER</span>
-              <h1>Organizational Chart</h1>
-              <p>Officer-side view of the council structure, responsibilities, and representative groups.</p>
-            </div>
-          </div>
-
-          <section class="org-function-strip" aria-label="Council structure groups">
-            <article><span class="org-function-icon"><i class="fa-solid fa-crown"></i></span><div><strong>Executive Leadership</strong><small>President and Vice President leadership roles.</small></div></article>
-            <article><span class="org-function-icon"><i class="fa-solid fa-gears"></i></span><div><strong>Core Operations</strong><small>Records, finance, audit, communication, and support.</small></div></article>
-            <article><span class="org-function-icon"><i class="fa-solid fa-people-group"></i></span><div><strong>Representation</strong><small>Department representatives connect colleges to the USC.</small></div></article>
-          </section>
-
-          <div class="org-tree" aria-label="University Student Council organizational chart">
-            <div class="org-row org-row-top">
-              <article class="org-node org-node-president">
-                <div class="org-avatar"><i class="fa-solid fa-crown"></i></div>
-                <strong>President</strong><small>University Student Council</small>
-              </article>
-            </div>
-
-            <div class="org-branch branch-top"></div>
-
-            <div class="org-row org-row-mid">
-              <article class="org-node"><div class="org-avatar"><i class="fa-solid fa-user-tie"></i></div><strong>Vice President</strong><small>Executive Support</small></article>
-              <article class="org-node"><div class="org-avatar"><i class="fa-solid fa-file-lines"></i></div><strong>Secretary</strong><small>Records & Documentation</small></article>
-              <article class="org-node"><div class="org-avatar"><i class="fa-solid fa-coins"></i></div><strong>Treasurer</strong><small>Financial Management</small></article>
-              <article class="org-node"><div class="org-avatar"><i class="fa-solid fa-clipboard-check"></i></div><strong>Auditor</strong><small>Audit & Compliance</small></article>
-              <article class="org-node"><div class="org-avatar"><i class="fa-solid fa-bullhorn"></i></div><strong>P.R.O.</strong><small>Public Relations</small></article>
-            </div>
-
-            <div class="org-row org-row-low">
-              <article class="org-node compact"><div class="org-avatar"><i class="fa-solid fa-briefcase"></i></div><strong>Business Manager</strong><small>Projects & Resources</small></article>
-              <article class="org-node compact"><div class="org-avatar"><i class="fa-solid fa-shield-halved"></i></div><strong>Sergeant-at-Arms</strong><small>Order & Discipline</small></article>
-              <article class="org-node compact"><div class="org-avatar"><i class="fa-solid fa-people-group"></i></div><strong>Department Representatives</strong><small>College Representatives</small></article>
-            </div>
-          </div>
-        </div>
-      </section>
-    </section>
+    <section class="main officer-org-main org-image-main" data-org-editor>
+  <header class="org-image-toolbar"><h1>Organizational Chart</h1><div class="org-image-controls" data-org-controls hidden>
+    <label class="org-image-upload">Choose image<input type="file" data-org-file accept="image/jpeg,image/png,image/webp" disabled></label>
+    <button type="button" data-org-save disabled>Publish image</button><button type="button" data-org-cancel disabled>Cancel</button>
+  </div></header>
+  <p class="org-image-hint">JPG, PNG or WebP · up to 5 MB</p>
+<figure class="org-image-frame" aria-label="University Student Council organizational chart">
+  <div class="org-image-placeholder" data-org-placeholder><i class="fa-solid fa-sitemap" aria-hidden="true"></i><strong>Organizational Chart</strong><span>Chart image coming soon</span></div>
+  <img data-org-image alt="University Student Council organizational chart" hidden>
+</figure><p class="org-image-status" data-org-status role="status" aria-live="polite"></p>
+</section>
   </main>
 </div></div>
 
@@ -188,5 +153,6 @@
 <script type="module" src="../shared/js/admin-auth.js?v=rbac4"></script>
 <script type="module" src="../../shared/profile-manager.js?v=registered-name-2&amp;refinements=1"></script>
   <script type="module" src="../shared/js/officer-rbac.js?v=6"></script>
+<script type="module" src="../../shared/organization-chart-image.js?v=1"></script>
 </body>
 </html>
