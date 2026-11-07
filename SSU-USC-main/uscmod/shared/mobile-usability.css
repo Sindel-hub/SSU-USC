@@ -12,6 +12,8 @@
   #about-section .feature-text p { font-size:16px !important; line-height:1.6 !important; }
   #homeEventList, body.student-app-shell #eventsUpcomingList {
     touch-action:pan-y pinch-zoom;
+    overflow-y:auto !important;
+    overflow-x:hidden !important;
     overscroll-behavior-y:auto !important;
     -webkit-overflow-scrolling:touch;
   }
@@ -36,3 +38,9 @@
 }
 
 @media(max-width:820px) { body.student-app-shell .student-sidebar .student-nav-link span { overflow-wrap:anywhere; } }
+
+@media(max-width:940px) {
+  #homeEventList, body.student-app-shell #eventsUpcomingList { align-content:start !important; }
+  /* Swipe on the text, card button or card footer: all use the same list scroller. */
+  :is(#homeEventList,#eventsUpcomingList) :is(article,button,a,.event-text,.events-upcoming-card-copy) { touch-action:pan-y pinch-zoom; }
+}

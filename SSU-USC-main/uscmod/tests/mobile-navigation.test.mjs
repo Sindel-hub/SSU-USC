@@ -43,3 +43,20 @@ test('touch swipes advance chapters without cancelling touch movement, and reduc
  f.handlers.touchend({changedTouches:[{clientX:50,clientY:350}]});assert.equal(f.calls.length,reduced?0:1);
  }
 });
+test('upward wheel over calendar returns to Highlights and list-edge wheel does the same',()=>{
+ for(const list of [null,{scrollHeight:1000,clientHeight:400,scrollTop:0}]){
+  const f=fixture(false);f.frame.scrollTop=600;let prevented=false;
+  f.handlers.wheel({cancelable:true,deltaY:-100,deltaX:0,target:{closest:selector=>selector==='.activity-card-grid'?list:null},preventDefault(){prevented=true}});
+  assert.equal(prevented,true);assert.equal(f.calls.at(-1).top,0);
+ }
+});
+test('an interrupted transition can restart at the same destination',()=>{
+ const f=fixture(false);const wheel=dy=>({cancelable:true,deltaY:dy,deltaX:0,target:{closest:()=>null},preventDefault(){}});
+ f.handlers.wheel(wheel(100));f.frame.scrollTop=200;f.handlers.wheel(wheel(10));f.handlers.wheel(wheel(100));assert.equal(f.calls.length,2);assert.equal(f.calls.at(-1).top,600);
+});
+test('swiping an overflowing card list never starts a chapter transition',()=>{
+ const f=fixture(true),list={scrollTop:40,scrollHeight:1000,clientHeight:400};
+ f.handlers.touchstart({target:{closest:selector=>selector==='.activity-card-grid'?list:null},touches:[{clientX:50,clientY:500}]});
+ list.scrollTop=200;
+ f.handlers.touchend({changedTouches:[{clientX:50,clientY:300}]});assert.equal(f.calls.length,0);
+});
