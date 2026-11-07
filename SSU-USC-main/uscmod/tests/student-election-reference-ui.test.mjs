@@ -7,8 +7,8 @@ const js = fs.readFileSync(new URL("../dashboard/js/election.js", import.meta.ur
 const css = fs.readFileSync(new URL("../dashboard/css/student-pages.css", import.meta.url), "utf8");
 
 test("student election page loads the reference UI assets", () => {
-  assert.match(html, /student-pages\.css\?v=election-state-4/);
-  assert.match(html, /election\.js\?v=election-state-4/);
+  assert.match(html, /election-polish\.css\?v=1/);
+  assert.match(html, /election\.js\?v=[^"]*ui-polish=1/);
 });
 
 test("candidate registration uses a four-step wizard", () => {
@@ -21,7 +21,7 @@ test("candidate registration uses a four-step wizard", () => {
 });
 
 test("election landing matches the reference hero and registered state", () => {
-  assert.match(js, /A Legacy of Student Leadership/);
+  assert.match(js, /Meet your next student leaders/);
   assert.match(js, /Already Registered/);
   assert.match(js, /election-reference-landing/);
   assert.match(css, /STUDENT ELECTION REFERENCE UI - 2026-09-05/);
