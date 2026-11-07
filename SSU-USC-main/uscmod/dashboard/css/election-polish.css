@@ -18,7 +18,7 @@
 
 /* Stable front page; schedule lives in a solid, accessible dialog. */
 #electionApp:has(.election-reference-landing) { overflow:hidden!important; }
-#electionApp .election-reference-landing { height:clamp(580px,calc(100svh - 170px),760px);min-height:0;box-sizing:border-box;padding:38px 28px; }
+#electionApp .election-reference-landing { height:clamp(580px,calc(100svh - 170px),760px);min-height:0;box-sizing:border-box;padding:14px 28px 62px; }
 #electionApp .election-reference-intro { margin-top:24px; }
 #electionApp .election-front-card .election-reference-logo { width:clamp(100px,11vw,140px);margin-bottom:16px; }
 .election-view-schedule { position:absolute;right:28px;top:22px;z-index:3;border:0;background:transparent;color:white;text-decoration:underline;font:inherit;font-size:12px;padding:8px;cursor:pointer; }
@@ -32,4 +32,4 @@
 .election-schedule-dialog .election-public-schedule-phase { background:#f2f7fc;border:1px solid #d4e2ef; }
 .election-schedule-dialog .election-public-schedule :is(h3,strong) { color:#194c80; }
 .election-schedule-dialog .election-public-schedule :is(span,i) { color:#496d8d; }
-@media(max-width:600px) { #electionApp .election-reference-landing { height:740px;min-height:0;padding:54px 20px 24px; } #electionApp .election-reference-intro p { font-size:13px;line-height:1.5; } #electionApp .election-front-card h2 { font-size:18px; } .election-view-schedule { top:12px;right:16px; } .election-schedule-dialog { padding:20px; } .election-schedule-dialog .election-public-schedule-grid { grid-template-columns:1fr; } }
+@media(max-width:600px) { #electionApp .election-reference-landing { height:740px;min-height:0;padding:38px 20px 40px; } #electionApp .election-reference-intro p { font-size:13px;line-height:1.5; } #electionApp .election-front-card h2 { font-size:18px; } .election-view-schedule { top:12px;right:16px; } .election-schedule-dialog { padding:20px; } .election-schedule-dialog .election-public-schedule-grid { grid-template-columns:1fr; } }
