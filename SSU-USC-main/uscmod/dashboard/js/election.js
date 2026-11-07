@@ -747,6 +747,65 @@ function showCandidateProfile(candidateId) {
 }
 
 function wireCandidateGallery() {
+  wireCandidateGallery.scrollController?.abort();
+  const controller = new AbortController();
+  wireCandidateGallery.scrollController = controller;
+  const options = { signal: controller.signal, passive: true };
+  const sections = [...app.querySelectorAll(".election-candidate-section")];
+  const motion = matchMedia("(prefers-reduced-motion: reduce)");
+  const top = section => Math.max(0, app.scrollTop + section.getBoundingClientRect().top - app.getBoundingClientRect().top - 18);
+  let destination = null;
+  let origin = 0;
+  let direction = 0;
+  const navigate = (index, from, delta) => {
+    if (!sections[index]) return;
+    destination = index; origin = from; direction = delta;
+    app.scrollTo({ top: top(sections[index]), behavior: motion.matches ? "instant" : "smooth" });
+  };
+  const move = (delta, position = app.scrollTop) => {
+    if (destination !== null) {
+      if (delta !== direction) navigate(origin, destination, delta);
+      return true;
+    }
+    let index = 0;
+    sections.forEach((section, i) => { if (top(section) <= position + 3) index = i; });
+    // Keep native scrolling available inside positions containing multiple rows.
+    if (delta > 0 && sections[index + 1]) {
+      if (position < top(sections[index + 1]) - app.clientHeight - 2) return false;
+      navigate(index + 1, index, delta); return true;
+    }
+    if (delta < 0) {
+      if (position > top(sections[index]) + 3) {
+        navigate(index, index, delta); return true;
+      }
+      if (index > 0) { navigate(index - 1, index, delta); return true; }
+      if (position > 0) { app.scrollTo({ top: 0, behavior: "smooth" }); return true; }
+    }
+    return false;
+  };
+  app.addEventListener("wheel", event => {
+    if (motion.matches || event.ctrlKey || event.shiftKey || !event.cancelable ||
+        Math.abs(event.deltaX) > Math.abs(event.deltaY) || Math.abs(event.deltaY) < 16 ||
+        event.target.closest?.('[role="dialog"],input,textarea,select')) return;
+    if (move(Math.sign(event.deltaY))) event.preventDefault();
+  }, { signal: controller.signal, passive: false });
+  app.addEventListener("scrollend", () => { destination = null; }, options);
+  let touch = null;
+  app.addEventListener("touchstart", event => {
+    destination = null;
+    const point = event.touches[0];
+    touch = point ? { x: point.clientX, y: point.clientY, top: app.scrollTop } : null;
+  }, options);
+  app.addEventListener("touchend", event => {
+    const point = event.changedTouches[0];
+    if (touch && point && !motion.matches) {
+      const dy = touch.y - point.clientY;
+      if (Math.abs(dy) > 48 && Math.abs(dy) > Math.abs(touch.x - point.clientX) * 1.2) move(Math.sign(dy), touch.top);
+    }
+    touch = null;
+  }, options);
+  app.addEventListener("touchcancel", () => { touch = null; }, options);
+
   app.querySelectorAll("[data-candidate-id]").forEach((card) => card.addEventListener("click", () => showCandidateProfile(clean(card.dataset.candidateId))));
 }
 

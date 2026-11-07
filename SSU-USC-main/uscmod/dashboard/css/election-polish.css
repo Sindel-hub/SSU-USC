@@ -35,7 +35,7 @@
 @media(max-width:600px) { #electionApp .election-reference-landing { height:740px;min-height:0;padding:38px 20px 40px; } #electionApp .election-reference-intro p { font-size:13px;line-height:1.5; } #electionApp .election-front-card h2 { font-size:18px; } .election-view-schedule { top:12px;right:16px; } .election-schedule-dialog { padding:20px; } .election-schedule-dialog .election-public-schedule-grid { grid-template-columns:1fr; } }
 
 /* Preserve the original slanted accordion presentation and section flow. */
-#electionApp.election-candidates-active { height:calc(100dvh - 170px);min-height:460px;overflow-y:auto!important;scroll-behavior:smooth!important;scroll-snap-type:y proximity;background:#226a91; }
+#electionApp.election-candidates-active { height:calc(100dvh - 170px);min-height:460px;overflow-y:auto!important;scroll-behavior:smooth!important;scroll-snap-type:none;background:#226a91; }
 .election-candidate-gallery { scroll-snap-align:start;position:relative;isolation:isolate;min-height:100%;background:#226a91; }
 .election-candidate-background { position:absolute;inset:0;filter:blur(7px);background:linear-gradient(#008fc577,#162b4177),url('../assets/HomeLogo.webp') center/cover; }
 .election-candidate-content { position:relative;padding:24px clamp(20px,3vw,40px) 0;color:white; }
@@ -45,12 +45,12 @@
 .election-position-title { text-align:center;margin:0 0 36px;color:white;font-size:30px; }
 .election-candidate-grid { --portrait-width:clamp(150px,17vw,240px);display:flex;justify-content:center;gap:8px;margin:0 auto 28px;max-width:1100px; }
 .election-candidate-card { position:relative;flex:0 1 var(--portrait-width);min-width:0;height:360px;padding:0;border:1px solid #456a81;border-radius:0;background:#071d2d;overflow:hidden;cursor:pointer;text-align:left;font:inherit;transform:skewX(-7deg);transition:flex-basis .55s cubic-bezier(.22,.61,.36,1); }
-.election-candidate-card img { position:absolute;left:0;top:0;width:var(--portrait-width);max-width:none;height:100%;object-fit:contain;background:#e6f0f7;transform:skewX(7deg); }
-.election-candidate-caption { position:absolute;left:var(--portrait-width);right:0;top:0;bottom:0;box-sizing:border-box;padding:24px;display:flex;flex-direction:column;justify-content:center;gap:12px;background:#071d2d;color:white;transform:translateX(30px) skewX(7deg);opacity:0;overflow:hidden;transition:transform .55s cubic-bezier(.22,.61,.36,1),opacity .35s ease; }
+.election-candidate-card img { position:absolute;left:-24px;top:0;width:calc(var(--portrait-width) + 48px);max-width:none;height:100%;object-fit:cover;background:#e6f0f7;transform:skewX(7deg); }
+.election-candidate-caption { position:absolute;left:var(--portrait-width);right:auto;width:280px;top:0;bottom:0;box-sizing:border-box;padding:24px;display:flex;flex-direction:column;justify-content:center;gap:12px;background:#071d2d;color:white;transform:skewX(7deg);opacity:0;overflow:hidden;transition:opacity .3s ease; }
 .election-candidate-caption strong { font-size:20px;line-height:1.25;overflow-wrap:break-word;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden; }
 .election-candidate-caption > span { font-size:14px;line-height:1.5;color:#d2e8f6; }
 .election-candidate-caption small { font-size:14px;line-height:1.5;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;border-top:1px solid #ffffff33;padding-top:12px; }
-@media(hover:hover) { .election-candidate-card:hover,.election-candidate-card:focus-visible { flex-basis:calc(var(--portrait-width) + 280px);flex-shrink:0; } .election-candidate-card:is(:hover,:focus-visible) .election-candidate-caption { opacity:1;transform:translateX(0) skewX(7deg); } }
+@media(hover:hover) { .election-candidate-card:hover,.election-candidate-card:focus-visible { flex-basis:calc(var(--portrait-width) + 280px);flex-shrink:0; } .election-candidate-card:is(:hover,:focus-visible) .election-candidate-caption { opacity:1;transform:skewX(7deg);transition-delay:.15s; } }
 .election-candidate-card:focus-visible { outline:3px solid #53cbf3;outline-offset:3px; }
 .election-candidate-vote { position:sticky;bottom:40px;z-index:10;display:flex;justify-content:center;height:48px;margin-top:-88px;pointer-events:none; }
 #electionApp .election-candidate-vote .candidate-vote-button { pointer-events:auto;background:#36b5de!important;color:white;min-width:190px; }
