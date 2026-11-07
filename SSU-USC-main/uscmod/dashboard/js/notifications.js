@@ -14,6 +14,7 @@ const uscAuthAllowed = await (globalThis.USC_AUTH_READY || Promise.resolve(false
 if (uscAuthAllowed !== true) await new Promise(() => {});
 
 
+const notificationOwner = auth.currentUser?.uid;
 const PROFILE_KEY = "studentProfile";
 const READ_KEY_PREFIX = "uscNotificationRead:";
 const feeds = { announcements: [], events: [], programs: [], complaints: [], election: null, application: null };
@@ -23,7 +24,7 @@ function dashboardHref(fileName) {
 }
 
 function profile() {
-  try { return JSON.parse(sessionStorage.getItem(PROFILE_KEY) || "null"); }
+  try { const value=JSON.parse(sessionStorage.getItem(PROFILE_KEY) || "null"); return value?.uid === auth.currentUser?.uid ? value : null; }
   catch { return null; }
 }
 function clean(v, fallback="") { return String(v ?? fallback).trim(); }
@@ -75,22 +76,23 @@ function relativeTime(v) {
 }
 function readSet() {
   const p=profile();
-  try { return new Set(JSON.parse(localStorage.getItem(`${READ_KEY_PREFIX}${clean(p?.uid,"guest")}`) || "[]")); }
+  try { return new Set(JSON.parse(localStorage.getItem(`${READ_KEY_PREFIX}${clean(auth.currentUser?.uid,"guest")}`) || "[]")); }
   catch { return new Set(); }
 }
 function saveRead(set) {
+  if (auth.currentUser?.uid !== notificationOwner) return;
   const p=profile();
-  localStorage.setItem(`${READ_KEY_PREFIX}${clean(p?.uid,"guest")}`, JSON.stringify([...set].slice(-200)));
+  localStorage.setItem(`${READ_KEY_PREFIX}${clean(auth.currentUser?.uid,"guest")}`, JSON.stringify([...set]));
 }
 function item(id,type,title,message,at,icon,href="") { return { id,type,title,message,at,icon,href }; }
 function buildItems() {
   const p=profile();
   const list=[];
-  feeds.announcements.slice(0,3).forEach(a=>list.push(item(`announcement:${a.id}`,"announcement","New Announcement",clean(a.title,"A new USC announcement was posted."),a.createdAt||a.createdAtMs,"fa-bullhorn",dashboardHref("bulletin.html"))));
+  feeds.announcements.forEach(a=>list.push(item(`announcement:${a.id}`,"announcement","New Announcement",clean(a.title,"A new USC announcement was posted."),a.createdAt||a.createdAtMs,"fa-bullhorn",dashboardHref("bulletin.html"))));
   const now=Date.now();
-  feeds.events.filter(e=>e.reminderEnabled !== false && eventDate(e.eventDate)?.getTime() >= now-86400000).slice(0,3).forEach(e=>list.push(item(`event:${e.id}`,"event","Event Reminder",`${clean(e.title,"USC event")} • ${clean(e.venue,"See event details")}${eventRegistrationHint(e)}`,e.registrationDeadline||e.eventDate,"fa-calendar-days",dashboardHref("events.html"))));
-  feeds.programs.filter(e=>e.reminderEnabled !== false && eventDate(e.eventDate)?.getTime() >= now-86400000).slice(0,3).forEach(e=>list.push(item(`program:${e.id}`,"event","External Program Reminder",`${clean(e.title,"External program")} • ${clean(e.hostOrganization,"Partner organization")} • ${clean(e.venue,"See program details")}${eventRegistrationHint(e)}`,e.registrationDeadline||e.eventDate,"fa-earth-americas",dashboardHref("events.html"))));
-  feeds.complaints.slice(0,3).forEach(c=>{
+  feeds.events.filter(e=>e.reminderEnabled !== false && eventDate(e.eventDate)?.getTime() >= now-86400000).forEach(e=>list.push(item(`event:${e.id}`,"event","Event Reminder",`${clean(e.title,"USC event")} • ${clean(e.venue,"See event details")}${eventRegistrationHint(e)}`,e.registrationDeadline||e.eventDate,"fa-calendar-days",dashboardHref("events.html"))));
+  feeds.programs.filter(e=>e.reminderEnabled !== false && eventDate(e.eventDate)?.getTime() >= now-86400000).forEach(e=>list.push(item(`program:${e.id}`,"event","External Program Reminder",`${clean(e.title,"External program")} • ${clean(e.hostOrganization,"Partner organization")} • ${clean(e.venue,"See program details")}${eventRegistrationHint(e)}`,e.registrationDeadline||e.eventDate,"fa-earth-americas",dashboardHref("events.html"))));
+  feeds.complaints.forEach(c=>{
     const classification=complaintClassification(c);
     const feedbackCount=Array.isArray(c.thread)?c.thread.filter(entry=>clean(entry?.by).toLowerCase()==="officer" && clean(entry?.kind).toLowerCase()!=="classification" && !/^status updated from/i.test(clean(entry?.message))).length:0;
     const classificationText=classification?` • ${classification}`:"";
@@ -117,16 +119,20 @@ function buildItems() {
     const ad=(toDate(a.at)||eventDate(a.at))?.getTime()||0;
     const bd=(toDate(b.at)||eventDate(b.at))?.getTime()||0;
     return bd-ad;
-  }).slice(0,8);
+  });
 }
 function render() {
   const host=document.getElementById("notificationList");
   const dot=document.getElementById("notificationDot");
   if (!host || !dot) return;
+  if (!notificationOwner || auth.currentUser?.uid !== notificationOwner) { dot.classList.add("hidden"); dot.textContent=""; host.replaceChildren(); return; }
   const reads=readSet();
   const items=buildItems();
   const unread=items.filter(n=>!reads.has(n.id)).length;
   dot.classList.toggle("hidden", unread===0);
+  dot.textContent=unread>99?"99+":String(unread || "");
+  dot.setAttribute("aria-hidden","true");
+  document.getElementById("notificationButton")?.setAttribute("aria-label",unread?`Notifications, ${unread} unread`:"Notifications");
   const markAll=document.getElementById('markNotificationsRead');
   if(markAll)markAll.disabled=unread===0;
   if (!items.length) { host.innerHTML='<div class="notification-empty">No new notifications yet.</div>'; return; }
@@ -165,7 +171,7 @@ const panel=document.getElementById("notificationPanel");
 if(panel){
   const style=document.createElement('link');
   style.rel='stylesheet';
-  style.href=new URL('../css/notifications.css?v=1',import.meta.url).href;
+  style.href=new URL('../css/notifications.css?v=2',import.meta.url).href;
   document.head.appendChild(style);
   panel.setAttribute('role','dialog');
   panel.setAttribute('aria-hidden','true');
@@ -229,4 +235,5 @@ document.addEventListener('keydown',event=>{
 });
 window.addEventListener('resize',()=>{if(panel && !panel.classList.contains('hidden'))positionPanel();});
 
+window.addEventListener("storage", event=>{if(event.key===`${READ_KEY_PREFIX}${notificationOwner}`)render();});
 listen();

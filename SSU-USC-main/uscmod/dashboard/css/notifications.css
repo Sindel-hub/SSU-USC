@@ -35,3 +35,7 @@
   #notificationPanel .notification-item { padding:12px 10px; gap:10px; }
 }
 @media(prefers-reduced-motion:reduce){#notificationPanel .notification-item { transition:none; }}
+
+#notificationButton { position:relative; overflow:visible; }
+#notificationButton #notificationDot { position:absolute; top:-5px; right:-6px; min-width:18px; width:auto; height:18px; box-sizing:border-box; padding:0 4px; display:grid; place-items:center; border:2px solid white; border-radius:999px; background:#d63246; color:white; font:700 10px/1 Arial,sans-serif; pointer-events:none; }
+#notificationButton #notificationDot.hidden { display:none!important; }
