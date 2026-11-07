@@ -67,3 +67,10 @@
 .candidate-profile-overlay .candidate-profile-section p { white-space:pre-wrap;overflow-wrap:anywhere; }
 @media(max-width:600px) { #electionApp.election-candidates-active { --candidate-frame-height:max(460px,calc(100dvh - 245px));height:calc(100dvh - 245px);min-height:460px; } .election-candidate-section { min-height:calc(100dvh - 265px);padding:28px 0 100px; } .election-position-title { font-size:25px; } .election-candidate-grid { --portrait-width:190px;justify-content:flex-start;overflow-x:auto;padding:0 18px 12px;scroll-snap-type:x proximity; } .election-candidate-card { flex:0 0 190px;height:340px;scroll-snap-align:center; } .election-candidate-card:only-child { margin-inline:auto; } .candidate-profile-overlay .candidate-profile-modal { grid-template-columns:1fr; } .candidate-profile-overlay .candidate-profile-cover { height:340px!important;min-height:0;border-radius:24px 24px 0 0; } }
 @media(prefers-reduced-motion:reduce) { #electionApp.election-candidates-active { scroll-behavior:auto!important;scroll-snap-type:none; } .election-candidate-card,.election-candidate-caption,.candidate-profile-overlay { transition:none!important;animation:none!important; } }
+
+/* Clip the scroller and overscan the blur so no base-color strips show. */
+body.student-app-shell #electionApp.election-candidates-active { padding:0!important;border:0;border-radius:18px;clip-path:inset(0 round 18px);background:linear-gradient(#008fc577,#162b4177),url('../assets/HomeLogo.webp') center/cover no-repeat; }
+.election-candidate-background { filter:none;background:none;overflow:hidden; }
+.election-candidate-background::before { content:"";position:absolute;inset:-24px;background:linear-gradient(#008fc577,#162b4177),url('../assets/HomeLogo.webp') center/cover no-repeat;filter:blur(7px); }
+#electionApp.election-candidates-active::-webkit-scrollbar-track { margin-block:18px;background:transparent; }
+#electionApp.election-candidates-active::-webkit-scrollbar-thumb { border-radius:999px; }
