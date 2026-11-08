@@ -29,6 +29,10 @@ A removed application may be replaced at its deterministic path only while its e
 
 `npm run test:registration-history-rules` uses a demo Firestore emulator. Tests cover completed election edits/deletions, missing parent history, permissions, mandatory audit, publication deactivation, result/ballot preservation, own-user queries, schedule retention, tombstone replacement and closed/deleted registration denial. The Task 1 registration-scope rules suite also passes with these rules. No production student data is used.
 
+## History loading failures
+
+History has distinct loading, failure and successful-empty states. Permission, missing-index and connection errors show actionable messages with a Retry button; filters are disabled until a query succeeds. Failed listeners clear stale records, and metadata refreshes cannot replace an access error with an empty listing. The browser fixture covers error/retry recovery without changing database authorization.
+
 ## Preview and deployment dependency
 
 There is **no isolated staging Firebase project**, confirmed by the user. Do not present the frontend Preview as fully functional for the new database operations. It uses the repository's existing service configuration; no test writes were made to that backend. Review its UI, but do not test record mutation against production data.

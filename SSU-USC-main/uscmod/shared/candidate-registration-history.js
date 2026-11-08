@@ -11,12 +11,16 @@ if(ready===true&&auth.currentUser){
  const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c]);
  const ms=v=>v?.toMillis?.()||Number(v)||0,date=v=>ms(v)?new Date(ms(v)).toLocaleString():'Not recorded';
  const root=document.createElement(officer?'section':'dialog');root.className='registration-history';root.setAttribute('aria-label','Candidate Registration History');
- root.innerHTML=`<header><h2>${officer?'Candidate Registration History':'My Candidate Registrations'}</h2>${officer?'':'<button data-close type="button">Close</button>'}</header><div class="registration-history-filters"><label>Search<input data-search type="search" placeholder="Name or Student ID"></label><label>Election<select data-election><option value="">All elections</option></select></label><label>Application status<select data-status><option value="">All statuses</option><option value="Under Review">Pending / Under Review</option><option>Approved</option><option>Rejected</option></select></label><label>Election status<select data-stage><option value="">All election statuses</option>${['Upcoming','Ongoing','Completed','Schedule Deleted','Archived'].map(s=>`<option>${s}</option>`).join('')}</select></label><label>Sort<select data-sort><option value="new">Newest first</option><option value="old">Oldest first</option></select></label></div><p data-message role="status" aria-live="polite"></p><div data-rows></div>`;
+ root.innerHTML=`<header><h2>${officer?'Candidate Registration History':'My Candidate Registrations'}</h2>${officer?'':'<button data-close type="button">Close</button>'}</header><div class="registration-history-filters"><label>Search<input data-search type="search" placeholder="Name or Student ID"></label><label>Election<select data-election><option value="">All elections</option></select></label><label>Application status<select data-status><option value="">All statuses</option><option value="Under Review">Pending / Under Review</option><option>Approved</option><option>Rejected</option></select></label><label>Election status<select data-stage><option value="">All election statuses</option>${['Upcoming','Ongoing','Completed','Schedule Deleted','Archived'].map(s=>`<option>${s}</option>`).join('')}</select></label><label>Sort<select data-sort><option value="new">Newest first</option><option value="old">Oldest first</option></select></label></div><p data-message role="status" aria-live="polite"></p><button data-retry type="button" hidden>Retry loading history</button><p data-metadata-message role="status"></p><div data-rows></div>`;
  if(officer){const card=document.getElementById('candidateReviewCard')||document.getElementById('candidateReviewList');card?.after(root)}else{const button=document.createElement('button');button.type='button';button.textContent='My registrations';button.className='registration-history-open';document.querySelector('.student-module-toolbar h1')?.after(button);document.body.append(root);button.onclick=()=>root.showModal();root.querySelector('[data-close]').onclick=()=>root.close()}
- let records=[],elections=new Map(),electionFilterKey='';
+ let records=[],elections=new Map(),electionFilterKey='',historyState='loading';
  const $=s=>root.querySelector(s),message=(text,error=false)=>{ $('[data-message]').textContent=text;$('[data-message]').classList.toggle('error',error)};
  const state=row=>({...row.electionSnapshot,...(elections.get(row.electionId)||{scheduleDeleted:true})});
  function render(){
+  root.querySelectorAll('.registration-history-filters input,.registration-history-filters select').forEach(control=>{control.disabled=historyState!=='ready'});
+  $('[data-retry]').hidden=historyState!=='error';
+  $('[data-rows]').setAttribute('aria-busy',String(historyState==='loading'));
+  if(historyState!=='ready'){ $('[data-rows]').replaceChildren(); return; }
   const available=[...new Set(records.filter(r=>!r.removed).map(r=>r.electionId))].sort(),key=available.join('|');
   if(key!==electionFilterKey){const selected=$('[data-election]').value;$('[data-election]').innerHTML='<option value="">All elections</option>'+available.map(id=>`<option value="${esc(id)}">${esc(elections.get(id)?.title||id)}</option>`).join('');$('[data-election]').value=available.includes(selected)?selected:'';electionFilterKey=key}
   const search=$('[data-search]').value.toLowerCase().trim(),election=$('[data-election]').value,status=$('[data-status]').value,stage=$('[data-stage]').value;
@@ -38,6 +42,34 @@ if(ready===true&&auth.currentUser){
   dialog.querySelector('form').onsubmit=async event=>{event.preventDefault();const save=dialog.querySelector('[type="submit"]');save.disabled=true;try{await manageCandidateRegistration({electionId:row.electionId,registrationId:row.id,details:Object.fromEntries(new FormData(event.target))});dialog.close();message('Candidate registration updated.');try{await refreshRegistrationReviewCompletion(row.electionId)}catch{message('Registration updated; review summary could not refresh. Reload the election.',true)}}catch(e){dialog.querySelector('[data-feedback]').textContent=e.message}finally{save.disabled=false}};
  });
  const source=officer?collectionGroup(db,'applications'):query(collectionGroup(db,'applications'),where('applicantUid','==',auth.currentUser.uid));
- const stops=[onSnapshot(collection(db,'elections'),snapshot=>{elections=new Map(snapshot.docs.map(d=>[d.id,d.data()]));render()},()=>message('Election metadata could not be loaded; recorded details remain available.',true)),onSnapshot(source,snapshot=>{records=snapshot.docs.filter(d=>/^elections\/[^/]+\/applications\/[^/]+$/.test(d.ref.path)).map(d=>({...d.data(),id:d.id,path:d.ref.path,electionId:d.ref.path.split('/')[1]}));message('');render()},()=>{message('Registration history is unavailable. Verify your access and the history rules/index deployment.',true)})];
- window.addEventListener('pagehide',event=>{if(!event.persisted)stops.forEach(stop=>stop())});
+ let stopHistory=null,historyGeneration=0;
+ function startHistory(){
+  const generation=++historyGeneration;
+  stopHistory?.();stopHistory=null;
+  historyState='loading';records=[];message('Loading candidate registrations…');render();
+  stopHistory=onSnapshot(source,snapshot=>{
+   if(generation!==historyGeneration)return;
+   records=snapshot.docs.filter(d=>/^elections\/[^/]+\/applications\/[^/]+$/.test(d.ref.path)).map(d=>({...d.data(),id:d.id,path:d.ref.path,electionId:d.ref.path.split('/')[1]}));
+   historyState='ready';message('');render();
+  },error=>{
+   if(generation!==historyGeneration)return;
+   historyState='error';records=[];
+   const code=String(error?.code||'').replace(/^firestore\//,'');
+   const explanation=code==='permission-denied'
+    ? 'Your account cannot access registration history. Ask an administrator to verify your access and the published history security rules.'
+    : code==='failed-precondition'
+     ? 'The registration history database index is not ready. Ask an administrator to complete the history index setup.'
+     : code==='unauthenticated'
+      ? 'Your session has expired. Sign in again to view registration history.'
+      : 'Registration history could not be loaded. Check your connection and try again.';
+   message(explanation,true);render();
+  });
+ }
+ $('[data-retry]').onclick=startHistory;
+ const stopElections=onSnapshot(collection(db,'elections'),snapshot=>{
+  elections=new Map(snapshot.docs.map(d=>[d.id,d.data()]));electionFilterKey='';
+  $('[data-metadata-message]').textContent='';render();
+ },()=>{ $('[data-metadata-message]').textContent='Election details could not be loaded; recorded details remain available.'; });
+ startHistory();
+ window.addEventListener('pagehide',event=>{if(!event.persisted){++historyGeneration;stopHistory?.();stopElections()}});
 }
