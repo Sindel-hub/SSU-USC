@@ -943,33 +943,21 @@ exports.saveElectionSchedule = onCall(callableOptions(), async (request) => {
   });
 });
 
-exports.deleteElectionSchedule = onCall(callableOptions(), async (request) => {
-  await requireOfficerPermission(request, "elections.view");
-  requireRecentAuth(request);
-  const requestedId = cleanText(request.data?.electionId, 80).toLowerCase();
-  const pointerRef = db.doc("election_config/current");
-  const pointerSnap = await pointerRef.get();
-  const electionId = requestedId || (pointerSnap.exists ? cleanText(pointerSnap.get("electionId"), 80) : "");
-  if (!electionId) throw new HttpsError("failed-precondition", "No active election schedule exists.");
-  const ref = db.doc(`elections/${electionId}`);
-  const beforeSnap = await ref.get();
-  if (!beforeSnap.exists) throw new HttpsError("not-found", "Election schedule not found.");
-  const before = beforeSnap.data();
-  if (before.finalized === true || before.resultsPublished === true || before.archived === true) {
-    throw new HttpsError("failed-precondition", "A finalized, published-result, or archived election schedule cannot be deleted.");
-  }
-  const batch = db.batch();
-  batch.set(ref, {
-    scheduleDeleted: true,
-    scheduleDeletedAt: FieldValue.serverTimestamp(),
-    scheduleDeletedByUid: request.auth.uid,
-    lifecycle: "Draft",
-    updatedAt: FieldValue.serverTimestamp()
-  }, { merge: true });
-  if (pointerSnap.exists && cleanText(pointerSnap.get("electionId"), 80) === electionId) batch.delete(pointerRef);
-  batch.set(db.collection("audit_logs").doc(), auditData(request, "ELECTION_SCHEDULE_DELETE", ref.path, before, { scheduleDeleted: true, activePointerRemoved: true }));
-  await batch.commit();
-  return { electionId, deleted: true };
+exports.deleteElectionSchedule = onCall(callableOptions(), async request => {
+  await requireOfficerPermission(request,"elections.view"); requireRecentAuth(request);
+  const requestedId=cleanText(request.data?.electionId,80).toLowerCase();
+  const pointerRef=db.doc("election_config/current");
+  return db.runTransaction(async tx=>{
+    const pointer=await tx.get(pointerRef);
+    const electionId=requestedId||(pointer.exists?cleanText(pointer.get("electionId"),80):"");
+    if(!electionId||electionId.includes('/'))throw new HttpsError("invalid-argument","Select an election schedule.");
+    const ref=db.doc(`elections/${electionId}`),record=await tx.get(ref);
+    if(!record.exists)throw new HttpsError("not-found","Election schedule not found.");
+    tx.update(ref,{scheduleDeleted:true,scheduleDeletedAt:FieldValue.serverTimestamp(),scheduleDeletedByUid:request.auth.uid,updatedAt:FieldValue.serverTimestamp()});
+    if(pointer.exists&&pointer.get("electionId")===electionId)tx.delete(pointerRef);
+    tx.set(db.collection("audit_logs").doc(),auditData(request,"ELECTION_SCHEDULE_DELETE",ref.path,record.data(),{scheduleDeleted:true,preservedElectionRecord:true}));
+    return {electionId,deleted:true};
+  });
 });
 
 exports.emergencyUpdateElectionSchedule = onCall(callableOptions(), async (request) => {
@@ -1042,6 +1030,8 @@ exports.submitCandidateApplication = onCall(callableOptions(), async (request) =
   const appRef = db.doc(`elections/${electionId}/applications/${uid}`);
   const application = {
     electionId,
+    registrationId:uid,
+    electionSnapshot:{title:election.title||"USC Election",registrationStart:election.registrationStart,registrationEnd:election.registrationEnd,votingStart:election.votingStart,votingEnd:election.votingEnd},
     applicantUid: uid,
     studentId,
     fullName: cleanText(roster.fullName || user.fullName, 120),
@@ -1061,8 +1051,10 @@ exports.submitCandidateApplication = onCall(callableOptions(), async (request) =
   await db.runTransaction(async (tx) => {
     const [existing, pointer, state] = await Promise.all([tx.get(appRef), tx.get(db.doc("election_config/current")), tx.get(db.doc(`elections/${electionId}`))]);
     if (!pointer.exists || pointer.get("electionId") !== electionId || !state.exists || state.get("scheduleDeleted") === true || electionLifecycle(state.data(), Date.now()) !== "Registration") throw new HttpsError("failed-precondition", "The active election changed or registration closed.");
-    if (existing.exists) throw new HttpsError("already-exists", "You already submitted a candidate application for this election.");
-    tx.create(appRef, application);
+    if (existing.exists && existing.data().removed !== true) throw new HttpsError("already-exists", "You already submitted a candidate application for this election.");
+    const current=state.data();
+    const record={...application,electionSnapshot:{title:current.title||"USC Election",registrationStart:current.registrationStart,registrationEnd:current.registrationEnd,votingStart:current.votingStart,votingEnd:current.votingEnd}};
+    if(existing.exists) tx.set(appRef,record); else tx.create(appRef,record);
   });
   await audit(request, "CANDIDACY_SUBMIT", appRef.path, null, { position, department });
   return { applicationId: uid, status: "Under Review", electionId };
@@ -1223,6 +1215,7 @@ exports.reviewCandidateApplication = onCall(callableOptions({ secrets: [SUPABASE
       const snap = await tx.get(appRef);
       if (!snap.exists) throw new HttpsError("not-found", "Candidate application not found.");
       const app = snap.data();
+      if(app.removed === true) throw new HttpsError("failed-precondition","This registration was deleted.");
       if (cleanText(app.status, 40).toLowerCase() !== "under review") {
         throw new HttpsError("aborted", "Another authorized reviewer already completed this application.");
       }

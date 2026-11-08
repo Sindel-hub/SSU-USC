@@ -180,6 +180,7 @@ async function loadSecureState() {
   const electionId = context.electionId;
   if (!electionId) {
     stopWatchingCandidates();
+    watchRegistration("", "");
     application = null;
     voterStatus = null;
     candidates = [];
@@ -192,11 +193,27 @@ async function loadSecureState() {
     getDoc(doc(db, "elections", electionId, "turnout", "public"))
   ]);
   if (generation !== loadSecureState.generation || context.electionId !== electionId) return;
-  if (appSnap.exists() && appSnap.data().electionId && appSnap.data().electionId !== electionId) throw new Error("This application has a conflicting election association. Ask the election officer to review it.");
-  application = appSnap.exists() ? { id: appSnap.id, ...appSnap.data(), electionId } : null;
+  if (appSnap.exists() && appSnap.data().removed !== true && appSnap.data().electionId && appSnap.data().electionId !== electionId) throw new Error("This application has a conflicting election association. Ask the election officer to review it.");
+  application = appSnap.exists() && appSnap.data().removed !== true ? { id: appSnap.id, ...appSnap.data(), electionId } : null;
   voterStatus = statusSnap.exists() ? statusSnap.data() : null;
   turnout = turnoutSnap.exists() ? turnoutSnap.data() : { ballotsCast: 0, eligibleVoters: context.eligibleVoterCount || 0 };
+  watchRegistration(electionId, student.uid);
   await watchElectionCandidates(electionId, context.candidateVisible || context.votingOpen);
+}
+
+let registrationSubscription = null, registrationWatchKey = "";
+function watchRegistration(electionId, userId) {
+  const key = electionId && userId ? electionId + "/" + userId : "";
+  if (key === registrationWatchKey) return;
+  registrationSubscription?.(); registrationSubscription = null; registrationWatchKey = key;
+  if (!key) return;
+  registrationSubscription = onSnapshot(doc(db,"elections",electionId,"applications",userId), snap => {
+    if (registrationWatchKey !== key || context?.electionId !== electionId) return;
+    application = snap.exists() && snap.data().removed !== true ? {...snap.data(),id:snap.id,electionId} : null;
+    if (currentView === "landing") renderLanding();
+    else if (currentView === "status") renderApplicationStatus();
+    else if (currentView === "registration" && application) renderApplicationStatus();
+  }, error => { if(registrationWatchKey === key)failClosed(error); });
 }
 
 function timeline() {

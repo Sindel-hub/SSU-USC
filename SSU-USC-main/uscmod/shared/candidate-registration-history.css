@@ -1,0 +1,20 @@
+.registration-history { box-sizing:border-box;min-width:0;grid-column:1/-1;background:white;border:1px solid #d5e4f1;border-radius:18px;padding:22px;color:#203e60; }
+dialog.registration-history { width:min(960px,calc(100vw - 28px));max-height:85dvh;overflow:auto; }
+dialog.registration-history::backdrop { background:#102b4566; }
+.registration-history header,.registration-history-row { display:flex;justify-content:space-between;gap:18px;align-items:start; }
+.registration-history h2 { font-size:22px;margin:0 0 18px;color:#194f89; }
+.registration-history-filters { display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px; }
+.registration-history label { display:block;font-size:13px;font-weight:600;margin-bottom:12px; }
+.registration-history :is(input,select,textarea) { box-sizing:border-box;width:100%;min-width:0;border:1px solid #bad1e5;border-radius:8px;padding:10px;margin-top:6px;color:#254668;font:inherit; }
+.registration-history textarea { min-height:150px; }
+.registration-history button,.registration-history-open { border:1px solid #bad1e5;border-radius:8px;padding:8px 12px;background:#edf5fc;color:#195c91;cursor:pointer;margin:3px; }
+.registration-history-row { padding:18px 0;border-bottom:1px solid #e2edf5;overflow-wrap:anywhere; }
+.registration-history-row p { margin:6px 0;font-size:14px; }
+.registration-history-badge { padding:5px 9px;border-radius:14px;background:#e6f3ff;font-size:12px; }
+.registration-history-copy { white-space:pre-wrap;font-weight:400;overflow-wrap:anywhere; }
+.registration-history .error { color:#b42c38; }
+.registration-history-empty { padding:22px;color:#607c96;text-align:center; }
+.registration-history-open { font-size:12px; }
+@media(max-width:650px) { .registration-history { padding:16px; } .registration-history-row { flex-direction:column;gap:8px; } }
+
+.registration-history-photo { width:160px;height:180px;object-fit:contain;border-radius:12px; }

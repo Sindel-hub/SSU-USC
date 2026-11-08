@@ -3,7 +3,7 @@ service cloud.firestore {
   match /databases/{database}/documents {
     function signedIn() { return request.auth != null; }
     function uid() { return request.auth.uid; }
-    function role() { return signedIn() && request.auth.token.role is string ? request.auth.token.role : ""; }
+    function role() { return signedIn() && request.auth.token.get("role", "") is string ? request.auth.token.get("role", "") : ""; }
     function ownProfile() { return get(/databases/$(database)/documents/users/$(uid())).data; }
     function activeSchoolStanding(data) {
       return !("studentStanding" in data) || data.studentStanding == "active";
@@ -544,6 +544,14 @@ service cloud.firestore {
       allow delete: if officerHasPermission("elections.view") && docId == "current";
     }
     match /elections/{electionId} {
+      // Removing the schedule is permitted even when historical results are locked.
+      allow update: if request.resource.data.diff(resource.data).affectedKeys().hasOnly(["scheduleDeleted","scheduleDeletedAt","scheduleDeletedByUid","updatedAt"])
+        && officerHasPermission("elections.view")
+        && request.resource.data.scheduleDeleted == true
+        && request.resource.data.scheduleDeletedAt == request.time
+        && request.resource.data.scheduleDeletedByUid == uid()
+        && request.resource.data.updatedAt == request.time;
+
       allow read: if signedIn();
       allow create: if officerHasPermission("elections.view")
         && request.resource.data.title is string
@@ -653,7 +661,7 @@ service cloud.firestore {
 
       match /applications/{applicantUid} {
         allow read: if ownUser(applicantUid) || isOfficerOrAdmin();
-        allow create: if schoolStudent()
+        function validSubmission() { return schoolStudent()
           && ownProfile().candidacyApproved == true
           && applicantUid == uid()
           && request.resource.data.electionId == electionId
@@ -667,20 +675,63 @@ service cloud.firestore {
           && request.resource.data.applicantUid == uid()
           && request.resource.data.studentId == ownProfile().studentId
           && request.resource.data.status == "Under Review"
-          && request.resource.data.position in ["President", "Vice President", "Secretary", "Treasurer", "Auditor", "Public Relations Officer", "Business Manager", "Sgt. at Arms", "Department Representative"];
+          && request.resource.data.position in ["President", "Vice President", "Secretary", "Treasurer", "Auditor", "Public Relations Officer", "Business Manager", "Sgt. at Arms", "Department Representative"]
+          && request.resource.data.get("removed", false) == false
+          && request.resource.data.keys().hasOnly(["registrationId","electionSnapshot","electionId","applicantUid","studentId","fullName","email","program","college","position","department","partylist","platform","campaignPhotoPath","supportingDocumentPaths","status","submittedAt","updatedAt"]); }
+        allow create: if validSubmission();
+        allow update: if resource.data.get("removed", false) == true && validSubmission();
         allow update: if officerHasPermission("elections.review")
+          && resource.data.get("removed", false) == false
           && request.time >= electionDoc(electionId).applicationReviewStart
           && request.time < electionDoc(electionId).applicationReviewEnd
           && resource.data.status == "Under Review"
-          && request.resource.data.status in ["Approved", "Rejected"];
+          && request.resource.data.status in ["Approved", "Rejected"]
+          && request.resource.data.get("removed", false) == false
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(["status","candidateId","reviewNote","reviewedByUid","reviewedAt","updatedAt"]);
 
-        // Authorized election reviewers may manually remove pending candidate applications.
-        // This supports the officer "Remove Candidate" action while keeping access controlled.
-        allow delete: if officerHasPermission("elections.review")
-          && resource.data.status == "Under Review";
+        // Registration management is independent of schedule existence/lifecycle.
+        allow update: if request.resource.data.keys().hasAll(["historyAuditId"]) && officerHasPermission("elections.review")
+          && resource.data.get("removed", false) == false
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(["fullName","position","department","program","college","partylist","platform","removed","updatedAt","updatedByUid","historyAuditId"])
+          && request.resource.data.updatedAt == request.time
+          && request.resource.data.updatedByUid == uid()
+          && (request.resource.data.get("removed",false) == true
+            ? request.resource.data.diff(resource.data).affectedKeys().hasOnly(["removed","updatedAt","updatedByUid","historyAuditId"])
+            : (request.resource.data.fullName is string && request.resource.data.fullName.size() > 0 && request.resource.data.fullName.size() <= 120
+          && ((request.resource.data.position == resource.data.position && request.resource.data.get("department", "") == resource.data.get("department", ""))
+            || (electionExists(electionId) && request.time < electionDoc(electionId).votingStart
+              && request.resource.data.position in ["President","Vice President","Secretary","Treasurer","Auditor","Public Relations Officer","Public Relations Officer (PRO)","Business Manager","Sgt. at Arms","Department Representative"]))
+          && request.resource.data.get("department", "").size() <= 160
+          && request.resource.data.get("partylist", "").size() <= 100
+          && request.resource.data.get("platform", "").size() <= 4000
+          && request.resource.data.get("program", "").size() <= 160
+          && request.resource.data.get("college", "").size() <= 160))
+          && !exists(/databases/$(database)/documents/audit_logs/$(request.resource.data.historyAuditId))
+          && getAfter(/databases/$(database)/documents/audit_logs/$(request.resource.data.historyAuditId)).data.actorUid == uid()
+          && getAfter(/databases/$(database)/documents/audit_logs/$(request.resource.data.historyAuditId)).data.target == "elections/" + electionId + "/applications/" + applicantUid
+          && getAfter(/databases/$(database)/documents/audit_logs/$(request.resource.data.historyAuditId)).data.before == resource.data
+          && getAfter(/databases/$(database)/documents/audit_logs/$(request.resource.data.historyAuditId)).data.after == request.resource.data
+          && getAfter(/databases/$(database)/documents/audit_logs/$(request.resource.data.historyAuditId)).data.action == (request.resource.data.get("removed", false) ? "REGISTRATION_DELETE" : "REGISTRATION_EDIT")
+          && (request.resource.data.get("removed", false) == false
+            || resource.data.get("candidateId", "") == ""
+            || !exists(/databases/$(database)/documents/elections/$(electionId)/candidates/$(resource.data.candidateId))
+            || getAfter(/databases/$(database)/documents/elections/$(electionId)/candidates/$(resource.data.candidateId)).data.removed == true);
+        allow delete: if false;
       }
 
       match /candidates/{candidateId} {
+        allow update: if request.resource.data.keys().hasAll(["registrationAuditId"]) && officerHasPermission("elections.review")
+          && resource.data.get("removed",false) == false
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(["removed","resultIdentity","updatedAt","updatedByUid","registrationAuditId"])
+          && request.resource.data.removed == true
+          && request.resource.data.resultIdentity == resource.data.get("resultIdentity",resource.data)
+          && request.resource.data.updatedAt == request.time && request.resource.data.updatedByUid == uid()
+          && getAfter(/databases/$(database)/documents/audit_logs/$(request.resource.data.registrationAuditId)).data.actorUid == uid()
+          && getAfter(/databases/$(database)/documents/audit_logs/$(request.resource.data.registrationAuditId)).data.action == "REGISTRATION_DELETE"
+          && getAfter(/databases/$(database)/documents/audit_logs/$(request.resource.data.registrationAuditId)).data.electionId == electionId
+          && getAfter(/databases/$(database)/documents/audit_logs/$(request.resource.data.registrationAuditId)).data.before.candidateId == candidateId
+          && getAfter(/databases/$(database)/documents/elections/$(electionId)/applications/$(getAfter(/databases/$(database)/documents/audit_logs/$(request.resource.data.registrationAuditId)).data.registrationId)).data.removed == true;
+
   allow read: if isOfficerOrAdmin()
     || (
       signedIn()
@@ -953,6 +1004,16 @@ service cloud.firestore {
     && request.resource.data.action is string
     && (
       isAdmin()
+      || (officerHasPermission("elections.review")
+        && request.resource.data.action in ["REGISTRATION_EDIT","REGISTRATION_DELETE"]
+        && request.resource.data.source == "registration-history"
+        && request.resource.data.createdAt == request.time
+        && request.resource.data.electionId.matches("^[^/]+$")
+        && request.resource.data.registrationId.matches("^[^/]+$")
+        && request.resource.data.target == "elections/"+request.resource.data.electionId+"/applications/"+request.resource.data.registrationId
+        && getAfter(/databases/$(database)/documents/elections/$(request.resource.data.electionId)/applications/$(request.resource.data.registrationId)).data.historyAuditId == logId
+        && getAfter(/databases/$(database)/documents/elections/$(request.resource.data.electionId)/applications/$(request.resource.data.registrationId)).data == request.resource.data.after
+        && get(/databases/$(database)/documents/elections/$(request.resource.data.electionId)/applications/$(request.resource.data.registrationId)).data == request.resource.data.before)
       || (
         (officerHasPermission("elections.view") || officerHasPermission("elections.review"))
         && request.resource.data.action in ["CANDIDATE_REMOVE", "CANDIDATE_DISMISS"]
@@ -999,6 +1060,9 @@ service cloud.firestore {
     match /election_settings/{docId} { allow read, write: if false; }
     match /role_logs/{docId} { allow read: if isAdmin(); allow write: if false; }
 
+    match /{parent=**}/applications/{registrationId} {
+      allow list: if isOfficerOrAdmin() || (signedIn() && resource.data.applicantUid == uid());
+    }
     // Everything not explicitly listed is denied.
     match /{document=**} {
       allow read, write: if false;

@@ -67,8 +67,8 @@ test('failed initial reads clear the watched election so a retry can occur',asyn
  assert.equal(h.ctx.watchedElection,'');assert.equal(h.ctx.candidates.length,0);
 });
 test('secure loading keeps candidate removal updates active during voting',async()=>{
- const h=setup('ballot');Object.assign(h.ctx,{student:{uid:'student'},auth:{currentUser:null},doc:(_db,...parts)=>parts.join('/'),getDoc:async()=>({exists:()=>false}),callSecure:async()=>({electionId:'e',candidateVisible:false,votingOpen:true}),application:null,voterStatus:null,turnout:{}});
- vm.runInContext(source.slice(source.indexOf('async function loadSecureState('),source.indexOf('function timeline(')),h.ctx);
+ const h=setup('ballot');Object.assign(h.ctx,{watchRegistration(){},student:{uid:'student'},auth:{currentUser:null},doc:(_db,...parts)=>parts.join('/'),getDoc:async()=>({exists:()=>false}),callSecure:async()=>({electionId:'e',candidateVisible:false,votingOpen:true}),application:null,voterStatus:null,turnout:{}});
+ vm.runInContext(source.slice(source.indexOf('async function loadSecureState('),source.indexOf('let registrationSubscription =')),h.ctx);
  await h.ctx.loadSecureState();assert.equal(h.ctx.watchedElection,'e');assert.equal(h.subscriptions.length,1);
 });
 
