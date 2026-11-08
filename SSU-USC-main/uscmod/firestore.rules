@@ -661,33 +661,9 @@ service cloud.firestore {
 
       match /applications/{applicantUid} {
         allow read: if ownUser(applicantUid) || isOfficerOrAdmin();
-        function validSubmission() { return schoolStudent()
-          && ownProfile().candidacyApproved == true
-          && applicantUid == uid()
-          && request.resource.data.electionId == electionId
-          && get(/databases/$(database)/documents/election_config/current).data.electionId == electionId
-          && electionDoc(electionId).get("scheduleDeleted", false) == false
-          && electionDoc(electionId).get("archived", false) == false
-          && electionDoc(electionId).get("finalized", false) == false
-          && electionDoc(electionId).get("resultsPublished", false) == false
-          && request.time >= electionDoc(electionId).registrationStart
-          && request.time < electionDoc(electionId).registrationEnd
-          && request.resource.data.applicantUid == uid()
-          && request.resource.data.studentId == ownProfile().studentId
-          && request.resource.data.status == "Under Review"
-          && request.resource.data.position in ["President", "Vice President", "Secretary", "Treasurer", "Auditor", "Public Relations Officer", "Business Manager", "Sgt. at Arms", "Department Representative"]
-          && request.resource.data.get("removed", false) == false
-          && request.resource.data.keys().hasOnly(["registrationId","electionSnapshot","electionId","applicantUid","studentId","fullName","email","program","college","position","department","partylist","platform","campaignPhotoPath","supportingDocumentPaths","status","submittedAt","updatedAt"]); }
-        allow create: if validSubmission();
-        allow update: if resource.data.get("removed", false) == true && validSubmission();
-        allow update: if officerHasPermission("elections.review")
-          && resource.data.get("removed", false) == false
-          && request.time >= electionDoc(electionId).applicationReviewStart
-          && request.time < electionDoc(electionId).applicationReviewEnd
-          && resource.data.status == "Under Review"
-          && request.resource.data.status in ["Approved", "Rejected"]
-          && request.resource.data.get("removed", false) == false
-          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(["status","candidateId","reviewNote","reviewedByUid","reviewedAt","updatedAt"]);
+        // Trusted email service validates current verified contact + election and
+        // commits the application and notification event together. No direct bypass.
+        allow create: if false;
 
         // Registration management is independent of schedule existence/lifecycle.
         allow update: if request.resource.data.keys().hasAll(["historyAuditId"]) && officerHasPermission("elections.review")
@@ -740,12 +716,7 @@ service cloud.firestore {
         || votingOpenByServer(electionId)
       )
     );
-        allow create: if officerHasPermission("elections.review")
-          && request.time >= electionDoc(electionId).applicationReviewStart
-          && request.time < electionDoc(electionId).applicationReviewEnd
-          && request.resource.data.candidateId == candidateId
-          && request.resource.data.approved == true
-          && request.resource.data.position in ["President", "Vice President", "Secretary", "Treasurer", "Auditor", "Public Relations Officer", "Business Manager", "Sgt. at Arms", "Department Representative"];
+        allow create: if false;
         // Module access permits removal only; profile edits still require review permission.
         // Candidate changes and their immutable audit event must commit together.
         allow update: if (officerHasPermission("elections.review")
@@ -877,12 +848,14 @@ service cloud.firestore {
     // Public event/announcement/candidate photos may be read by any visitor;
     // private candidacy documents stay restricted to their owner and authorized staff.
     match /browser_files/{fileId} {
-      allow read: if resource.data.visibility == "public"
-        || (signedIn() && resource.data.kind == "candidate-photo")
+      allow read: if (resource.data.visibility == "public" && resource.data.kind != "candidate-photo")
+        || (signedIn() && resource.data.kind == "candidate-photo" && !resource.data.keys().hasAny(["ownerEmail","email"]))
         || (signedIn() && (resource.data.ownerUid == uid() || isOfficerOrAdmin()));
       allow create: if signedIn()
         && request.resource.data.ownerUid == uid()
+        && !request.resource.data.keys().hasAny(["ownerEmail","email"])
         && request.resource.data.kind in ["event-media", "program-media", "announcement-media", "candidate-photo", "candidate-document"]
+        && (!(request.resource.data.kind in ["candidate-photo","candidate-document"]) || request.resource.data.keys().hasOnly(["ownerUid","kind","visibility","name","type","size","chunkCount","createdAt"]))
         && request.resource.data.visibility in ["public", "private"]
         && request.resource.data.size is int
         && request.resource.data.size > 0
@@ -1062,6 +1035,20 @@ service cloud.firestore {
 
     match /{parent=**}/applications/{registrationId} {
       allow list: if isOfficerOrAdmin() || (signedIn() && resource.data.applicantUid == uid());
+    }
+    match /candidate_email_events/{eventId} {
+      allow read: if isOfficerOrAdmin() || (signedIn() && resource.data.uid == uid());
+      allow write: if false;
+    }
+    match /candidate_registration_drafts/{userId}/elections/{electionId} {
+      allow read, delete: if ownUser(userId);
+      allow create, update: if ownUser(userId) && schoolStudent()
+        && request.resource.data.keys().hasOnly(["electionId","requestId","position","partylist","platform","statement","photoTicket","docTickets","photoName","documentNames","expiresAtMs"])
+        && request.resource.data.electionId == electionId
+        && request.resource.data.platform is string && request.resource.data.platform.size() <= 1600
+        && request.resource.data.statement is string && request.resource.data.statement.size() <= 1600
+        && request.resource.data.docTickets is list && request.resource.data.docTickets.size() <= 8
+        && request.resource.data.expiresAtMs <= request.time.toMillis() + 86400000;
     }
     // Everything not explicitly listed is denied.
     match /{document=**} {

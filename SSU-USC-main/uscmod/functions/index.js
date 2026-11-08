@@ -998,66 +998,13 @@ exports.emergencyUpdateElectionSchedule = onCall(callableOptions(), async (reque
   return { electionId, lifecycle: after.lifecycle, emergencyChangeRecorded: true };
 });
 
-exports.submitCandidateApplication = onCall(callableOptions(), async (request) => {
-  const activeStudent = await requireActiveRole(request, ["student"]);
-  const { electionId, data: election } = await currentElection();
-  if (request.data?.electionId !== electionId) throw new HttpsError("failed-precondition", "The active election changed. Reopen Election before registering.");
-  const nowMs = Date.now();
-  if (!inWindow(election, "registrationStart", "registrationEnd", nowMs) || electionLifecycle(election, nowMs) !== "Registration") {
-    throw new HttpsError("failed-precondition", "Candidate registration is not open according to server time.");
-  }
-  const uid = request.auth.uid;
-  const userSnap = await db.doc(`users/${uid}`).get();
-  const user = userSnap.data() || {};
-  if (!userSnap.exists || user.accountStatus !== "approved" || user.isActive === false || user.schoolProvisioned !== true) {
-    throw new HttpsError("permission-denied", "Your school-provided student account is not active for candidate registration.");
-  }
-  if (user.candidacyApproved !== true) {
-    throw new HttpsError("permission-denied", "The System Administrator has not approved this account for candidacy registration.");
-  }
-  const studentId = normalizeAccountStudentId(user.studentId);
-  const rosterSnap = await db.doc(`elections/${electionId}/voterRoster/${studentId}`).get();
-  const roster = rosterSnap.exists ? rosterSnap.data() : {};
-  const position = cleanText(request.data?.position, 80);
-  if (!POSITIONS.includes(position)) throw new HttpsError("invalid-argument", "Invalid candidate position.");
-  const department = position === "Department Representative" ? cleanText(roster.college, 160) : "";
-  const photoPath = cleanText(request.data?.campaignPhotoPath, 500);
-  const supportingDocumentPaths = Array.isArray(request.data?.supportingDocumentPaths) ? request.data.supportingDocumentPaths.map((v) => cleanText(v, 500)).filter(Boolean).slice(0, 8) : [];
-  const requiredPrefix = `candidacy/${electionId}/${uid}/`;
-  if (!photoPath.startsWith(requiredPrefix)) throw new HttpsError("invalid-argument", "Campaign photo upload is missing or invalid.");
-  if (supportingDocumentPaths.some((path) => !path.startsWith(requiredPrefix))) throw new HttpsError("invalid-argument", "A supporting document path is invalid.");
-
-  const appRef = db.doc(`elections/${electionId}/applications/${uid}`);
-  const application = {
-    electionId,
-    registrationId:uid,
-    electionSnapshot:{title:election.title||"USC Election",registrationStart:election.registrationStart,registrationEnd:election.registrationEnd,votingStart:election.votingStart,votingEnd:election.votingEnd},
-    applicantUid: uid,
-    studentId,
-    fullName: cleanText(roster.fullName || user.fullName, 120),
-    email: normalizeEmail(user.email || request.auth.token?.email),
-    program: cleanText(roster.program, 160),
-    college: cleanText(roster.college, 160),
-    position,
-    department,
-    partylist: cleanText(request.data?.partylist, 100),
-    platform: cleanText(request.data?.platform, 4000),
-    campaignPhotoPath: photoPath,
-    supportingDocumentPaths,
-    status: "Under Review",
-    submittedAt: FieldValue.serverTimestamp(),
-    updatedAt: FieldValue.serverTimestamp()
-  };
-  await db.runTransaction(async (tx) => {
-    const [existing, pointer, state] = await Promise.all([tx.get(appRef), tx.get(db.doc("election_config/current")), tx.get(db.doc(`elections/${electionId}`))]);
-    if (!pointer.exists || pointer.get("electionId") !== electionId || !state.exists || state.get("scheduleDeleted") === true || electionLifecycle(state.data(), Date.now()) !== "Registration") throw new HttpsError("failed-precondition", "The active election changed or registration closed.");
-    if (existing.exists && existing.data().removed !== true) throw new HttpsError("already-exists", "You already submitted a candidate application for this election.");
-    const current=state.data();
-    const record={...application,electionSnapshot:{title:current.title||"USC Election",registrationStart:current.registrationStart,registrationEnd:current.registrationEnd,votingStart:current.votingStart,votingEnd:current.votingEnd}};
-    if(existing.exists) tx.set(appRef,record); else tx.create(appRef,record);
-  });
-  await audit(request, "CANDIDACY_SUBMIT", appRef.path, null, { position, department });
-  return { applicationId: uid, status: "Under Review", electionId };
+exports.submitCandidateApplication = onCall(callableOptions({secrets:[SUPABASE_URL]}), async request => {
+  if(!request.auth)throw new HttpsError("unauthenticated","Sign in again.");
+  const token=String(request.rawRequest.headers.authorization||"").replace(/^Bearer\s+/i,"");
+  const response=await fetch(`${SUPABASE_URL.value()}/functions/v1/usc-email`,{method:"POST",headers:{"Content-Type":"application/json","x-firebase-token":token},body:JSON.stringify({...request.data,action:"candidate_submit"})});
+  const result=await response.json().catch(()=>({}));
+  if(!response.ok||!result.ok)throw new HttpsError(["permission-denied","already-exists","not-found","invalid-argument","failed-precondition"].includes(result.code)?result.code:"failed-precondition",result.message||"Candidate service is unavailable.",{reason:result.code||"unavailable"});
+  return result;
 });
 
 function supabaseAdmin() {
@@ -1186,77 +1133,14 @@ exports.removeCandidateApplication = onCall(callableOptions(), async (request) =
   return {success:true};
 });
 
-exports.reviewCandidateApplication = onCall(callableOptions({ secrets: [SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY] }), async (request) => {
-  await requireOfficerPermission(request, "elections.review");
-  requireRecentAuth(request);
-  const { electionId, data: election } = await currentElection();
-  if (request.data?.electionId && request.data.electionId !== electionId) throw new HttpsError("failed-precondition", "The active election changed. Reopen the candidate list.");
-  const nowMs = Date.now();
-  if (!inWindow(election, "applicationReviewStart", "applicationReviewEnd", nowMs) || electionLifecycle(election, nowMs) !== "Review") {
-    throw new HttpsError("failed-precondition", "Application review is not open according to server time.");
-  }
-  const uid = cleanText(request.data?.applicantUid, 128);
-  const decision = cleanText(request.data?.decision, 20).toLowerCase();
-  const reviewNote = cleanText(request.data?.reviewNote, 500);
-  if (!uid || !["approve", "reject"].includes(decision)) throw new HttpsError("invalid-argument", "Applicant UID and approve/reject decision are required.");
-  const appRef = db.doc(`elections/${electionId}/applications/${uid}`);
-  const initialSnap = await appRef.get();
-  if (!initialSnap.exists) throw new HttpsError("not-found", "Candidate application not found.");
-  const initialApp = initialSnap.data();
-  if (cleanText(initialApp.status, 40).toLowerCase() !== "under review") throw new HttpsError("failed-precondition", "This application already has a final review decision.");
-
-  const status = decision === "approve" ? "Approved" : "Rejected";
-  const candidateId = decision === "approve" ? `cand-${crypto.randomBytes(12).toString("hex")}` : "";
-  let publicPhoto = { url: "", path: "" };
-  try {
-    if (decision === "approve") publicPhoto = await publishCandidatePhoto(electionId, candidateId, initialApp.campaignPhotoPath);
-
-    await db.runTransaction(async (tx) => {
-      const snap = await tx.get(appRef);
-      if (!snap.exists) throw new HttpsError("not-found", "Candidate application not found.");
-      const app = snap.data();
-      if(app.removed === true) throw new HttpsError("failed-precondition","This registration was deleted.");
-      if (cleanText(app.status, 40).toLowerCase() !== "under review") {
-        throw new HttpsError("aborted", "Another authorized reviewer already completed this application.");
-      }
-      tx.update(appRef, {
-        status,
-        candidateId: candidateId || FieldValue.delete(),
-        reviewNote,
-        reviewedByUid: request.auth.uid,
-        reviewedAt: FieldValue.serverTimestamp(),
-        updatedAt: FieldValue.serverTimestamp()
-      });
-      if (decision === "approve") {
-        const candidateRef = db.doc(`elections/${electionId}/candidates/${candidateId}`);
-        tx.create(candidateRef, {
-          candidateId,
-          fullName: cleanText(app.fullName, 120),
-          position: cleanText(app.position, 80),
-          department: cleanText(app.department, 160),
-          college: cleanText(app.college, 160),
-          program: cleanText(app.program, 160),
-          partylist: cleanText(app.partylist, 100),
-          platform: cleanText(app.platform, 4000),
-          campaignPhotoUrl: publicPhoto.url,
-          approved: true,
-          published: true,
-          approvedAt: FieldValue.serverTimestamp()
-        });
-      }
-      tx.set(db.collection("audit_logs").doc(), auditData(request, `CANDIDACY_${decision.toUpperCase()}`, appRef.path, { status: app.status }, { status, candidateId: candidateId || null }));
-    });
-
-    await syncCandidateReviewCompletion(
-  electionId,
-  request.auth.uid
-);
-    
-    return { status, candidateId: candidateId || null };
-  } catch (error) {
-    if (publicPhoto.path) await removePublicFile(publicPhoto.path);
-    throw error;
-  }
+exports.reviewCandidateApplication = onCall(callableOptions({secrets:[SUPABASE_URL]}), async request => {
+  await requireOfficerPermission(request,"elections.review"); requireRecentAuth(request);
+  if(!request.auth)throw new HttpsError("unauthenticated","Sign in again.");
+  const token=String(request.rawRequest.headers.authorization||"").replace(/^Bearer\s+/i,"");
+  const response=await fetch(`${SUPABASE_URL.value()}/functions/v1/usc-email`,{method:"POST",headers:{"Content-Type":"application/json","x-firebase-token":token},body:JSON.stringify({...request.data,action:"candidate_review"})});
+  const result=await response.json().catch(()=>({}));
+  if(!response.ok||!result.ok)throw new HttpsError(["permission-denied","already-exists","not-found","invalid-argument","failed-precondition"].includes(result.code)?result.code:"failed-precondition",result.message||"Candidate service is unavailable.",{reason:result.code||"unavailable"});
+  return result;
 });
 
 function validateSelectionsShape(selections) {

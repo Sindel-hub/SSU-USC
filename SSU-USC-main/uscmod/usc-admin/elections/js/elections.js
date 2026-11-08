@@ -378,19 +378,22 @@ function closeCandidatePreview() {
 
 async function submitCandidatePreviewDecision(application, decision, trigger) {
   const approving = decision === "approve";
-  const note = prompt(`${approving ? "Approval" : "Rejection"} note (optional):`) || "";
+  const note=prompt(decision==='request-info'?'Describe the information requested (this will be sent to the student):':`${approving?'Approval':'Rejection'} message to student (optional; included in email):`);
+  if(note===null)return;
+  if(decision==='request-info'&&!note.trim())return;
   const buttons = [...document.querySelectorAll("[data-preview-decision]")];
   buttons.forEach((button) => { button.disabled = true; });
   if (trigger) trigger.classList.add("is-working");
   try {
-    await callSecure("reviewCandidateApplication", {
+    const result=await callSecure("reviewCandidateApplication", {
       applicantUid: application.id,
       electionId: application.electionId,
       decision,
-      reviewNote: note
+      publicMessage: note
     });
     closeCandidatePreview();
     await refreshAll();
+    if(result.reviewSummaryUpdated===false)msg("Decision saved and email queued. The review summary needs reconciliation before candidate publication.","error");
   } catch (error) {
     alert(error.message);
     buttons.forEach((button) => { button.disabled = false; });
@@ -507,7 +510,7 @@ async function openCandidatePreview(uid) {
     <div class="candidate-preview-footer-note">${canReview ? `<i class="fa-solid fa-shield-halved"></i> Review the application before recording a decision.` : `<i class="fa-solid fa-lock"></i> ${status.toLowerCase() === "under review" ? "Decisions are available only during the scheduled review window." : `This application is already ${esc(status.toLowerCase())}.`}`}</div>
     <div class="candidate-preview-footer-actions">
       <button class="mini-btn light" type="button" data-candidate-preview-close>Close</button>
-      ${canReview ? `<button class="mini-btn danger candidate-preview-return" type="button" data-rbac-permission="elections.review" data-preview-decision="reject"><i class="fa-solid fa-rotate-left"></i> Reject</button><button class="mini-btn primary candidate-preview-approve" type="button" data-rbac-permission="elections.review" data-preview-decision="approve"><i class="fa-solid fa-check"></i> Approve</button>` : ""}
+      ${canReview ? `<button class="mini-btn light" type="button" data-rbac-permission="elections.review" data-preview-decision="request-info">Request information</button><button class="mini-btn danger candidate-preview-return" type="button" data-rbac-permission="elections.review" data-preview-decision="reject"><i class="fa-solid fa-rotate-left"></i> Reject</button><button class="mini-btn primary candidate-preview-approve" type="button" data-rbac-permission="elections.review" data-preview-decision="approve"><i class="fa-solid fa-check"></i> Approve</button>` : ""}
       ${canRemoveCandidates && linkedCandidate?.removed === true && !linkedCandidate.managementHidden ? `<button class="mini-btn danger" type="button" data-delete-removed-candidate="${esc(linkedCandidate.id)}">Delete from Review</button>` : ""}
       ${((canManageCandidates && application.status === "Under Review") || (canRemoveCandidates && candidates.some((c) => c.id === application.candidateId && !c.removed))) ? `<button class="mini-btn danger" type="button" data-remove-candidate="${esc(application.id)}"><i class="fa-solid fa-trash"></i> Remove</button>` : ""}
     </div>`;
