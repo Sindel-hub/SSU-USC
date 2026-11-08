@@ -1,25 +1,9 @@
-import test from 'node:test';
-import assert from 'node:assert/strict';
-import fs from 'node:fs';
-import vm from 'node:vm';
-const source=fs.readFileSync(new URL('../complaint/js/complaints.js',import.meta.url),'utf8');
-const helpers=source.slice(source.indexOf('function lastSubmissionMs('),source.indexOf('function normalizedErrorCode('));
-const commit=source.slice(source.indexOf('async function commitComplaintAtomically('),source.indexOf('complaintForm?.addEventListener("submit"'));
-function setup(age,{existing=false}={}){
- const writes=[];let rateReads=0;
- const snapshot=()=>({data:()=>age===null?{}:{lastSubmittedAt:{toMillis:()=>100000-age}}});
- const ctx=vm.createContext({Date:{now:()=>100000},SUBMISSION_COOLDOWN_MS:20000,db:{},Math,
-  doc:(_db,...parts)=>({id:parts.at(-1),path:parts.join('/')}),getDoc:async()=>snapshot(),serverTimestamp:()=>100000,
-  withTransientRetry:fn=>fn(),runTransaction:async(_db,fn)=>fn({
-   get:async ref=>ref.path.startsWith('complaints/')?{exists:()=>existing}:(rateReads++,snapshot()),
-   set:(ref,data)=>writes.push({path:ref.path,data})
-  })
- });
- vm.runInContext(helpers+commit,ctx);
- return {ctx,writes,rateReads:()=>rateReads,submit:()=>ctx.commitComplaintAtomically({p:{uid:'student'},payload:{subject:'Complaint'},complaintDocRef:{path:'complaints/one',id:'one'}})};
-}
-for(const [age,expected] of [[null,0],[1,19999],[19999,1],[20000,0],[20001,0]])test(`complaint cooldown boundary at ${age}ms`,()=>{const h=setup(age);const snap={data:()=>age===null?{}:{lastSubmittedAt:{toMillis:()=>100000-age}}};assert.equal(h.ctx.cooldownRemainingMs(snap),expected);});
-test('preflight prevents attachment work during the cooldown',async()=>{const h=setup(5000);await assert.rejects(h.ctx.preflightCooldown('student'),/wait 15 seconds/);assert.equal(h.writes.length,0);});
-test('transaction rechecks cooldown and commits no complaint or rate writes on rejection',async()=>{const h=setup(5000);await assert.rejects(h.submit(),/wait 15 seconds/);assert.equal(h.writes.length,0);assert.equal(h.rateReads(),1);});
-test('an eligible submission writes the complaint and server timestamp together',async()=>{const h=setup(20000);await h.submit();assert.deepEqual(h.writes.map(w=>w.path),['complaints/one','complaint_rate_limits/student']);assert.equal(h.writes[1].data.lastSubmittedAt,100000);});
-test('retry after a successful commit remains idempotent inside the cooldown',async()=>{const h=setup(1000,{existing:true});const result=await h.submit();assert.equal(result.alreadyCommitted,true);assert.equal(h.writes.length,0);assert.equal(h.rateReads(),0);});
+import test from 'node:test';import assert from 'node:assert/strict';import fs from 'node:fs';import vm from 'node:vm';
+import {complaintFixture} from './helpers/complaint-workflow-fixture.mjs';
+const source=fs.readFileSync(new URL('../complaint/js/complaints.js',import.meta.url),'utf8'),helpers=source.slice(source.indexOf('function lastSubmissionMs('),source.indexOf('function normalizedErrorCode('));
+function preflight(age){const snapshot={data:()=>age===null?{}:{lastSubmittedAt:100000-age}},context=vm.createContext({Date:{now:()=>100000,parse:Date.parse},SUBMISSION_COOLDOWN_MS:20000,Math,db:{},doc:()=>'',getDoc:async()=>snapshot});vm.runInContext(helpers,context);return {context,snapshot};}
+for(const [age,expected]of [[null,0],[1,19999],[19999,1],[20000,0],[20001,0]])test(`complaint cooldown boundary at ${age}ms`,()=>{const h=preflight(age);assert.equal(h.context.cooldownRemainingMs(h.snapshot),expected)});
+test('preflight prevents attachment work during the cooldown',async()=>{await assert.rejects(preflight(5000).context.preflightCooldown('student'),/wait 15 seconds/)});
+test('trusted transaction rechecks cooldown and commits no complaint or mail on rejection',async()=>{const h=complaintFixture();h.seed('complaint_rate_limits/student',{studentUid:'student',lastSubmittedAt:h.clock-5000});await assert.rejects(h.submit(),/wait 15 seconds/);assert.equal(h.events().length,0);assert.equal([...h.records.keys()].some(p=>p.startsWith('complaints/')),false)});
+test('an eligible submission commits its complaint, rate claim, receipt and email event together',async()=>{const h=complaintFixture(),result=await h.submit();assert.equal(h.records.get('complaint_rate_limits/student').lastSubmittedAt,h.clock);assert.equal(h.records.get(`complaints/${result.complaintId}`).status,'Submitted');assert.equal(h.records.has(`complaint_submission_receipts/${result.complaintId}`),true);assert.equal(h.events().length,1)});
+test('retry after a successful commit remains idempotent inside the cooldown',async()=>{const h=complaintFixture(),requestId=h.draft();await h.workflow.submit({uid:'student'},{requestId});const result=await h.workflow.submit({uid:'student'},{requestId});assert.equal(result.alreadyCommitted,true);assert.equal(h.events().length,1)});

@@ -381,7 +381,7 @@ function openComplaintDetails(complaintId) {
   setText('detailComplaintDate', formatDateTime(complaint.createdAt));
   setText('detailSubmittedName', clean(complaint.studentName, 'Student'));
   setText('detailSubmittedId', clean(complaint.studentId, 'Student ID not available'));
-  setText('detailSubmittedEmail', clean(complaint.studentEmail, 'Email not available'));
+  setText('detailSubmittedEmail', clean(complaint.studentEmail, 'Managed in Student Profile'));
   setText('detailSubmittedInitials', getInitials(complaint.studentName));
   setText('detailComplaintDescription', clean(complaint.details, 'No complaint description available.'));
 

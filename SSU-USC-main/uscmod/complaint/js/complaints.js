@@ -1,10 +1,10 @@
+import {callStudentEmailService} from "../../shared/supabase-email-service.js";
+import {hasVerifiedNotificationEmail,showEmailVerificationRequired} from "../../shared/verified-email.js";
+import {saveComplaintDraft,restoreComplaintDraft,clearComplaintDraft,draftAttachmentPreview} from "../../shared/complaint-drafts.js";
 import { auth, db } from "../../firebase/firebase-config.js";
 import {
-  collection,
   doc,
-  getDoc,
-  runTransaction,
-  serverTimestamp
+  getDoc
 } from "https://www.gstatic.com/firebasejs/12.12.0/firebase-firestore.js";
 import { signOut } from "https://www.gstatic.com/firebasejs/12.12.0/firebase-auth.js";
 
@@ -16,8 +16,7 @@ const SESSION_PROFILE_KEY = "studentProfile";
 const SESSION_EXPIRES_AT_KEY = "sessionExpiresAt";
 const LAST_ACTIVITY_AT_KEY = "lastActivityAt";
 
-// Complaint burst-control settings. The Firestore Rules enforce the same cooldown
-// using request.time, so changing the browser clock cannot bypass it.
+// Local burst control supplements the trusted service's atomic server-time cooldown.
 const SUBMISSION_COOLDOWN_MS = 20_000;
 const LOCAL_LOCK_TTL_MS = 90_000;
 const MAX_SUBMIT_ATTEMPTS = 4;
@@ -105,6 +104,9 @@ const modalCloseButtons = [
 ].filter(Boolean);
 let previewObjectUrl = "";
 let submissionInFlight = false;
+let activeDraftId=crypto.randomUUID(),restoredAttachment=null,formTouched=false;
+const formMessage=document.getElementById("complaintFormMessage");
+complaintForm?.addEventListener("input",()=>{formTouched=true});
 
 function humanBytes(bytes) {
   if (!Number.isFinite(bytes) || bytes <= 0) return "0 MB";
@@ -165,6 +167,7 @@ detailsInput?.addEventListener("input", () => {
 
 attachmentInput?.addEventListener("change", () => {
   const file = attachmentInput.files?.[0] || null;
+  restoredAttachment=null;
   try {
     renderSelectedAttachment(file);
   } catch (error) {
@@ -199,13 +202,6 @@ async function prepareComplaintAttachment(file) {
     });
   }
   return { storageMode: "firestore-chunks", chunks };
-}
-
-function createComplaintReference() {
-  const year = new Date().getFullYear();
-  const random = (globalThis.crypto?.randomUUID?.() || `${Date.now()}-${Math.random()}`)
-    .replace(/[^a-zA-Z0-9]/g, "").slice(-10).toUpperCase();
-  return `SC-${year}-${random}`;
 }
 
 function openModal() {
@@ -253,7 +249,7 @@ function releaseLocalSubmissionLock(lock) {
 
 function lastSubmissionMs(snapshot) {
   const value = snapshot?.data?.()?.lastSubmittedAt;
-  return typeof value?.toMillis === "function" ? value.toMillis() : 0;
+  return typeof value?.toMillis === "function" ? value.toMillis() : typeof value === "number" ? value : Date.parse(value)||0;
 }
 
 function cooldownRemainingMs(snapshot) {
@@ -300,35 +296,33 @@ function setSubmittingState(isSubmitting) {
   submitButton.textContent = isSubmitting ? "Submitting…" : "Submit complaint";
 }
 
-async function commitComplaintAtomically({ p, payload, complaintDocRef, attachmentChunks = [] }) {
-  const rateRef = doc(db, "complaint_rate_limits", p.uid);
-  return withTransientRetry(() => runTransaction(db, async (transaction) => {
-    // Read the complaint first so a retry after a lost network response is idempotent.
-    const existingComplaint = await transaction.get(complaintDocRef);
-    if (existingComplaint.exists()) return { alreadyCommitted: true };
-
-    const rateSnapshot = await transaction.get(rateRef);
-    const remaining = cooldownRemainingMs(rateSnapshot);
-    if (remaining > 0) {
-      throw new Error(`Please wait ${Math.ceil(remaining / 1000)} seconds before submitting another complaint.`);
-    }
-
-    transaction.set(complaintDocRef, payload);
-    attachmentChunks.forEach((chunk) => {
-      const chunkRef = doc(db, "complaints", complaintDocRef.id, "attachmentChunks", String(chunk.index).padStart(4, "0"));
-      transaction.set(chunkRef, {
-        studentUid: p.uid,
-        index: chunk.index,
-        payload: chunk.payload
-      });
-    });
-    transaction.set(rateRef, {
-      studentUid: p.uid,
-      lastSubmittedAt: serverTimestamp()
-    }, { merge: true });
-    return { alreadyCommitted: false };
-  }));
+function submissionFields(){return {submissionType:document.getElementById('submissionType')?.value||'Complaint',category:document.getElementById('category')?.value||'',incidentDate:document.getElementById('incidentDate')?.value||'',subject:document.getElementById('subject')?.value.trim()||'',details:detailsInput?.value.trim()||''};}
+async function saveFormProgress(){
+ const uid=auth.currentUser?.uid;if(uid!==profile()?.uid)throw new Error('Your account changed. Sign in again.');
+ const file=attachmentInput?.files?.[0]||null;let attachment=restoredAttachment,preparedChunks=null;
+ if(file){validateAttachment(file);const prepared=await prepareComplaintAttachment(file);preparedChunks=prepared.chunks;attachment={attachmentName:file.name,attachmentType:file.type,attachmentSize:file.size,chunkCount:prepared.chunks.length};}
+ else if(!attachment){attachment={attachmentName:'',attachmentType:'',attachmentSize:0,chunkCount:0};preparedChunks=[];}
+ await saveComplaintDraft({uid,requestId:activeDraftId,fields:submissionFields(),attachment,chunks:preparedChunks});
+ return uid;
 }
+async function verifyComplaintEmail(){
+ if(await hasVerifiedNotificationEmail())return true;
+ await showEmailVerificationRequired({label:'Complaint / Feedback',description:'Before submitting your complaint or feedback, connect and verify one Gmail or institutional email address to receive important updates about your submission.',saveProgress:saveFormProgress});return false;
+}
+async function commitComplaintAtomically(){return withTransientRetry(()=>callStudentEmailService('complaint_submit',{requestId:activeDraftId}));}
+function syncSubmissionType(){const feedback=document.getElementById('submissionType')?.value==='Feedback';const heading=document.getElementById('complaintFormTitle');if(heading)heading.textContent=feedback?'Submit Feedback':'Submit a Complaint';if(submitButton&&!submissionInFlight)submitButton.textContent=feedback?'Submit feedback':'Submit complaint';}
+document.getElementById('submissionType')?.addEventListener('change',syncSubmissionType);
+async function restoreFormProgress(){
+ const uid=auth.currentUser?.uid;if(!uid)return;const draft=await restoreComplaintDraft(uid);if(!draft||formTouched||auth.currentUser?.uid!==uid)return;
+ activeDraftId=draft.requestId;
+ for(const key of ['submissionType','category','incidentDate','subject','details']){const input=document.getElementById(key);if(input)input.value=draft[key]||'';}
+ if(charCount)charCount.textContent=String(draft.details?.length||0);
+ restoredAttachment={attachmentName:draft.attachmentName||'',attachmentType:draft.attachmentType||'',attachmentSize:draft.attachmentSize||0,chunkCount:draft.chunkCount||0};
+ if(fileName)fileName.textContent=draft.attachmentName||'No file selected';syncSubmissionType();
+ if(draft.attachmentType?.startsWith('image/')){const preview=await draftAttachmentPreview(uid,draft);if(!formTouched&&auth.currentUser?.uid===uid){clearAttachmentPreview();previewObjectUrl=preview;const img=document.getElementById('attachmentSelectedPreview');if(img&&preview){img.src=preview;img.hidden=false}}else if(preview)URL.revokeObjectURL(preview);}
+ if(formMessage)formMessage.textContent='Your saved form is restored. Review it before submitting.';
+}
+window.addEventListener('usc:profile-closed',async()=>{if(!formTouched&&!restoredAttachment)return;try{const verified=await hasVerifiedNotificationEmail();if(formMessage)formMessage.textContent=verified?'Email verified. Review your form and submit when ready.':'Your form is preserved. Finish verifying an email before submitting.';}catch{if(formMessage)formMessage.textContent='Email verification could not refresh. Your form is preserved.';}});
 
 complaintForm?.addEventListener("submit", async (event) => {
   event.preventDefault();
@@ -360,40 +354,15 @@ complaintForm?.addEventListener("submit", async (event) => {
     validateAttachment(attachmentFile);
     localLock = acquireLocalSubmissionLock(p.uid);
 
-    // Avoid uploading a file when the account is still inside its cooldown window.
+    if(!await verifyComplaintEmail())return;
     await preflightCooldown(p.uid);
-
-    const complaintDocRef = doc(collection(db, "complaints")); // random Firestore ID avoids collection hotspots
-    const submissionId = globalThis.crypto?.randomUUID?.() || complaintDocRef.id;
-    const preparedAttachment = await prepareComplaintAttachment(attachmentFile);
-
-    const payload = {
-      complaintRef: createComplaintReference(),
-      submissionId,
-      studentUid: p.uid,
-      studentName: p.fullName || "Student",
-      studentEmail: p.email || "",
-      studentId: p.studentId || "",
-      studentDepartment: department,
-      category,
-      incidentDate,
-      subject,
-      details,
-      attachmentName,
-      attachmentPath: attachmentFile ? complaintDocRef.id : "",
-      attachmentStoragePath: attachmentFile ? complaintDocRef.id : "",
-      attachmentStorageBucket: attachmentFile ? preparedAttachment.storageMode : "",
-      attachmentType: attachmentFile?.type || "",
-      attachmentSize: attachmentFile?.size || 0,
-      status: "Submitted",
-      createdAt: serverTimestamp(),
-      updatedAt: serverTimestamp(),
-      thread: [{ by: "Student", message: details, at: new Date().toISOString() }]
-    };
-
-    await commitComplaintAtomically({ p, payload, complaintDocRef, attachmentChunks: preparedAttachment.chunks });
-
-    complaintForm.reset();
+    await saveFormProgress();
+    if(auth.currentUser?.uid!==p.uid)throw new Error('Your account changed. Reopen this form.');
+    const result=await commitComplaintAtomically();
+    await clearComplaintDraft(p.uid,activeDraftId).catch(()=>{});
+    activeDraftId=crypto.randomUUID();restoredAttachment=null;formTouched=false;
+    const reference=document.getElementById('complaintSuccessReference');if(reference)reference.textContent=result.complaintRef||'';
+    complaintForm.reset();if(formMessage)formMessage.textContent="";
     clearAttachmentPreview();
     setAttachmentError("");
     if (fileName) fileName.textContent = "No file selected";
@@ -402,7 +371,7 @@ complaintForm?.addEventListener("submit", async (event) => {
     if (deptInput) deptInput.value = department;
     openModal();
   } catch (error) {
-    console.error("Error submitting complaint:", error);
+    if(error.code==='email-verification-required'){await showEmailVerificationRequired({label:'Complaint / Feedback',description:'Connect and verify a Gmail or institutional email before submitting your complaint or feedback.',saveProgress:saveFormProgress});return;}
     const code = normalizedErrorCode(error);
     const message = code === "permission-denied"
       ? "The complaint was blocked by the secure submission rules. Please try submitting your complaint again."
@@ -410,8 +379,8 @@ complaintForm?.addEventListener("submit", async (event) => {
     alert(message);
   } finally {
     releaseLocalSubmissionLock(localLock);
-    setSubmittingState(false);
+    setSubmittingState(false);syncSubmissionType();
   }
 });
 
-ensureProtectedSession();
+if(ensureProtectedSession())restoreFormProgress().catch(()=>{if(formMessage)formMessage.textContent="Saved forms are temporarily unavailable. You can continue using this form.";});

@@ -15,7 +15,7 @@
     "test:admin-auth": "node --test tests/mfa-enrollment.test.mjs",
     "test:verify": "node --test tests/admin-verification.test.mjs",
     "test:school-login": "node --test tests/school-login.test.mjs tests/pasted-password.test.mjs",
-    "test:complaints": "node --test tests/complaint-stress.test.mjs",
+    "test:complaints": "node --test tests/complaint-stress.test.mjs tests/complaint-verified-email.test.mjs tests/complaint-classification-permission-compat.test.mjs tests/complaint-classification-workflow.test.mjs tests/complaint-inbox-model.test.mjs tests/complaint-attachment-ui.test.mjs tests/complaint-subject-placeholder.test.mjs tests/task1-4-integration.test.mjs tests/staging-review-build.test.mjs tests/notification-digest-coexistence.test.mjs",
     "test:capstone": "node --test tests/capstone-browser-mode.test.mjs",
     "test:navigation-profile": "node --test tests/navigation-profile-scroll.test.mjs",
     "test:complaint-delete": "node --test tests/complaint-deletion.test.mjs",
@@ -40,7 +40,9 @@
     "test:registration-history-rules": "firebase emulators:exec --project demo-ssu-registration-history --only firestore \"node --test tests/registration-history.rules.test.mjs\"",
     "test:registration-history-browser": "node tests/browser/candidate-registration-history.cjs",
     "test:candidate-email-rules": "firebase emulators:exec --project demo-ssu-candidate-email --only firestore \"node --test tests/candidate-verified-email.rules.test.mjs\"",
-    "test:candidate-email-browser": "node tests/browser/candidate-verified-email.cjs"
+    "test:candidate-email-browser": "node tests/browser/candidate-verified-email.cjs",
+    "test:complaint-email-browser": "node tests/browser/complaint-verified-email.cjs",
+    "test:task1-4-rules": "firebase emulators:exec --project demo-ssu-task-integration --only firestore \"node --test tests/election-registration-scope.rules.test.mjs tests/registration-history.rules.test.mjs tests/election-candidate-removal.rules.test.mjs tests/candidate-verified-email.rules.test.mjs tests/complaint-review.rules.test.mjs tests/complaint-verified-email.rules.test.mjs\""
   },
   "devDependencies": {
     "@firebase/rules-unit-testing": "^4.0.1",

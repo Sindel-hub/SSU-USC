@@ -1,21 +1,12 @@
-import {institutionalAddress} from "../usc-email/institutional-accounts.mjs";
+import {processVerifiedNotification,retryVerifiedNotification} from "./verified-notification-delivery.mjs";
+import {verifiedNotificationIdentity} from "./verified-notification-email.mjs";
+import {verifiedNotificationContact as verifiedCandidateContact} from "./verified-notification-email.mjs";
 // Backend-only application workflow. The existing email account tables and
 // institutional verification remain the sole contact verification authorities.
 const text=(v,n=160)=>String(v??'').trim().slice(0,n);
-const norm=v=>String(v||'').trim().toLowerCase();
 export const candidatePositions=['President','Vice President','Secretary','Treasurer','Auditor','Public Relations Officer','Public Relations Officer (PRO)','Business Manager','Sgt. at Arms','Department Representative'];
 export const time=v=>typeof v==='number'?v:v?.toMillis?.()||Date.parse(v)||0;
-export function verifiedCandidateContact(uid,profile,auth,gmail){
- if(!auth||auth.disabled||auth.uid!==uid)return null;
- const linked=norm(profile.institutionalEmail||profile.email);
- let institutionalValid=false;try{institutionalValid=institutionalAddress(linked)===linked}catch{}
- const institutional=institutionalValid&&!profile.institutionalEmailRevokedAt&&(profile.institutionalEmailVerified===true||(auth.emailVerified===true&&norm(auth.email)===linked))?linked:'';
- const personal=gmail?.firebase_uid===uid&&gmail.verified_at&&gmail.requested_email===gmail.verified_email&&/^[a-z0-9.]+(?:\+[a-z0-9._-]+)?@gmail\.com$/.test(gmail.verified_email||'')&&!gmail.revoked_at?gmail.verified_email:'';
- const preferred=norm(profile.primaryNotificationEmail||profile.preferredNotificationEmail);
- if(preferred&&[personal,institutional].includes(preferred))return {email:preferred,source:preferred===personal?'gmail':'institutional'};
- // Existing portal notifications prefer the connected, verified personal Gmail.
- return personal?{email:personal,source:'gmail'}:institutional?{email:institutional,source:'institutional'}:null;
-}
+export {verifiedNotificationContact as verifiedCandidateContact} from "./verified-notification-email.mjs";
 export function candidateError(code,message){return Object.assign(new Error(message),{code});}
 function id(value){const result=text(value,150);if(!/^[A-Za-z0-9:_-]{1,128}$/.test(result))throw candidateError('invalid-argument','Select a valid election and account.');return result;}
 function active(profile){return profile&&profile.accountStatus==='approved'&&profile.isActive!==false&&(!profile.studentStanding||profile.studentStanding==='active');}
@@ -100,11 +91,7 @@ export function createCandidateRegistrationService(deps){
   let reviewSummaryUpdated=true;try{await deps.syncReview(electionId)}catch{reviewSummaryUpdated=false}
   return {ok:true,status,candidateId:candidateId||null,notificationState:'queued',reviewSummaryUpdated};
  }
- async function retry(user,input){
-  await identity(user,true);const eventId=id(input.eventId),path=`candidate_email_events/${eventId}`,record=await read(path);
-  if(!record||record.data.state!=='failed')throw candidateError('failed-precondition','Only a confirmed failed notification can be retried. Unconfirmed delivery requires administrator reconciliation.');
-  await deps.commit([{path,version:record.version,data:{state:'queued',updatedAt:now(),retryByUid:user.uid}},{path:`audit_logs/${deps.randomId()}`,version:null,data:{actorUid:user.uid,action:'CANDIDATE_EMAIL_RETRY',target:path,createdAt:now(),source:'trusted-candidate-service'}}]);return {ok:true,state:'queued'};
- }
+ async function retry(user,input){await identity(user,true);return retryVerifiedNotification('candidate_email_events',id(input.eventId),user,{...deps,now},'CANDIDATE_EMAIL_RETRY');}
  return {emailStatus,submit,review,retry};
 }
 
@@ -116,26 +103,12 @@ export function candidateNotificationMessage(app,election,event,portalUrl){
  return {subject:`SSU USC: ${title}`,text:lines.join('\n\n')};
 }
 export async function processCandidateNotification(eventId,deps){
- const path=`candidate_email_events/${eventId}`,record=await deps.get(path);if(!record||record.data.state!=='queued')return false;
- const event=record.data,attempts=(event.attempts||0)+1;
- // Claim before doing any network delivery. Competing workers cannot both send.
- try{await deps.commit([{path,version:record.version,data:{state:'sending',attempts,updatedAt:deps.now()}}])}catch{return false}
- let sending=false;
- try{
+ return processVerifiedNotification('candidate_email_events',eventId,deps,async event=>{
   const app=await deps.get(`elections/${event.electionId}/applications/${event.uid}`);
-  if(!app||app.data.removed||app.data.submissionId!==event.submissionId||(event.applicationStatus==='Needs Information'&&app.data.revision!==event.revision)){await deps.finish(path,{state:'cancelled',updatedAt:deps.now()});return false;}
-  const profile=await deps.get(`users/${event.uid}`),auth=await deps.authUser(event.uid),gmail=await deps.gmail(event.uid);
-  if(!active(profile?.data)||profile.data.role!=='student')throw candidateError('no-recipient','The student account is inactive.');
-  const recipient=verifiedCandidateContact(event.uid,profile.data,auth,gmail);
-  if(!recipient)throw candidateError('no-recipient','No currently verified notification email is available.');
-  const election=await deps.get(`elections/${event.electionId}`),message=candidateNotificationMessage(app.data,election?.data,event,deps.portalUrl);
-  sending=true;
-  const providerId=await deps.send(recipient.email,message,`${eventId}-${attempts}`);
-  if(!providerId)throw new Error('Delivery could not be confirmed.');
-  await deps.finish(path,{state:'sent',providerId,updatedAt:deps.now()});return true;
- }catch(error){
-  // A timeout/lost response can mean the provider accepted the message. Never
-  // automatically retry an uncertain delivery, including a failed sent-state write.
-  await deps.finish(path,{state:sending&&!error.deliveryRejected?'unknown':'failed',failureCode:sending?(error.deliveryRejected?'provider-rejected':'delivery-unconfirmed'):error.code||'recipient-unavailable',updatedAt:deps.now()}).catch(()=>{});return false;
- }
+  if(!app||app.data.removed||app.data.submissionId!==event.submissionId||(event.applicationStatus==='Needs Information'&&app.data.revision!==event.revision))return null;
+  const {contact}=await verifiedNotificationIdentity(event.uid,deps);
+  if(!contact)throw candidateError('no-recipient','No currently verified notification email is available.');
+  const election=await deps.get(`elections/${event.electionId}`);
+  return {recipient:contact.email,message:candidateNotificationMessage(app.data,election?.data,event,deps.portalUrl)};
+ });
 }

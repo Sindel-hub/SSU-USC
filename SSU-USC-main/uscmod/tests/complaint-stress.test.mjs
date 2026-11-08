@@ -1,3 +1,5 @@
+import {workflowHash} from '../supabase/functions/_shared/complaint-workflow.mjs';
+import {complaintFixture} from './helpers/complaint-workflow-fixture.mjs';
 import test from "node:test";
 import assert from "node:assert/strict";
 import fs from "node:fs";
@@ -15,15 +17,10 @@ const officerComplaintsJs = fs.readFileSync(path.join(root, "usc-admin/complaint
 
 const complaintAttachmentJs = fs.readFileSync(path.join(root, "shared/complaint-attachments.js"), "utf8");
 
-test("complaint submission uses atomic per-user burst protection", () => {
-  assert.match(complaintJs, /runTransaction/);
-  assert.match(complaintJs, /complaint_rate_limits/);
-  assert.match(complaintJs, /SUBMISSION_COOLDOWN_MS\s*=\s*20_000/);
-  assert.match(complaintJs, /submissionInFlight/);
-  assert.match(complaintJs, /localStorage/);
-  assert.match(complaintJs, /MAX_SUBMIT_ATTEMPTS\s*=\s*4/);
-  assert.match(rules, /getAfter\(complaintRatePath\(\)\)/);
-  assert.match(rules, /duration\.value\(20, "s"\)/);
+test("complaint submission uses atomic per-user burst protection", async () => {
+ const h=complaintFixture();const requests=Array.from({length:12},()=>h.draft());const outcomes=await Promise.allSettled(requests.map(requestId=>h.workflow.submit({uid:'student'},{requestId})));
+ assert.equal(outcomes.filter(o=>o.status==='fulfilled').length,1);assert.equal(h.events().length,1);
+ assert.match(complaintJs,/submissionInFlight/);assert.match(complaintJs,/localStorage/);
 });
 
 test("attachment limits are enforced in UI and Firestore rules", () => {
@@ -35,16 +32,9 @@ test("attachment limits are enforced in UI and Firestore rules", () => {
   assert.match(complaintHtml, /id="attachmentError"/);
 });
 
-test("synthetic concurrent complaint references remain unique", () => {
-  const refs = new Set();
-  const year = 2026;
-  for (let i = 0; i < 25000; i += 1) {
-    const random = crypto.randomUUID().replace(/[^a-zA-Z0-9]/g, "").slice(-10).toUpperCase();
-    const ref = `SC-${year}-${random}`;
-    assert.equal(refs.has(ref), false, `duplicate complaint reference: ${ref}`);
-    refs.add(ref);
-  }
-  assert.equal(refs.size, 25000);
+test("synthetic backend complaint references remain unique and account-scoped", async () => {
+ const requests=Array.from({length:1000},()=>crypto.randomUUID());const ids=await Promise.all(requests.map(request=>workflowHash(['complaint','student',request])));assert.equal(new Set(ids.map(id=>id.slice(0,40))).size,1000);
+ assert.notEqual(await workflowHash(['complaint','student','same-request']),await workflowHash(['complaint','other','same-request']));
 });
 
 test("student and officer dashboards include dedicated mobile passes", () => {
@@ -64,14 +54,9 @@ test("officer complaint views avoid unbounded realtime collection listeners", ()
 });
 
 
-test("complaint attachments no longer require a secure Cloud Function in browser-only mode", () => {
-  assert.doesNotMatch(complaintJs, /secureUpload\(/);
-  assert.match(complaintJs, /FIRESTORE_ATTACHMENT_CHUNK_BYTES\s*=\s*600 \* 1024/);
-  assert.match(complaintJs, /attachmentChunks/);
-  assert.match(rules, /match \/attachmentChunks\/\{chunkId\}/);
-  assert.match(rules, /getAfter\(\/databases\/\$\(database\)\/documents\/complaints\/\$\(complaintId\)\)/);
-  assert.match(complaintAttachmentJs, /loadFirestoreChunks/);
-  assert.match(officerComplaintsJs, /loadComplaintAttachmentBlob/);
-  assert.match(officerComplaintsJs, /admin-image-display/);
-  assert.doesNotMatch(officerComplaintsJs, /openPrivateFile/);
+test("complaint attachments retain the private Firestore format with trusted submission", () => {
+ assert.doesNotMatch(complaintJs,/secureUpload\(/);assert.match(complaintJs,/FIRESTORE_ATTACHMENT_CHUNK_BYTES\s*=\s*600 \* 1024/);
+ const drafts=fs.readFileSync(path.join(root,'shared/complaint-drafts.js'),'utf8');assert.match(drafts,/attachmentChunks/);
+ assert.match(rules,/allow create, update: if false/);assert.match(complaintAttachmentJs,/loadFirestoreChunks/);
+ assert.match(officerComplaintsJs,/loadComplaintAttachmentBlob/);assert.match(officerComplaintsJs,/admin-image-display/);assert.doesNotMatch(officerComplaintsJs,/openPrivateFile/);
 });

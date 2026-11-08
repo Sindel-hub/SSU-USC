@@ -1560,55 +1560,13 @@ exports.adminResetUserPassword = onCall(callableOptions(), async (request) => {
   };
 });
 
-exports.updateComplaintCase = onCall(callableOptions(), async (request) => {
-  await requireOfficerPermission(request, "complaints.review");
-  const complaintId = cleanText(request.data?.complaintId, 160);
-  const nextStatus = cleanText(request.data?.status, 40);
-  const classification = cleanText(request.data?.classification, 60);
-  const feedback = cleanText(request.data?.feedback || request.data?.reply, 4000);
-  const allowedStatuses = new Set(["Submitted", "Under Review", "In Progress", "Resolved", "Closed"]);
-  const allowedClassifications = new Set(["Student Level", "Administrative Level", "Crisis Level"]);
-  if (!complaintId) throw new HttpsError("invalid-argument", "Complaint ID is required.");
-  if (nextStatus && !allowedStatuses.has(nextStatus)) throw new HttpsError("invalid-argument", "Unsupported complaint status.");
-  if (classification && !allowedClassifications.has(classification)) throw new HttpsError("invalid-argument", "Unsupported complaint classification.");
-  if (!nextStatus && !classification && !feedback) throw new HttpsError("invalid-argument", "Provide a status, classification, or USC feedback update.");
-  if (nextStatus) await requireOfficerPermission(request, "complaints.status");
-  if (classification) await requireOfficerPermission(request, "complaints.classify");
-  if (feedback) await requireOfficerPermission(request, "complaints.feedback");
-
-  const ref = db.doc(`complaints/${complaintId}`);
-  await db.runTransaction(async (tx) => {
-    const snap = await tx.get(ref);
-    if (!snap.exists) throw new HttpsError("not-found", "Complaint not found.");
-    const before = snap.data();
-    const previousStatus = cleanText(before.status || "Submitted", 40);
-    const previousClassification = cleanText(before.classification || "", 60);
-    let effectiveStatus = nextStatus || previousStatus;
-    const effectiveClassification = classification || previousClassification;
-
-    if (feedback && effectiveStatus === "Submitted") effectiveStatus = "Under Review";
-    if (["In Progress", "Resolved", "Closed"].includes(effectiveStatus) && !allowedClassifications.has(effectiveClassification)) {
-      throw new HttpsError("failed-precondition", "Assign a complaint classification before moving the case beyond review.");
-    }
-    if (feedback && !allowedClassifications.has(effectiveClassification)) {
-      throw new HttpsError("failed-precondition", "Assign a complaint classification before providing USC feedback.");
-    }
-
-    const threadEntries = [];
-    if (nextStatus && effectiveStatus !== previousStatus) {
-      threadEntries.push({ by: "Officer", kind: "status", message: `Status updated from ${previousStatus} to ${effectiveStatus}.`, at: Timestamp.now() });
-    }
-    if (feedback) threadEntries.push({ by: "Officer", kind: "feedback", message: feedback, at: Timestamp.now() });
-
-    const patch = { status: effectiveStatus, updatedAt: FieldValue.serverTimestamp() };
-    if (classification) patch.classification = classification;
-    if (threadEntries.length) patch.thread = FieldValue.arrayUnion(...threadEntries);
-    tx.update(ref, patch);
-    tx.set(db.collection("audit_logs").doc(), auditData(request, "COMPLAINT_CASE_UPDATE", ref.path,
-      { status: previousStatus, classification: previousClassification || "Pending Classification" },
-      { status: effectiveStatus, classification: effectiveClassification || "Pending Classification", feedbackAdded: Boolean(feedback) }));
-  });
-  return { updated: true, status: nextStatus || null, classification: classification || null, feedbackAdded: Boolean(feedback), replyAdded: Boolean(feedback) };
+exports.updateComplaintCase = onCall(callableOptions({secrets:[SUPABASE_URL]}),async request=>{
+ await requireOfficerPermission(request,'complaints.review');
+ const token=String(request.rawRequest.headers.authorization||'').replace(/^Bearer\s+/i,'');
+ const response=await fetch(`${SUPABASE_URL.value()}/functions/v1/usc-email`,{method:'POST',headers:{'Content-Type':'application/json','x-firebase-token':token},body:JSON.stringify({...request.data,action:'complaint_update'})});
+ const result=await response.json().catch(()=>({}));
+ if(!response.ok||!result.ok)throw new HttpsError(['permission-denied','not-found','invalid-argument','failed-precondition','aborted'].includes(result.code)?result.code:'failed-precondition',result.message||'Complaint services are unavailable.');
+ return result;
 });
 
 exports.createUploadTicket = onCall(callableOptions({ secrets: [SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY] }), async (request) => {

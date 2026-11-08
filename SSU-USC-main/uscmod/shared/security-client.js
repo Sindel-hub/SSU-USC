@@ -330,130 +330,14 @@ function isFirestorePermissionDenied(error) {
     || /missing or insufficient permissions/i.test(String(error?.message || ""));
 }
 
-async function browserUpdateComplaintStatus(data = {}) {
-  const { user, profile, role } = await requireBrowserPermission("complaints.review");
-
-  const complaintId = String(data.complaintId || "").trim();
-  const requestedStatus = String(data.status || "").trim();
-  const requestedClassification = String(data.classification || "").trim();
-  const previousStatus = String(data.previousStatus || "Submitted").trim() || "Submitted";
-  const previousClassification = String(data.previousClassification || "").trim();
-  const complaintRefText = String(data.complaintRef || complaintId).trim() || complaintId;
-  const allowedStatuses = ["Submitted", "Under Review", "In Progress", "Resolved", "Closed"];
-  const allowedClassifications = ["Student Level", "Administrative Level", "Crisis Level"];
-
-  if (!complaintId) throw new Error("Complaint ID is required.");
-  if (requestedStatus && !allowedStatuses.includes(requestedStatus)) throw new Error("Invalid complaint status.");
-  if (requestedClassification && !allowedClassifications.includes(requestedClassification)) throw new Error("Invalid complaint classification.");
-
-  const nextStatus = requestedStatus || previousStatus;
-  const nextClassification = requestedClassification || previousClassification;
-  if (["In Progress", "Resolved", "Closed"].includes(nextStatus) && !allowedClassifications.includes(nextClassification)) {
-    throw new Error("Assign a complaint classification before moving the case beyond review.");
-  }
-
-  const statusChanged = nextStatus !== previousStatus;
-  const classificationChanged = Boolean(requestedClassification && requestedClassification !== previousClassification);
-  if (statusChanged && !browserHasOfficerPermission(profile, role, "complaints.status")) throw new Error("Your assigned USC office cannot update complaint status.");
-  if (classificationChanged && !browserHasOfficerPermission(profile, role, "complaints.classify")) throw new Error("Your assigned USC office cannot classify complaints.");
-  if (!statusChanged && !classificationChanged) {
-    return { ok: true, unchanged: true, classification: nextClassification || "" };
-  }
-
-  const complaintRef = doc(db, "complaints", complaintId);
-
-  // First try the current rules format. This deliberately updates ONLY the
-  // complaint document. Audit logging is best-effort afterwards so a log rule
-  // can never roll back a valid USC review.
-  const modernPatch = { updatedAt: serverTimestamp() };
-  if (statusChanged) modernPatch.status = nextStatus;
-  // Older clients stored classification only in the thread. Include the known
-  // classification when saving status so current rules can validate the case.
-  // Firestore still checks complaints.classify if this adds/changes the field.
-  if (nextClassification) modernPatch.classification = nextClassification;
-
-  try {
-    await updateDoc(complaintRef, modernPatch);
-
-    try {
-      await addDoc(collection(db, "complaint_case_logs"), {
-        actorUid: user.uid,
-        actorEmail: user.email || "",
-        action: classificationChanged ? "COMPLAINT_REVIEW_UPDATED" : "COMPLAINT_STATUS_UPDATED",
-        complaintId,
-        complaintRef: complaintRefText,
-        statusBefore: previousStatus,
-        statusAfter: nextStatus,
-        classificationBefore: previousClassification || "Pending Classification",
-        classificationAfter: nextClassification || "Pending Classification",
-        source: "browser-officer-runtime",
-        createdAt: serverTimestamp()
-      });
-    } catch (auditError) {
-      console.warn("Complaint review saved, but its audit entry was blocked by older Firestore rules.", auditError);
-    }
-
-    return { ok: true, previousStatus, status: nextStatus, classification: nextClassification || "" };
-  } catch (error) {
-    if (!isFirestorePermissionDenied(error)) throw error;
-  }
-
-  // Compatibility path for the original deployed capstone rules. Those rules
-  // allow status/updatedAt/thread but do not allow a root-level classification.
-  // Put the classification in the immutable USC review thread instead. All
-  // complaint UIs already resolve classification from this thread when needed.
-  const legacyPatch = { updatedAt: serverTimestamp() };
-  if (statusChanged) legacyPatch.status = nextStatus;
-  if (classificationChanged) {
-    legacyPatch.thread = arrayUnion({
-      by: "Officer",
-      kind: "classification",
-      actorUid: user.uid,
-      classification: requestedClassification,
-      message: `USC classification assigned: ${requestedClassification}.`,
-      at: Timestamp.now()
-    });
-  }
-
-  try {
-    await updateDoc(complaintRef, legacyPatch);
-  } catch (legacyError) {
-    if (isFirestorePermissionDenied(legacyError)) {
-      throw new Error(
-        "USC can view this complaint but Firebase is blocking complaint updates for this account. " +
-        "Refresh the page and sign in again. If it continues, publish the included firestore.rules so the officer account has complaint-update permission."
-      );
-    }
-    throw legacyError;
-  }
-
-  // Old deployed rules may reject newer audit fields. Keep this completely
-  // separate from the complaint write and ignore permission failures.
-  try {
-    await addDoc(collection(db, "complaint_case_logs"), {
-      actorUid: user.uid,
-      actorEmail: user.email || "",
-      action: "COMPLAINT_STATUS_UPDATED",
-      complaintId,
-      complaintRef: complaintRefText,
-      statusBefore: previousStatus,
-      statusAfter: nextStatus,
-      source: "browser-officer-runtime",
-      createdAt: serverTimestamp()
-    });
-  } catch (auditError) {
-    console.warn("Complaint review saved in compatibility mode; audit log was not permitted.", auditError);
-  }
-
-  return {
-    ok: true,
-    previousStatus,
-    status: nextStatus,
-    classification: nextClassification || "",
-    compatibilityMode: true
-  };
+const complaintActionRequests=new Map();
+async function postComplaintUpdate(data){
+ const key=JSON.stringify(data);
+ if(!complaintActionRequests.has(key))complaintActionRequests.set(key,crypto.randomUUID());
+ const result=await callStudentEmailService('complaint_update',{...data,requestId:data.requestId||complaintActionRequests.get(key)});
+ complaintActionRequests.delete(key);return result;
 }
-
+async function browserUpdateComplaintStatus(data = {}) { return postComplaintUpdate(data); }
 async function browserDeleteComplaintCase(data = {}) {
   const { user } = await requireBrowserPermission("complaints.status");
 
@@ -759,67 +643,7 @@ export async function hydrateMediaImages(root = document) {
   }));
 }
 
-async function browserComplaintReply(data = {}) {
-  const { user, profile, role } = await requireBrowserPermission("complaints.feedback");
-  const complaintId = String(data.complaintId || "").trim();
-  const feedback = String(data.feedback || data.reply || "").trim().slice(0,4000);
-  const requestedStatus = String(data.status || "").trim();
-  const previousStatus = String(data.previousStatus || "Submitted").trim() || "Submitted";
-  const classification = String(data.classification || data.previousClassification || "").trim();
-  const allowedClassifications = ["Student Level", "Administrative Level", "Crisis Level"];
-  const allowedStatuses = ["Submitted", "Under Review", "In Progress", "Resolved", "Closed"];
-
-  if (!complaintId || !feedback) throw new Error("Complaint ID and USC feedback are required.");
-  if (!allowedClassifications.includes(classification)) throw new Error("Assign a valid complaint classification before sending feedback.");
-  if (classification !== String(data.previousClassification || "").trim() && !browserHasOfficerPermission(profile, role, "complaints.classify")) {
-    throw new Error("Your assigned USC office cannot change complaint classification.");
-  }
-
-  let effectiveStatus = allowedStatuses.includes(requestedStatus) ? requestedStatus : previousStatus;
-  if (effectiveStatus === "Submitted") effectiveStatus = "Under Review";
-
-  const feedbackEntry = {
-    by: "Officer",
-    kind: "feedback",
-    actorUid: user.uid,
-    classification,
-    message: feedback,
-    at: Timestamp.now()
-  };
-  const ref = doc(db, "complaints", complaintId);
-
-  // Current rules format.
-  try {
-    await updateDoc(ref, {
-      status: effectiveStatus,
-      classification,
-      updatedAt: serverTimestamp(),
-      thread: arrayUnion(feedbackEntry)
-    });
-    return { updated: true, status: effectiveStatus, classification, feedbackAdded: true, replyAdded: true };
-  } catch (error) {
-    if (!isFirestorePermissionDenied(error)) throw error;
-  }
-
-  // Original rules compatibility format: classification lives in the appended
-  // USC feedback entry instead of the complaint root.
-  try {
-    await updateDoc(ref, {
-      status: effectiveStatus,
-      updatedAt: serverTimestamp(),
-      thread: arrayUnion(feedbackEntry)
-    });
-  } catch (legacyError) {
-    if (isFirestorePermissionDenied(legacyError)) {
-      throw new Error(
-        "Feedback was not saved because Firestore denied the update. Ask the system administrator to check this officer’s complaint permissions and the deployed complaint rules. Signing in again alone may not fix a rules or older-record compatibility issue."
-      );
-    }
-    throw legacyError;
-  }
-
-  return { updated: true, status: effectiveStatus, classification, feedbackAdded: true, replyAdded: true, compatibilityMode: true };
-}
+async function browserComplaintReply(data = {}) { return postComplaintUpdate(data); }
 
 async function browserSaveElectionSchedule(data = {}, emergency = false) {
   const { user } = emergency ? await requireBrowserRole(["admin"]) : await requireBrowserPermission("elections.view");

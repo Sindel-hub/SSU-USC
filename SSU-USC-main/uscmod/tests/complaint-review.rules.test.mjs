@@ -1,8 +1,9 @@
 import test, { before, after, beforeEach } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
-import { initializeTestEnvironment, assertFails, assertSucceeds } from '@firebase/rules-unit-testing';
-import * as firestore from 'firebase/firestore';
+import {createRequire} from 'node:module';
+import {complaintBackend} from './helpers/complaint-emulator-backend.mjs';
+const require=createRequire(process.env.SSU_RULES_TEST_DEPENDENCIES||import.meta.url),{initializeTestEnvironment,assertFails,assertSucceeds}=require('@firebase/rules-unit-testing'),firestore=require('firebase/firestore');
 import { effectiveOfficerPermissions } from '../shared/officer-permissions.js';
 let env;
 const source = fs.readFileSync(new URL('../shared/security-client.js', import.meta.url), 'utf8');
@@ -20,12 +21,8 @@ async function seed(profile = {}, complaint = {}) {
     await firestore.setDoc(firestore.doc(ctx.firestore(), 'complaints/case'), record);
   });
   const db = env.authenticatedContext('officer', {role: 'officer'}).firestore();
-  const bindings = {...firestore, db, effectiveOfficerPermissions, requireBrowserPermission: async () => ({user: {uid: 'officer'}, profile: officer, role: 'officer'})};
-  const status = source.slice(source.indexOf('function isFirestorePermissionDenied'), source.indexOf('async function browserDeleteComplaintCase'));
-  const permission = source.slice(source.indexOf('function browserHasOfficerPermission'), source.indexOf('async function requireBrowserPermission'));
-  const reply = source.slice(source.indexOf('async function browserComplaintReply'), source.indexOf('async function browserSaveElectionSchedule'));
-  const api = new Function(...Object.keys(bindings), `${permission}\n${status}\n${reply}\nreturn {browserComplaintReply, browserUpdateComplaintStatus};`)(...Object.values(bindings));
-  return {db, ...api};
+  const service=complaintBackend(env,'officer');
+  return {db,browserComplaintReply:data=>service.update(data),browserUpdateComplaintStatus:data=>service.update(data)};
 }
 const review = {complaintId: 'case', previousStatus: 'Under Review', previousClassification: 'Student Level', classification: 'Student Level', status: 'Resolved'};
 test('President can send feedback and resolve a classified complaint', async () => {

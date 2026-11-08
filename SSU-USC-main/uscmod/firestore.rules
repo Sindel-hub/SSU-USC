@@ -410,53 +410,9 @@ service cloud.firestore {
         || isOfficerOrAdmin()
       );
       allow list: if signedIn() && (resource.data.studentUid == uid() || isOfficerOrAdmin());
-      allow create: if schoolStudent()
-        && request.resource.data.studentUid == uid()
-        && request.resource.data.studentId == get(/databases/$(database)/documents/users/$(uid())).data.studentId
-        && request.resource.data.studentEmail == get(/databases/$(database)/documents/users/$(uid())).data.email
-        && request.resource.data.status == "Submitted"
-        && request.resource.data.createdAt == request.time
-        && request.resource.data.updatedAt == request.time
-        && request.resource.data.subject is string
-        && request.resource.data.subject.size() >= 3
-        && request.resource.data.subject.size() <= 120
-        && request.resource.data.details is string
-        && request.resource.data.details.size() >= 5
-        && request.resource.data.details.size() <= 1000
-        && validComplaintAttachment(request.resource.data)
-        && complaintCooldownSatisfied()
-        && complaintRateCommittedNow()
-        && request.resource.data.keys().hasOnly([
-          "complaintRef", "submissionId", "studentUid", "studentId", "studentName", "studentEmail", "studentDepartment",
-          "subject", "category", "incidentDate", "details", "status", "createdAt", "updatedAt",
-          "attachmentName", "attachmentPath", "attachmentStorageBucket", "attachmentStoragePath",
-          "attachmentType", "attachmentSize", "thread"
-        ]);
-      // Browser-only complaint review updates are restricted to authorized officers/admins.
-      // Officers may assign the review classification, advance the workflow, and append
-      // one official feedback entry at a time. Students remain submit-only.
-      allow update: if officerHasPermission("complaints.review")
-        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(["status", "classification", "updatedAt", "thread"])
-        && (!request.resource.data.diff(resource.data).affectedKeys().hasAny(["status"]) || officerHasPermission("complaints.status"))
-        && (!request.resource.data.diff(resource.data).affectedKeys().hasAny(["classification"]) || officerHasPermission("complaints.classify"))
-        && (!request.resource.data.diff(resource.data).affectedKeys().hasAny(["thread"]) || officerHasPermission("complaints.feedback") || officerHasPermission("complaints.classify"))
-        && request.resource.data.status in ["Submitted", "Under Review", "In Progress", "Resolved", "Closed"]
-        && request.resource.data.updatedAt == request.time
-        && (!(request.resource.data.diff(resource.data).affectedKeys().hasAny(["classification"]))
-          || (("classification" in request.resource.data)
-            && validComplaintClassification(request.resource.data.classification)))
-        && (!(request.resource.data.status in ["In Progress", "Resolved", "Closed"])
-          || (("classification" in request.resource.data)
-            && validComplaintClassification(request.resource.data.classification)))
-        && (!(request.resource.data.diff(resource.data).affectedKeys().hasAny(["thread"]))
-          || (("classification" in request.resource.data)
-            && validComplaintClassification(request.resource.data.classification)
-            && request.resource.data.thread is list
-            // Older complaint records may predate the thread field. Treat only
-            // a missing thread as empty; malformed existing values still fail.
-            && resource.data.get("thread", []) is list
-            && request.resource.data.thread.size() == resource.data.get("thread", []).size() + 1
-            && request.resource.data.thread.size() <= 200));
+      // Submission, status/classification and USC feedback must use the trusted
+      // workflow so verified-contact checks, audits and outbox events cannot be skipped.
+      allow create, update: if false;
       // A complaint becomes deletable only after it has reached a terminal workflow state.
       allow delete: if officerHasPermission("complaints.status") && resource.data.status in ["Resolved", "Closed"];
 
@@ -468,18 +424,9 @@ service cloud.firestore {
           get(/databases/$(database)/documents/complaints/$(complaintId)).data.studentUid == uid()
           || isOfficerOrAdmin()
         );
-        allow create: if signedIn()
-          && getAfter(/databases/$(database)/documents/complaints/$(complaintId)).data.studentUid == uid()
-          && request.resource.data.studentUid == uid()
-          && request.resource.data.index is int
-          && request.resource.data.index >= 0
-          && request.resource.data.index <= 30
-          && request.resource.data.payload is string
-          && request.resource.data.payload.size() > 0
-          && request.resource.data.payload.size() <= 850000
-          && request.resource.data.keys().hasOnly(["studentUid", "index", "payload"]);
+        allow create: if false;
         allow update: if false;
-        allow delete: if isOfficerOrAdmin()
+        allow delete: if officerHasPermission("complaints.status")
           && exists(/databases/$(database)/documents/complaints/$(complaintId))
           && get(/databases/$(database)/documents/complaints/$(complaintId)).data.status in ["Resolved", "Closed"];
       }
@@ -518,19 +465,7 @@ service cloud.firestore {
     match /complaint_rate_limits/{userId} {
       allow get: if signedIn() && userId == uid();
       allow list: if false;
-      allow create: if schoolStudent()
-        && userId == uid()
-        && request.resource.data.keys().hasOnly(["studentUid", "lastSubmittedAt"])
-        && request.resource.data.studentUid == uid()
-        && request.resource.data.lastSubmittedAt == request.time;
-      allow update: if schoolStudent()
-        && userId == uid()
-        && resource.data.studentUid == uid()
-        && request.resource.data.studentUid == uid()
-        && request.resource.data.keys().hasOnly(["studentUid", "lastSubmittedAt"])
-        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(["lastSubmittedAt"])
-        && request.resource.data.lastSubmittedAt == request.time;
-      allow delete: if false;
+      allow create, update, delete: if false;
     }
 
     // Browser-managed capstone election workflow. Firestore Rules remain the final
@@ -1049,6 +984,40 @@ service cloud.firestore {
         && request.resource.data.statement is string && request.resource.data.statement.size() <= 1600
         && request.resource.data.docTickets is list && request.resource.data.docTickets.size() <= 8
         && request.resource.data.expiresAtMs <= request.time.toMillis() + 86400000;
+    }
+    match /complaint_email_events/{eventId} {
+      allow read: if isOfficerOrAdmin() || (signedIn() && resource.data.uid == uid());
+      allow write: if false;
+    }
+    match /complaint_submission_receipts/{receiptId} { allow read, write: if false; }
+    match /complaint_action_requests/{requestId} { allow read, write: if false; }
+    match /complaint_drafts/{userId} {
+      allow read, delete: if ownUser(userId);
+      allow create, update: if ownUser(userId) && schoolStudent()
+        && request.resource.data.keys().hasOnly(["requestId","savedAtMs"])
+        && request.resource.data.requestId.matches("^[a-fA-F0-9-]{24,64}$");
+      match /entries/{requestId} {
+        allow read, delete: if ownUser(userId);
+        allow create, update: if ownUser(userId) && schoolStudent()
+          && request.resource.data.requestId == requestId
+          && request.resource.data.keys().hasOnly(["requestId","submissionType","category","incidentDate","subject","details","attachmentName","attachmentType","attachmentSize","chunkCount","expiresAtMs"])
+          && request.resource.data.subject is string && request.resource.data.subject.size() <= 120
+          && request.resource.data.details is string && request.resource.data.details.size() <= 1000
+          && request.resource.data.chunkCount is int && request.resource.data.chunkCount >= 0 && request.resource.data.chunkCount <= 9
+          && request.resource.data.attachmentSize is int && request.resource.data.attachmentSize >= 0 && request.resource.data.attachmentSize <= 5242880
+          && (!request.resource.data.attachmentType.matches("^image/.*") || request.resource.data.attachmentSize <= 3145728)
+          && request.resource.data.expiresAtMs <= request.time.toMillis() + 86400000;
+        match /attachmentChunks/{chunkId} {
+          allow read, delete: if ownUser(userId);
+          allow create, update: if ownUser(userId) && schoolStudent()
+            && request.resource.data.keys().hasOnly(["studentUid","index","payload"])
+            && chunkId in ["0000","0001","0002","0003","0004","0005","0006","0007","0008"]
+            && request.resource.data.studentUid == uid()
+            && request.resource.data.index is int && request.resource.data.index >= 0 && request.resource.data.index < 9
+            && request.resource.data.payload is string && request.resource.data.payload.size() <= 850000
+            && getAfter(/databases/$(database)/documents/complaint_drafts/$(userId)/entries/$(requestId)).data.requestId == requestId;
+        }
+      }
     }
     // Everything not explicitly listed is denied.
     match /{document=**} {

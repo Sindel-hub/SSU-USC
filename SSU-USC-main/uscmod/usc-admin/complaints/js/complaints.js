@@ -1,9 +1,11 @@
+import {callStudentEmailService} from "../../../shared/supabase-email-service.js";
 import { departmentName, departmentSummary, sortComplaints } from "./complaint-inbox-model.mjs";
 import { db } from "../../../firebase/firebase-config.js";
-import { callSecure } from "../../../shared/security-client.js?v=complaint-review-compat-3";
+import { callSecure } from "../../../shared/security-client.js?v=complaint-email-1";
 import { complaintAttachmentMeta, downloadBlob, isImageAttachment, loadComplaintAttachmentBlob } from "../../../shared/complaint-attachments.js";
 import {
   collection,
+  doc,
   getCountFromServer,
   getDocs,
   limit,
@@ -18,6 +20,17 @@ const uscAuthAllowed = await (globalThis.USC_AUTH_READY || Promise.resolve(false
 if (uscAuthAllowed !== true) await new Promise(() => {});
 
 
+let stopDelivery=null;
+function watchComplaintDelivery(record){
+ stopDelivery?.();stopDelivery=null;
+ const status=document.getElementById('complaintEmailDelivery'),retry=document.getElementById('retryComplaintEmail');if(!status||!retry)return;
+ status.textContent='';retry.hidden=true;if(!record?.notificationEventId)return;
+ stopDelivery=onSnapshot(doc(db,'complaint_email_events',record.notificationEventId),snapshot=>{
+  const state=snapshot.data()?.state;status.textContent='Email: '+({queued:'Queued',sending:'Sending',sent:'Sent',failed:'Failed',unknown:'Delivery unconfirmed — administrator reconciliation required',cancelled:'Cancelled'}[state]||'Unavailable');retry.hidden=state!=='failed';
+  retry.onclick=async()=>{retry.disabled=true;try{await callStudentEmailService('complaint_notification_retry',{eventId:record.notificationEventId})}catch{status.textContent='The email could not be queued for retry.'}finally{retry.disabled=false}};
+ },()=>{status.textContent='Email delivery status is unavailable.'});
+}
+window.addEventListener('pagehide',()=>stopDelivery?.());
 const STATUS_FLOW = ["Submitted", "Under Review", "In Progress", "Resolved", "Closed"];
 
 const COMPLAINT_CLASSIFICATIONS = ["Student Level", "Administrative Level", "Crisis Level"];
@@ -440,6 +453,7 @@ function renderDetails() {
     if (detailPanel) detailPanel.style.display = "none";
     if (deleteComplaintBtn) deleteComplaintBtn.hidden = true;
     updateStatusFlow("Submitted");
+    watchComplaintDelivery(null);
     return;
   }
 
@@ -457,6 +471,7 @@ function renderDetails() {
   void renderAttachmentPreview(selected);
   renderThread(selected);
   updateStatusFlow(selected.status);
+  watchComplaintDelivery(selected);
 
   if (deleteComplaintBtn) {
     const deletable = ["Resolved", "Closed"].includes(safeText(selected.status));
@@ -586,7 +601,7 @@ if (updateStatusBtn) {
         ? `Review saved as ${nextClassification}.`
         : "Complaint review status saved.");
     } catch (error) {
-      console.error("Error saving complaint review:", error);
+      console.error("Complaint review could not be saved.");
       alert(error?.message || "Failed to save the complaint review.");
       updateStatusFlow(previousStatus);
       syncClassificationUI(previousClassification);
@@ -669,12 +684,14 @@ if (sendReplyBtn) {
         previousClassification: complaintClassificationForRecord(selected),
         status: nextStatus,
         classification,
+        requestInformation: document.getElementById("requestComplaintInformation")?.checked===true,
         feedback: feedbackText
       });
       detailReply.value = "";
+      const requestInfo=document.getElementById("requestComplaintInformation");if(requestInfo)requestInfo.checked=false;
       alert("USC feedback sent. The student can now view it in their Tracklist.");
     } catch (error) {
-      console.error("Error sending USC feedback:", error);
+      console.error("USC feedback could not be saved.");
       alert(error?.message || "Failed to send USC feedback.");
     } finally {
       setButtonLoading(sendReplyBtn, false, "Sending...", "Send Feedback");
