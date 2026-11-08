@@ -28,13 +28,15 @@
     "test:email": "node --test tests/email-service.test.mjs",
     "test:email-rules": "firebase emulators:exec --only firestore \"node --test tests/email-settings.rules.test.mjs\"",
     "test:event-participation": "node --test tests/event-participation.test.mjs",
-    "test:candidate-management": "node --test tests/election-candidate-management.test.mjs tests/student-candidate-removal-sync.test.mjs",
+    "test:candidate-management": "node --test tests/election-candidate-management.test.mjs tests/student-candidate-removal-sync.test.mjs tests/election-registration-scope.test.mjs",
     "test:auth-regressions": "node --test tests/verified-gmail-login.test.mjs tests/gmail-conflict-resolution.test.mjs tests/gmail-account-return.test.mjs tests/gmail-recovery-page.test.mjs tests/gmail-verification-page.test.mjs tests/complaint-cooldown.test.mjs tests/usc-email-provider-compatibility.test.mjs tests/admin-account-removal.test.mjs tests/admin-password-reset.test.mjs tests/admin-password-reset-browser-fallback.test.mjs tests/email-service.test.mjs tests/institutional-accounts.test.mjs tests/institutional-firebase-adapter.test.mjs tests/admin-audit-guardrails-static.test.mjs tests/overview-unified-charts.test.mjs tests/email-service-contracts.test.mjs",
     "test:gmail-security": "node --test tests/gmail-password-security.test.mjs tests/verified-gmail-http.integration.test.mjs",
     "test:gmail-rate-postgres": "node --test tests/gmail-rate-limit.postgres.integration.test.mjs",
     "test:candidate-removal-rules": "firebase emulators:exec --project demo-ssu-candidate-removal --only firestore \"node --test tests/election-candidate-removal.rules.test.mjs\"",
     "test:organization-chart-rules": "firebase emulators:exec --project demo-ssu-org-chart --only firestore \"node --test tests/organization-chart-image.rules.test.mjs\"",
-    "test:organization-chart-browser": "node tests/browser/organization-chart-image.cjs"
+    "test:organization-chart-browser": "node tests/browser/organization-chart-image.cjs",
+    "test:registration-scope-rules": "firebase emulators:exec --project demo-ssu-registration-scope --only firestore \"node --test tests/election-registration-scope.rules.test.mjs\"",
+    "test:election-history-browser": "node tests/browser/election-application-history.cjs"
   },
   "devDependencies": {
     "@firebase/rules-unit-testing": "^4.0.1",

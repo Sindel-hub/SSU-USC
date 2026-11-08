@@ -919,7 +919,8 @@ exports.saveElectionSchedule = onCall(callableOptions(), async (request) => {
     }
     const beforeSnap = await tx.get(electionRef);
     const before = beforeSnap.exists ? beforeSnap.data() : null;
-    if (before?.finalized === true || before?.archived === true || before?.resultsPublished === true) throw new HttpsError("failed-precondition", "A finalized, published-result, or archived election schedule is immutable.");
+    if (before && (request.data?.createNew === true || previousElectionId !== electionId)) throw new HttpsError("already-exists", "Use a new Election ID; existing election records cannot be reused.");
+    if (before?.scheduleDeleted === true || before?.finalized === true || before?.archived === true || before?.resultsPublished === true) throw new HttpsError("failed-precondition", "A finalized, published-result, or archived election schedule is immutable.");
     if (before && request.data?.expectedScheduleVersion !== undefined && Number(request.data.expectedScheduleVersion) !== Number(before.scheduleVersion || 0)) {
       throw new HttpsError("failed-precondition", "The schedule changed while you were editing. Close and reopen the editor to review the latest dates.");
     }
@@ -1012,6 +1013,7 @@ exports.emergencyUpdateElectionSchedule = onCall(callableOptions(), async (reque
 exports.submitCandidateApplication = onCall(callableOptions(), async (request) => {
   const activeStudent = await requireActiveRole(request, ["student"]);
   const { electionId, data: election } = await currentElection();
+  if (request.data?.electionId !== electionId) throw new HttpsError("failed-precondition", "The active election changed. Reopen Election before registering.");
   const nowMs = Date.now();
   if (!inWindow(election, "registrationStart", "registrationEnd", nowMs) || electionLifecycle(election, nowMs) !== "Registration") {
     throw new HttpsError("failed-precondition", "Candidate registration is not open according to server time.");
@@ -1039,6 +1041,7 @@ exports.submitCandidateApplication = onCall(callableOptions(), async (request) =
 
   const appRef = db.doc(`elections/${electionId}/applications/${uid}`);
   const application = {
+    electionId,
     applicantUid: uid,
     studentId,
     fullName: cleanText(roster.fullName || user.fullName, 120),
@@ -1056,7 +1059,8 @@ exports.submitCandidateApplication = onCall(callableOptions(), async (request) =
     updatedAt: FieldValue.serverTimestamp()
   };
   await db.runTransaction(async (tx) => {
-    const existing = await tx.get(appRef);
+    const [existing, pointer, state] = await Promise.all([tx.get(appRef), tx.get(db.doc("election_config/current")), tx.get(db.doc(`elections/${electionId}`))]);
+    if (!pointer.exists || pointer.get("electionId") !== electionId || !state.exists || state.get("scheduleDeleted") === true || electionLifecycle(state.data(), Date.now()) !== "Registration") throw new HttpsError("failed-precondition", "The active election changed or registration closed.");
     if (existing.exists) throw new HttpsError("already-exists", "You already submitted a candidate application for this election.");
     tx.create(appRef, application);
   });
@@ -1194,6 +1198,7 @@ exports.reviewCandidateApplication = onCall(callableOptions({ secrets: [SUPABASE
   await requireOfficerPermission(request, "elections.review");
   requireRecentAuth(request);
   const { electionId, data: election } = await currentElection();
+  if (request.data?.electionId && request.data.electionId !== electionId) throw new HttpsError("failed-precondition", "The active election changed. Reopen the candidate list.");
   const nowMs = Date.now();
   if (!inWindow(election, "applicationReviewStart", "applicationReviewEnd", nowMs) || electionLifecycle(election, nowMs) !== "Review") {
     throw new HttpsError("failed-precondition", "Application review is not open according to server time.");

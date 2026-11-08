@@ -105,6 +105,7 @@ async function loadContext() {
 }
 
 async function loadData() {
+  const selectedElectionId = electionId;
   applications = [];
   candidates = [];
   turnout = { ballotsCast: 0, eligibleVoters: context?.eligibleVoterCount || 0 };
@@ -119,7 +120,8 @@ async function loadData() {
       return null;
     })
   ]);
-  if (appSnap) applications = appSnap.docs.map((d) => ({ id: d.id, ...d.data() }));
+  if (selectedElectionId !== electionId) return;
+  if (appSnap) applications = appSnap.docs.map((d) => ({ id: d.id, ...d.data(), electionId: selectedElectionId }));
   if (candidateSnap) candidates = candidateSnap.docs.map((d) => ({ id: d.id, ...d.data() }));
   if (turnoutSnap?.exists?.()) turnout = turnoutSnap.data();
   if (departmentResult) departmentTurnout = departmentResult;
@@ -186,10 +188,12 @@ function renderSavedSchedule() {
   setButtonState($("deleteScheduleFromEditorBtn"), !hasSchedule || context?.finalized || context?.resultsPublished || context?.archived);
 }
 
+function newElectionId() { return `usc-${new Date().getFullYear()}-${crypto.randomUUID()}`; }
+
 function populateScheduleEditor({ blank = false } = {}) {
   if (els.electionTitleInput) els.electionTitleInput.value = blank ? "USC Election" : (context?.title || "USC General Election");
   const idInput = $("electionIdInput");
-  if (idInput) idInput.value = electionId || `usc-${new Date().getFullYear()}-general`;
+  if (idInput) idInput.value = (blank || !electionId) ? newElectionId() : electionId;
   for (const [field, input] of Object.entries(scheduleInputs)) {
     if (!input) continue;
     input.value = blank ? "" : asLocalInput(context?.[field]);
@@ -201,7 +205,7 @@ function populateScheduleEditor({ blank = false } = {}) {
 function openScheduleEditor(mode = "edit") {
   const dialog = $("scheduleEditorDialog");
   if (!dialog) return;
-  const hasSchedule = Boolean(electionId && context?.scheduleComplete);
+  const hasSchedule = mode !== "create" && Boolean(electionId && context?.scheduleComplete);
   if (hasSchedule && (context?.finalized || context?.resultsPublished || context?.archived)) return alert("Officially finalized, published, or archived elections cannot be rescheduled.");
   scheduleEditorMode = mode;
   scheduleEditorOriginal = hasSchedule ? {...context} : null;
@@ -381,6 +385,7 @@ async function submitCandidatePreviewDecision(application, decision, trigger) {
   try {
     await callSecure("reviewCandidateApplication", {
       applicantUid: application.id,
+      electionId: application.electionId,
       decision,
       reviewNote: note
     });
@@ -400,7 +405,7 @@ async function removeCandidateApplication(application) {
   if (!confirm(`Remove the pending application for ${application.fullName}? This action will be audited.`)) return;
   if (!confirm(`Are you absolutely sure you want to remove the pending application for ${application.fullName}?`)) return;
   try {
-    await callSecure("removeCandidateApplication", {applicantUid:application.id});
+    await callSecure("removeCandidateApplication", {applicantUid:application.id,electionId:application.electionId});
     closeCandidatePreview();
     await refreshAll();
   } catch (error) { alert(error.message); }
@@ -624,6 +629,7 @@ async function saveSchedule() {
     if (scheduleEditorOriginal && !confirm(`Save the updated schedule for ${scheduleEditorOriginal.title || id}?\nVoting closes: ${new Date(schedule.votingEnd).toLocaleString()}\nResult publication: ${new Date(schedule.resultPublicationStart).toLocaleString()} → ${new Date(schedule.resultPublicationEnd).toLocaleString()}\nExisting candidates, votes, and turnout will be preserved.`)) return;
     const result = await callSecure("saveElectionSchedule", {
       electionId: id,
+      createNew: scheduleEditorVersion === null,
       title: clean(els.electionTitleInput?.value) || "USC General Election",
       schedule,
       ...(scheduleEditorVersion === null ? {} : {expectedScheduleVersion:scheduleEditorVersion})
