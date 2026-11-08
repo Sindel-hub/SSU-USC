@@ -1,3 +1,4 @@
+import { manageCandidateRegistration } from "./registration-history-store.js";
 import { isInternalAuthEmail } from "./account-email.js";
 import { callStudentEmailService } from "./supabase-email-service.js";
 import { auth, db, functions } from "../firebase/firebase-config.js";
@@ -903,37 +904,18 @@ async function browserSaveElectionSchedule(data = {}, emergency = false) {
 
 
 async function browserDeleteElectionSchedule(data = {}) {
-  const { user } = await requireBrowserPermission("elections.view");
-  const electionId = String(data.electionId || "").trim().toLowerCase();
-  if (!electionId) throw new Error("No election schedule was selected.");
-  const electionRef = doc(db, "elections", electionId);
-  const pointerRef = doc(db, "election_config", "current");
-  const [existing, pointer] = await Promise.all([getDoc(electionRef), getDoc(pointerRef)]);
-  if (!existing.exists()) throw new Error("The election schedule no longer exists.");
-  const before = existing.data();
-  if (before.finalized === true || before.resultsPublished === true || before.archived === true) {
-    throw new Error("A finalized, published-result, or archived election schedule cannot be deleted.");
-  }
-  const batch = writeBatch(db);
-  batch.set(electionRef, {
-    scheduleDeleted: true,
-    scheduleDeletedAt: serverTimestamp(),
-    scheduleDeletedByUid: user.uid,
-    lifecycle: "Draft",
-    updatedAt: serverTimestamp()
-  }, { merge: true });
-  if (pointer.exists() && String(pointer.data()?.electionId || "") === electionId) batch.delete(pointerRef);
-  batch.set(doc(collection(db, "audit_logs")), {
-    actorUid: user.uid,
-    actorEmail: user.email || "",
-    action: "ELECTION_SCHEDULE_DELETE",
-    target: `elections/${electionId}`,
-    source: "browser-election-runtime",
-    details: { preservedElectionRecord: true },
-    createdAt: serverTimestamp()
+  const {user}=await requireBrowserPermission("elections.view");
+  const electionId=String(data.electionId||"").trim().toLowerCase();
+  if(!electionId||electionId.includes('/'))throw new Error("Select an election schedule.");
+  const ref=doc(db,"elections",electionId),pointerRef=doc(db,"election_config","current");
+  await runTransaction(db,async tx=>{
+    const [record,pointer]=await Promise.all([tx.get(ref),tx.get(pointerRef)]);
+    if(!record.exists())throw new Error("Election schedule not found.");
+    tx.update(ref,{scheduleDeleted:true,scheduleDeletedAt:serverTimestamp(),scheduleDeletedByUid:user.uid,updatedAt:serverTimestamp()});
+    if(pointer.exists()&&pointer.data().electionId===electionId)tx.delete(pointerRef);
+    tx.set(doc(collection(db,"audit_logs")),{actorUid:user.uid,actorEmail:user.email||"",action:"ELECTION_SCHEDULE_DELETE",target:ref.path,source:"browser-election-runtime",details:{preservedElectionRecord:true},createdAt:serverTimestamp()});
   });
-  await batch.commit();
-  return { electionId, deleted: true };
+  return {electionId,deleted:true};
 }
 
 async function browserStartRosterImport(data = {}) {
@@ -1005,19 +987,19 @@ async function browserSubmitCandidateApplication(data = {}) {
   if (!ELECTION_POSITIONS.includes(position)) throw new Error("Invalid candidate position.");
   const appRef = doc(db,"elections",context.electionId,"applications",user.uid);
   const existing = await getDoc(appRef);
-  if (existing.exists()) throw new Error("You already submitted a candidate application for this election.");
+  if (existing.exists() && existing.data().removed !== true) throw new Error("You already submitted a candidate application for this election.");
   const photoPath = String(data.campaignPhotoPath || "").trim();
   if (!photoPath.startsWith(BROWSER_FILE_SCHEME)) throw new Error("Campaign photo upload is missing.");
   const supportingDocumentPaths = Array.isArray(data.supportingDocumentPaths) ? data.supportingDocumentPaths.filter((p)=>String(p).startsWith(BROWSER_FILE_SCHEME)).slice(0,8) : [];
-  const record = { electionId:context.electionId, applicantUid:user.uid, studentId, fullName:String(roster.fullName||profile.fullName||"").slice(0,120), email:user.email||profile.email||"", program:String(roster.program||profile.program||"").slice(0,160), college:String(roster.college||profile.college||"").slice(0,160), position, department:position==="Department Representative"?String(roster.college||profile.college||"").slice(0,160):"", partylist:String(data.partylist||"").trim().slice(0,100), platform:String(data.platform||"").trim().slice(0,4000), campaignPhotoPath:photoPath, supportingDocumentPaths, status:"Under Review", submittedAt:serverTimestamp(), updatedAt:serverTimestamp() };
+  const record = { registrationId:user.uid, electionSnapshot:{title:context.title||"USC Election",registrationStart:context.registrationStart,registrationEnd:context.registrationEnd,votingStart:context.votingStart,votingEnd:context.votingEnd}, electionId:context.electionId, applicantUid:user.uid, studentId, fullName:String(roster.fullName||profile.fullName||"").slice(0,120), email:user.email||profile.email||"", program:String(roster.program||profile.program||"").slice(0,160), college:String(roster.college||profile.college||"").slice(0,160), position, department:position==="Department Representative"?String(roster.college||profile.college||"").slice(0,160):"", partylist:String(data.partylist||"").trim().slice(0,100), platform:String(data.platform||"").trim().slice(0,4000), campaignPhotoPath:photoPath, supportingDocumentPaths, status:"Under Review", submittedAt:serverTimestamp(), updatedAt:serverTimestamp() };
   await runTransaction(db, async tx => {
     const [active, election, duplicate] = await Promise.all([
       tx.get(doc(db,"election_config","current")), tx.get(doc(db,"elections",context.electionId)), tx.get(appRef)
     ]);
     const state = election.exists() ? election.data() : {};
     if (!active.exists() || active.data().electionId !== context.electionId || !election.exists() || state.scheduleDeleted || lifecycleFromSchedule(state) !== "Registration") throw new Error("The active election changed or registration closed. Reopen Election before registering.");
-    if (duplicate.exists()) throw new Error("You already submitted a candidate application for this election.");
-    tx.set(appRef, record);
+    if (duplicate.exists() && duplicate.data().removed !== true) throw new Error("You already submitted a candidate application for this election.");
+    tx.set(appRef, {...record,electionSnapshot:{title:state.title||"USC Election",registrationStart:state.registrationStart,registrationEnd:state.registrationEnd,votingStart:state.votingStart,votingEnd:state.votingEnd}});
   });
   return { applicationId:user.uid, status:"Under Review", electionId:context.electionId };
 }
@@ -1073,8 +1055,8 @@ async function syncBrowserCandidateReviewCompletion(
    * - ZERO applications remain Under Review
    */
   const complete =
-    !applications.empty &&
-    pending.empty;
+    applications.docs.some(doc=>doc.data().removed !== true) &&
+    !pending.docs.some(doc=>doc.data().removed !== true);
 
 
   await updateDoc(
@@ -1106,18 +1088,21 @@ async function syncBrowserCandidateReviewCompletion(
   return complete;
 }
 
+export async function refreshRegistrationReviewCompletion(electionId) {
+  const snap=await getDoc(doc(db,"elections",electionId));
+  if(!snap.exists())return;
+  const state=snap.data();
+  if(state.finalized||state.archived||state.resultsPublished||state.scheduleDeleted)return;
+  if(Date.now()<toMillis(state.applicationReviewStart)||Date.now()>=toMillis(state.applicationReviewEnd))return;
+  await syncBrowserCandidateReviewCompletion(electionId,auth.currentUser?.uid||"");
+}
+
 async function browserRemoveCandidateApplication(data = {}) {
-  const { user } = await requireBrowserPermission("elections.review");
-  const context = await browserElectionContext();
-  if (data.electionId && data.electionId !== context.electionId) throw new Error("The active election changed. Reopen the candidate list.");
-  const ref = doc(db,"elections",context.electionId,"applications",String(data.applicantUid));
-  await runTransaction(db, async (tx) => {
-    const snap = await tx.get(ref);
-    if (!snap.exists() || snap.data().status !== "Under Review") throw new Error("Only pending applications can be deleted. Use candidate management for approved candidates.");
-    tx.delete(ref);
-    tx.set(doc(collection(db,"audit_logs")), {actorUid:user.uid, action:"CANDIDATE_APPLICATION_REMOVE",target:ref.path,source:"browser-election-runtime",before:snap.data(),createdAt:serverTimestamp()});
-  });
-  await syncBrowserCandidateReviewCompletion(context.electionId, user.uid);
+  await requireBrowserPermission("elections.review");
+  const context=await browserElectionContext();
+  if(data.electionId&&data.electionId!==context.electionId)throw new Error("The active election changed. Reopen the candidate list.");
+  await manageCandidateRegistration({electionId:context.electionId,registrationId:String(data.applicantUid||""),remove:true});
+  await refreshRegistrationReviewCompletion(context.electionId);
   return {success:true};
 }
 
@@ -1236,6 +1221,7 @@ async function browserReviewCandidate(data = {}) {
 
   const app =
     appSnap.data();
+  if (app.removed === true) throw new Error("This registration was deleted. Refresh the candidate list.");
 
 
   const status =

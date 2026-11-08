@@ -7,8 +7,8 @@ test('late application reads cannot restore previous election status after a swi
  const scope=vm.createContext({student:{uid:'s'},auth:{currentUser:null},context:{electionId:'A'},application:{status:'Approved'},candidateDraft:{position:'President'},currentView:'registration',voterStatus:null,candidates:[],turnout:{},db:{},
  sessionProfile:()=>({}),sessionStorage:{setItem(){}},doc:(_db,...parts)=>parts.join('/'),callSecure:async()=>next,
  getDoc:async path=>path==='elections/B/applications/s'?new Promise(resolve=>{resolveB=resolve}):path==='elections/C/applications/s'?{id:'s',exists:()=>true,data:()=>({status:'Rejected',applicantUid:'s'})}:empty,
- stopWatchingCandidates(){},watchElectionCandidates:async()=>{},});
- vm.runInContext(source.slice(source.indexOf('async function loadSecureState('),source.indexOf('function timeline(')),scope);
+ stopWatchingCandidates(){},watchRegistration(){},watchElectionCandidates:async()=>{},});
+ vm.runInContext(source.slice(source.indexOf('async function loadSecureState('),source.indexOf('let registrationSubscription =')),scope);
  const pending=scope.loadSecureState();await new Promise(resolve=>setImmediate(resolve));assert.equal(scope.application,null);assert.equal(scope.currentView,'landing');assert.equal(scope.candidateDraft,null);
  next={electionId:'C'};await scope.loadSecureState();resolveB({id:'s',exists:()=>true,data:()=>({status:'Approved'})});await pending;
  assert.equal(scope.context.electionId,'C');assert.equal(scope.application.electionId,'C');assert.equal(scope.application.status,'Rejected');

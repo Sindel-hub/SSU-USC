@@ -121,7 +121,7 @@ async function loadData() {
     })
   ]);
   if (selectedElectionId !== electionId) return;
-  if (appSnap) applications = appSnap.docs.map((d) => ({ id: d.id, ...d.data(), electionId: selectedElectionId }));
+  if (appSnap) applications = appSnap.docs.map((d) => ({ id: d.id, ...d.data(), electionId: selectedElectionId })).filter(row=>row.removed!==true);
   if (candidateSnap) candidates = candidateSnap.docs.map((d) => ({ id: d.id, ...d.data() }));
   if (turnoutSnap?.exists?.()) turnout = turnoutSnap.data();
   if (departmentResult) departmentTurnout = departmentResult;
@@ -184,8 +184,8 @@ function renderSavedSchedule() {
   const scheduleLocked = context?.finalized || context?.resultsPublished || context?.archived;
   setButtonState($("editScheduleBtn"), !hasSchedule || scheduleLocked);
   setButtonState($("extendVotingBtn"), !hasSchedule || scheduleLocked);
-  setButtonState($("deleteCurrentScheduleBtn"), !hasSchedule || context?.finalized || context?.resultsPublished || context?.archived);
-  setButtonState($("deleteScheduleFromEditorBtn"), !hasSchedule || context?.finalized || context?.resultsPublished || context?.archived);
+  setButtonState($("deleteCurrentScheduleBtn"), !hasSchedule);
+  setButtonState($("deleteScheduleFromEditorBtn"), !hasSchedule);
 }
 
 function newElectionId() { return `usc-${new Date().getFullYear()}-${crypto.randomUUID()}`; }
@@ -648,7 +648,6 @@ async function saveSchedule() {
 
 async function deleteCurrentSchedule() {
   if (!electionId || !context?.scheduleComplete) return alert("There is no saved schedule to delete.");
-  if (context.finalized || context.resultsPublished || context.archived) return alert("A finalized, published-result, or archived election schedule cannot be deleted.");
   if (!confirm("Delete the current saved election schedule? The action will be recorded in the audit trail. Candidate and turnout records are preserved, but there will be no active schedule until a new one is saved.")) return;
   const buttons = [$("deleteCurrentScheduleBtn"), $("deleteScheduleFromEditorBtn")];
   buttons.forEach((button) => setButtonState(button, true));
