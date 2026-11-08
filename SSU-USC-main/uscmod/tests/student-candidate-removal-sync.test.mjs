@@ -9,7 +9,7 @@ const initial=[{id:'one',fullName:'One',position:'President',approved:true},{id:
 function setup(view='candidates'){
  let selectors=[],gallery=0,ballots=0,closed=0,reads=0,stops=0,failed=0;
  const subscriptions=[];
- const ctx=vm.createContext({db:{},candidates:[],watchedElection:'',stopCandidateWatch:null,activeCandidateId:'',candidateWatchGeneration:0,currentView:view,
+ const ctx=vm.createContext({context:null,candidateDraft:null,db:{},candidates:[],watchedElection:'',stopCandidateWatch:null,activeCandidateId:'',candidateWatchGeneration:0,currentView:view,
   collection:(_db,...parts)=>parts.join('/'),getDocs:async()=>{reads++;return snapshot(initial);},
   onSnapshot:(ref,next,error)=>{subscriptions.push({ref,next,error});return ()=>{stops++;};},
   closeCandidateProfile:()=>{closed++;ctx.activeCandidateId='';},

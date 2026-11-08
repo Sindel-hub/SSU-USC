@@ -160,16 +160,23 @@ async function watchElectionCandidates(electionId, readable) {
 }
 
 async function loadSecureState() {
+  const generation = loadSecureState.generation = (loadSecureState.generation || 0) + 1;
   const liveProfileId = student?.uid || auth.currentUser?.uid || "";
   if (liveProfileId) {
     const liveProfileSnap = await getDoc(doc(db, "users", liveProfileId));
+    if (generation !== loadSecureState.generation) return;
     if (liveProfileSnap.exists()) {
       const liveProfile = liveProfileSnap.data();
       student = { ...student, ...liveProfile, uid: liveProfileId, candidacyApproved: liveProfile.candidacyApproved === true };
       sessionStorage.setItem("studentProfile", JSON.stringify({ ...sessionProfile(), candidacyApproved: student.candidacyApproved }));
     }
   }
-  context = await callSecure("getElectionContext");
+  const nextContext = await callSecure("getElectionContext");
+  if (generation !== loadSecureState.generation) return;
+  if (context?.electionId !== nextContext.electionId) {
+    application = null; voterStatus = null; candidateDraft = null; currentView = "landing";
+  }
+  context = nextContext;
   const electionId = context.electionId;
   if (!electionId) {
     stopWatchingCandidates();
@@ -184,7 +191,9 @@ async function loadSecureState() {
     getDoc(doc(db, "elections", electionId, "voterStatus", student.uid)),
     getDoc(doc(db, "elections", electionId, "turnout", "public"))
   ]);
-  application = appSnap.exists() ? { id: appSnap.id, ...appSnap.data() } : null;
+  if (generation !== loadSecureState.generation || context.electionId !== electionId) return;
+  if (appSnap.exists() && appSnap.data().electionId && appSnap.data().electionId !== electionId) throw new Error("This application has a conflicting election association. Ask the election officer to review it.");
+  application = appSnap.exists() ? { id: appSnap.id, ...appSnap.data(), electionId } : null;
   voterStatus = statusSnap.exists() ? statusSnap.data() : null;
   turnout = turnoutSnap.exists() ? turnoutSnap.data() : { ballotsCast: 0, eligibleVoters: context.eligibleVoterCount || 0 };
   await watchElectionCandidates(electionId, context.candidateVisible || context.votingOpen);
@@ -335,9 +344,10 @@ function renderElectionBlockingState(message, reason = "closed") {
         <h2>SSU UNIVERSITY STUDENT COUNCIL</h2>
         <div class="election-reference-motto">LEADERSHIP | EXCELLENCE | DISCIPLINE | SERVICE</div>
         <div class="election-reference-intro"><h3>A Legacy of Student Leadership</h3><p>The University Student Council elections are the heartbeat of student representation at Samar State University. For decades, the USC has stood as the vital bridge between the student body and the university administration. Participating in these elections is more than just a democratic exercise; it is a commitment to continuing a long-standing tradition of proactive leadership. By choosing our representatives, we ensure that student welfare, campus initiatives, and academic excellence remain at the forefront of SSU’s growth.</p></div><p class="election-phase-copy">${esc(message)}</p>
-      <div class="election-reference-actions"><button class="election-reference-primary" type="button" disabled>Closed</button></div>
+      <div class="election-reference-actions"><button class="election-reference-primary" type="button" disabled>Closed</button>${application ? '<button type="button" id="closedApplicationStatus">View Application Status</button>' : ""}</div>
     </div></div></section>`;
   wireLandingSchedule();
+  document.getElementById("closedApplicationStatus")?.addEventListener("click", renderApplicationStatus);
 }
 
 function renderLanding() {
@@ -372,11 +382,12 @@ function renderLanding() {
     const label = hasApplication
       ? "Already Registered"
       : candidacyApproved
-        ? "Register Now!"
+        ? "Register as Candidate"
         : "Candidacy Approval Required";
     applicationAction = `<button type="button" class="election-reference-primary" id="landingApplication" ${(!hasApplication && !candidacyApproved) ? "disabled" : ""}>${esc(label)}</button>`;
   }
 
+  if (hasApplication && !context?.registrationOpen) secondaryActions.push('<button type="button" id="landingApplication" class="election-reference-secondary">View Application Status</button>');
   if (context?.candidateVisible) secondaryActions.push(`<button type="button" class="election-reference-secondary" id="landingCandidates">View Candidates</button>`);
   if (context?.votingOpen) secondaryActions.push(`<button type="button" class="election-reference-secondary" id="landingVote" ${voterStatus?.hasVoted ? "disabled" : ""}>${voterStatus?.hasVoted ? "Already Voted" : "Vote Now"}</button>`);
   if (context?.resultsVisible) secondaryActions.push(`<button type="button" class="election-reference-secondary" id="landingResults">View Results</button>`);
@@ -579,7 +590,9 @@ async function submitApplication() {
   button.disabled = true;
   message.textContent = "Server-verifying registration window and securely uploading files...";
   try {
+    const expectedElectionId = context?.electionId;
     context = await callSecure("getElectionContext");
+    if (!expectedElectionId || context.electionId !== expectedElectionId) throw new Error("The active election changed. Reopen Election before submitting.");
     if (!context.registrationOpen) throw new Error("Candidate registration is no longer open according to server time.");
     if (!candidateDraft.photoFile) throw new Error("Campaign photo is required.");
     const photoTicket = await secureUpload(candidateDraft.photoFile, "candidate-photo");
@@ -591,6 +604,7 @@ ${candidateDraft.platform}
 Statement of Intent:
 ${candidateDraft.statement}`.slice(0, 4000);
     const result = await callSecure("submitCandidateApplication", {
+      electionId: expectedElectionId,
       position: candidateDraft.position,
       partylist: candidateDraft.partylist,
       platform: combinedPlatform,
@@ -941,6 +955,7 @@ setInterval(async () => {
     await loadSecureState();
     if (currentView === "landing" || previousLifecycle !== context.lifecycle) renderLanding();
     else if (currentView === "candidates") renderCandidates();
+    else if (currentView === "status") renderApplicationStatus();
     else if (currentView === "registration" && !context.registrationOpen) renderLanding();
     else if (currentView === "ballot" && !context.votingOpen) renderLanding();
     else if (currentView === "results" && !context.resultsVisible) renderLanding();

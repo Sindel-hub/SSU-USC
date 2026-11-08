@@ -570,6 +570,7 @@ service cloud.firestore {
         && request.resource.data.votingEnd <= request.resource.data.resultPublicationStart
         && request.resource.data.resultPublicationStart < request.resource.data.resultPublicationEnd;
       allow update: if officerHasPermission("elections.view")
+        && !(resource.data.get("scheduleDeleted", false) == true && request.resource.data.get("scheduleDeleted", false) != true)
         && resource.data.archived != true
         && (!request.resource.data.diff(resource.data).affectedKeys().hasAny([
             "registrationStart", "registrationEnd", "applicationReviewStart", "applicationReviewEnd",
@@ -655,6 +656,12 @@ service cloud.firestore {
         allow create: if schoolStudent()
           && ownProfile().candidacyApproved == true
           && applicantUid == uid()
+          && request.resource.data.electionId == electionId
+          && get(/databases/$(database)/documents/election_config/current).data.electionId == electionId
+          && electionDoc(electionId).get("scheduleDeleted", false) == false
+          && electionDoc(electionId).get("archived", false) == false
+          && electionDoc(electionId).get("finalized", false) == false
+          && electionDoc(electionId).get("resultsPublished", false) == false
           && request.time >= electionDoc(electionId).registrationStart
           && request.time < electionDoc(electionId).registrationEnd
           && request.resource.data.applicantUid == uid()
