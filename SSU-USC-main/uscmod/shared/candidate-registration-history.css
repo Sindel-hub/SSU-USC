@@ -21,3 +21,80 @@ dialog.registration-history::backdrop { background:#102b4566; }
 
 .registration-history [hidden] { display:none !important; }
 .registration-history :is(input,select):disabled { opacity:.65; }
+
+/* Keep the native dialog centered even when page resets remove browser margins. */
+dialog.registration-history.registration-history-details {
+ position:fixed;inset:0;margin:auto;width:min(1040px,calc(100vw - 48px));
+ max-width:none;max-height:min(880px,calc(100dvh - 48px));padding:0;
+ border:1px solid #d7e5f1;border-radius:22px;overflow:hidden;
+ background:#fff;color:#203e60;box-shadow:0 24px 80px #0c28433d;
+ font-family:Roboto,Arial,sans-serif;font-size:14px;line-height:1.55;
+}
+dialog.registration-history-details::backdrop { background:#122c4d80; }
+.registration-history-details .registration-detail-form { display:flex;flex-direction:column;max-height:inherit;min-height:0;margin:0; }
+.registration-history-details .registration-detail-header { flex-shrink:0;align-items:center;padding:24px 28px;gap:16px;border-bottom:1px solid #e2ebf3;background:#fff; }
+.registration-history-details .registration-detail-eyebrow { margin:0 0 5px;color:#607e9b;font-size:11px;letter-spacing:.1em;text-transform:uppercase;font-weight:700; }
+.registration-history-details .registration-detail-header h2 { margin:0;font-size:24px;line-height:1.25;color:#194f89; }
+.registration-history-details .registration-detail-header button { flex-shrink:0;display:flex;align-items:center;gap:12px;margin:0;min-height:42px;background:#f4f8fc;font-size:14px;font-weight:500; }
+.registration-history-details .registration-detail-header button span { font-size:22px;line-height:1; }
+.registration-history-details .registration-detail-body { display:grid;grid-template-columns:280px minmax(0,1fr);min-height:0;overflow:auto;overscroll-behavior:contain;scrollbar-width:thin;scrollbar-color:#94b2c5 transparent; }
+.registration-history-details .registration-detail-sidebar { min-width:0;padding:26px 24px;background:#f3f8fd;border-right:1px solid #e2ebf3;overflow-wrap:anywhere; }
+.registration-history-details .registration-detail-identity { padding-bottom:24px;border-bottom:1px solid #dce8f3; }
+.registration-history-details .registration-detail-photo-wrap { display:flex;align-items:center;justify-content:center;height:220px;border:1px solid #dbe7f0;border-radius:14px;overflow:hidden;margin-bottom:18px;background:#e8f0f7; }
+.registration-history-details .registration-history-photo { display:block;width:100%;height:100%;max-height:none;border-radius:0;object-fit:contain; }
+.registration-history-details .registration-detail-avatar { display:grid;place-items:center;width:72px;height:72px;margin-bottom:16px;border-radius:18px;background:#dfedfc;color:#2169a2;font-size:26px;font-weight:700; }
+.registration-history-details h3 { margin:0 0 16px;color:#204e79;font-size:15px;font-weight:700;line-height:1.4; }
+.registration-history-details .registration-detail-identity h3 { margin-bottom:6px;font-size:20px; }
+.registration-history-details .registration-detail-id { margin:0 0 14px;color:#617b94;font-size:13px; }
+.registration-history-details .registration-history-badge { display:inline-block;font-weight:600;border:1px solid #c7e1f6;color:#1d6094;background:#e1f0fd; }
+.registration-history-details .registration-detail-election { padding-top:24px; }
+.registration-history-details .registration-detail-election-name { margin:0;font-weight:600; }
+.registration-history-details .registration-detail-election-id { margin:4px 0 20px;color:#607b95;font-size:12px; }
+.registration-history-details dl { margin:0; }
+.registration-history-details dt { margin:0 0 5px;color:#6a7f94;font-size:12px;font-weight:500; }
+.registration-history-details dd { margin:0;color:#253f59;font-size:14px;line-height:1.6;overflow-wrap:anywhere; }
+.registration-history-details .registration-detail-election dl>div+div { margin-top:18px; }
+.registration-history-details .registration-detail-election dd { font-size:13px; }
+.registration-history-details .registration-detail-election dd span { display:block;color:#617b94; }
+.registration-history-details .registration-detail-main { min-width:0;padding:28px 30px;overflow-wrap:anywhere; }
+.registration-history-details .registration-detail-section+.registration-detail-section { margin-top:26px;padding-top:24px;border-top:1px solid #e2ebf3; }
+.registration-history-details .registration-detail-grid { display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:20px 24px; }
+.registration-history-details .registration-detail-field { min-width:0;margin:0; }
+.registration-history-details label.registration-detail-field { font-size:12px;color:#607b95; }
+.registration-history-details .registration-detail-contact { margin-top:20px; }
+.registration-history-details .registration-history-copy { margin:0;line-height:1.8;font-size:14px;color:#425e78; }
+.registration-history-details .registration-detail-muted { color:#71879c;font-size:13px;margin:0; }
+.registration-history-details .registration-detail-documents { display:flex;flex-wrap:wrap;gap:8px; }
+.registration-history-details .registration-detail-documents button { margin:0;min-height:42px;font-size:13px;text-align:left; }
+.registration-history-details [data-feedback]:empty { display:none; }
+.registration-history-details [data-feedback] { margin-top:20px;color:#b42c38; }
+.registration-history-details .registration-detail-footer { display:flex;align-items:center;justify-content:space-between;gap:16px;padding:18px 28px;flex-shrink:0;border-top:1px solid #e2ebf3;background:#fff; }
+.registration-history-details .registration-detail-footer span { color:#6a7f94;font-size:12px; }
+.registration-history-details .registration-detail-footer button { margin:0;background:#218fb9;color:#fff;border-color:#218fb9;min-height:44px;font-weight:600; }
+.registration-history-details button:hover { border-color:#79a8ca;background:#e4eff9; }
+.registration-history-details .registration-detail-footer button:hover { background:#197da5; }
+.registration-history-details :is(button,input,textarea):focus-visible { outline:3px solid #53cbf380;outline-offset:2px; }
+@media(max-width:700px) {
+ dialog.registration-history.registration-history-details { width:calc(100vw - 24px);max-height:calc(100dvh - 24px);border-radius:16px; }
+ .registration-history-details .registration-detail-header { padding:18px;gap:10px; }
+ .registration-history-details .registration-detail-header h2 { font-size:19px; }
+ .registration-history-details .registration-detail-header button { gap:6px;padding:8px 10px; }
+ .registration-history-details .registration-detail-body { grid-template-columns:minmax(0,1fr); }
+ .registration-history-details .registration-detail-sidebar { padding:20px;border-right:0;border-bottom:1px solid #e2ebf3; }
+ .registration-history-details .registration-detail-identity { display:flow-root;min-height:110px;padding-bottom:20px; }
+ .registration-history-details .registration-detail-photo-wrap { float:left;width:86px;height:112px;margin:0 16px 8px 0;border-radius:10px; }
+ .registration-history-details .registration-detail-avatar { float:left;width:64px;height:72px;margin:0 16px 8px 0; }
+ .registration-history-details .registration-detail-identity h3 { font-size:18px; }
+ .registration-history-details .registration-detail-main { padding:22px 20px; }
+ .registration-history-details .registration-detail-footer { padding:14px 18px; }
+ .registration-history-details :is(input,textarea) { font-size:16px; }
+}
+@media(max-width:400px) {
+ .registration-history-details .registration-detail-grid { grid-template-columns:minmax(0,1fr);gap:16px; }
+ .registration-history-details .registration-detail-footer { align-items:stretch;flex-direction:column;gap:8px; }
+ .registration-history-details .registration-detail-header h2 { font-size:17px; }
+}
+@media(min-width:360px) and (max-width:700px) {
+ .registration-history-details .registration-detail-election dl { display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px; }
+ .registration-history-details .registration-detail-election dl>div+div { margin-top:0; }
+}

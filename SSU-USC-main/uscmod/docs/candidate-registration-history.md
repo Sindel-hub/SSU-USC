@@ -29,6 +29,10 @@ A removed application may be replaced at its deterministic path only while its e
 
 `npm run test:registration-history-rules` uses a demo Firestore emulator. Tests cover completed election edits/deletions, missing parent history, permissions, mandatory audit, publication deactivation, result/ballot preservation, own-user queries, schedule retention, tombstone replacement and closed/deleted registration denial. The Task 1 registration-scope rules suite also passes with these rules. No production student data is used.
 
+## Registration details dialog
+
+The view/edit dialog is explicitly centered within the viewport, with a persistent Close header and one contained scrolling body. Desktop separates the photo, status and election dates from candidate details, platform, supporting documents and review notes. Mobile stacks the same content, wraps long values and keeps form inputs at a readable size. Photos use contain to preserve the full image; missing photos use initials. Editing keeps the same field names, validation, transaction and submit behavior. No backend or authorization changes are part of this UI polish. Browser checks include long content, viewport centering, overflow and Close access at 320/390/768/1440/1920px.
+
 ## History loading failures
 
 History has distinct loading, failure and successful-empty states. Permission, missing-index and connection errors show actionable messages with a Retry button; filters are disabled until a query succeeds. Failed listeners clear stale records, and metadata refreshes cannot replace an access error with an empty listing. The browser fixture covers error/retry recovery without changing database authorization.
