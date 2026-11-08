@@ -31,6 +31,7 @@ export async function callStudentEmailService(action, payload = {}, { requireSes
   const data = await response.json().catch(() => ({}));
   if (!response.ok || data?.ok === false) {
     const error = new Error(data?.message || `Supabase email service failed (${response.status}).`);
+    if (typeof data?.code === "string") error.code = data.code;
     if (action === "authenticate_gmail" && response.status === 401) error.code = "auth/invalid-credential";
     throw error;
   }

@@ -44,3 +44,7 @@ There is **no isolated staging Firebase project**, confirmed by the user. Do not
 Before end-to-end review, provision an isolated Firebase staging project, configure the Preview client for it, apply these rules and indexes there, and wait for index readiness. If using callable mode, deploy the matching functions to staging as well. Verify review, submission, replacement, query and file access with synthetic staging accounts. Existing file authorization remains unchanged. Legacy documents may reference files no longer available; the UI reports existing access errors rather than broadening file permissions.
 
 Production rollout requires separate explicit backend authorization and coordinated rules/index/client deployment. Old clients must refresh: physical application deletion is denied and new soft-delete writes require these rules. Do not merge until staging review is complete. The user merges the PR manually. Rollback: revert the frontend review commit; retain backend audit/tombstone records and do not restore permissive destructive delete rules.
+
+## Task 3 verification integration
+
+The later verified-email change moves submission/review writes to the existing trusted email service and adds private drafts and notification events. Its deployment and legacy photo metadata privacy dependencies supersede the earlier browser-submission rollout notes here; see `candidate-verified-email.md`. History edits/soft deletion remain the same audited operations.

@@ -1,5 +1,6 @@
+import {verifiedCandidateEmail,showCandidateEmailRequired,restoreCandidateDraft,clearCandidateDraft} from "../../shared/candidate-email-registration.js";
 import { auth, db } from "../../firebase/firebase-config.js";
-import { callSecure, secureUpload, hydrateMediaImages } from "../../shared/security-client.js";
+import { callSecure, secureUpload, hydrateMediaImages, resolveMediaUrl } from "../../shared/security-client.js";
 import {
   collection,
   doc,
@@ -41,6 +42,8 @@ let candidateDraft = null;
 
 function createCandidateDraft() {
   return {
+    requestId: crypto.randomUUID(),
+    photoTicket: null, docTickets: [], documentNames: [],
     position: "",
     partylist: "",
     platform: "",
@@ -260,12 +263,12 @@ function registrationShell(step, body) {
 }
 
 function candidatePhotoPreviewUrl() {
-  if (!candidateDraft?.photoFile) return "assets/USClogo.webp";
+  if (!candidateDraft?.photoFile) return candidateDraft?.photoPreviewUrl || "assets/USClogo.webp";
   try { return URL.createObjectURL(candidateDraft.photoFile); } catch { return "assets/USClogo.webp"; }
 }
 
 function candidateReviewDocumentRows() {
-  const docs = candidateDraft?.supportingFiles || [];
+  const docs = candidateDraft?.supportingFiles?.length ? candidateDraft.supportingFiles : (candidateDraft?.documentNames||[]).map(name=>({name}));
   if (!docs.length) return `<span class="candidate-review-empty">No supporting documents added</span>`;
   return docs.map((file) => `<div class="candidate-review-document"><i class="fa-regular fa-file-pdf"></i><span>${esc(file.name)}</span><i class="fa-solid fa-circle-check"></i></div>`).join("");
 }
@@ -437,7 +440,7 @@ function renderLanding() {
 }
 
 function renderRegistration(step = 1, resetDraft = false) {
-  if (!electionActionEligibility().allowed || !context?.registrationOpen || student?.candidacyApproved !== true) return renderLanding();
+  if (!electionActionEligibility().allowed || !(context?.registrationOpen || (application?.status === "Needs Information" && context?.reviewOpen)) || student?.candidacyApproved !== true) return renderLanding();
   if (resetDraft || !candidateDraft) candidateDraft = createCandidateDraft();
   currentView = "registration";
   candidateRegistrationStep = Math.max(1, Math.min(4, Number(step) || 1));
@@ -485,7 +488,7 @@ function renderRegistration(step = 1, resetDraft = false) {
           <label class="candidate-photo-upload" for="campaignPhoto">
             <input id="campaignPhoto" type="file" accept="image/jpeg,image/png,image/webp">
             <i class="fa-regular fa-image"></i>
-            <strong>${candidateDraft.photoFile ? esc(candidateDraft.photoFile.name) : "Upload a photo"}</strong>
+            <strong>${candidateDraft.photoFile ? esc(candidateDraft.photoFile.name) : esc(candidateDraft.photoName||"Upload a photo")}</strong>
             <small>Upload jpg, png or webp (maximum 5MB)</small>
           </label>
           <div class="candidate-photo-guidelines"><strong>Photo Guidelines:</strong><ul><li>Clear image of your face</li><li>Formal or semi-formal attire</li><li>No sunglasses or props</li></ul></div>
@@ -508,7 +511,7 @@ function renderRegistration(step = 1, resetDraft = false) {
             <input id="supportingDocuments" type="file" multiple accept=".pdf,image/jpeg,image/png">
             <i class="fa-solid fa-plus"></i><strong>Add Document</strong>
           </label>
-          <div class="candidate-selected-docs">${candidateDraft.supportingFiles.length ? candidateDraft.supportingFiles.map((f) => `<span><i class="fa-regular fa-file"></i>${esc(f.name)}</span>`).join("") : ""}</div>
+          <div class="candidate-selected-docs">${(candidateDraft.supportingFiles.length||candidateDraft.documentNames.length) ? (candidateDraft.supportingFiles.length?candidateDraft.supportingFiles:candidateDraft.documentNames.map(name=>({name}))).map((f) => `<span><i class="fa-regular fa-file"></i>${esc(f.name)}</span>`).join("") : ""}</div>
           <div class="candidate-doc-guidelines"><strong>Accepted Files:</strong><ul><li>Certificate of enrollment</li><li>Good Moral</li><li>Other supporting documents</li></ul><p>File types: PDF, JPG, PNG<br>Maximum file size: 5MB</p></div>
         </div>
       </div>
@@ -521,7 +524,7 @@ function renderRegistration(step = 1, resetDraft = false) {
       <div class="candidate-review-top">
         <section>
           <h4>Candidate Information</h4>
-          <div class="candidate-review-person"><img src="${candidatePhotoPreviewUrl()}" alt="Selected campaign photo"><div><strong>${esc(student.fullName)}</strong><span>${esc(student.studentId)}</span><span>${esc(student.program || "")}</span><span>${esc(email)}</span><span>${esc(contact)}</span></div></div>
+          <div class="candidate-review-person"><img src="${esc(candidatePhotoPreviewUrl())}" alt="Selected campaign photo"><div><strong>${esc(student.fullName)}</strong><span>${esc(student.studentId)}</span><span>${esc(student.program || "")}</span><span>${esc(email)}</span><span>${esc(contact)}</span></div></div>
         </section>
         <section><h4>Position</h4><p>${esc(candidateDraft.position)}</p><h4>Party / Affiliation</h4><p>${esc(candidateDraft.partylist || "Independent")}</p></section>
         <section><h4>Documents</h4><div class="candidate-review-documents">${candidateReviewDocumentRows()}</div></section>
@@ -547,7 +550,7 @@ function renderRegistration(step = 1, resetDraft = false) {
       if (file) {
         candidateDraft.position = clean(document.getElementById("candidatePosition")?.value);
         candidateDraft.partylist = clean(document.getElementById("candidateParty")?.value);
-        candidateDraft.photoFile = file;
+        candidateDraft.photoFile = file;candidateDraft.photoTicket=null;
         renderRegistration(2);
       }
     });
@@ -556,8 +559,8 @@ function renderRegistration(step = 1, resetDraft = false) {
       const position = clean(document.getElementById("candidatePosition")?.value);
       const party = clean(document.getElementById("candidateParty")?.value);
       if (!position) { message.textContent = "Choose the position you are applying for."; return; }
-      if (!candidateDraft.photoFile) { message.textContent = "Upload a campaign photo before continuing."; return; }
-      if (candidateDraft.photoFile.size > 5 * 1024 * 1024) { message.textContent = "Campaign photo must be 5MB or smaller."; return; }
+      if (!candidateDraft.photoFile && !candidateDraft.photoTicket) { message.textContent = "Upload a campaign photo before continuing."; return; }
+      if (candidateDraft.photoFile?.size > 5 * 1024 * 1024) { message.textContent = "Campaign photo must be 5MB or smaller."; return; }
       candidateDraft.position = position;
       candidateDraft.partylist = party;
       renderRegistration(3);
@@ -578,7 +581,7 @@ function renderRegistration(step = 1, resetDraft = false) {
       const selected = [...(docsInput.files || [])].slice(0, 8);
       const tooLarge = selected.find((file) => file.size > 5 * 1024 * 1024);
       if (tooLarge) { document.getElementById("candidateStepMessage").textContent = `${tooLarge.name} is larger than 5MB.`; return; }
-      candidateDraft.supportingFiles = selected;
+      candidateDraft.supportingFiles = selected;candidateDraft.docTickets=[];candidateDraft.documentNames=selected.map(f=>f.name);
       candidateDraft.platform = platform?.value || candidateDraft.platform;
       candidateDraft.statement = statement?.value || candidateDraft.statement;
       renderRegistration(3);
@@ -600,6 +603,30 @@ function renderRegistration(step = 1, resetDraft = false) {
   }
 }
 
+async function cacheCandidateUploads(){
+ if(!candidateDraft.photoTicket){if(!candidateDraft.photoFile)throw new Error('Campaign photo is required.');const ticket=await secureUpload(candidateDraft.photoFile,'candidate-photo');candidateDraft.photoTicket={path:ticket.path};}
+ for(let i=candidateDraft.docTickets.length;i<candidateDraft.supportingFiles.length&&i<8;i++){const ticket=await secureUpload(candidateDraft.supportingFiles[i],'candidate-document');candidateDraft.docTickets.push({path:ticket.path});}
+}
+async function saveCandidateEmailProgress(save){
+ const uid=student?.uid;if(!uid||auth.currentUser?.uid!==uid)throw new Error("Sign in again before saving your draft.");
+ await cacheCandidateUploads();
+ if(auth.currentUser?.uid!==uid)throw new Error("Your account changed. Please reopen Election.");
+ const {requestId,position,partylist,platform,statement,photoTicket,docTickets}=candidateDraft;
+ await save(context.electionId,{electionId:context.electionId,requestId,position,partylist,platform,statement,photoTicket,docTickets,photoName:candidateDraft.photoFile?.name||candidateDraft.photoName||'Campaign photo',documentNames:candidateDraft.supportingFiles.length?candidateDraft.supportingFiles.map(f=>f.name):candidateDraft.documentNames});
+}
+async function resumeCandidateEmailDraft(){
+ const electionId=context?.electionId;if(!electionId)return;
+ const saved=await restoreCandidateDraft(electionId);
+ if(!saved||context?.electionId!==electionId||currentView!=='landing')return;
+ if(saved.electionId!==electionId){app.insertAdjacentHTML('afterbegin','<p role="status">Your saved application belongs to a different election. It has not been submitted.</p>');return;}
+ if(application&&application.status!=='Needs Information')return;
+ if(!(context.registrationOpen||(application?.status==='Needs Information'&&context.reviewOpen))){app.insertAdjacentHTML('afterbegin','<p role="status">Registration closed while you were away. Your draft was not submitted.</p>');return;}
+ const restored={...createCandidateDraft(),...saved};
+ if(restored.photoTicket?.path)restored.photoPreviewUrl=await resolveMediaUrl(restored.photoTicket.path).catch(()=>null);
+ if(context?.electionId!==electionId||currentView!=='landing')return;
+ candidateDraft=restored;renderRegistration(4);
+}
+
 async function submitApplication() {
   const button = document.getElementById("submitCandidateApplication");
   const message = document.getElementById("candidateSubmitMessage");
@@ -610,11 +637,14 @@ async function submitApplication() {
     const expectedElectionId = context?.electionId;
     context = await callSecure("getElectionContext");
     if (!expectedElectionId || context.electionId !== expectedElectionId) throw new Error("The active election changed. Reopen Election before submitting.");
-    if (!context.registrationOpen) throw new Error("Candidate registration is no longer open according to server time.");
-    if (!candidateDraft.photoFile) throw new Error("Campaign photo is required.");
-    const photoTicket = await secureUpload(candidateDraft.photoFile, "candidate-photo");
-    const docTickets = [];
-    for (const file of candidateDraft.supportingFiles.slice(0, 8)) docTickets.push(await secureUpload(file, "candidate-document"));
+    if (!(context.registrationOpen || (application?.status === "Needs Information" && context.reviewOpen))) throw new Error("Candidate registration is no longer open according to server time.");
+    if(!await verifiedCandidateEmail()){
+      message.textContent='A verified email is required before submission.';
+      await showCandidateEmailRequired({saveProgress:saveCandidateEmailProgress});
+      button.disabled=false;return;
+    }
+    await cacheCandidateUploads();
+    const photoTicket=candidateDraft.photoTicket,docTickets=candidateDraft.docTickets;
     const combinedPlatform = `Platform & Advocacy:
 ${candidateDraft.platform}
 
@@ -622,17 +652,19 @@ Statement of Intent:
 ${candidateDraft.statement}`.slice(0, 4000);
     const result = await callSecure("submitCandidateApplication", {
       electionId: expectedElectionId,
+      requestId: candidateDraft.requestId,
       position: candidateDraft.position,
       partylist: candidateDraft.partylist,
       platform: combinedPlatform,
       campaignPhotoPath: photoTicket.path,
       supportingDocumentPaths: docTickets.map((ticket) => ticket.path)
     });
+    await clearCandidateDraft(expectedElectionId).catch(()=>{});
     await loadSecureState();
     document.getElementById("applicationSuccess")?.classList.remove("hidden");
     message.textContent = `Application submitted: ${result.status}.`;
   } catch (error) {
-    console.error(error);
+    if(error.code==='email-verification-required'||error.details?.reason==='email-verification-required')await showCandidateEmailRequired({saveProgress:saveCandidateEmailProgress});
     message.textContent = error.message || "Unable to submit the application.";
     button.disabled = false;
   }
@@ -641,7 +673,12 @@ ${candidateDraft.statement}`.slice(0, 4000);
 function renderApplicationStatus() {
   if (!application) return renderLanding();
   currentView = "status";
-  app.innerHTML = `<section class="registration-card" style="max-width:850px;margin:35px auto"><div class="registration-tip"><i class="fa-solid fa-circle-info"></i><div><strong>Application Status: ${esc(application.status || "Under Review")}</strong><span>Private supporting documents are not exposed on public candidate pages.</span></div></div><div class="registration-body"><div class="review-grid"><div class="review-panel"><h4>Candidate</h4><p><strong>${esc(application.fullName || student.fullName)}</strong><br>${esc(application.studentId || student.studentId)}<br>${esc(application.program || student.program || "")}</p></div><div class="review-panel"><h4>Position</h4><p>${esc(application.position)}</p>${application.department ? `<h4>Verified College</h4><p>${esc(application.department)}</p>` : ""}<h4>Party</h4><p>${esc(application.partylist || "Independent")}</p></div><div class="review-panel"><h4>Review</h4><p>${esc(application.reviewNote || "No review note has been posted.")}</p></div></div><div class="registration-actions"><button class="btn-back" id="backFromStatus">Back</button>${context?.candidateVisible ? '<button class="btn-next" id="viewCandidatesFromStatus">View Candidates</button>' : ""}</div></div></section>`;
+  app.innerHTML = `<section class="registration-card" style="max-width:850px;margin:35px auto"><div class="registration-tip"><i class="fa-solid fa-circle-info"></i><div><strong>Application Status: ${esc(application.status || "Under Review")}</strong><span>Private supporting documents are not exposed on public candidate pages.</span></div></div><div class="registration-body"><div class="review-grid"><div class="review-panel"><h4>Candidate</h4><p><strong>${esc(application.fullName || student.fullName)}</strong><br>${esc(application.studentId || student.studentId)}<br>${esc(application.program || student.program || "")}</p></div><div class="review-panel"><h4>Position</h4><p>${esc(application.position)}</p>${application.department ? `<h4>Verified College</h4><p>${esc(application.department)}</p>` : ""}<h4>Party</h4><p>${esc(application.partylist || "Independent")}</p></div><div class="review-panel"><h4>Review</h4><p>${esc(application.reviewNote || "No review note has been posted.")}</p></div></div><div class="registration-actions">${application.status==='Needs Information'&&context?.reviewOpen?'<button class="btn-next" id="correctCandidateApplication">Update application</button>':''}<button class="btn-back" id="backFromStatus">Back</button>${context?.candidateVisible ? '<button class="btn-next" id="viewCandidatesFromStatus">View Candidates</button>' : ""}</div></div></section>`;
+  document.getElementById('correctCandidateApplication')?.addEventListener('click',async()=>{
+    candidateDraft=createCandidateDraft();const pieces=String(application.platform||'').split('\n\nStatement of Intent:\n');
+    Object.assign(candidateDraft,{position:application.position,partylist:application.partylist||'',platform:pieces[0].replace(/^Platform & Advocacy:\n/,''),statement:pieces[1]||'',photoTicket:{path:application.campaignPhotoPath},photoName:'Saved campaign photo',docTickets:(application.supportingDocumentPaths||[]).map(path=>({path})),documentNames:(application.supportingDocumentPaths||[]).map((_,i)=>`Supporting document ${i+1}`)});
+    candidateDraft.photoPreviewUrl=await resolveMediaUrl(application.campaignPhotoPath).catch(()=>null);renderRegistration(2);
+  });
   document.getElementById("backFromStatus")?.addEventListener("click", renderLanding);
   document.getElementById("viewCandidatesFromStatus")?.addEventListener("click", renderCandidates);
 }
@@ -956,7 +993,9 @@ async function initialize() {
   document.getElementById("dashboardUserInitials").textContent = (student.fullName || "ST").split(/\s+/).map((p) => p[0]).join("").slice(0,2).toUpperCase();
   app.innerHTML = `<div class="page-loading"><i class="fa-solid fa-spinner fa-spin"></i><br>Verifying election state with the server...</div>`;
   try { await loadSecureState(); renderLanding(); }
-  catch (error) { failClosed(error); }
+  catch (error) { failClosed(error); return; }
+  try { await resumeCandidateEmailDraft(); }
+  catch { app.insertAdjacentHTML("afterbegin",'<p role="status">Saved drafts are temporarily unavailable. You can continue with the form on this page.</p>'); }
 }
 
 document.getElementById("closeSuccess")?.addEventListener("click", async () => { document.getElementById("applicationSuccess")?.classList.add("hidden"); await loadSecureState(); renderLanding(); });
@@ -973,7 +1012,7 @@ setInterval(async () => {
     if (currentView === "landing" || previousLifecycle !== context.lifecycle) renderLanding();
     else if (currentView === "candidates") renderCandidates();
     else if (currentView === "status") renderApplicationStatus();
-    else if (currentView === "registration" && !context.registrationOpen) renderLanding();
+    else if (currentView === "registration" && !(context.registrationOpen || (application?.status === "Needs Information" && context.reviewOpen))) renderLanding();
     else if (currentView === "ballot" && !context.votingOpen) renderLanding();
     else if (currentView === "results" && !context.resultsVisible) renderLanding();
   } catch (error) { failClosed(error); }

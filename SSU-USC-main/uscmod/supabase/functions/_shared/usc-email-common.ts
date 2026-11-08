@@ -435,3 +435,25 @@ export async function disableFirebaseAuthAccount(uid: string, timestamp: number)
     method: "POST", body: JSON.stringify({ localId: uid, disableUser: true, validSince: String(Math.floor(timestamp / 1000)) })
   });
 }
+
+// General versioned workflow commits. Kept separate from identity writes so
+// candidate maps/arrays never relax the scalar-only identity helper.
+function encodeWorkflowValue(value: any): any {
+  if(value===null)return {nullValue:null};
+  if(typeof value==='string')return {stringValue:value};
+  if(typeof value==='boolean')return {booleanValue:value};
+  if(typeof value==='number'&&Number.isFinite(value))return Number.isSafeInteger(value)?{integerValue:String(value)}:{doubleValue:value};
+  if(Array.isArray(value))return {arrayValue:{values:value.map(encodeWorkflowValue)}};
+  if(value&&typeof value==='object')return {mapValue:{fields:Object.fromEntries(Object.entries(value).map(([k,v])=>[k,encodeWorkflowValue(v)]))}};
+  throw new Error('Invalid candidate workflow data.');
+}
+export async function firestoreWorkflowCommit(operations: any[]) {
+ const database=`projects/${env().firebaseProjectId}/databases/(default)`;
+ const writes=operations.map(operation=>({update:{name:`${database}/documents/${operation.path}`,fields:Object.fromEntries(Object.entries(operation.data).map(([k,v])=>[k,encodeWorkflowValue(v)]))},...(operation.replace?{}:{updateMask:{fieldPaths:Object.keys(operation.data)}}),currentDocument:operation.version?{updateTime:operation.version}:{exists:false}}));
+ await googleJson(`https://firestore.googleapis.com/v1/${database}/documents:commit`,{method:'POST',body:JSON.stringify({writes})});
+}
+export async function firestoreWorkflowQuery(collectionId: string, parent = '', state = '', limit = 1000) {
+ const database=`projects/${env().firebaseProjectId}/databases/(default)/documents`;
+ const payload=await googleJson(`https://firestore.googleapis.com/v1/${database}${parent?'/'+parent:''}:runQuery`,{method:'POST',body:JSON.stringify({structuredQuery:{from:[{collectionId}],...(state?{where:{fieldFilter:{field:{fieldPath:'state'},op:'EQUAL',value:{stringValue:state}}}}:{}),limit}})});
+ return (Array.isArray(payload)?payload:[]).filter(r=>r.document).map(r=>({id:r.document.name.split('/').pop(),data:decodeFirestoreFields(r.document.fields||{}),version:r.document.updateTime}));
+}

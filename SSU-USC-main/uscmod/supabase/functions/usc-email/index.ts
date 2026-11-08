@@ -1,3 +1,4 @@
+import {candidateRegistration} from "../_shared/candidate-registration-adapter.ts";
 import { createAccountRemovalService } from "./account-removal.mjs";
 import { createGmailPasswordAuthenticator } from "./gmail-login.mjs";
 import { createInstitutionalAccountService } from "./institutional-accounts.mjs";
@@ -265,6 +266,8 @@ function portalActionUrl(path: string): string {
 }
 
 
+function actionErrorMessage(error: unknown) { return errorText(error,"The email service could not complete this request."); }
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: CORS_HEADERS });
   const url = new URL(req.url);
@@ -282,6 +285,12 @@ Deno.serve(async (req) => {
 
     const body = await jsonBody(req);
     const action = String(body.action || "").trim();
+    if (["candidate_email_status","candidate_submit","candidate_review","candidate_notification_retry"].includes(action)) {
+      const user=await verifyFirebaseIdToken(String(req.headers.get("x-firebase-token")||""));
+      const methods={candidate_email_status:'emailStatus',candidate_submit:'submit',candidate_review:'review',candidate_notification_retry:'retry'} as const;
+      try{return jsonResponse(await candidateRegistration[methods[action as keyof typeof methods]](user,body));}
+      catch(error){const code=String((error as any)?.code||'unavailable');const known=['permission-denied','already-exists','not-found','invalid-argument','failed-precondition','email-verification-required'].includes(code);return jsonResponse({ok:false,code:known?code:'unavailable',message:known?errorText(error):'Candidate services are temporarily unavailable. Your saved application is preserved; refresh its status before retrying.'},known?409:503);}
+    }
     if (action === "admin_remove_suspended_account") {
       const user = await verifyFirebaseIdToken(String(req.headers.get("x-firebase-token") || ""));
       return jsonResponse(await removeSuspendedAccount(user, String(body.uid || "")));
@@ -350,7 +359,7 @@ Deno.serve(async (req) => {
     if (action === "password_changed") return await passwordChanged(req);
     return jsonResponse({ ok: false, message: "Unknown email-service action." }, 400);
   } catch (error) {
-    console.error("usc-email error", error);
-    return jsonResponse({ ok: false, message: errorText(error, "The email service could not complete this request.") }, 500);
+    console.error("usc-email request failed");
+    return jsonResponse({ ok: false, code: (error as any)?.code || "unavailable", message: String(actionErrorMessage(error)) }, (error as any)?.code === "permission-denied" ? 403 : (error as any)?.code ? 409 : 500);
   }
 });

@@ -1,3 +1,4 @@
+import {trustedSubmission} from './helpers/candidate-test-backend.mjs';
 import test,{before,after,beforeEach} from 'node:test';import assert from 'node:assert/strict';import fs from 'node:fs';import vm from 'node:vm';import {createRequire} from 'node:module';
 const require=createRequire(process.env.SSU_RULES_TEST_DEPENDENCIES||import.meta.url),{initializeTestEnvironment,assertSucceeds,assertFails}=require('@firebase/rules-unit-testing');
 const {doc,collection,collectionGroup,query,where,getDoc,getDocs,setDoc,deleteDoc,runTransaction,serverTimestamp,Timestamp}=require('firebase/firestore');let env;
@@ -19,9 +20,9 @@ test('removed registration may be replaced only while its active registration wi
  await operation().manage({electionId:'B',registrationId:'student',remove:true});
  const db=operation('student').db,ref=doc(db,'elections','B','applications','student');
  const fresh={registrationId:'student',electionId:'B',applicantUid:'student',studentId:'student',fullName:'Student',position:'President',status:'Under Review',submittedAt:serverTimestamp()};
- await assertSucceeds(setDoc(ref,fresh));
+ await trustedSubmission(env,'B','student');
  await assertFails(setDoc(ref,{...fresh,platform:'Duplicate'}));
- await inspect('B',async(store,app)=>{assert.equal(app.removed,undefined);assert.equal((await getDoc(doc(store,'elections','B','candidates','cand'))).data().removed,true);assert.equal((await getDocs(collection(store,'audit_logs'))).size,1)});
+ await inspect('B',async(store,app)=>{assert.equal(app.removed,false);assert.equal((await getDoc(doc(store,'elections','B','candidates','cand'))).data().removed,true);assert.equal((await getDocs(collection(store,'audit_logs'))).size,2)});
 });
 test('removing a registration never reopens closed or deleted schedules',async()=>{
  await operation().manage({electionId:'B',registrationId:'student',remove:true});

@@ -1,3 +1,4 @@
+import {deliverCandidateEvents} from "../_shared/candidate-registration-adapter.ts";
 import {
   activeEmailProfile,
   adminClient,
@@ -67,6 +68,7 @@ Deno.serve(async (req) => {
     const expected = String(Deno.env.get("EMAIL_WORKER_SECRET") || "");
     if (!expected || req.headers.get("x-worker-secret") !== expected) return new Response("Unauthorized", { status: 401 });
 
+    const candidateNotifications=await deliverCandidateEvents();
     const now = Date.now();
     const [{ data: accounts, error }, complaints, announcements, events, programs, pointer] = await Promise.all([
       supabase.from("student_email_accounts").select("*").not("verified_email", "is", null),
@@ -115,7 +117,7 @@ Deno.serve(async (req) => {
       await supabase.from("student_email_accounts").update(changes).eq("firebase_uid", account.firebase_uid);
     }
 
-    return new Response(JSON.stringify({ ok: true, accounts: (accounts || []).length, sent }), { headers: { "Content-Type": "application/json" } });
+    return new Response(JSON.stringify({ ok: true, candidateNotifications, accounts: (accounts || []).length, sent }), { headers: { "Content-Type": "application/json" } });
   } catch (error) {
     console.error("usc-email-worker error", error);
     return new Response(JSON.stringify({ ok: false, message: errorText(error, "Worker failed") }), { status: 500, headers: { "Content-Type": "application/json" } });

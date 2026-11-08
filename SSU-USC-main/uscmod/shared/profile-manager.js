@@ -985,6 +985,10 @@ function initialize() {
   if (!trigger) return;
   const { overlay, drawer } = createDrawer();
   bindDrawer(trigger, overlay, drawer);
+  window.addEventListener('usc:open-profile-email',()=>{
+    openDrawer(trigger);
+    window.setTimeout(()=>document.getElementById('gmailSettings')?.scrollIntoView({block:'center',behavior:'auto'}),100);
+  });
   import("./settings-manager.js?v=button-activation-1")
     .then(({ initializeSettingsManager }) => initializeSettingsManager({ role: currentProfile.role }))
     .catch((error) => console.warn("Settings manager load error:", error));

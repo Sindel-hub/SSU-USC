@@ -1,0 +1,14 @@
+dialog.candidate-email-required { position:fixed;inset:0;margin:auto;width:min(480px,calc(100vw - 28px));max-height:calc(100dvh - 28px);overflow:auto;box-sizing:border-box;border:1px solid #d5e4f1;border-radius:22px;padding:26px;background:#fff;color:#264666;box-shadow:0 24px 80px #102b453d;font:15px/1.65 Roboto,Arial,sans-serif; }
+.candidate-email-required::backdrop { background:#102b4580; }
+.candidate-email-required form { margin:0; }
+.candidate-email-required header { display:flex;gap:14px;align-items:center;margin-bottom:18px; }
+.candidate-email-required h2 { margin:0;color:#194f89;font-size:21px;line-height:1.3; }
+.candidate-email-required header p { margin:4px 0 0;font-size:12px;color:#66809a; }
+.candidate-email-required .candidate-email-icon { display:grid;place-items:center;flex-shrink:0;width:50px;height:50px;border-radius:14px;background:#e7f3fd;color:#1d7ca9;font-size:27px; }
+.candidate-email-required .candidate-email-hint { color:#66809a;font-size:13px; }
+.candidate-email-required button { display:block;width:100%;box-sizing:border-box;min-height:44px;margin-top:10px;padding:12px;border:1px solid #c6dcec;border-radius:12px;font:inherit;font-weight:600;color:#19588e;background:#f3f8fd;cursor:pointer; }
+.candidate-email-required [data-connect] { color:#fff;background:#218fb9;border-color:#218fb9; }
+.candidate-email-required button span { display:block;font-size:11px;font-weight:400;margin-top:3px; }
+.candidate-email-required [data-email-error] { color:#b42c38; }
+.candidate-email-required :focus-visible { outline:3px solid #53cbf3;outline-offset:3px; }
+@media(max-width:450px){dialog.candidate-email-required {padding:20px;}.candidate-email-required h2 {font-size:18px;}}

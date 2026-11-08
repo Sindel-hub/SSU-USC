@@ -724,7 +724,7 @@ async function browserStoreFile(file, kind) {
   const visibility = ["event-media", "program-media", "announcement-media"].includes(kind) ? "public" : "private";
   const batch = writeBatch(db);
   batch.set(ref, {
-    ownerUid: user.uid, ownerEmail: user.email || "", kind, visibility,
+    ownerUid: user.uid, kind, visibility,
     name: String(file.name || "upload").slice(0,180), type: file.type || "application/octet-stream",
     size: file.size, chunkCount: chunks.length, createdAt: serverTimestamp()
   });
@@ -974,34 +974,7 @@ async function browserFinalizeRosterImport(data = {}) {
 }
 
 async function browserSubmitCandidateApplication(data = {}) {
-  const { user, profile } = await requireBrowserRole(["student"]);
-  if (profile.schoolProvisioned !== true) throw new Error("Your school-provided student account is required for candidate registration.");
-  if (profile.candidacyApproved !== true) throw new Error("The System Administrator has not approved this account for candidacy registration.");
-  const context = await browserElectionContext();
-  if (!data.electionId || String(data.electionId) !== context.electionId) throw new Error("The active election changed. Reopen Election before registering.");
-  if (!context.registrationOpen) throw new Error("Candidate registration is not open.");
-  const studentId = String(profile.studentId || "").trim();
-  const rosterSnap = await getDoc(doc(db,"elections",context.electionId,"voterRoster",studentId));
-  const roster = rosterSnap.exists() ? rosterSnap.data() : {};
-  const position = String(data.position || "").trim();
-  if (!ELECTION_POSITIONS.includes(position)) throw new Error("Invalid candidate position.");
-  const appRef = doc(db,"elections",context.electionId,"applications",user.uid);
-  const existing = await getDoc(appRef);
-  if (existing.exists() && existing.data().removed !== true) throw new Error("You already submitted a candidate application for this election.");
-  const photoPath = String(data.campaignPhotoPath || "").trim();
-  if (!photoPath.startsWith(BROWSER_FILE_SCHEME)) throw new Error("Campaign photo upload is missing.");
-  const supportingDocumentPaths = Array.isArray(data.supportingDocumentPaths) ? data.supportingDocumentPaths.filter((p)=>String(p).startsWith(BROWSER_FILE_SCHEME)).slice(0,8) : [];
-  const record = { registrationId:user.uid, electionSnapshot:{title:context.title||"USC Election",registrationStart:context.registrationStart,registrationEnd:context.registrationEnd,votingStart:context.votingStart,votingEnd:context.votingEnd}, electionId:context.electionId, applicantUid:user.uid, studentId, fullName:String(roster.fullName||profile.fullName||"").slice(0,120), email:user.email||profile.email||"", program:String(roster.program||profile.program||"").slice(0,160), college:String(roster.college||profile.college||"").slice(0,160), position, department:position==="Department Representative"?String(roster.college||profile.college||"").slice(0,160):"", partylist:String(data.partylist||"").trim().slice(0,100), platform:String(data.platform||"").trim().slice(0,4000), campaignPhotoPath:photoPath, supportingDocumentPaths, status:"Under Review", submittedAt:serverTimestamp(), updatedAt:serverTimestamp() };
-  await runTransaction(db, async tx => {
-    const [active, election, duplicate] = await Promise.all([
-      tx.get(doc(db,"election_config","current")), tx.get(doc(db,"elections",context.electionId)), tx.get(appRef)
-    ]);
-    const state = election.exists() ? election.data() : {};
-    if (!active.exists() || active.data().electionId !== context.electionId || !election.exists() || state.scheduleDeleted || lifecycleFromSchedule(state) !== "Registration") throw new Error("The active election changed or registration closed. Reopen Election before registering.");
-    if (duplicate.exists() && duplicate.data().removed !== true) throw new Error("You already submitted a candidate application for this election.");
-    tx.set(appRef, {...record,electionSnapshot:{title:state.title||"USC Election",registrationStart:state.registrationStart,registrationEnd:state.registrationEnd,votingStart:state.votingStart,votingEnd:state.votingEnd}});
-  });
-  return { applicationId:user.uid, status:"Under Review", electionId:context.electionId };
+  return callStudentEmailService("candidate_submit",data);
 }
 
 async function syncBrowserCandidateReviewCompletion(
@@ -1056,7 +1029,8 @@ async function syncBrowserCandidateReviewCompletion(
    */
   const complete =
     applications.docs.some(doc=>doc.data().removed !== true) &&
-    !pending.docs.some(doc=>doc.data().removed !== true);
+    !pending.docs.some(doc=>doc.data().removed !== true) &&
+    applications.docs.filter(doc=>doc.data().removed !== true).every(doc=>["Approved","Rejected"].includes(doc.data().status));
 
 
   await updateDoc(
@@ -1146,210 +1120,7 @@ async function browserManageCandidate(data = {}, remove = false, dismiss = false
 }
 
 async function browserReviewCandidate(data = {}) {
-  const { user } = await requireBrowserPermission("elections.review");
-
-
-  const context =
-    await browserElectionContext();
-  if (data.electionId && data.electionId !== context.electionId) throw new Error("The active election changed. Reopen the candidate list.");
-
-
-  if (!context.reviewOpen) {
-    throw new Error(
-      "Application review is not open."
-    );
-  }
-
-
-  const applicantUid =
-    String(
-      data.applicantUid || ""
-    ).trim();
-
-
-  const decision =
-    String(
-      data.decision || ""
-    ).toLowerCase();
-
-
-  if (
-    !applicantUid ||
-    ![
-      "approve",
-      "reject"
-    ].includes(decision)
-  ) {
-    throw new Error(
-      "Choose Approve or Reject."
-    );
-  }
-
-
-  const appRef =
-    doc(
-      db,
-      "elections",
-      context.electionId,
-      "applications",
-      applicantUid
-    );
-
-
-  const appSnap =
-    await getDoc(appRef);
-
-
-  if (!appSnap.exists()) {
-    throw new Error(
-      "Candidate application not found."
-    );
-  }
-
-
-  if (
-    String(
-      appSnap.data().status || ""
-    ).toLowerCase() !==
-    "under review"
-  ) {
-    throw new Error(
-      "This application already has a final decision."
-    );
-  }
-
-
-  const app =
-    appSnap.data();
-  if (app.removed === true) throw new Error("This registration was deleted. Refresh the candidate list.");
-
-
-  const status =
-    decision === "approve"
-      ? "Approved"
-      : "Rejected";
-
-
-  const candidateId =
-    decision === "approve"
-      ? randomId("cand")
-      : "";
-
-
-  const batch =
-    writeBatch(db);
-
-
-  batch.update(
-    appRef,
-    {
-      status,
-
-      candidateId:
-        candidateId || "",
-
-      reviewNote:
-        String(
-          data.reviewNote || ""
-        ).slice(
-          0,
-          500
-        ),
-
-      reviewedByUid:
-        user.uid,
-
-      reviewedAt:
-        serverTimestamp(),
-
-      updatedAt:
-        serverTimestamp()
-    }
-  );
-
-
-  /*
-   * Approved application becomes
-   * an official candidate.
-   */
-  if (candidateId) {
-
-    batch.set(
-      doc(
-        db,
-        "elections",
-        context.electionId,
-        "candidates",
-        candidateId
-      ),
-      {
-        candidateId,
-
-        fullName:
-          app.fullName || "",
-
-        position:
-          app.position || "",
-
-        department:
-          app.department || "",
-
-        college:
-          app.college || "",
-
-        program:
-          app.program || "",
-
-        partylist:
-          app.partylist || "",
-
-        platform:
-          app.platform || "",
-
-        campaignPhotoUrl:
-          app.campaignPhotoPath || "",
-
-        approved:
-          true,
-
-        published:
-          true,
-
-        approvedAt:
-          serverTimestamp()
-      }
-    );
-  }
-
-
-  /*
-   * Save the actual review decision first.
-   */
-  await batch.commit();
-
-
-  /*
-   * IMPORTANT:
-   *
-   * After every approval/rejection,
-   * check whether ALL applications now
-   * have a final decision.
-   */
-  const candidateReviewComplete =
-    await syncBrowserCandidateReviewCompletion(
-      context.electionId,
-      user.uid
-    );
-
-
-  return {
-    status,
-
-    candidateId:
-      candidateId || null,
-
-    candidateReviewComplete
-  };
+  return callStudentEmailService("candidate_review",data);
 }
 async function browserGetElectionDepartmentTurnout(data = {}) {
   await requireBrowserPermission("elections.view");
