@@ -65,7 +65,7 @@ test("new officer accounts receive the permission preset for their USC position"
 });
 
 test("complaint and election actions enforce function-level permissions", () => {
-  const security = read("shared/security-client.js");
+  const security = read("shared/security-client.js")+read("supabase/functions/_shared/complaint-workflow.mjs");
   for (const permission of [
     "complaints.review",
     "complaints.classify",
@@ -114,7 +114,9 @@ test("Firestore rules enforce officer permissions on privileged writes", () => {
   assert.match(rules, /officerHasPermission\("events\.manage"\)/);
   assert.match(rules, /officerHasPermission\("complaints\.review"\)/);
   assert.match(rules, /officerHasPermission\("complaints\.status"\)/);
-  assert.match(rules, /officerHasPermission\("complaints\.classify"\)/);
+  const complaintWorkflow=read("supabase/functions/_shared/complaint-workflow.mjs");
+  assert.match(rules,/allow create, update: if false/);
+  assert.match(complaintWorkflow,/classificationChanged,'complaints.classify'/);
   assert.match(rules, /officerHasPermission\("elections\.view"\)/);
   assert.match(rules, /officerHasPermission\("elections\.roster"\)/);
   assert.match(rules, /officerHasPermission\("elections\.review"\)/);

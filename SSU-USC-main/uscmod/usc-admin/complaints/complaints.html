@@ -6,7 +6,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>USC Complaint Module</title>
   <link rel="stylesheet" href="../shared/css/usc-theme.css?v=officer-readable-1" />
-  <link rel="stylesheet" href="css/complaints.css?v=review-field-alignment-1" />
+  <link rel="stylesheet" href="css/complaints.css?v=verified-email-1" />
     <link rel="stylesheet" href="../shared/css/officer-ui.css?v=instant-shell-2" />
   <link
     rel="stylesheet"
@@ -241,7 +241,7 @@
 </footer>
 
     <script src="../shared/js/nav-active.js?v=7"></script>
-  <script type="module" src="js/complaints.js?v=complaint-review-compat-3&amp;mobile=1"></script>
+  <script type="module" src="js/complaints.js?verified-email=1&amp;v=complaint-review-compat-3&amp;mobile=1"></script>
   <script type="module" src="../shared/js/admin-auth.js?v=rbac4"></script>
 <script type="module" src="../../shared/profile-manager.js?v=registered-name-2&amp;refinements=1"></script>
   <script type="module" src="../shared/js/officer-rbac.js?v=6"></script>
@@ -315,7 +315,8 @@
 
                 <div class="field">
                   <label><i class="fa-solid fa-reply"></i> USC Feedback</label>
-                  <textarea id="detailReply" data-rbac-permission="complaints.feedback" placeholder="Write feedback for the student"></textarea>
+                  <label class="complaint-clarification-toggle"><input id="requestComplaintInformation" type="checkbox" data-rbac-permission="complaints.feedback"> Request clarification from the student</label>
+                  <p id="complaintEmailDelivery" role="status"></p><button class="mini-btn light" data-rbac-permission="complaints.review" id="retryComplaintEmail" type="button" hidden>Retry email</button><textarea id="detailReply" data-rbac-permission="complaints.feedback" placeholder="Write feedback for the student"></textarea>
                 </div>
 
                 <div class="row-actions" style="margin-bottom:14px;">

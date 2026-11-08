@@ -11,6 +11,7 @@ const tracklistHtml = read("dashboard/tracklist.html");
 const tracklistJs = read("dashboard/js/tracklist.js");
 const notificationsJs = read("dashboard/js/notifications.js");
 const rules = read("firestore.rules");
+const backend=read("supabase/functions/_shared/complaint-workflow.mjs");
 
 test("complaint classification is assigned by USC after student submission", () => {
   assert.match(studentHtml, /What happens next/);
@@ -37,10 +38,10 @@ test("browser and trusted backend enforce supported complaint classification lev
     assert.match(securityJs, new RegExp(level));
     assert.match(rules, new RegExp(level));
   }
-  assert.match(securityJs, /Assign a complaint classification before moving the case beyond review/);
-  assert.match(securityJs, /kind:\s*"feedback"/);
+  assert.match(backend,/Assign a complaint classification before advancing the case/);
+  assert.match(backend,/kind:'feedback'/);
   assert.match(rules, /validComplaintClassification/);
-  assert.match(rules, /hasOnly\(\["status", "classification", "updatedAt", "thread"\]\)/);
+  assert.match(rules,/allow create, update: if false/);
 });
 
 test("student tracklist exposes classification and USC feedback without a student reply control", () => {

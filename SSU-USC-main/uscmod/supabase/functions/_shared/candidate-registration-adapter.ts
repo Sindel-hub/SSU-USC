@@ -1,11 +1,9 @@
+import {notificationGmail,deliverNotificationQueue} from "./notification-adapter.ts";
 import {adminClient,firebaseUserByUid,firestoreVersionedGet,firestoreWorkflowCommit,firestoreWorkflowQuery,randomToken,env,sendEmail,escapeHtml} from './usc-email-common.ts';
 import {createCandidateRegistrationService,processCandidateNotification} from './candidate-registration.mjs';
 import {effectiveOfficerPermissions} from '../../../shared/officer-permissions.js';
 const supabase=adminClient();
-export async function candidateGmail(uid:string){
- const {data,error}=await supabase.from('student_email_accounts').select('firebase_uid,requested_email,verified_email,verified_at').eq('firebase_uid',uid).maybeSingle();
- if(error)throw new Error('Email verification records are temporarily unavailable.');return data;
-}
+export {notificationGmail as candidateGmail} from "./notification-adapter.ts";
 async function validateFile(ref:string,kind:string,uid:string,electionId:string){
  if(ref.startsWith('firestore-media://')){
   const fileId=ref.slice('firestore-media://'.length);if(!/^[A-Za-z0-9_-]{1,128}$/.test(fileId))throw new Error('Invalid attachment.');
@@ -34,14 +32,5 @@ async function syncReview(electionId:string){
   try{await firestoreWorkflowCommit([...apps.map(a=>({path:`elections/${electionId}/applications/${a.id}`,version:a.version,data:{status:a.data.status}})),{path:`elections/${electionId}`,version:parent.version,data:{candidateReviewComplete:complete,updatedAt:Date.now()}}]);return}catch(e){if(attempt===2)throw e}
  }
 }
-export const candidateRegistration=createCandidateRegistrationService({get:firestoreVersionedGet,commit:firestoreWorkflowCommit,authUser:firebaseUserByUid,gmail:candidateGmail,randomId:()=>randomToken().slice(0,32),canReview:(profile:any,user:any)=>(profile.role==='admin'&&user.role==='admin')||(profile.role==='officer'&&effectiveOfficerPermissions(profile).includes('elections.review')),validateFile,publishPhoto,syncReview});
-export async function deliverCandidateEvents(){
- const deps={get:firestoreVersionedGet,commit:firestoreWorkflowCommit,authUser:firebaseUserByUid,gmail:candidateGmail,now:Date.now,portalUrl:env().portalUrl,
-  finish:async(path:string,data:any)=>{const current=await firestoreVersionedGet(path);if(current)await firestoreWorkflowCommit([{path,version:current.version,data}])},
-  send:async(to:string,message:any,_key:string)=>{try{return await sendEmail(to,message.subject,`<p>${escapeHtml(message.text).replaceAll('\n','<br>')}</p>`,message.text,'candidate-application')}catch(error){if(/^Email provider rejected the message \(4[0-9]{2}\)/.test(String((error as Error).message)))Object.assign(error as object,{deliveryRejected:true});throw error}}};
- const stranded=await firestoreWorkflowQuery('candidate_email_events','','sending',100);
- for(const event of stranded)if(Date.now()-event.data.updatedAt>10*60*1000)await deps.finish(`candidate_email_events/${event.id}`,{state:'unknown',failureCode:'delivery-unconfirmed',updatedAt:Date.now()});
- const queued=await firestoreWorkflowQuery('candidate_email_events','','queued',50);let sent=0;
- for(const event of queued)if(await processCandidateNotification(event.id,deps))sent++;
- return {processed:queued.length,sent};
-}
+export const candidateRegistration=createCandidateRegistrationService({get:firestoreVersionedGet,commit:firestoreWorkflowCommit,authUser:firebaseUserByUid,gmail:notificationGmail,randomId:()=>randomToken().slice(0,32),canReview:(profile:any,user:any)=>(profile.role==='admin'&&user.role==='admin')||(profile.role==='officer'&&effectiveOfficerPermissions(profile).includes('elections.review')),validateFile,publishPhoto,syncReview});
+export async function deliverCandidateEvents(){return deliverNotificationQueue('candidate_email_events','candidate-application',processCandidateNotification);}

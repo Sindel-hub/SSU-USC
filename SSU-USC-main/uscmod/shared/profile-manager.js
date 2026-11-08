@@ -723,6 +723,7 @@ function closeDrawer(trigger) {
   trigger?.setAttribute("aria-expanded", "false");
   unlockBackgroundScroll();
   drawerOpen = false;
+  window.dispatchEvent(new CustomEvent('usc:profile-closed'));
   window.setTimeout(() => {
     if (!drawerOpen) overlay.hidden = true;
   }, 220);

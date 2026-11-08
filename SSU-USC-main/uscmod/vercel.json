@@ -5,5 +5,7 @@
       "destination": "/home/home.html",
       "permanent": false
     }
-  ]
+  ],
+  "buildCommand": "node scripts/build-staging-review.cjs",
+  "outputDirectory": "review-build"
 }

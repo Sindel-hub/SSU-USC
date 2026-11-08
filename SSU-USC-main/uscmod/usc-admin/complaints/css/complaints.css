@@ -628,3 +628,7 @@ body.officer-app-shell .review-fields-grid .classification-help {
 @media (max-width: 620px) {
   body.officer-app-shell .review-fields-grid > .field > label { min-height: 0; }
 }
+
+.complaint-clarification-toggle { display:flex;align-items:center;gap:9px;margin:12px 0;font-size:13px;line-height:1.5;color:#476680; }
+.complaint-clarification-toggle input[type="checkbox"] { width:18px;height:18px;margin:0;flex:0 0 18px;accent-color:#218fb9; }
+#complaintEmailDelivery { margin:10px 0;font-size:13px;color:#476680; }

@@ -15,7 +15,7 @@ const root=path.resolve(__dirname,'../..');
   if(url.pathname.endsWith('/shared/security-client.js'))return route.fulfill({contentType:'text/javascript',body:`export async function callSecure(name,data){return window.fixtureCall(name,data)}export async function secureUpload(file,kind){return window.fixtureCall('upload',{kind,name:file.name})}export const hydrateMediaImages=async()=>{};export const resolveMediaUrl=async()=>'/dashboard/assets/USClogo.webp';`});
   if(url.hostname==='www.gstatic.com')return route.fulfill({contentType:'text/javascript',body:sdk});
   if(url.pathname.endsWith('/functions/v1/usc-email')){
-   const body=route.request().postDataJSON();if(body.action==='candidate_email_status')return route.fulfill({json:{ok:true,verified}});return route.fulfill({status:400,json:{ok:false}});
+   const body=route.request().postDataJSON();if(['candidate_email_status','verified_email_status'].includes(body.action))return route.fulfill({json:{ok:true,verified}});return route.fulfill({status:400,json:{ok:false}});
   }
   if(url.hostname!=='candidate.test')return route.abort();const file=path.join(root,url.pathname);if(!fs.existsSync(file))return route.fulfill({status:404,body:''});
   let body=fs.readFileSync(file);const ext=path.extname(file);if(ext==='.html')body=body.toString().replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi,'');

@@ -439,6 +439,7 @@ export async function disableFirebaseAuthAccount(uid: string, timestamp: number)
 // General versioned workflow commits. Kept separate from identity writes so
 // candidate maps/arrays never relax the scalar-only identity helper.
 function encodeWorkflowValue(value: any): any {
+  if(value instanceof Date)return {timestampValue:value.toISOString()};
   if(value===null)return {nullValue:null};
   if(typeof value==='string')return {stringValue:value};
   if(typeof value==='boolean')return {booleanValue:value};

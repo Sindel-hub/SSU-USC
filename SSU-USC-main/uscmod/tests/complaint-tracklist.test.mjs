@@ -11,7 +11,8 @@ const attachmentJs = fs.readFileSync(path.join(root, "shared/complaint-attachmen
 
 test("submitted complaints and student tracklist use the authenticated Firebase UID", () => {
   assert.match(complaintJs, /auth\.currentUser\?\.uid/);
-  assert.match(complaintJs, /studentUid:\s*p\.uid/);
+  const workflow=fs.readFileSync(path.join(root,"supabase/functions/_shared/complaint-workflow.mjs"),"utf8");
+  assert.match(workflow,/studentUid:uid/);
   assert.match(tracklistJs, /auth\.currentUser\?\.uid/);
   assert.match(tracklistJs, /where\('studentUid',\s*'==',\s*studentUid\)/);
   assert.match(dashboardJs, /auth\.currentUser\?\.uid \|\| studentProfile\?\.uid/);

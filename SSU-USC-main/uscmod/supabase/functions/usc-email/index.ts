@@ -1,3 +1,6 @@
+import {complaintWorkflow} from "../_shared/complaint-adapter.ts";
+import {verifiedEmailStatus} from "../_shared/verified-notification-email.mjs";
+import {notificationIdentityDependencies} from "../_shared/notification-adapter.ts";
 import {candidateRegistration} from "../_shared/candidate-registration-adapter.ts";
 import { createAccountRemovalService } from "./account-removal.mjs";
 import { createGmailPasswordAuthenticator } from "./gmail-login.mjs";
@@ -285,6 +288,15 @@ Deno.serve(async (req) => {
 
     const body = await jsonBody(req);
     const action = String(body.action || "").trim();
+    if (["verified_email_status","complaint_submit","complaint_update","complaint_notification_retry"].includes(action)) {
+      const user=await verifyFirebaseIdToken(String(req.headers.get("x-firebase-token")||""));
+      try{
+        if(action==='verified_email_status')return jsonResponse(await verifiedEmailStatus(user,notificationIdentityDependencies));
+        if(action==='complaint_submit')return jsonResponse(await complaintWorkflow.submit(user,body));
+        if(action==='complaint_update')return jsonResponse(await complaintWorkflow.update(user,body));
+        return jsonResponse(await complaintWorkflow.retry(user,body));
+      }catch(error){const code=String((error as any)?.code||'unavailable'),known=['permission-denied','already-exists','not-found','invalid-argument','failed-precondition','email-verification-required','aborted','resource-exhausted'].includes(code);return jsonResponse({ok:false,code:known?code:'unavailable',message:known?errorText(error):'Submission services are temporarily unavailable. Your saved form is preserved; check Tracklist before retrying.'},known?409:503);}
+    }
     if (["candidate_email_status","candidate_submit","candidate_review","candidate_notification_retry"].includes(action)) {
       const user=await verifyFirebaseIdToken(String(req.headers.get("x-firebase-token")||""));
       const methods={candidate_email_status:'emailStatus',candidate_submit:'submit',candidate_review:'review',candidate_notification_retry:'retry'} as const;
