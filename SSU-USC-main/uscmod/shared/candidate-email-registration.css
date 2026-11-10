@@ -12,3 +12,6 @@ dialog.candidate-email-required { position:fixed;inset:0;margin:auto;width:min(4
 .candidate-email-required [data-email-error] { color:#b42c38; }
 .candidate-email-required :focus-visible { outline:3px solid #53cbf3;outline-offset:3px; }
 @media(max-width:450px){dialog.candidate-email-required {padding:20px;}.candidate-email-required h2 {font-size:18px;}}
+
+[data-connect-candidate-email]{margin-top:8px;padding:10px 12px;border:1px solid #bed3ec;border-radius:10px;background:#edf5ff;color:#234f87;font:inherit;font-size:14px;font-weight:600;cursor:pointer;white-space:normal}
+[data-connect-candidate-email][hidden]{display:none}

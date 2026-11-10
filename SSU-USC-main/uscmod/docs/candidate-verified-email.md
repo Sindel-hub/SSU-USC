@@ -86,3 +86,20 @@ Deployment checklist for the separately authorized backend rollout:
 
 During this follow-up, the configured Supabase management credential returned HTTP 401.
 No production Edge Functions, rules, records, scheduler or provider settings were changed.
+
+### Form-entry connection flow
+
+The private form also supports the existing Profile `get` and `institutional_get`
+actions when the deployed service lacks `candidate_email_status`, or returns a
+verified status without an address. Display only an active, timestamped Gmail
+whose requested and verified addresses agree, or a verified institutional contact.
+A failed lookup is reported as unavailable rather than as a missing email.
+This compatibility lookup is display-only: submission still invokes the trusted
+candidate verification and submit handlers without falling back to direct writes.
+
+An unverified student can use Connect Gmail / Institutional Email directly from
+Personal Information. Save an early draft without requiring a campaign photo;
+restore incomplete drafts to Personal Information instead of Review & Submit.
+Existing complete drafts retain the review restoration behavior. Browser coverage
+includes Gmail and institutional display through legacy Profile endpoints, missing
+contact, early profile connection without uploads, and incomplete draft reload.

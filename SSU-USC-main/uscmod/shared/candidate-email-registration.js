@@ -3,8 +3,24 @@ import {doc,getDoc,setDoc,deleteDoc} from 'https://www.gstatic.com/firebasejs/12
 import {callStudentEmailService} from './supabase-email-service.js';
 const draftRef=id=>doc(db,'candidate_registration_drafts',auth.currentUser.uid,'elections',id);
 const pointerKey=()=>`candidateDraftElection:${auth.currentUser.uid}`;
-export async function candidateEmailStatus(){return callStudentEmailService('candidate_email_status');}
-export async function verifiedCandidateEmail(){return (await candidateEmailStatus()).verified===true;}
+export async function candidateEmailStatus(){
+ try {
+  const status=await callStudentEmailService('candidate_email_status');
+  if(!status.verified||status.email)return status;
+ } catch(error) { if(error.code!=='candidate-service-unavailable')throw error; }
+ // Display compatibility with the existing Profile endpoints. Submission always
+ // checks the trusted candidate action again; this cannot authorize an application.
+ const [gmail,institutional]=await Promise.allSettled([
+  callStudentEmailService('get'),callStudentEmailService('institutional_get')
+ ]);
+ const settings=gmail.status==='fulfilled'?gmail.value.settings:null;
+ if(settings?.active===true&&settings.verifiedAt&&settings.requestedEmail===settings.verifiedEmail&&/^[a-z0-9.]+(?:\+[a-z0-9._-]+)?@gmail\.com$/.test(settings.verifiedEmail||''))return {verified:true,email:settings.verifiedEmail,source:'gmail'};
+ const school=institutional.status==='fulfilled'?institutional.value:null;
+ if(school?.verified===true&&/^[^@\s]+@ssu\.edu\.ph$/.test(school.email||''))return {verified:true,email:school.email,source:'institutional'};
+ if(gmail.status==='rejected'||institutional.status==='rejected')throw new Error('Unable to check connected email. Please try again.');
+ return {verified:false,email:'',source:''};
+}
+export async function verifiedCandidateEmail(){return (await callStudentEmailService('candidate_email_status')).verified===true;}
 export async function restoreCandidateDraft(electionId){
  const uid=auth.currentUser?.uid;if(!uid)return null;
  let selected=electionId;try{const remembered=sessionStorage.getItem(pointerKey());if(/^[A-Za-z0-9:_-]{1,128}$/.test(remembered||''))selected=remembered}catch{}
