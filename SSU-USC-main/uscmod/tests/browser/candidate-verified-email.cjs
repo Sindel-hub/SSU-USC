@@ -15,7 +15,7 @@ const root=path.resolve(__dirname,'../..');
   if(url.pathname.endsWith('/shared/security-client.js'))return route.fulfill({contentType:'text/javascript',body:`export async function callSecure(name,data){return window.fixtureCall(name,data)}export async function secureUpload(file,kind){return window.fixtureCall('upload',{kind,name:file.name})}export const hydrateMediaImages=async()=>{};export const resolveMediaUrl=async()=>'/dashboard/assets/USClogo.webp';`});
   if(url.hostname==='www.gstatic.com')return route.fulfill({contentType:'text/javascript',body:sdk});
   if(url.pathname.endsWith('/functions/v1/usc-email')){
-   const body=route.request().postDataJSON();if(body.action==='candidate_email_status')return route.fulfill({json:{ok:true,verified}});return route.fulfill({status:400,json:{ok:false}});
+   const body=route.request().postDataJSON();if(body.action==='candidate_email_status')return route.fulfill({json:{ok:true,verified,email:verified?"verified@gmail.com":""}});return route.fulfill({status:400,json:{ok:false}});
   }
   if(url.hostname!=='candidate.test')return route.abort();const file=path.join(root,url.pathname);if(!fs.existsSync(file))return route.fulfill({status:404,body:''});
   let body=fs.readFileSync(file);const ext=path.extname(file);if(ext==='.html')body=body.toString().replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi,'');
@@ -27,7 +27,7 @@ const root=path.resolve(__dirname,'../..');
   if(name==='getElectionContext')return {electionId:'B',title:'Synthetic Election',lifecycle:closed?'Review':'Registration',scheduleComplete:true,registrationOpen:!closed,reviewOpen:closed,candidateVisible:false,votingOpen:false,resultsVisible:false};throw Error('Unexpected action '+name);
  });
  async function open(){await page.goto('https://candidate.test/dashboard/election.html');await page.addScriptTag({type:'module',url:'https://candidate.test/dashboard/js/election.js'});}
- await open();await page.locator('#landingApplication').click();await page.locator('#candidateNext').click();await page.locator('#candidatePosition').selectOption('President');await page.locator('#candidateParty').fill('Independent');
+ await open();await page.locator('#landingApplication').click();await page.waitForFunction(()=>document.querySelector('[data-candidate-email]')?.value==='No verified email connected');await page.locator('#candidateNext').click();await page.locator('#candidatePosition').selectOption('President');await page.locator('#candidateParty').fill('Independent');
  await page.locator('input[type=file]').first().setInputFiles({name:'campaign.png',mimeType:'image/png',buffer:Buffer.from('synthetic-image')});await page.locator('#candidateNext').click();await page.locator('#candidatePlatform').fill('A saved platform');await page.locator('#candidateStatement').fill('A saved statement');
  await page.locator('#supportingDocuments').setInputFiles({name:'supporting.pdf',mimeType:'application/pdf',buffer:Buffer.from('synthetic-document')});await page.locator('#candidateNext').click();
  await page.locator('#submitCandidateApplication').click();await page.getByRole('dialog',{name:'Email Verification Required'}).waitFor();assert.equal(submitted,0);assert.equal(uploads,0);
@@ -35,7 +35,7 @@ const root=path.resolve(__dirname,'../..');
  await page.getByRole('button',{name:'Cancel',exact:true}).click();assert.match(await page.locator('.candidate-review-text').textContent(),/A saved platform/);
  await page.locator('#submitCandidateApplication').click();await page.getByRole('button',{name:'Connect Gmail / Institutional Email'}).click();await page.waitForFunction(()=>window.profileRequests===1);assert.equal(submitted,0);assert.equal(uploads,2);
  assert.equal(records['candidate_registration_drafts/student/elections/B'].platform,'A saved platform');assert.doesNotMatch(JSON.stringify(records),/synthetic-document|synthetic-image/);
- await open();await page.locator('#submitCandidateApplication').waitFor();assert.match(await page.locator('.candidate-review-text').textContent(),/A saved statement/);verified=true;
+ await open();await page.locator('#submitCandidateApplication').waitFor();assert.match(await page.locator('.candidate-review-text').textContent(),/A saved statement/);verified=true;await page.evaluate(()=>window.dispatchEvent(new Event('focus')));await page.waitForFunction(()=>document.querySelector('[data-candidate-email]')?.textContent==='verified@gmail.com');
  await page.locator('#submitCandidateApplication').click();await page.locator('#applicationSuccess:not(.hidden)').waitFor();assert.equal(submitted,1);assert.equal(uploads,2);assert.equal(records['candidate_registration_drafts/student/elections/B'],undefined);
  // A closed window restores no actionable form and never submits its saved draft.
  delete records['elections/B/applications/student'];records['candidate_registration_drafts/student/elections/B']={electionId:'B',platform:'Expired application',statement:'Saved',expiresAtMs:Date.now()+60000};closed=true;await open();await page.getByText('Registration closed while you were away. Your draft was not submitted.').waitFor();assert.equal(await page.locator('#submitCandidateApplication').count(),0);assert.equal(submitted,1);

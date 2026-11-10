@@ -3,7 +3,8 @@ import {doc,getDoc,setDoc,deleteDoc} from 'https://www.gstatic.com/firebasejs/12
 import {callStudentEmailService} from './supabase-email-service.js';
 const draftRef=id=>doc(db,'candidate_registration_drafts',auth.currentUser.uid,'elections',id);
 const pointerKey=()=>`candidateDraftElection:${auth.currentUser.uid}`;
-export async function verifiedCandidateEmail(){return (await callStudentEmailService('candidate_email_status')).verified===true;}
+export async function candidateEmailStatus(){return callStudentEmailService('candidate_email_status');}
+export async function verifiedCandidateEmail(){return (await candidateEmailStatus()).verified===true;}
 export async function restoreCandidateDraft(electionId){
  const uid=auth.currentUser?.uid;if(!uid)return null;
  let selected=electionId;try{const remembered=sessionStorage.getItem(pointerKey());if(/^[A-Za-z0-9:_-]{1,128}$/.test(remembered||''))selected=remembered}catch{}
