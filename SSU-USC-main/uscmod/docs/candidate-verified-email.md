@@ -55,3 +55,51 @@ The user previously confirmed **no isolated staging Firebase project exists**. B
 Before end-to-end review: provision isolated staging Firebase/Supabase, configure the Preview client and email endpoint override for them, configure existing Firebase IAM/email/worker secrets for staging, perform the legacy privacy audit/redaction in staging, deploy matching usc-email + usc-email-worker (and callable proxies if used), apply rules, and verify synthetic lifecycle/delivery/recipient-revocation/retry scenarios with a controlled staging recipient. No new SQL migration/index is needed; root outbox state/UID queries use default single-field indexes. Confirm the worker scheduler calls the updated worker. Reconcile review summaries if an election has 490+ applications or a version conflict exhausts summary retries; the saved review/email event is retained and publication stays locked.
 
 Production backend updates need separate explicit authorization. Deploy backend/rules/client together; cached clients using direct registration writes must refresh. Do not weaken the rules to roll back or to bypass missing backend setup. Leave the PR unmerged for the user's manual GitHub review/merge after staging acceptance. Rollback the client/Edge deployment as a coordinated release while preserving application/audit/outbox records; reconcile sending/unknown events with the provider before any resend.
+
+## Follow-up: email display and deployment mismatch
+
+The registration personal-information and private review screens now load the authenticated
+`candidate_email_status` response instead of reading basic login/profile email text. This
+response includes only the calling student's selected verified contact. Unverified contacts
+are never displayed as verified. Each render, profile update and window focus refreshes the
+status; detached fields and changed sessions cannot receive stale responses. No addresses
+are added to application, outbox, or public candidate documents.
+
+A 400 `Unknown email-service action.` for candidate actions is reported as a service update
+requirement, not as an unverified email. Submission remains blocked and the open form is
+preserved. Other email actions and actual verification rejections retain their existing errors.
+This message does not replace the required backend deployment.
+
+Deployment checklist for the separately authorized backend rollout:
+
+1. Deploy this branch's `usc-email` and `usc-email-worker` together to isolated staging,
+   with their existing Firebase and email provider settings. Apply the matching rules.
+2. Verify authenticated `candidate_email_status` returns `{ok:true,verified,source,email}`
+   for synthetic Gmail-only, institutional-only and unverified students. A pending contact
+   returns `verified:false` and an empty address. Another UID cannot be selected by payload.
+3. Exercise submission, each review outcome, draft restore and notification delivery through
+   the existing secret-authenticated worker scheduler. Use controlled staging recipients.
+4. Review public candidate documents and photo metadata for legacy email fields.
+5. Only after separate production authorization and restored Supabase management access,
+   deploy the same tested Edge Functions to production and verify its scheduler and secrets.
+   The Vercel frontend deployment alone cannot update Supabase functions.
+
+During this follow-up, the configured Supabase management credential returned HTTP 401.
+No production Edge Functions, rules, records, scheduler or provider settings were changed.
+
+### Form-entry connection flow
+
+The private form also supports the existing Profile `get` and `institutional_get`
+actions when the deployed service lacks `candidate_email_status`, or returns a
+verified status without an address. Display only an active, timestamped Gmail
+whose requested and verified addresses agree, or a verified institutional contact.
+A failed lookup is reported as unavailable rather than as a missing email.
+This compatibility lookup is display-only: submission still invokes the trusted
+candidate verification and submit handlers without falling back to direct writes.
+
+An unverified student can use Connect Gmail / Institutional Email directly from
+Personal Information. Save an early draft without requiring a campaign photo;
+restore incomplete drafts to Personal Information instead of Review & Submit.
+Existing complete drafts retain the review restoration behavior. Browser coverage
+includes Gmail and institutional display through legacy Profile endpoints, missing
+contact, early profile connection without uploads, and incomplete draft reload.

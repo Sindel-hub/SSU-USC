@@ -31,7 +31,7 @@ export function createCandidateRegistrationService(deps){
   return profile;
  }
  async function contact(user,profile){return verifiedCandidateContact(user.uid,profile.data,await deps.authUser(user.uid),await deps.gmail(user.uid));}
- async function emailStatus(user){const profile=await identity(user);const found=await contact(user,profile);return {ok:true,verified:Boolean(found),source:found?.source||''};}
+ async function emailStatus(user){const profile=await identity(user);const found=await contact(user,profile);return {ok:true,verified:Boolean(found),source:found?.source||'',email:found?.email||''};}
  async function schedule(electionId,start,end){
   const [pointer,election]=await Promise.all([read('election_config/current'),read(`elections/${electionId}`)]);
   if(pointer?.data?.electionId!==electionId||!open(election?.data,start,end,now()))throw candidateError('failed-precondition','The election changed or this registration/review window has closed.');
