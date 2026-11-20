@@ -68,7 +68,7 @@ await context.addInitScript(
   },
   { endpoint },
 );
-await context.route("**/shared/auth-guard.js", (route) =>
+await context.route("**/shared/auth-guard.js*", (route) =>
   route.fulfill({
     contentType: "text/javascript",
     body: "globalThis.USC_AUTH_READY=Promise.resolve(true);",
@@ -78,6 +78,20 @@ await context.route("**/firebase/firebase-config.js", (route) =>
   route.fulfill({
     contentType: "text/javascript",
     body: "export const auth={currentUser:{getIdToken:async()=> 'test-admin'}};",
+  }),
+);
+// Shared profile/notification services are covered independently; keep this
+// workflow isolated from live identity/data services while rendering the real shell.
+await context.route("**/shared/profile-manager.js*", (route) =>
+  route.fulfill({ contentType: "text/javascript", body: "" }),
+);
+await context.route("**/dashboard/js/notifications.js*", (route) =>
+  route.fulfill({ contentType: "text/javascript", body: "" }),
+);
+await context.route("**/firebase-auth.js", (route) =>
+  route.fulfill({
+    contentType: "text/javascript",
+    body: "export async function signOut() {}",
   }),
 );
 await context.route(endpoint, async (route) => {
@@ -110,7 +124,9 @@ await context.route(endpoint, async (route) => {
     });
   }
 });
-const shots = path.join(root, "docs/needs-assessment-review");
+const shots =
+  process.env.USC_MANAGEMENT_SCREENSHOT_DIR ||
+  path.join(root, "docs/needs-assessment-review");
 await fs.mkdir(shots, { recursive: true });
 try {
   await page.goto(origin + "/usc-admin/needs-assessment/needs-assessment.html");

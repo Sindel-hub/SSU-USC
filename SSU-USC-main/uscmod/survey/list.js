@@ -16,7 +16,7 @@ try {
   document.getElementById("availableSurveys").innerHTML = surveys
     .map(
       (s) =>
-        `<article class="panel"><h2>${e(s.title)}</h2><span class="badge">${e(s.status)}</span><p>${e(s.description)}</p><p>${e(s.department === "all" ? "All departments" : s.department)}</p><p class="muted">${e(new Date(s.startsAt).toLocaleString())} – ${e(new Date(s.endsAt).toLocaleString())}</p><a class="button" href="${e(surveyUrl(s.id))}">${s.status === "active" ? "Take Survey" : "View Schedule"}</a></article>`,
+        `<article class="bulletin-page-card survey-card panel"><h2>${e(s.title)}</h2><span class="badge">${e(s.status)}</span><p>${e(s.description)}</p><p>${e(s.department === "all" ? "All departments" : s.department)}</p><p class="muted">${e(new Date(s.startsAt).toLocaleString())} – ${e(new Date(s.endsAt).toLocaleString())}</p><a class="modal-btn primary" href="${e(document.body.classList.contains("needs-assessment-dashboard") ? new URL("?id=" + encodeURIComponent(s.id), location.href).href : surveyUrl(s.id))}">${s.status === "active" ? "Take Survey" : "View Schedule"}</a></article>`,
     )
     .join("");
 } catch (error) {

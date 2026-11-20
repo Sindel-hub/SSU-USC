@@ -1,167 +1,338 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" class="usc-officer-access-pending">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width,initial-scale=1" />
     <meta name="referrer" content="no-referrer" />
     <title>Needs Assessment — SSU-USC</title>
-    <link rel="stylesheet" href="../../usc-admin/shared/css/usc-theme.css" />
-    <link rel="stylesheet" href="../../shared/management.css" />
-    <script src="../../shared/app-config.js"></script>
-    <script type="module" src="../../shared/auth-guard.js"></script>
+    <link
+      rel="stylesheet"
+      href="../shared/css/usc-theme.css?v=officer-readable-1"
+    />
+    <link
+      rel="stylesheet"
+      href="../shared/css/officer-ui.css?v=instant-shell-2"
+    />
+    <link
+      rel="stylesheet"
+      href="../shared/css/officer-responsive.css?v=officer-readable-1"
+    />
     <link
       rel="stylesheet"
       href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
     />
+    <link rel="stylesheet" href="../../shared/profile-manager.css" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="../../shared/scrollbars.css?v=2" />
+    <link rel="stylesheet" href="../../shared/needs-assessment.css" />
+    <script src="../../shared/app-config.js"></script>
+    <script type="module" src="../../shared/auth-guard.js?v=rbac7"></script>
   </head>
-  <body>
-    <header class="management-header">
-      <img
-        src="../../usc-admin/shared/assets/SSUlogo.webp"
-        alt="Samar State University"
-      /><img
-        src="../../usc-admin/shared/assets/USClogo.webp"
-        alt="University Student Council"
-      />
-      <div>
-        <strong>SSU UNIVERSITY STUDENT COUNCIL</strong
-        ><small>Leadership · Excellence · Discipline · Service</small>
-      </div>
-    </header>
-    <div class="management-layout">
-      <aside class="management-sidebar" aria-label="Officer navigation">
-        <h2>Officer modules</h2>
-        <nav class="officer-module-nav" aria-label="Officer modules">
-          <a class="nav-btn" href="../overview/overview.html"
-            ><span class="icon"><i class="fa-solid fa-table-columns"></i></span
-            ><span>Dashboard</span></a
-          >
-          <a class="nav-btn" href="../announcements/announcements.html"
-            ><span class="icon"><i class="fa-solid fa-note-sticky"></i></span
-            ><span>Bulletin Board Center</span></a
-          >
-          <a
-            class="nav-btn"
-            href="../needs-assessment/needs-assessment.html"
-            aria-current="page"
-            ><span class="icon"
-              ><i class="fa-regular fa-rectangle-list"></i></span
-            ><span>Needs Assessment</span></a
-          >
-          <a class="nav-btn" href="../events/events.html"
-            ><span class="icon"><i class="fa-regular fa-calendar"></i></span
-            ><span>Events</span></a
-          >
-          <a class="nav-btn" href="../programs/programs.html"
-            ><span class="icon"><i class="fa-solid fa-earth-americas"></i></span
-            ><span>Programs</span></a
-          >
-          <a
-            class="nav-btn"
-            href="../organizational-chart/organizational-chart.html"
-            ><span class="icon"><i class="fa-solid fa-users"></i></span
-            ><span>Organizational Chart</span></a
-          >
-          <a class="nav-btn" href="../complaints/complaints.html"
-            ><span class="icon"><i class="fa-solid fa-message"></i></span
-            ><span>Complaints Management</span></a
-          >
-        </nav>
-      </aside>
-      <main class="management-main">
-        <div class="row space-between">
-          <div>
-            <h1>Needs Assessment</h1>
-            <p class="lead">
-              Listen to student needs. Create questionnaires and use real
-              responses to plan USC services.
-            </p>
+  <body class="officer-app-shell needs-assessment-page">
+    <div class="page">
+      <div class="page-label">Dashboard</div>
+
+      <div class="app-shell">
+        <header class="top-banner">
+          <div class="brand-logos">
+            <img
+              src="../shared/assets/SSUlogo.webp"
+              alt="Samar State University Logo"
+              class="brand-logo"
+              onerror="this.style.display = 'none'"
+            />
+            <img
+              src="../shared/assets/USClogo.webp"
+              alt="University Student Council Logo"
+              class="brand-logo"
+              onerror="this.style.display = 'none'"
+            />
           </div>
-          <button id="newSurvey">Create Survey</button>
-        </div>
-        <p id="status" class="notice" role="status">Loading surveys…</p>
-        <section id="editor" class="panel" hidden>
-          <h2 id="editorTitle">Create survey</h2>
-          <form id="surveyForm">
-            <label
-              >Survey title<input name="title" maxlength="160" required
-            /></label>
-            <div class="grid">
-              <label
-                >Description<textarea
-                  name="description"
-                  maxlength="3000"
-                ></textarea></label
-              ><label
-                >Instructions<textarea
-                  name="instructions"
-                  maxlength="3000"
-                ></textarea>
-              </label>
-            </div>
-            <div class="grid">
-              <label
-                >Target department<select name="department"></select
-              ></label>
-              <div class="grid">
-                <label
-                  >Starts at (your local time)<input
-                    name="startsAt"
-                    type="datetime-local"
-                    required /></label
-                ><label
-                  >Deadline (your local time)<input
-                    name="endsAt"
-                    type="datetime-local"
-                    required
-                /></label>
+
+          <div class="brand">
+            <h1>SSU UNIVERSITY STUDENT COUNCIL</h1>
+            <p>LEADERSHIP | EXCELLENCE | DISCIPLINE | SERVICE</p>
+          </div>
+        </header>
+
+        <nav class="top-nav officer-global-toolbar">
+          <!-- LEFT: sidebar + module search -->
+          <div class="nav-left officer-global-search-wrap">
+            <button
+              class="sidebar-toggle"
+              type="button"
+              data-sidebar-toggle
+              aria-label="Open sidebar"
+              aria-expanded="false"
+            >
+              <span class="grid-icon"></span>
+            </button>
+
+            <div class="officer-search-box" id="officerSearchBox">
+              <div class="officer-search">
+                <i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i>
+
+                <input
+                  id="officerQuickSearch"
+                  type="search"
+                  aria-label="Search officer modules"
+                  placeholder="Search modules"
+                  autocomplete="off"
+                />
+
+                <button
+                  class="officer-search-clear"
+                  id="officerSearchClear"
+                  type="button"
+                  aria-label="Clear search"
+                  hidden
+                >
+                  <i class="fa-solid fa-xmark"></i>
+                </button>
               </div>
-            </div>
-            <h3>Questions</h3>
-            <div id="questions"></div>
-            <div class="row">
-              <button type="button" id="addQuestion" class="secondary">
-                Add question</button
-              ><button type="submit">Save Draft</button
-              ><button type="button" id="cancelEdit" class="secondary">
-                Cancel
-              </button>
-            </div>
-            <p class="muted">
-              Questions and schedule become locked after publication. Ratings
-              use a 1–5 scale. No names or student IDs are requested.
-            </p>
-          </form>
-        </section>
-        <section
-          id="surveys"
-          class="grid"
-          aria-label="Survey library"
-        ></section>
-        <section id="results" class="panel" hidden>
-          <div class="row space-between">
-            <h2 id="resultsTitle">Survey results</h2>
-            <div class="row no-print">
-              <button id="exportCsv">Export CSV summary</button
-              ><button id="printReport" class="secondary">
-                Print / Save PDF</button
-              ><button id="closeResults" class="secondary">Close</button>
+
+              <div
+                class="officer-search-results"
+                id="officerSearchResults"
+                role="listbox"
+                aria-label="Officer module search results"
+                hidden
+              ></div>
             </div>
           </div>
-          <p id="resultsOverview"></p>
-          <label class="no-print"
-            >Department filter<select id="resultsDepartment"></select
-          ></label>
-          <p class="muted">
-            Departments with fewer than five responses are excluded from
-            question results, including all-department summaries. Anonymous
-            answers are self-reported; identity, enrollment, and department are
-            not verified. Checkbox percentages may exceed 100%.
-          </p>
-          <div id="analytics"></div>
-        </section>
-      </main>
+
+          <!-- RIGHT: notifications + profile -->
+          <div class="nav-right">
+            <button
+              class="bell officer-bell"
+              type="button"
+              aria-label="Notifications"
+            >
+              <i class="fa-regular fa-bell"></i>
+            </button>
+
+            <div class="avatar" aria-label="Officer profile"></div>
+          </div>
+        </nav>
+
+        <div class="sidebar-overlay" data-sidebar-overlay></div>
+
+        <main class="layout">
+          <aside class="sidebar officer-reference-sidebar">
+            <div class="officer-sidebar-mark">
+              <i class="fa-solid fa-user-tie"></i>
+            </div>
+            <nav class="officer-module-nav" aria-label="Officer modules">
+              <a class="nav-btn" href="../overview/overview.html"
+                ><span class="icon"
+                  ><i class="fa-solid fa-table-columns"></i></span
+                ><span>Dashboard</span></a
+              >
+              <a class="nav-btn" href="../announcements/announcements.html"
+                ><span class="icon"
+                  ><i class="fa-solid fa-note-sticky"></i></span
+                ><span>Bulletin Board Center</span></a
+              >
+              <a
+                class="nav-btn"
+                href="../needs-assessment/needs-assessment.html"
+                ><span class="icon"
+                  ><i class="fa-regular fa-rectangle-list"></i></span
+                ><span>Needs Assessment</span></a
+              >
+              <a class="nav-btn" href="../events/events.html"
+                ><span class="icon"><i class="fa-regular fa-calendar"></i></span
+                ><span>Events</span></a
+              >
+              <a class="nav-btn" href="../programs/programs.html"
+                ><span class="icon"
+                  ><i class="fa-solid fa-earth-americas"></i></span
+                ><span>Programs</span></a
+              >
+              <a
+                class="nav-btn"
+                href="../organizational-chart/organizational-chart.html"
+                ><span class="icon"><i class="fa-solid fa-users"></i></span
+                ><span>Organizational Chart</span></a
+              >
+              <a class="nav-btn" href="../complaints/complaints.html"
+                ><span class="icon"><i class="fa-solid fa-message"></i></span
+                ><span>Complaints Management</span></a
+              >
+            </nav>
+            <button class="nav-btn logout-btn" type="button" id="needsLogout">
+              <span class="icon"
+                ><i class="fa-solid fa-right-from-bracket"></i></span
+              ><span>Logout</span>
+            </button>
+          </aside>
+
+          <section class="main">
+            <div class="needs-assessment-content">
+              <div class="hero-title row space-between">
+                <div>
+                  <h1>Needs Assessment</h1>
+                  <p class="lead">
+                    Listen to student needs. Create questionnaires and use real
+                    responses to plan USC services.
+                  </p>
+                </div>
+                <button id="newSurvey" class="btn primary">
+                  Create Survey
+                </button>
+              </div>
+              <p id="status" class="notice" role="status">Loading surveys…</p>
+              <section id="editor" class="card card-body panel" hidden>
+                <h2 id="editorTitle">Create survey</h2>
+                <form id="surveyForm">
+                  <label
+                    >Survey title<input name="title" maxlength="160" required
+                  /></label>
+                  <div class="grid">
+                    <label
+                      >Description<textarea
+                        name="description"
+                        maxlength="3000"
+                      ></textarea></label
+                    ><label
+                      >Instructions<textarea
+                        name="instructions"
+                        maxlength="3000"
+                      ></textarea>
+                    </label>
+                  </div>
+                  <div class="grid">
+                    <label
+                      >Target department<select name="department"></select
+                    ></label>
+                    <div class="grid">
+                      <label
+                        >Starts at (your local time)<input
+                          name="startsAt"
+                          type="datetime-local"
+                          required /></label
+                      ><label
+                        >Deadline (your local time)<input
+                          name="endsAt"
+                          type="datetime-local"
+                          required
+                      /></label>
+                    </div>
+                  </div>
+                  <h3>Questions</h3>
+                  <div id="questions"></div>
+                  <div class="row">
+                    <button
+                      type="button"
+                      id="addQuestion"
+                      class="btn light secondary"
+                    >
+                      Add question</button
+                    ><button type="submit" class="btn primary">
+                      Save Draft</button
+                    ><button
+                      type="button"
+                      id="cancelEdit"
+                      class="btn light secondary"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                  <p class="muted">
+                    Questions and schedule become locked after publication.
+                    Ratings use a 1–5 scale. No names or student IDs are
+                    requested.
+                  </p>
+                </form>
+              </section>
+              <section
+                id="surveys"
+                class="grid"
+                aria-label="Survey library"
+              ></section>
+              <section id="results" class="card card-body panel" hidden>
+                <div class="row space-between">
+                  <h2 id="resultsTitle">Survey results</h2>
+                  <div class="row no-print">
+                    <button id="exportCsv" class="btn primary">
+                      Export CSV summary</button
+                    ><button id="printReport" class="btn light secondary">
+                      Print / Save PDF</button
+                    ><button id="closeResults" class="btn light secondary">
+                      Close
+                    </button>
+                  </div>
+                </div>
+                <p id="resultsOverview"></p>
+                <label class="no-print"
+                  >Department filter<select id="resultsDepartment"></select
+                ></label>
+                <p class="muted">
+                  Departments with fewer than five responses are excluded from
+                  question results, including all-department summaries.
+                  Anonymous answers are self-reported; identity, enrollment, and
+                  department are not verified. Checkbox percentages may exceed
+                  100%.
+                </p>
+                <div id="analytics"></div>
+              </section>
+            </div>
+          </section>
+        </main>
+      </div>
     </div>
+    <footer class="officer-shared-footer">
+      <div class="officer-footer-main">
+        <div class="officer-footer-col">
+          <h3>ABOUT US</h3>
+          <a href="../overview/overview.html">USC Officer Portal</a>
+          <a href="../organizational-chart/organizational-chart.html"
+            >University Student Council</a
+          >
+          <a href="../organizational-chart/organizational-chart.html"
+            >Organizational Chart</a
+          >
+        </div>
+        <div class="officer-footer-col">
+          <h3>CONTACT US</h3>
+          <p><strong>Samar State University</strong></p>
+          <p>Arteche Boulevard</p>
+          <p>Catbalogan, Samar 6700</p>
+        </div>
+        <div class="officer-footer-col officer-footer-links">
+          <a href="https://ssu.edu.ph" target="_blank" rel="noopener"
+            ><i class="fa-brands fa-square-facebook"></i> ssu.edu.ph</a
+          >
+          <a href="mailto:ssuuniversitystudentcouncil@gmail.com"
+            ><i class="fa-regular fa-envelope"></i>
+            ssuuniversitystudentcouncil@gmail.com</a
+          >
+        </div>
+      </div>
+      <div class="officer-footer-bottom">
+        <img src="../shared/assets/SSUlogo.webp" alt="SSU Logo" />
+        <img src="../shared/assets/USClogo.webp" alt="USC Logo" />
+        <div>
+          <strong>SSU UNIVERSITY STUDENT COUNCIL</strong
+          ><span
+            >LEADERSHIP&nbsp;&nbsp;|&nbsp;&nbsp;EXCELLENCE&nbsp;&nbsp;|&nbsp;&nbsp;DISCIPLINE&nbsp;&nbsp;|&nbsp;&nbsp;SERVICE</span
+          >
+        </div>
+      </div>
+    </footer>
+    <script
+      src="../shared/js/nav-active.js?v=needs-assessment-ui-1"
+      data-preserve-current-route
+    ></script>
     <script type="module" src="needs-assessment.js"></script>
+    <script type="module" src="../../shared/needs-assessment-shell.js"></script>
+    <script
+      type="module"
+      src="../../shared/profile-manager.js?v=registered-name-2&amp;refinements=1"
+    ></script>
+    <script type="module" src="../shared/js/officer-rbac.js?v=6"></script>
   </body>
 </html>

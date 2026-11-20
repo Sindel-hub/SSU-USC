@@ -63,7 +63,14 @@ export function attachSurveyButton(container, surveyId) {
   const a = document.createElement("a");
   a.className = "attached-survey-link";
   a.textContent = "Take Survey";
-  a.href = surveyUrl(surveyId);
+  // Keep student Bulletin Board navigation inside its existing dashboard shell.
+  // Officer copies and public announcements continue to use the no-login URL.
+  a.href = location.pathname.startsWith("/dashboard/")
+    ? new URL(
+        "/dashboard/needs-assessment.html?id=" + encodeURIComponent(surveyId),
+        location.origin,
+      ).href
+    : surveyUrl(surveyId);
   a.style.cssText =
     "display:inline-block;margin:16px 0;padding:12px 20px;background:#174f98;color:white;border-radius:10px;font-weight:700";
   container.after(a);

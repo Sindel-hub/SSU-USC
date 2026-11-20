@@ -43,10 +43,10 @@ async function load() {
         .sort((a, b) => b.updatedAtMs - a.updatedAtMs)
         .map(
           (s) =>
-            `<article class="panel survey-card"><h3>${e(s.title)}</h3><span class="badge">${e(s.status)}</span><p>${e(s.description)}</p><p class="muted">${e(s.department === "all" ? "All departments" : s.department)} · ${s.responseCount || 0} responses</p><p class="muted">${e(new Date(s.startsAt).toLocaleString())} – ${e(new Date(s.endsAt).toLocaleString())}</p><div class="row"><button data-action="analytics" data-id="${s.id}">Results</button>${s.state === "draft" ? `<button data-action="edit" data-id="${s.id}" class="secondary">Edit Draft</button><button data-action="published" data-id="${s.id}">Publish</button>` : ""}${s.state === "published" ? `<button data-action="copy" data-id="${s.id}" class="secondary">Copy Survey Link</button><button data-action="closed" data-id="${s.id}" class="secondary">Close Survey</button>` : ""}${s.state !== "archived" ? `<button data-action="archived" data-id="${s.id}" class="secondary">Archive</button>` : ""}</div></article>`,
+            `<article class="card card-body panel survey-card"><h3>${e(s.title)}</h3><span class="badge">${e(s.status)}</span><p>${e(s.description)}</p><p class="muted">${e(s.department === "all" ? "All departments" : s.department)} · ${s.responseCount || 0} responses</p><p class="muted">${e(new Date(s.startsAt).toLocaleString())} – ${e(new Date(s.endsAt).toLocaleString())}</p><div class="row"><button class="btn primary" data-action="analytics" data-id="${s.id}">Results</button>${s.state === "draft" ? `<button data-action="edit" data-id="${s.id}" class="btn light secondary">Edit Draft</button><button class="btn primary" data-action="published" data-id="${s.id}">Publish</button>` : ""}${s.state === "published" ? `<button data-action="copy" data-id="${s.id}" class="btn light secondary">Copy Survey Link</button><button data-action="closed" data-id="${s.id}" class="btn light secondary">Close Survey</button>` : ""}${s.state !== "archived" ? `<button data-action="archived" data-id="${s.id}" class="btn light secondary">Archive</button>` : ""}</div></article>`,
         )
         .join("")
-    : '<p class="panel">No surveys yet. Create your first needs assessment.</p>';
+    : '<p class="card card-body panel">No surveys yet. Create your first needs assessment.</p>';
   status(
     "Surveys loaded. Access is enforced by your assigned officer permissions.",
   );
@@ -81,7 +81,7 @@ function drawQuestions() {
           )
           .join(
             "",
-          )}</select></label><label>Options (one per line, for choice and checkbox questions)<textarea name="options">${e(q.options.join("\n"))}</textarea></label><label><input type="checkbox" name="required" ${q.required ? "checked" : ""}>Required answer</label><div class="question-actions"><button type="button" class="secondary" data-q="${i}" data-move="-1" ${i === 0 ? "disabled" : ""}>Move up</button><button type="button" class="secondary" data-q="${i}" data-move="1" ${i === questions.length - 1 ? "disabled" : ""}>Move down</button><button type="button" class="secondary" data-q="${i}" data-remove>Remove</button></div></fieldset>`,
+          )}</select></label><label>Options (one per line, for choice and checkbox questions)<textarea name="options">${e(q.options.join("\n"))}</textarea></label><label><input type="checkbox" name="required" ${q.required ? "checked" : ""}>Required answer</label><div class="question-actions"><button type="button" class="btn light secondary" data-q="${i}" data-move="-1" ${i === 0 ? "disabled" : ""}>Move up</button><button type="button" class="btn light secondary" data-q="${i}" data-move="1" ${i === questions.length - 1 ? "disabled" : ""}>Move down</button><button type="button" class="btn light secondary" data-q="${i}" data-remove>Remove</button></div></fieldset>`,
     )
     .join("");
 }
