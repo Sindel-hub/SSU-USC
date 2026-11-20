@@ -1,0 +1,12 @@
+{
+  "projectName": "ssu-usc-email-staging",
+  "supabaseProjectRef": "",
+  "supabasePublishableKey": "",
+  "portalUrl": "https://ssu-usc-git-feat-needs-assessment-student-records-usc-projects.vercel.app",
+  "firebase": {
+    "apiKey": "",
+    "authDomain": "",
+    "projectId": "",
+    "appId": ""
+  }
+}
