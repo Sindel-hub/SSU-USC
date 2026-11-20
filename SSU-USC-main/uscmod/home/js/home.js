@@ -1,3 +1,4 @@
+import { attachSurveyButton } from '../../shared/management-client.js';
 import { db } from "../../firebase/firebase-config.js";
 import {
   collection,
@@ -210,6 +211,7 @@ function openLandingAnnouncement(id) {
   document.getElementById("landingAnnouncementDate").textContent = formatDate(announcement.createdAt || announcement.createdAtMs || announcement.updatedAt || announcement.date);
   document.getElementById("landingAnnouncementAudience").textContent = `Audience: ${safeText(announcement.audience, "All Students")}`;
   document.getElementById("landingAnnouncementBody").textContent = String(announcement.content ?? announcement.description ?? announcement.details ?? "");
+  attachSurveyButton(document.getElementById("landingAnnouncementBody"), announcement.surveyId);
   const media = document.getElementById("landingAnnouncementMedia");
   media.replaceChildren();
   const sourceImage = dom.slidesHost.querySelector(".preview-slide.active .announcement-poster-media > img");

@@ -90,11 +90,11 @@ test("complaint and election actions enforce function-level permissions", () => 
 });
 
 
-test("officer dashboard keeps complaint analytics, election access and recent records visible in the read-only model", () => {
+test("officer dashboard keeps complaint analytics, needs assessment access and recent records visible", () => {
   const html = read("usc-admin/overview/overview.html");
   const js = read("usc-admin/overview/js/overview.js");
   assert.match(html, /data-summary="complaint"/);
-  assert.match(html, /href="\.\.\/elections\/elections\.html"/);
+  assert.match(html, /href="\.\.\/needs-assessment\/needs-assessment\.html"/);
   assert.match(html, /id="officerOverviewEvents"/);
   assert.match(html, /id="officerOverviewPrograms"/);
   assert.match(js, /renderOverviewChart\('complaint'/);

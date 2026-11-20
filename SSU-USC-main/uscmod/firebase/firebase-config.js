@@ -4,7 +4,7 @@ import { getAuth } from "https://www.gstatic.com/firebasejs/12.12.0/firebase-aut
 import { getFunctions } from "https://www.gstatic.com/firebasejs/12.12.0/firebase-functions.js";
 import { initializeAppCheck, ReCaptchaEnterpriseProvider } from "https://www.gstatic.com/firebasejs/12.12.0/firebase-app-check.js";
 
-export const firebaseConfig = {
+const defaultFirebaseConfig = {
   apiKey: "AIzaSyAVu7wu_1JnWQFNmwWMQHly0JEXjXxnzjA",
   authDomain: "universitystudentcouncil-856cc.firebaseapp.com",
   projectId: "universitystudentcouncil-856cc",
@@ -12,6 +12,14 @@ export const firebaseConfig = {
   messagingSenderId: "653983268515",
   appId: "1:653983268515:web:e219d9c7d74fdd5077c916"
 };
+
+// An explicitly supplied staging configuration is checked before initialization.
+// Existing public production values remain the default; invalid overrides fail closed.
+const suppliedFirebaseConfig = globalThis.USC_FIREBASE_CONFIG;
+if (suppliedFirebaseConfig && !["apiKey", "authDomain", "projectId", "appId"].every(key => typeof suppliedFirebaseConfig[key] === "string" && suppliedFirebaseConfig[key].trim())) {
+  throw new Error("Invalid staging Firebase configuration. Supply apiKey, authDomain, projectId, and appId before Firebase initializes.");
+}
+export const firebaseConfig = suppliedFirebaseConfig || defaultFirebaseConfig;
 
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
