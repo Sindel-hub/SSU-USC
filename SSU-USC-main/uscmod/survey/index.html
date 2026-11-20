@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <meta name="referrer" content="no-referrer" />
+    <title>Student Needs Assessment — SSU-USC</title>
+    <link rel="stylesheet" href="../usc-admin/shared/css/usc-theme.css" />
+    <link rel="stylesheet" href="../shared/management.css" />
+    <script src="../shared/app-config.js"></script>
+  </head>
+  <body>
+    <header class="management-header">
+      <img
+        src="../usc-admin/shared/assets/SSUlogo.webp"
+        alt="Samar State University"
+      /><img
+        src="../usc-admin/shared/assets/USClogo.webp"
+        alt="University Student Council"
+      />
+      <div>
+        <strong>SSU UNIVERSITY STUDENT COUNCIL</strong
+        ><small>Leadership · Excellence · Discipline · Service</small>
+      </div>
+    </header>
+    <nav class="management-nav">
+      <a href="/home/home.html">Bulletin Board</a>
+    </nav>
+    <main class="management-main public-survey">
+      <h1 id="surveyTitle">Student Needs Assessment</h1>
+      <p id="surveyStatus" class="notice" role="status">
+        Loading questionnaire…
+      </p>
+      <section id="questionnaire" class="panel" hidden>
+        <p id="description" class="lead"></p>
+        <p id="instructions" class="answer-text"></p>
+        <p id="schedule" class="muted"></p>
+        <p class="notice">
+          This survey is anonymous. Do not include names, student IDs, contact
+          details, or other identifying information in your answers. No login is
+          required. Department is self-reported and cannot verify enrollment or
+          identity.
+        </p>
+        <form id="responseForm">
+          <label>Department<select id="department" required></select></label>
+          <div id="publicQuestions"></div>
+          <div class="honeypot" aria-hidden="true">
+            <label
+              >Leave this blank<input
+                name="website"
+                tabindex="-1"
+                autocomplete="off"
+            /></label>
+          </div>
+          <button type="submit" id="submitSurvey">Submit Survey</button>
+        </form>
+      </section>
+    </main>
+    <script type="module" src="survey.js"></script>
+  </body>
+</html>

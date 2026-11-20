@@ -101,7 +101,7 @@ async function requireActiveCanvasser(request) {
 
 
 const OFFICER_PERMISSION_KEYS = new Set([
-  "dashboard.view", "elections.view", "elections.schedule", "elections.roster", "elections.review", "elections.results",
+  "needs.manage", "dashboard.view", "elections.view", "elections.schedule", "elections.roster", "elections.review", "elections.results",
   "complaints.view", "complaints.review", "complaints.classify", "complaints.feedback", "complaints.status", "complaints.report",
   "bulletin.manage", "events.manage", "programs.manage", "organization.view", "reports.generate"
 ]);

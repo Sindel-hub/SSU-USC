@@ -1,3 +1,4 @@
+import { attachSurveyButton } from '../../shared/management-client.js';
 import { announcementExcerpt } from "../../shared/announcement-excerpt.mjs";
 import { auth, db } from "../../firebase/firebase-config.js";
 import { collection, limit, onSnapshot, orderBy, query } from "https://www.gstatic.com/firebasejs/12.12.0/firebase-firestore.js";
@@ -251,6 +252,7 @@ function openAnnouncement(announcement) {
   document.getElementById("bulletinModalDate").textContent = formatDate(announcement.createdAt || announcement.createdAtMs);
   document.getElementById("bulletinModalAudience").textContent = `Audience: ${clean(announcement.audience, "All students")}`;
   document.getElementById("bulletinModalContent").textContent = String(announcement.content ?? "");
+  attachSurveyButton(document.getElementById("bulletinModalContent"), announcement.surveyId);
 
   if (announcement.imageUrl) {
     image.src = announcement.imageUrl;

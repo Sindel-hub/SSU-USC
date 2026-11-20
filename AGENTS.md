@@ -266,3 +266,11 @@ The user reserves the final GitHub pull-request merge action for themselves. Thi
 - Keep required checks and branch protections in place. Do not change repository or Vercel settings to circumvent this manual gate.
 - The existing Vercel integration may deploy after the user manually merges. Verify and report that deployment when requested; do not initiate a separate production deployment without authorization.
 - Required production backend changes still require separate explicit authorization and coordinated deployment order.
+
+## Latest user override — review and explicit approval before any remote operation
+
+For every development change, inspect the existing system, implement on a separate local development branch, and run relevant checks. Present (A) Changes Made, (B) Modified Files, (C) relevant before/after code or Git diff and UI previews when supported, and (D) actual testing results and limitations.
+
+Then ask exactly: "Are you satisfied with these changes? Would you like me to revise anything, or do you approve these changes for pushing to GitHub?"
+
+Stop and wait. The original change request, silence, and past approvals do not authorize a push. Without explicit approval for the reviewed changes, never push, create a pull request, publish, deploy, or change GitHub Actions, Vercel settings, or branch protections. This overrides older instructions above to automatically push and create a Vercel Preview. Local commits are allowed. If code changes after approval, repeat review and obtain approval again. After approval, verify the exact reviewed scope before submitting only that scope to the authorized branch. The existing manual-merge restriction remains in force: the user performs the final merge.

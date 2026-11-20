@@ -1,4 +1,5 @@
 export const OFFICER_PERMISSION_DEFINITIONS = Object.freeze([
+  { key: "needs.manage", group: "Needs Assessment", label: "Manage Needs Assessment", description: "Create and publish surveys; view anonymous results and reports." },
   { key: "dashboard.view", group: "Dashboard", label: "View Officer Dashboard", description: "Open the officer dashboard and see aggregate USC summaries." },
   { key: "elections.view", group: "Elections", label: "Assigned Election Module", description: "Marks Elections as an assigned office module. All officers may still open it read-only; assigned officers can use granted election functions." },
   { key: "elections.roster", group: "Elections", label: "Manage Voter Roster", description: "Import, validate, and finalize the voter masterlist." },
@@ -104,6 +105,7 @@ export const OFFICER_POSITION_PERMISSION_PRESETS = Object.freeze({
 });
 
 export const OFFICER_MODULE_PERMISSION_BY_PATH = Object.freeze({
+  "/usc-admin/needs-assessment/": "needs.manage",
   "/usc-admin/announcements/": "bulletin.manage",
   "/usc-admin/elections/": "elections.view",
   "/usc-admin/events/": "events.manage",
@@ -114,6 +116,7 @@ export const OFFICER_MODULE_PERMISSION_BY_PATH = Object.freeze({
 });
 
 export const OFFICER_MODULE_PERMISSION_BY_HREF = Object.freeze({
+  "needs-assessment/needs-assessment.html": "needs.manage",
   "announcements/announcements.html": "bulletin.manage",
   "elections/elections.html": "elections.view",
   "events/events.html": "events.manage",

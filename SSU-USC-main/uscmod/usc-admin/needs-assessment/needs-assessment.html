@@ -1,0 +1,167 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <meta name="referrer" content="no-referrer" />
+    <title>Needs Assessment — SSU-USC</title>
+    <link rel="stylesheet" href="../../usc-admin/shared/css/usc-theme.css" />
+    <link rel="stylesheet" href="../../shared/management.css" />
+    <script src="../../shared/app-config.js"></script>
+    <script type="module" src="../../shared/auth-guard.js"></script>
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+    />
+  </head>
+  <body>
+    <header class="management-header">
+      <img
+        src="../../usc-admin/shared/assets/SSUlogo.webp"
+        alt="Samar State University"
+      /><img
+        src="../../usc-admin/shared/assets/USClogo.webp"
+        alt="University Student Council"
+      />
+      <div>
+        <strong>SSU UNIVERSITY STUDENT COUNCIL</strong
+        ><small>Leadership · Excellence · Discipline · Service</small>
+      </div>
+    </header>
+    <div class="management-layout">
+      <aside class="management-sidebar" aria-label="Officer navigation">
+        <h2>Officer modules</h2>
+        <nav class="officer-module-nav" aria-label="Officer modules">
+          <a class="nav-btn" href="../overview/overview.html"
+            ><span class="icon"><i class="fa-solid fa-table-columns"></i></span
+            ><span>Dashboard</span></a
+          >
+          <a class="nav-btn" href="../announcements/announcements.html"
+            ><span class="icon"><i class="fa-solid fa-note-sticky"></i></span
+            ><span>Bulletin Board Center</span></a
+          >
+          <a
+            class="nav-btn"
+            href="../needs-assessment/needs-assessment.html"
+            aria-current="page"
+            ><span class="icon"
+              ><i class="fa-regular fa-rectangle-list"></i></span
+            ><span>Needs Assessment</span></a
+          >
+          <a class="nav-btn" href="../events/events.html"
+            ><span class="icon"><i class="fa-regular fa-calendar"></i></span
+            ><span>Events</span></a
+          >
+          <a class="nav-btn" href="../programs/programs.html"
+            ><span class="icon"><i class="fa-solid fa-earth-americas"></i></span
+            ><span>Programs</span></a
+          >
+          <a
+            class="nav-btn"
+            href="../organizational-chart/organizational-chart.html"
+            ><span class="icon"><i class="fa-solid fa-users"></i></span
+            ><span>Organizational Chart</span></a
+          >
+          <a class="nav-btn" href="../complaints/complaints.html"
+            ><span class="icon"><i class="fa-solid fa-message"></i></span
+            ><span>Complaints Management</span></a
+          >
+        </nav>
+      </aside>
+      <main class="management-main">
+        <div class="row space-between">
+          <div>
+            <h1>Needs Assessment</h1>
+            <p class="lead">
+              Listen to student needs. Create questionnaires and use real
+              responses to plan USC services.
+            </p>
+          </div>
+          <button id="newSurvey">Create Survey</button>
+        </div>
+        <p id="status" class="notice" role="status">Loading surveys…</p>
+        <section id="editor" class="panel" hidden>
+          <h2 id="editorTitle">Create survey</h2>
+          <form id="surveyForm">
+            <label
+              >Survey title<input name="title" maxlength="160" required
+            /></label>
+            <div class="grid">
+              <label
+                >Description<textarea
+                  name="description"
+                  maxlength="3000"
+                ></textarea></label
+              ><label
+                >Instructions<textarea
+                  name="instructions"
+                  maxlength="3000"
+                ></textarea>
+              </label>
+            </div>
+            <div class="grid">
+              <label
+                >Target department<select name="department"></select
+              ></label>
+              <div class="grid">
+                <label
+                  >Starts at (your local time)<input
+                    name="startsAt"
+                    type="datetime-local"
+                    required /></label
+                ><label
+                  >Deadline (your local time)<input
+                    name="endsAt"
+                    type="datetime-local"
+                    required
+                /></label>
+              </div>
+            </div>
+            <h3>Questions</h3>
+            <div id="questions"></div>
+            <div class="row">
+              <button type="button" id="addQuestion" class="secondary">
+                Add question</button
+              ><button type="submit">Save Draft</button
+              ><button type="button" id="cancelEdit" class="secondary">
+                Cancel
+              </button>
+            </div>
+            <p class="muted">
+              Questions and schedule become locked after publication. Ratings
+              use a 1–5 scale. No names or student IDs are requested.
+            </p>
+          </form>
+        </section>
+        <section
+          id="surveys"
+          class="grid"
+          aria-label="Survey library"
+        ></section>
+        <section id="results" class="panel" hidden>
+          <div class="row space-between">
+            <h2 id="resultsTitle">Survey results</h2>
+            <div class="row no-print">
+              <button id="exportCsv">Export CSV summary</button
+              ><button id="printReport" class="secondary">
+                Print / Save PDF</button
+              ><button id="closeResults" class="secondary">Close</button>
+            </div>
+          </div>
+          <p id="resultsOverview"></p>
+          <label class="no-print"
+            >Department filter<select id="resultsDepartment"></select
+          ></label>
+          <p class="muted">
+            Departments with fewer than five responses are excluded from
+            question results, including all-department summaries. Anonymous
+            answers are self-reported; identity, enrollment, and department are
+            not verified. Checkbox percentages may exceed 100%.
+          </p>
+          <div id="analytics"></div>
+        </section>
+      </main>
+    </div>
+    <script type="module" src="needs-assessment.js"></script>
+  </body>
+</html>

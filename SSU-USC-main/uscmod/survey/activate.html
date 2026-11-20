@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <meta name="referrer" content="no-referrer" />
+    <title>Activate Student Account — SSU-USC</title>
+    <link rel="stylesheet" href="../usc-admin/shared/css/usc-theme.css" />
+    <link rel="stylesheet" href="../shared/management.css" />
+    <script src="../shared/app-config.js"></script>
+  </head>
+  <body>
+    <header class="management-header">
+      <img
+        src="../usc-admin/shared/assets/SSUlogo.webp"
+        alt="Samar State University"
+      /><img
+        src="../usc-admin/shared/assets/USClogo.webp"
+        alt="University Student Council"
+      />
+      <div>
+        <strong>SSU UNIVERSITY STUDENT COUNCIL</strong
+        ><small>Leadership · Excellence · Discipline · Service</small>
+      </div>
+    </header>
+    <nav class="management-nav">
+      <a href="/home/home.html">Bulletin Board</a>
+    </nav>
+    <main class="management-main public-survey">
+      <h1>Activate your student account</h1>
+      <p class="lead">
+        Use the private activation link provided through your verified-source
+        email or after USC checks your identity in person.
+      </p>
+      <section class="panel">
+        <p id="activationStatus" role="status" class="notice">
+          Set your own password. The link expires in 24 hours and can be used
+          once.
+        </p>
+        <form id="activationForm">
+          <label
+            >New password<input
+              id="newPassword"
+              type="password"
+              autocomplete="new-password"
+              minlength="12"
+              maxlength="128"
+              required /></label
+          ><label
+            >Confirm new password<input
+              id="confirmPassword"
+              type="password"
+              autocomplete="new-password"
+              minlength="12"
+              maxlength="128"
+              required /></label
+          ><button type="submit">Activate Account</button>
+        </form>
+        <p class="muted">
+          After activation, sign in with your Student ID and chosen password.
+          Academic status controls access separately from activation.
+        </p>
+        <a href="/index/index.html">Return to sign in</a>
+      </section>
+    </main>
+    <script type="module" src="activate.js"></script>
+  </body>
+</html>

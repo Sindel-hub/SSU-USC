@@ -23,7 +23,7 @@ function settle(allowed) {
 
 function expectedRoles() {
   const path = location.pathname.toLowerCase();
-  if (path.includes("/usc-admin/admin-dashboard/") || path.includes("/usc-admin/student-registration/")) return ["admin"];
+  if (path.includes("/usc-admin/admin-dashboard/") || path.includes("/usc-admin/student-registration/") || path.includes("/usc-admin/student-records/")) return ["admin"];
   if (path.includes("/usc-admin/")) return ["officer", "admin"];
   if (path.includes("/dashboard/") || path.includes("/complaint/") || path.includes("/voting/")) return ["student"];
   return [];
