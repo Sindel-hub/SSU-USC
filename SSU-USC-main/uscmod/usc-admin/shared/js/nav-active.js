@@ -1,6 +1,7 @@
 const OFFICER_OVERVIEW_PATH = "../overview/overview.html";
 const ADMIN_DASHBOARD_PATH = "../admin-dashboard/admin-dashboard.html";
 const OFFICER_MODULES = [
+  { name: "Needs Assessment", detail: "Student surveys and department analytics", href: "../needs-assessment/needs-assessment.html", icon: "fa-clipboard-list", keywords: "needs assessment survey questionnaire responses analytics departments" },
   {
     name: "Dashboard",
     detail: "Officer overview and live summaries",

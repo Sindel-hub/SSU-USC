@@ -1,3 +1,4 @@
+import { surveyIdFromLink } from '../../../shared/survey-links.mjs';
 import { initializeFacebookPublishing, hydrateFacebookDeliveries, facebookRequest } from './facebook-publishing.js';
 import { RETENTION_MS, daysRemaining, canRestore } from "./announcement-retention.mjs";
 import { db, auth } from "../../../firebase/firebase-config.js";
@@ -18,6 +19,9 @@ const uscAuthAllowed = await (globalThis.USC_AUTH_READY || Promise.resolve(false
 if (uscAuthAllowed !== true) await new Promise(() => {});
 
 
+const surveyLinkInput = document.getElementById('announcementSurveyLink');
+const attachedSurveyId = new URLSearchParams(location.search).get('survey');
+if (/^[a-zA-Z0-9]{20}$/.test(attachedSurveyId || '')) surveyLinkInput.value = new URL(`/survey/index.html?id=${attachedSurveyId}`, location.origin).href;
 const announcementForm = document.getElementById("announcementForm");
 const announcementTitleInput = document.getElementById("announcementTitle");
 const announcementCategoryInput = document.getElementById("announcementCategory");
@@ -478,6 +482,15 @@ announcementForm?.addEventListener("submit", async (event) => {
         return;
     }
 
+    let surveyId;
+    try { surveyId = surveyIdFromLink(surveyLinkInput.value, location.origin); }
+    catch (error) { alert(error.message); return; }
+    if (surveyId) {
+      try {
+        const { surveyCall } = await import('../../../shared/needs-assessment-client.js');
+        await surveyCall('Public', { surveyId });
+      } catch (error) { alert(`Cannot attach survey: ${error.message}`); return; }
+    }
     const facebookToggle = document.getElementById('alsoPostFacebook');
     const wantsFacebook = facebookToggle.checked && !facebookToggle.disabled;
     publishAnnouncementBtn.disabled = true;
@@ -495,6 +508,7 @@ announcementForm?.addEventListener("submit", async (event) => {
             category,
             audience,
             content,
+            surveyId,
             imageUrl,
             imagePath,
             createdByUid: auth.currentUser?.uid || "",
