@@ -12,3 +12,14 @@ ui-debug.log
 .DS_Store
 
 # Free local admin bridge runtime files
+
+# Hosted build output and local-only test/secret files
+dist/
+.vercel/
+**/.secret*
+**/*.local-backup
+.emulator-data.local/
+serve-local.cjs
+functions/seed-local-admin.cjs
+functions/configure-local-activation.cjs
+local-activation-test.csv

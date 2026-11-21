@@ -20,5 +20,15 @@
       "destination": "/dashboard/dashboard.html",
       "permanent": false
     }
-  ]
+  ],
+  "buildCommand": "npm run build:hosted",
+  "outputDirectory": "dist",
+  "regions": [
+    "sin1"
+  ],
+  "functions": {
+    "api/management.js": {
+      "maxDuration": 300
+    }
+  }
 }

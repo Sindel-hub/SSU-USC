@@ -1,0 +1,12 @@
+**/.secret*
+**/.env*
+**/*.local-backup
+**/service-account*.json
+.emulator-data.local/
+.firebase/
+functions/seed-local-admin.cjs
+functions/configure-local-activation.cjs
+serve-local.cjs
+local-activation-test.csv
+tests/
+docs/
