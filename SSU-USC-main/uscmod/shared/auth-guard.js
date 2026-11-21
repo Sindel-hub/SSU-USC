@@ -92,6 +92,7 @@ function refreshSession(profile, claims = {}, electionEligibility = null, resolv
     accountStatus: profile.accountStatus || "pending",
     isVerifiedStudent: profile.isVerifiedStudent === true,
     officePosition: profile.officePosition || (role === "admin" ? "System Administrator" : ""),
+    officerAssignmentId: profile.officerAssignmentId || "",
     officerPermissionsConfigured: Array.isArray(profile.officerPermissions),
     officerPermissionSource: profile.officerPermissionSource || "",
     officerPermissions: role === "officer" ? effectiveOfficerPermissions({ ...profile, role }, { legacyFullAccess: true }) : [],

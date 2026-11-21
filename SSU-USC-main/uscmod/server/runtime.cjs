@@ -2,6 +2,8 @@
 const { createHmac } = require("node:crypto");
 const { readServerSettings, ServiceError } = require("./settings.cjs");
 const { createAuthorization } = require("./authorization.cjs");
+const { createOfficerHistory } = require("./officer-history.cjs");
+const { createOfficerModuleHandlers } = require("./officer-modules.cjs");
 const { createActivationMailer } = require("./activation-mail.cjs");
 const { createStudentRecordHandlers } = require("../functions/student-records.js");
 const { createNeedsAssessmentHandlers } = require("../functions/needs-assessment.js");
@@ -26,7 +28,7 @@ function getRuntime() {
   const settings = readServerSettings();
   const { initializeApp, cert } = require("firebase-admin/app");
   const { getAuth } = require("firebase-admin/auth");
-  const { getFirestore } = require("firebase-admin/firestore");
+  const { getFirestore, Timestamp } = require("firebase-admin/firestore");
   const { getAppCheck } = require("firebase-admin/app-check");
   const nodemailer = require("nodemailer");
   const app = initializeApp({ projectId: settings.projectId, credential: cert(settings.account) }, "usc-hosted-management");
@@ -36,9 +38,10 @@ function getRuntime() {
   const authorization = createAuthorization({ db });
   const sendActivation = createActivationMailer({ publicOrigin: settings.publicOrigin, createTransport: nodemailer.createTransport });
   const dependencies = { db, adminAuth, ...authorization, HttpsError: ServiceError, sendActivation };
+  const history = createOfficerHistory({ ...dependencies });
   cached = {
     settings,
-    handlers: { ...createNeedsAssessmentHandlers(dependencies), ...createStudentRecordHandlers(dependencies) },
+    handlers: { ...createNeedsAssessmentHandlers({ ...dependencies, history }), ...createStudentRecordHandlers(dependencies), ...history.handlers, ...createOfficerModuleHandlers({ ...dependencies, history, Timestamp }) },
     verifyIdToken: token => adminAuth.verifyIdToken(token, true),
     verifyAppCheckToken: token => getAppCheck(app).verifyToken(token),
     limitPublicRequest: createPublicLimiter({ db, key: settings.account.private_key })

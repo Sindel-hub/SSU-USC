@@ -36,7 +36,7 @@ test('Programs have independent RBAC, registrations, and media permissions', () 
   assert.match(permissions, /programs\.manage/);
   assert.match(permissions, /\/usc-admin\/programs\//);
   assert.match(rules, /match \/programs\/\{programId\}/);
-  assert.match(rules, /officerHasPermission\("programs\.manage"\)/);
+  assert.match(rules, /moduleWriter\("programs\.manage"\)/);
   assert.match(rules, /"program-media"/);
   assert.match(security, /"program-media"/);
 });
