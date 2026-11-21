@@ -2,7 +2,7 @@
   "name": "usc-election-system",
   "private": true,
   "scripts": {
-    "test": "npm run test:signin-analytics && npm run test:syntax && npm run test:landing-ui && npm run test:static && npm run test:candidate-management && npm run test:lifecycle && npm run test:admin-auth && npm run test:verify && npm run test:school-login && npm run test:auth-regressions && npm run test:complaints && npm run test:complaint-tracklist && npm run test:capstone && npm run test:navigation-profile && npm run test:complaint-delete && npm run test:rbac && npm run test:no-backend && npm run test:needs-assessment",
+    "test": "npm run test:signin-analytics && npm run test:syntax && npm run test:landing-ui && npm run test:static && npm run test:candidate-management && npm run test:lifecycle && npm run test:admin-auth && npm run test:verify && npm run test:school-login && npm run test:auth-regressions && npm run test:complaints && npm run test:complaint-tracklist && npm run test:capstone && npm run test:navigation-profile && npm run test:complaint-delete && npm run test:rbac && npm run test:no-backend && npm run test:needs-assessment && npm run test:student-records",
     "test:signin-analytics": "node --test tests/officer-signin-analytics.test.mjs",
     "test:provisioning-rules": "firebase emulators:exec --project demo-ssu-registration --only firestore \"node --test tests/account-provisioning.rules.test.mjs\"",
     "test:rules": "firebase emulators:exec --only firestore \"node --test tests/firestore.rules.test.mjs\"",
@@ -41,7 +41,8 @@
     "test:registration-history-browser": "node tests/browser/candidate-registration-history.cjs",
     "test:candidate-email-rules": "firebase emulators:exec --project demo-ssu-candidate-email --only firestore \"node --test tests/candidate-verified-email.rules.test.mjs\"",
     "test:candidate-email-browser": "node tests/browser/candidate-verified-email.cjs",
-    "test:needs-assessment": "node --test tests/needs-assessment.test.mjs"
+    "test:needs-assessment": "node --test tests/needs-assessment.test.mjs",
+    "test:student-records": "node --test tests/student-records.test.mjs"
   },
   "devDependencies": {
     "@firebase/rules-unit-testing": "^4.0.1",
