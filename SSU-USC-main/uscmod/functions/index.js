@@ -1714,3 +1714,10 @@ exports.syncElectionLifecycle = onSchedule({ region: REGION, schedule: "every 5 
 
 // Exported only for unit tests that run without Firebase deployment.
 exports.__test = { electionLifecycle, validateSchedule };
+
+// Needs Assessment is separate from the retired election services.
+const { createNeedsAssessmentHandlers } = require('./needs-assessment');
+const needsAssessmentHandlers = createNeedsAssessmentHandlers({ db, requireActiveRole, requireOfficerPermission, HttpsError });
+for (const [name, handler] of Object.entries(needsAssessmentHandlers)) {
+  exports[name] = onCall(callableOptions({ maxInstances: 10, timeoutSeconds: 30 }), handler);
+}

@@ -1,3 +1,4 @@
+import { attachSurveyButton } from '../../shared/survey-links.mjs';
 import { announcementExcerpt } from "../../shared/announcement-excerpt.mjs";
 import { auth, db } from "../../firebase/firebase-config.js";
 import {
@@ -553,6 +554,7 @@ function openAnnouncementModal(announcement) {
   if (modalTitle) modalTitle.textContent = safeText(announcement.title, "Announcement");
   if (modalAudience) modalAudience.textContent = safeText(announcement.audience, "All students");
   if (modalContent) modalContent.textContent = String(announcement.content ?? "");
+  attachSurveyButton(modalContent, announcement);
 
   modal.classList.remove("hidden");
   document.body.classList.add("modal-open");

@@ -2,13 +2,14 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import vm from 'node:vm';
+import { surveyIdFromLink } from '../shared/survey-links.mjs';
 const read=p=>fs.readFileSync(new URL('../'+p,import.meta.url),'utf8');
 const source=read('usc-admin/announcements/js/announcements.js');
 const preview=source.slice(source.indexOf('function syncPreviewCard()'),source.indexOf('function setImageFileLabel'));
 const submit=source.slice(source.indexOf('announcementForm?.addEventListener("submit"'),source.indexOf('\nfunction setPostMenu'));
 function fixture(body){
  const saved=[],alerts=[];let handler;
- const context=vm.createContext({String,Date,console,
+ const context=vm.createContext({String,Date,console,surveyIdFromLink,surveyLinkInput:{value:""},location:{origin:"https://portal.test"},
   announcementForm:{addEventListener:(event,fn)=>{handler=fn;}},
   announcementTitleInput:{value:'Synthetic notice'},announcementCategoryInput:{value:'Official Notice'},announcementAudienceInput:{value:'All Students'},announcementContentInput:{value:body},
   publishAnnouncementBtn:{disabled:false},document:{getElementById:()=>({checked:false,disabled:false})},

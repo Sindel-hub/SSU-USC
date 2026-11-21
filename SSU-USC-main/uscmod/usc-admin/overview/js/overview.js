@@ -398,6 +398,7 @@ function bindStudentSignInAnalytics() {
 }
 
 const OFFICER_MODULES = [
+  { name: "Needs Assessment", detail: "Student surveys and department analytics", href: "../needs-assessment/needs-assessment.html", icon: "fa-clipboard-list", keywords: "needs assessment survey questionnaire responses analytics departments" },
   { name:"Dashboard", detail:"Officer overview and live summaries", href:"../overview/overview.html", icon:"fa-table-columns", keywords:"dashboard overview home summary" },
   { name:"Bulletin Board Center", detail:"Create and manage USC announcements", href:"../announcements/announcements.html", icon:"fa-note-sticky", keywords:"bulletin announcement announcements post notice" },
   { name:"Events", detail:"Create and manage university events", href:"../events/events.html", icon:"fa-calendar", keywords:"event events calendar activity activities" },
