@@ -1,5 +1,7 @@
 # Annual student records and account provisioning
 
+> Hosted deployment update: the website now defaults to its own Vercel management API. Firebase Cloud Functions/Resend instructions below describe the optional original path. See [hosted-management.md](hosted-management.md) for the current Spark-compatible architecture, staging gates and private configuration. No hosted deployment has been performed.
+
 ## Administrator workflow
 
 Open **Student Records** in the System Administrator sidebar or use **Bulk student import** in User Directory. This is restricted to a trusted, approved, active administrator. Officers and students cannot call the record-management/monitoring endpoints.

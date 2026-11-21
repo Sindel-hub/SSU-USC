@@ -30,3 +30,7 @@ globalThis.USC_SUPABASE_EMAIL_FUNCTION_URL = "";
 
 // Deploy usc-facebook and configure its secrets before enabling this endpoint.
 globalThis.USC_FACEBOOK_FUNCTION_URL = "https://svgfxatigtjdrwzibjbu.supabase.co/functions/v1/usc-facebook";
+
+// Surveys and annual student records run on the website's own hosted API.
+// Set to "firebase" only in an isolated emulator/Cloud Functions test copy.
+globalThis.USC_MANAGEMENT_TRANSPORT = "hosted";

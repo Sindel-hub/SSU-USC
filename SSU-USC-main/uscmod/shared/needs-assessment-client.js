@@ -1,7 +1,6 @@
-import { functions } from '../firebase/firebase-config.js';
-import { httpsCallable } from 'https://www.gstatic.com/firebasejs/12.12.0/firebase-functions.js';
+import { hostedManagementCall } from './hosted-management-client.js';
 export async function surveyCall(action, data = {}) {
-  try { return (await httpsCallable(functions, `needsAssessment${action}`)(data)).data; }
+  try { return await hostedManagementCall(`needsAssessment${action}`, data); }
   catch (error) {
     if (/not-found|unavailable|internal|unknown/.test(error.code || '') && !error.message?.includes('Survey')) {
       throw new Error('The survey service is unavailable. Please try again later.');

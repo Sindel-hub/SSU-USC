@@ -1,5 +1,7 @@
 # Needs Assessment
 
+> Hosted deployment update: the website now defaults to its own Vercel management API. Firebase Cloud Functions/Resend instructions below describe the optional original path. See [hosted-management.md](hosted-management.md) for the current Spark-compatible architecture, staging gates and private configuration. No hosted deployment has been performed.
+
 This module replaces retired election dashboard access with anonymous surveys. It does not restore student-record import/activation or the removed Supabase management backend. Existing election records and legacy services are untouched.
 
 ## Usage
