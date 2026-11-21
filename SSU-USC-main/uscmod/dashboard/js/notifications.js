@@ -1,5 +1,4 @@
 import { auth, db } from "../../firebase/firebase-config.js";
-import { callSecure } from "../../shared/security-client.js";
 import {
   collection,
   doc,
@@ -17,7 +16,7 @@ if (uscAuthAllowed !== true) await new Promise(() => {});
 const notificationOwner = auth.currentUser?.uid;
 const PROFILE_KEY = "studentProfile";
 const READ_KEY_PREFIX = "uscNotificationRead:";
-const feeds = { announcements: [], events: [], programs: [], complaints: [], election: null, application: null };
+const feeds = { announcements: [], events: [], programs: [], complaints: [] };
 
 function dashboardHref(fileName) {
   return window.location.pathname.includes("/dashboard/") ? fileName : `../dashboard/${fileName}`;
@@ -107,14 +106,6 @@ function buildItems() {
       dashboardHref("tracklist.html")
     ));
   });
-  if (feeds.election) {
-    const e=feeds.election;
-    list.push(item(`election:${clean(e.electionId,"active")}:${clean(e.lifecycle,"Unavailable")}`,"election","Election Update",`${clean(e.title,"USC Election")} is currently in the ${clean(e.lifecycle,"Unavailable")} phase.`,e.serverNowMs||Date.now(),"fa-file-lines",dashboardHref("election.html")));
-  }
-  if (feeds.application && p?.uid) {
-    const a=feeds.application;
-    list.push(item(`application:${a.id}:${clean(a.status)}`,"election","Candidacy Update",`Your candidacy application is ${clean(a.status,"under review")}.`,a.updatedAt||a.submittedAt,"fa-circle-check",dashboardHref("election.html")));
-  }
   return list.sort((a,b)=>{
     const ad=(toDate(a.at)||eventDate(a.at))?.getTime()||0;
     const bd=(toDate(b.at)||eventDate(b.at))?.getTime()||0;
@@ -146,22 +137,7 @@ function listen() {
   onSnapshot(query(collection(db,"programs"),orderBy("eventDate","asc"),limit(8)),s=>{feeds.programs=s.docs.map(d=>({id:d.id,...d.data()}));render();},()=>{});
   const studentUid=clean(auth.currentUser?.uid || p?.uid);
   if (studentUid) onSnapshot(query(collection(db,"complaints"),where("studentUid","==",studentUid)),s=>{feeds.complaints=s.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>(toDate(b.updatedAt||b.createdAt)?.getTime()||0)-(toDate(a.updatedAt||a.createdAt)?.getTime()||0));render();},error=>{console.warn("Complaint notification feed unavailable:",error);});
-  let unsubscribeApplication=null;
-  let boundElectionId="";
-  const refreshElection=async()=>{
-    try{
-      const context=await callSecure("getElectionContext");
-      feeds.election=context;
-      if(p?.uid && context.electionId!==boundElectionId){
-        unsubscribeApplication?.();
-        boundElectionId=context.electionId;
-        unsubscribeApplication=onSnapshot(doc(db,"elections",context.electionId,"applications",p.uid),s=>{feeds.application=s.exists()?{id:s.id,...s.data()}:null;render();},()=>{feeds.application=null;render();});
-      }
-      render();
-    }catch(error){console.warn("Election notification feed unavailable:",error);feeds.election=null;feeds.application=null;render();}
-  };
-  refreshElection();
-  setInterval(refreshElection,60000);
+
 }
 
 const btn=document.getElementById("notificationButton");

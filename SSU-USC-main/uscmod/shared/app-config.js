@@ -30,7 +30,3 @@ globalThis.USC_SUPABASE_EMAIL_FUNCTION_URL = "";
 
 // Deploy usc-facebook and configure its secrets before enabling this endpoint.
 globalThis.USC_FACEBOOK_FUNCTION_URL = "https://svgfxatigtjdrwzibjbu.supabase.co/functions/v1/usc-facebook";
-
-// New management service: configure an isolated staging endpoint before testing.
-// Leave empty until usc-management and its server secrets are configured.
-globalThis.USC_MANAGEMENT_FUNCTION_URL = globalThis.USC_MANAGEMENT_FUNCTION_URL || "";

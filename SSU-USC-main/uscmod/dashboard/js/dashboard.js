@@ -1,4 +1,3 @@
-import { attachSurveyButton } from '../../shared/management-client.js';
 import { announcementExcerpt } from "../../shared/announcement-excerpt.mjs";
 import { auth, db } from "../../firebase/firebase-config.js";
 import {
@@ -554,7 +553,6 @@ function openAnnouncementModal(announcement) {
   if (modalTitle) modalTitle.textContent = safeText(announcement.title, "Announcement");
   if (modalAudience) modalAudience.textContent = safeText(announcement.audience, "All students");
   if (modalContent) modalContent.textContent = String(announcement.content ?? "");
-  attachSurveyButton(modalContent, announcement.surveyId);
 
   modal.classList.remove("hidden");
   document.body.classList.add("modal-open");
@@ -879,7 +877,6 @@ function startAnnouncementListener() {
 }
 
 function startVoteListener(studentProfile) {
-  if (!document.getElementById("dashboardTurnoutRate")) return;
   let unsubTurnout = null;
   let unsubStatus = null;
   let latestTurnout = {};
@@ -973,7 +970,7 @@ if (studentProfile) {
   bindDashboardEvents();
   bindDashboardEventControls();
   startAnnouncementListener();
-  startVoteListener(studentProfile);
+
   startComplaintTracklistListener(studentProfile);
   startDashboardEventsListener();
 }

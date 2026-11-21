@@ -400,7 +400,6 @@ function bindStudentSignInAnalytics() {
 const OFFICER_MODULES = [
   { name:"Dashboard", detail:"Officer overview and live summaries", href:"../overview/overview.html", icon:"fa-table-columns", keywords:"dashboard overview home summary" },
   { name:"Bulletin Board Center", detail:"Create and manage USC announcements", href:"../announcements/announcements.html", icon:"fa-note-sticky", keywords:"bulletin announcement announcements post notice" },
-  { name:"Election Management", detail:"Election schedule, candidates and voting", href:"../elections/elections.html", icon:"fa-rectangle-list", keywords:"election elections voting vote candidate candidates schedule results" },
   { name:"Events", detail:"Create and manage university events", href:"../events/events.html", icon:"fa-calendar", keywords:"event events calendar activity activities" },
   { name:"Programs", detail:"Publish outside-university programs and opportunities", href:"../programs/programs.html", icon:"fa-earth-americas", keywords:"program programs external outside outreach partner opportunity opportunities training scholarship internship" },
   { name:"Organizational Chart", detail:"View the USC council structure", href:"../organizational-chart/organizational-chart.html", icon:"fa-users", keywords:"organization organizational chart officers council structure" },

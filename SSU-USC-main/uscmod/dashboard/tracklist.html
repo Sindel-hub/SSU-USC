@@ -35,7 +35,7 @@
       <nav class="student-nav" aria-label="Student module navigation">
         <a class="student-nav-link" href="dashboard.html"><i class="fa-solid fa-briefcase"></i><span>Dashboard</span></a>
         <a class="student-nav-link" href="bulletin.html"><i class="fa-solid fa-note-sticky"></i><span>Bulletin Board</span></a>
-        <a class="student-nav-link" href="needs-assessment.html"><i class="fa-regular fa-building"></i><span>Needs Assessment</span></a>
+
         <a class="student-nav-link" href="events.html"><i class="fa-regular fa-calendar"></i><span>Events / Programs</span></a>
         <a class="student-nav-link" href="organizational-chart.html"><i class="fa-solid fa-users"></i><span>Organizational Chart</span></a>
         <a class="student-nav-link" href="../complaint/complaint.html"><i class="fa-solid fa-hand-holding-heart"></i><span>Student Complaint/Feedbacks</span></a>
@@ -75,7 +75,7 @@
               <div class="track-hero-copy">
                 <span class="track-eyebrow">MY TRACKING OVERVIEW</span>
                 <h2>Your Campus, Your Voice</h2>
-                <p>Track your concerns, follow progress, and take part in elections.</p>
+                <p>Track your concerns and follow their progress.</p>
               </div>
               <div class="track-overview-illustration" aria-hidden="true">
                 <div class="track-campus-silhouette"><i class="fa-solid fa-building-columns"></i></div>
@@ -97,10 +97,7 @@
                 <span class="overview-icon"><i class="fa-solid fa-circle-check"></i></span>
                 <div class="overview-copy"><small>Resolved Cases</small><strong id="overviewResolvedComplaints">00</strong><span>Resolved / Closed</span></div>
               </article>
-              <article class="mini-overview-card election">
-                <span class="overview-icon"><i class="fa-solid fa-check-to-slot"></i></span>
-                <div class="overview-copy"><small>Election Records</small><strong id="overviewElectionRecords">00</strong><span>Submitted Votes</span></div>
-              </article>
+
             </div>
           </section>
 
@@ -126,16 +123,7 @@
               <div id="recentActivityHost" class="activity-list"></div>
             </section>
 
-            <section class="track-card election-participation-card">
-              <header class="track-card-head">
-                <div class="track-card-heading">
-                  <span class="track-card-icon indigo"><i class="fa-solid fa-check-to-slot"></i></span>
-                  <div><h2>Election Participation</h2><p>Take part in student elections and make your voice count.</p></div>
-                </div>
-                <button class="track-card-link" data-open-modal="trackElectionModal" type="button">View All <i class="fa-solid fa-arrow-right"></i></button>
-              </header>
-              <div id="votePreviewHost" class="track-card-content"></div>
-            </section>
+
           </div>
         </section>
       </main>
@@ -160,18 +148,6 @@
       <div class="student-modal-footer"><div class="student-modal-note" id="complaintTableMeta">Showing 1 to 0 of 0 entries</div><button class="modal-btn outline" data-close-modal="trackComplaintsModal" type="button">Close</button></div>
     </div>
   </div>
-
-  <div class="student-modal hidden" id="trackElectionModal">
-    <div class="student-modal-backdrop" data-close-modal="trackElectionModal"></div>
-    <div class="student-modal-panel wide">
-      <button class="student-modal-close" data-close-modal="trackElectionModal" type="button">×</button>
-      <div class="student-modal-head"><div class="student-modal-icon indigo"><i class="fa-solid fa-check-to-slot"></i></div><div><h3>Election Participation Details</h3><p>Here is your election participation record. Your candidate selections remain confidential and are never shown here.</p></div></div>
-      <div class="election-summary-strip"><div><small>Election Name</small><strong id="voteElectionName">USC Election</strong></div><div><small>Date</small><strong id="voteElectionDate">—</strong></div><div><small>Time</small><strong id="voteElectionTime">—</strong></div><div><small>Status</small><span class="status-pill success">Vote Recorded</span></div></div>
-      <div class="tracklist-table-wrap"><table class="student-data-table"><thead><tr><th>Position</th><th>Voted Candidate</th><th>Course / Year</th><th>Party / Affiliation</th></tr></thead><tbody id="voteTableBody"></tbody></table></div>
-      <div class="student-modal-footer"><div class="student-modal-note"><i class="fa-regular fa-circle-check"></i> Thank you for exercising your right to vote!</div><button class="modal-btn outline" data-close-modal="trackElectionModal" type="button">Close</button></div>
-    </div>
-  </div>
-
 
   <div class="student-modal hidden complaint-detail-modal" id="complaintDetailModal">
     <div class="student-modal-backdrop" id="complaintDetailBackdrop"></div>

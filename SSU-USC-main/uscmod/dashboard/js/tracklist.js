@@ -114,15 +114,13 @@ function renderRecentActivity() {
   state.complaints.slice(0,3).forEach(item => {
     items.push({title: 'Complaint Updated', text: `Your complaint is ${clean(item.status,'Submitted')}${complaintClassification(item.classification) ? ` • ${complaintClassification(item.classification)}` : ''}.`, when: formatDateTime(item.updatedAt || item.createdAt)});
   });
-  state.participation.slice(0,1).forEach(item => {
-    items.push({title: 'Vote Recorded', text: 'Your submission for the USC General Election was successfully saved.', when: formatDateTime(item.votedAt)});
-  });
+
   if (!items.length) {
     host.innerHTML = `
       <div class="track-empty-state activity-empty-state">
         <div class="track-empty-illustration calendar"><i class="fa-regular fa-calendar-days"></i></div>
         <h3>No recent activity yet.</h3>
-        <p>Your activity will appear here once you submit a complaint or vote.</p>
+        <p>Your activity will appear here once you submit a complaint.</p>
       </div>`;
     return;
   }
@@ -418,7 +416,7 @@ function renderAll() {
   renderOverview();
   renderComplaintPreview();
   renderRecentActivity();
-  renderVotePreview();
+
   renderComplaintTable();
   bindOpenButtons();
 }
@@ -491,5 +489,5 @@ async function listenVotes() {
 bindModalClose();
 bindComplaintDetails();
 listenComplaints();
-listenVotes();
+
 renderAll();
