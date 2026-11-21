@@ -1,0 +1,2 @@
+studentId,fullName,department,program,yearLevel,email,status
+"000012345",Sample Student,College of Engineering,Bachelor of Science in Civil Engineering,1,student@example.invalid,active

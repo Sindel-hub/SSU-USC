@@ -1721,3 +1721,27 @@ const needsAssessmentHandlers = createNeedsAssessmentHandlers({ db, requireActiv
 for (const [name, handler] of Object.entries(needsAssessmentHandlers)) {
   exports[name] = onCall(callableOptions({ maxInstances: 10, timeoutSeconds: 30 }), handler);
 }
+
+const STUDENT_ACTIVATION_RESEND_KEY = defineSecret('STUDENT_ACTIVATION_RESEND_KEY');
+async function sendStudentActivation({ email, token, studentId, messageId }) {
+  const origin = String(process.env.STUDENT_ACTIVATION_ORIGIN || '').trim();
+  const from = String(process.env.STUDENT_ACTIVATION_FROM || '').trim();
+  const url = new URL(origin);
+  if (url.protocol !== 'https:' || url.origin !== origin || !from) throw new Error('Activation email configuration is incomplete.');
+  const link = `${origin}/activate/index.html#token=${token}`;
+  const response = await fetch('https://api.resend.com/emails', {
+    method: 'POST', signal: AbortSignal.timeout(10000),
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${STUDENT_ACTIVATION_RESEND_KEY.value()}`, 'Idempotency-Key': `student-activation:${messageId}` },
+    body: JSON.stringify({ from, to: [email], subject: 'Activate your SSU-USC student account',
+      text: `An authorized SSU-USC administrator provisioned Student ID ${studentId}. Set your own password and verify this email using this single-use link within 24 hours: ${link}\nIf this is not your Student ID, do not activate it; contact USC.`,
+      html: `<p>An authorized SSU-USC administrator provisioned Student ID ${studentId}.</p><p><a href="${link}">Verify email and set your password</a></p><p>This single-use link expires in 24 hours. If this is not your Student ID, do not activate it; contact USC.</p>` })
+  });
+  const result = await response.json().catch(() => ({}));
+  if (!response.ok || !result.id) throw new Error('Activation email delivery was not confirmed.');
+}
+const { createStudentRecordHandlers } = require('./student-records');
+const studentRecordHandlers = createStudentRecordHandlers({ db, adminAuth, requireActiveRole, requireRecentAuth, HttpsError, sendActivation: sendStudentActivation });
+for (const [name, handler] of Object.entries(studentRecordHandlers)) {
+  const email = ['studentAnnualApply', 'studentActivationResend'].includes(name);
+  exports[name] = onCall(callableOptions({ maxInstances: 5, timeoutSeconds: name === 'studentAnnualPreview' ? 540 : 180, ...(email ? { secrets: [STUDENT_ACTIVATION_RESEND_KEY] } : {}) }), handler);
+}
