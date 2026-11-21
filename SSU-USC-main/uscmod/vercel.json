@@ -4,6 +4,21 @@
       "source": "/",
       "destination": "/home/home.html",
       "permanent": false
+    },
+    {
+      "source": "/dashboard/election.html",
+      "destination": "/dashboard/dashboard.html",
+      "permanent": false
+    },
+    {
+      "source": "/usc-admin/elections/:path*",
+      "destination": "/usc-admin/overview/overview.html",
+      "permanent": false
+    },
+    {
+      "source": "/voting/:path*",
+      "destination": "/dashboard/dashboard.html",
+      "permanent": false
     }
   ]
 }

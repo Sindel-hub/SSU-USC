@@ -170,15 +170,6 @@ service cloud.firestore {
         && request.resource.data.updatedAt == request.time;
     }
 
-    // Managed through usc-management with server-side validation and RBAC.
-    // Browser access, including direct anonymous writes, is intentionally denied.
-    match /needs_surveys/{document=**} { allow read, write: if false; }
-    match /needs_submission_keys/{key} { allow read, write: if false; }
-    match /student_imports/{document=**} { allow read, write: if false; }
-    match /student_academic_history/{key} { allow read, write: if false; }
-    match /student_activation_tokens/{key} { allow read, write: if false; }
-    match /management_rate_limits/{key} { allow read, write: if false; }
-
     match /announcements/{announcementId} {
       allow read: if true;
       allow create, update, delete: if officerHasPermission("bulletin.manage");
@@ -305,7 +296,7 @@ service cloud.firestore {
             && request.resource.data.officePosition.size() >= 2
             && request.resource.data.officePosition.size() <= 120
             && request.resource.data.officerPermissions is list
-            && request.resource.data.officerPermissions.size() <= 17
+            && request.resource.data.officerPermissions.size() <= 16
             && "dashboard.view" in request.resource.data.officerPermissions
             && (!("officerPermissionSource" in request.resource.data)
               || request.resource.data.officerPermissionSource in ["position-default", "custom"])));
@@ -331,7 +322,7 @@ service cloud.firestore {
           && (!("candidacyApproved" in request.resource.data) || request.resource.data.candidacyApproved is bool)
           && (!("officerPermissions" in request.resource.data)
             || (request.resource.data.officerPermissions is list
-              && request.resource.data.officerPermissions.size() <= 17
+              && request.resource.data.officerPermissions.size() <= 16
               && (request.resource.data.role != "officer" || "dashboard.view" in request.resource.data.officerPermissions)))
           && (!("officerPermissionSource" in request.resource.data)
             || request.resource.data.officerPermissionSource in ["", "position-default", "custom"])));

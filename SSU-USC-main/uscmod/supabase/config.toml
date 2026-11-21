@@ -7,7 +7,3 @@ verify_jwt = false
 [functions.usc-facebook]
 # Firebase ID tokens are validated by Google inside the function.
 verify_jwt = false
-
-[functions.usc-management]
-# Public surveys/activation; privileged operations verify Firebase ID tokens.
-verify_jwt = false

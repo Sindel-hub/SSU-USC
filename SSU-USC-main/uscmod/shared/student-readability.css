@@ -136,3 +136,13 @@ body.student-app-shell #dashboardHome .calendar-header strong { white-space: now
   body.student-app-shell #dashboardHome .calendar-grid { grid-template-rows: 22px repeat(6, 44px); }
   body.student-app-shell #dashboardHome .day-cell { height: 44px; }
 }
+
+/* Reflow the student dashboard after retiring election cards. */
+@media (min-width: 821px) {
+  body.student-app-shell #dashboardHome .dashboard-grid { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+  body.student-app-shell #dashboardHome .dashboard-bulletin { grid-column: 2; grid-row: 1 / span 2; }
+  body.student-app-shell #dashboardHome .events-section-card { grid-column: 1; grid-row: 2; }
+}
+@media (min-width: 1101px) {
+  body.student-app-shell .track-overview-cards { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}

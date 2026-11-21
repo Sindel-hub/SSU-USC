@@ -17,14 +17,6 @@ const OFFICER_MODULES = [
     keywords: "bulletin announcement announcements post notice"
   },
 
-  {
-    name: "Needs Assessment",
-    detail: "Student consultations, surveys and reports",
-    href: "../needs-assessment/needs-assessment.html",
-    icon: "fa-rectangle-list",
-    keywords:
-      "needs assessment survey surveys questionnaire responses analytics reports"
-  },
 
   {
     name: "Events",
@@ -61,8 +53,6 @@ const OFFICER_MODULES = [
   }
 ];
 const MOBILE_BREAKPOINT = 820;
-// This opt-in preserves existing module routing; authentication stays in auth-guard.js.
-const preserveCurrentModuleRoute = document.currentScript?.hasAttribute("data-preserve-current-route") === true;
 const OFFICER_NAV_SCRIPT_URL = document.currentScript?.src || new URL('../shared/js/nav-active.js', location.href).href;
 let sidebarReturnFocus = null;
 let sidebarOverflow = null;
@@ -812,7 +802,7 @@ function bindOfficerModuleSearch() {
    ========================================================= */
 
 document.addEventListener("DOMContentLoaded", () => {
-  if (!preserveCurrentModuleRoute && guardAdminFromOfficerPages()) {
+  if (guardAdminFromOfficerPages()) {
     return;
   }
 

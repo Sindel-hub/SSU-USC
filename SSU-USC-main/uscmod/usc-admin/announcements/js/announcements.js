@@ -1,5 +1,3 @@
-import { managementRequest as managementRequestForBulletin } from '../../../shared/management-client.js';
-import { attachSurveyButton } from '../../../shared/management-client.js';
 import { initializeFacebookPublishing, hydrateFacebookDeliveries, facebookRequest } from './facebook-publishing.js';
 import { RETENTION_MS, daysRemaining, canRestore } from "./announcement-retention.mjs";
 import { db, auth } from "../../../firebase/firebase-config.js";
@@ -305,7 +303,6 @@ function openAnnouncementModal(announcement) {
     if (modalAnnouncementTitle) modalAnnouncementTitle.textContent = safeText(announcement.title, "Announcement");
     if (modalAnnouncementAudience) modalAnnouncementAudience.textContent = safeText(announcement.audience, "All Students");
     if (modalAnnouncementContent) modalAnnouncementContent.textContent = String(announcement.content ?? "");
-  attachSurveyButton(modalAnnouncementContent, announcement.surveyId);
 
     announcementModal.hidden = false;
     document.body.classList.add("modal-open");
@@ -498,7 +495,6 @@ announcementForm?.addEventListener("submit", async (event) => {
             category,
             audience,
             content,
-            surveyId: document.getElementById("announcementSurvey")?.value || "",
             imageUrl,
             imagePath,
             createdByUid: auth.currentUser?.uid || "",
@@ -671,11 +667,3 @@ setInterval(()=>{if(bulletinView==='deleted')renderLibrary();},60000);
 
 initializeFacebookPublishing(endCompose);
 setInterval(() => { if (!document.hidden) hydrateFacebookDeliveries(recentAnnouncementsList, bulletinView); }, 30000);
-
-// Survey loading failures do not prevent ordinary announcements.
-try {
-  const data=await managementRequestForBulletin('survey_links');
-  const select=document.getElementById('announcementSurvey');
-  for(const survey of data.surveys){const option=document.createElement('option');option.value=survey.id;option.textContent=survey.title+' ('+survey.status+')';select.append(option);}
-  document.getElementById('surveyAttachmentStatus').textContent=data.surveys.length?'Students can open the attached questionnaire without signing in.':'No published surveys available.';
-} catch(error) { document.getElementById('surveyAttachmentStatus').textContent=error.message; }
