@@ -1,3 +1,4 @@
+import { trackedOfficerAction } from './officer-activity-client.js';
 import { manageCandidateRegistration } from "./registration-history-store.js";
 import { isInternalAuthEmail } from "./account-email.js";
 import { callStudentEmailService } from "./supabase-email-service.js";
@@ -198,7 +199,8 @@ async function browserAdminUpdateUser(data = {}) {
   const candidacyApproved = role === "student" && standingActive && (typeof data.candidacyApproved === "boolean" ? data.candidacyApproved : old.candidacyApproved === true);
   const isActive = accountStatus !== "suspended" && standingActive;
   const officePosition = String(data.officePosition ?? old.officePosition ?? "").trim().slice(0,120);
-  const officerPermissions = role === "officer"
+  if (old.officerAssignmentId && (role !== old.role || officePosition !== (old.officePosition || ""))) throw new Error("Use Officer Management to complete the existing term and create a new assignment. Historical officer identity cannot be replaced.");
+  let officerPermissions = role === "officer"
     ? normalizeOfficerPermissions(
         Array.isArray(data.officerPermissions)
           ? data.officerPermissions
@@ -206,9 +208,14 @@ async function browserAdminUpdateUser(data = {}) {
         { legacyFullAccess: false }
       )
     : [];
-  const officerPermissionSource = role === "officer"
+  let officerPermissionSource = role === "officer"
     ? String(data.officerPermissionSource || old.officerPermissionSource || (Array.isArray(data.officerPermissions) ? "custom" : "position-default")).trim().toLowerCase()
     : "";
+  if (old.officerAssignmentId) {
+    if (JSON.stringify([...officerPermissions].sort()) !== JSON.stringify([...(old.officerPermissions || [])].sort())) throw new Error("Use Officer Management for a new approved permission scope. Existing term permissions cannot be replaced in User Directory.");
+    officerPermissions = old.officerPermissions || [];
+    officerPermissionSource = old.officerPermissionSource || "";
+  }
   const adminNotes = String(data.adminNotes ?? old.adminNotes ?? "").trim().slice(0,1000);
   const roleEffectiveDate = String(data.roleEffectiveDate ?? old.roleEffectiveDate ?? "").trim().slice(0,40);
   const now = serverTimestamp();
@@ -1249,6 +1256,14 @@ async function callBrowserMode(name, data) {
 
 export async function callSecure(name, data = {}) {
   try {
+    if (name === "updateComplaintCase") {
+      const tracked = await trackedOfficerAction({ module: "complaints", action: "review", recordId: data.complaintId, input: data });
+      if (tracked) return tracked;
+    }
+    if (name === "deleteComplaintCase" && auth.currentUser) {
+      const p = (await getDoc(doc(db, "users", auth.currentUser.uid))).data();
+      if (p?.officerAssignmentId) throw new Error("Term-managed complaint cases are retained. Close the case instead of deleting it.");
+    }
     if (globalThis.USC_FREE_SPARK_MODE === true) {
       const local = await callBrowserMode(name, data);
       if (local !== null) return local;

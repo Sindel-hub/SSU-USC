@@ -14,6 +14,10 @@ function createAuthorization({ db, clock = Date.now }) {
     }
     const profile = request.trustedProfile;
     if (profile.role !== role || profile.accountStatus !== "approved" || profile.isActive === false || profile.accountRemoved === true || profile.accountRemovalPending === true || (role !== "admin" && profile.studentStanding && profile.studentStanding !== "active")) throw new ServiceError("permission-denied", "This account is inactive, unapproved, or its role has changed.");
+    if (role === "officer" && profile.officerAssignmentId) {
+      const a = (await db.doc(`officer_assignments/${profile.officerAssignmentId}`).get()).data();
+      if (!a || a.officerUid !== auth.uid || a.status !== "active" || a.startsAtMs > clock() || a.endsAtMs <= clock()) throw new ServiceError("permission-denied", "Your officer assignment is not active. Contact the administrator for turnover.");
+    }
     return profile;
   }
   function requireRecentAuth(request) {

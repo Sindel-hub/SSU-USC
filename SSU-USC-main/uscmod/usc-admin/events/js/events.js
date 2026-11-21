@@ -1,3 +1,4 @@
+import { trackedOfficerAction, canModifyTermRecord } from '../../../shared/officer-activity-client.js';
 import { classifyEngagement } from "../../../shared/engagement-report-model.mjs";
 import { mountEngagementAnalytics } from "../../../shared/engagement-analytics.js?v=3";
 import { hasOfficerPermission } from "../../shared/js/officer-rbac.js?v=6";
@@ -65,6 +66,7 @@ const participantsBody = document.getElementById("eventParticipantsBody");
 let selectedEventImageFile = null;
 let selectedEventImageObjectUrl = "";
 let lastEvents = [];
+let editingEventId = null;
 let participantsReturnFocus = null;
 const eventSearch = document.getElementById("eventSearch");
 const eventStatusFilter = document.getElementById("eventStatusFilter");
@@ -206,6 +208,7 @@ function syncRegistrationFields() {
 }
 
 function resetEventForm() {
+  editingEventId = null;
   eventForm?.reset();
   selectedEventImageFile = null;
   releaseEventImageObjectUrl();
@@ -217,11 +220,13 @@ function resetEventForm() {
   if (eventRegistrationModeInput) eventRegistrationModeInput.value = "internal";
   if (eventCategoryInput) eventCategoryInput.value = "Assembly";
   syncRegistrationFields();
+  setLoadingState(false);
 }
 
 function setLoadingState(isLoading) {
   if (!publishEventBtn) return;
   publishEventBtn.disabled = isLoading;
+  if (editingEventId) { publishEventBtn.textContent = isLoading ? 'Saving current record…' : 'Save current record'; return; }
   publishEventBtn.innerHTML = isLoading
     ? '<i class="fa-solid fa-spinner fa-spin" aria-hidden="true"></i> Publishing...'
     : '<i class="fa-solid fa-paper-plane" aria-hidden="true"></i> Publish Event';
@@ -319,7 +324,8 @@ function renderEvents(events) {
           ${eventItem.participationNotes ? `<div class="event-participation-note"><i class="fa-solid fa-circle-info" aria-hidden="true"></i><div><strong>Participation instructions</strong><span>${escapeHtml(eventItem.participationNotes)}</span></div></div>` : ""}
           <div class="event-card-actions">
             ${participantButton}
-            <button class="mini-btn danger" type="button" data-delete-event="${escapeHtml(eventItem.id)}" data-rbac-permission="events.manage"><i class="fa-solid fa-trash-can" aria-hidden="true"></i> Delete</button>
+            ${canModifyTermRecord(eventItem) ? `<button class="mini-btn danger" type="button" data-delete-event="${escapeHtml(eventItem.id)}" data-rbac-permission="events.manage"><i class="fa-solid fa-trash-can" aria-hidden="true"></i> ${eventItem.officerAssignmentId ? "Archive" : "Delete"}</button>` : '<span>Previous term · read-only</span>'}
+            ${eventItem.officerAssignmentId && canModifyTermRecord(eventItem) ? `<button class="mini-btn light" type="button" data-edit-event="${escapeHtml(eventItem.id)}" data-rbac-permission="events.manage">Edit current record</button>` : ''}
           </div>
         </article>
       `;
@@ -334,7 +340,7 @@ function subscribeToEvents() {
     eventsQuery,
     (snapshot) => {
       eventsFeedReady = true;
-      lastEvents = snapshot.docs.map((docSnap) => ({ id: docSnap.id, ...docSnap.data() }));
+      lastEvents = snapshot.docs.map((docSnap) => ({ id: docSnap.id, ...docSnap.data() })).filter(row => !row.officerArchived);
       bindRegistrationCountListeners(lastEvents);
       updateStats(lastEvents);
       renderEvents(lastEvents);
@@ -543,9 +549,10 @@ eventForm?.addEventListener("submit", async (event) => {
   setLoadingState(true);
 
   try {
-    const { imageUrl, imagePath } = await uploadEventImage(selectedEventImageFile);
+    const existing = lastEvents.find(row => row.id === editingEventId);
+    const { imageUrl, imagePath } = !selectedEventImageFile && existing ? existing : await uploadEventImage(selectedEventImageFile);
 
-    await addDoc(eventsCollection, {
+    const publicationInput = {
       title,
       eventDate,
       venue,
@@ -569,9 +576,10 @@ eventForm?.addEventListener("submit", async (event) => {
       publishedAt: serverTimestamp(),
       publishedAtMs: Date.now(),
       updatedAt: serverTimestamp()
-    });
+    };
+    await trackedOfficerAction({ module: "events", action: editingEventId ? "update" : "publish", recordId: editingEventId || undefined, input: publicationInput }) || await addDoc(eventsCollection, publicationInput);
 
-    alert(imageUrl
+    alert(editingEventId ? "Current record updated. Earlier versions remain preserved in Officer Tracklist." : imageUrl
       ? "Event published successfully. Students can now view its participation options."
       : "Event published successfully. Students can now view its participation options.");
     resetEventForm();
@@ -584,6 +592,22 @@ eventForm?.addEventListener("submit", async (event) => {
 });
 
 recentEventsList?.addEventListener("click", async (event) => {
+  const editButton = event.target.closest('[data-edit-event]');
+  if (editButton) {
+    const saved = lastEvents.find(row => row.id === editButton.dataset.editEvent);
+    if (!saved || !canModifyTermRecord(saved)) return;
+    resetEventForm(); editingEventId = saved.id;
+    const fields = { title: eventTitleInput, eventDate: eventDateInput, venue: eventVenueInput, startTime: eventStartTimeInput, endTime: eventEndTimeInput, category: eventCategoryInput, description: eventDescriptionInput, audience: eventAudienceInput, registrationMode: eventRegistrationModeInput, externalRegistrationUrl: eventExternalRegistrationUrlInput, participationNotes: eventParticipationNotesInput };
+    for (const [key, input] of Object.entries(fields)) if (input) input.value = saved[key] || '';
+    eventReminderEnabledInput.value = String(saved.reminderEnabled === true);
+    const deadline = saved.registrationDeadline?.toDate?.();
+    if (deadline) { const local = new Date(deadline.getTime() - deadline.getTimezoneOffset() * 60000); eventRegistrationDeadlineInput.value = local.toISOString().slice(0, 16); }
+    syncRegistrationFields();
+    publishEventBtn.textContent = 'Save current record';
+    eventForm.scrollIntoView({ behavior: 'smooth' }); eventTitleInput.focus();
+    return;
+  }
+
   const participantsButton = event.target.closest("[data-view-participants]");
   if (participantsButton) {
     openParticipantsModal(safeText(participantsButton.dataset.viewParticipants));
@@ -597,7 +621,8 @@ recentEventsList?.addEventListener("click", async (event) => {
   if (!eventId) return;
 
   const title = deleteButton.closest(".list-item")?.querySelector(".item-title")?.textContent?.trim() || "this event";
-  const confirmed = window.confirm(
+  const termManaged = Boolean(lastEvents.find(row => row.id === eventId)?.officerAssignmentId);
+  const confirmed = window.confirm(termManaged ? `Archive "${title}" from live views? Its history and registrations will be preserved.` :
     `Delete "${title}"?\n\nThis will remove it from the officer dashboard, student Events module, and its website registrations.`
   );
   if (!confirmed) return;
@@ -606,9 +631,11 @@ recentEventsList?.addEventListener("click", async (event) => {
   deleteButton.innerHTML = '<i class="fa-solid fa-spinner fa-spin" aria-hidden="true"></i> Deleting...';
 
   try {
+    if (!await trackedOfficerAction({ module: "events", action: "delete", recordId: eventId })) {
     const registrations = await getDocs(collection(db, "events", eventId, "registrations"));
     await Promise.all(registrations.docs.map((registrationDoc) => deleteDoc(registrationDoc.ref)));
     await deleteDoc(doc(db, "events", eventId));
+    }
   } catch (error) {
     console.error("Unable to delete event:", error);
     alert("Failed to delete the event. Please try again.");

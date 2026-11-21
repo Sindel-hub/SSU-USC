@@ -453,7 +453,7 @@ async function ownRegistration(eventId) {
   const eventItem = eventById(eventId);
   if (!uid || !eventId || !eventItem) return null;
   const snap = await getDoc(doc(db, itemCollection(eventItem), eventId, "registrations", uid));
-  return snap.exists() ? { id: snap.id, ...snap.data() } : null;
+  return snap.exists() && !snap.data().officerArchived ? { id: snap.id, ...snap.data() } : null;
 }
 
 function renderDetail(eventItem, registration = null) {
@@ -603,7 +603,7 @@ function bindSourceFeed(collectionName, sourceType) {
         id: docSnap.id,
         ...docSnap.data(),
         sourceType
-      }));
+      })).filter(row => !row.officerArchived);
       rebuildMergedFeed();
     },
     (error) => {

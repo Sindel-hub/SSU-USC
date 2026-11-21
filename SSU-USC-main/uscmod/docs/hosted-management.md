@@ -8,9 +8,11 @@ This does **not** upgrade Firebase Spark or bypass its quotas. Vercel plan eligi
 
 The implementation is prepared locally. No GitHub push, PR, deployment, live secret, Firebase setting or student record was changed as part of this work. Real hosted Firebase and Gmail integration remain unverified until the explicit staging steps below are completed. The user's dedicated Gmail currently does not offer App Passwords; its cause has not been established. Never disable security protections to force this setup to work.
 
+Officer assignments, historical records and automatic activity capture are described in [officer-administration.md](officer-administration.md). This dependent change also requires reviewed staging rules and the assignment index.
+
 ## Runtime and frontend boundary
 
-- `api/management.js` exposes only 12 named management operations, not arbitrary Firebase functions or database paths.
+- `api/management.js` exposes only 19 named management operations, not arbitrary Firebase functions or database paths.
 - Protected requests send a Firebase ID token. The server calls `verifyIdToken(token, true)`, then checks the current approved/active profile, trusted role, administrator email verification and recent sign-in for student-record writes. Officer survey management also requires the existing `bulletin.manage` permission. A browser-supplied role/UID is never trusted.
 - Public questionnaire, submission and activation calls need no login and omit authentication headers. They are narrowly validated by the same existing business modules. IP-based rate limits are stored under a keyed, opaque network identifier in the private `hosted_request_limits` collection; raw addresses are not stored. Existing survey retry protection, schedules, private responses and activation ticket checks remain in force.
 - Requests require JSON, have a 1 MiB limit and accept only the documented action envelope. Browser origins are checked against configured origins, and no permissive CORS response is added. Cookies are not used for API authentication. Responses are not cached. App Check verification can be enabled separately and fails closed if its configuration is incomplete.

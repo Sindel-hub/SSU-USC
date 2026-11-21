@@ -1,3 +1,4 @@
+import { trackedOfficerAction } from '../../../shared/officer-activity-client.js';
 import { surveyIdFromLink } from '../../../shared/survey-links.mjs';
 import { initializeFacebookPublishing, hydrateFacebookDeliveries, facebookRequest } from './facebook-publishing.js';
 import { RETENTION_MS, daysRemaining, canRestore } from "./announcement-retention.mjs";
@@ -117,6 +118,7 @@ function renderLibrary() {
 }
 async function movePost(id, action) {
   const sourceName = bulletinView === 'archive' ? 'archived_announcements' : bulletinView === 'deleted' ? 'deleted_announcements' : 'announcements';
+  if (await trackedOfficerAction({ module: "announcements", action, recordId: id, sourceCollection: sourceName })) return;
   await runTransaction(db, async tx => {
     const sourceRef = doc(db, sourceName, id);
     const source = await tx.get(sourceRef);
@@ -503,7 +505,7 @@ announcementForm?.addEventListener("submit", async (event) => {
     try {
         const { imageUrl, imagePath } = await uploadImage(selectedImageFile);
 
-        const savedPost = await addDoc(announcementsCollection, {
+        const postInput = {
             title,
             category,
             audience,
@@ -516,7 +518,8 @@ announcementForm?.addEventListener("submit", async (event) => {
             createdAt: serverTimestamp(),
             facebookRequested: wantsFacebook,
             createdAtMs: Date.now()
-        });
+        };
+        const savedPost = await trackedOfficerAction({ module: "announcements", action: "publish", input: postInput }) || await addDoc(announcementsCollection, postInput);
 
         resetAnnouncementForm();
         if (wantsFacebook) {

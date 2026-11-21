@@ -54,9 +54,9 @@ test("Firestore permits officer reads needed for read-only complaint/election mo
   assert.match(rules, /allow list: if signedIn\(\) && \(resource\.data\.studentUid == uid\(\) \|\| isOfficerOrAdmin\(\)\);/);
   assert.match(rules, /match \/applications\/\{applicantUid\}[\s\S]*?allow read: if ownUser\(applicantUid\) \|\| isOfficerOrAdmin\(\);/);
   assert.match(rules, /match \/candidates\/\{candidateId\}[\s\S]*?allow read: if isOfficerOrAdmin\(\)/);
-  assert.match(rules, /allow create, update, delete: if officerHasPermission\("bulletin\.manage"\);/);
-  assert.match(rules, /allow create, update, delete: if officerHasPermission\("events\.manage"\);/);
-  assert.match(rules, /allow update: if officerHasPermission\("complaints\.review"\)/);
+  assert.match(rules, /allow create, update, delete: if moduleWriter\("bulletin\.manage"\);/);
+  assert.match(rules, /allow create, update, delete: if moduleWriter\("events\.manage"\);/);
+  assert.match(rules, /allow update: if moduleWriter\("complaints\.review"\)/);
   assert.match(rules, /allow create: if officerHasPermission\("elections\.view"\)/);
 });
 

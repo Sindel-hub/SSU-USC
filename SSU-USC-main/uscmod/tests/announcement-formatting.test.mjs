@@ -9,7 +9,7 @@ const preview=source.slice(source.indexOf('function syncPreviewCard()'),source.i
 const submit=source.slice(source.indexOf('announcementForm?.addEventListener("submit"'),source.indexOf('\nfunction setPostMenu'));
 function fixture(body){
  const saved=[],alerts=[];let handler;
- const context=vm.createContext({String,Date,console,surveyIdFromLink,surveyLinkInput:{value:""},location:{origin:"https://portal.test"},
+ const context=vm.createContext({trackedOfficerAction:async()=>null,String,Date,console,surveyIdFromLink,surveyLinkInput:{value:""},location:{origin:"https://portal.test"},
   announcementForm:{addEventListener:(event,fn)=>{handler=fn;}},
   announcementTitleInput:{value:'Synthetic notice'},announcementCategoryInput:{value:'Official Notice'},announcementAudienceInput:{value:'All Students'},announcementContentInput:{value:body},
   publishAnnouncementBtn:{disabled:false},document:{getElementById:()=>({checked:false,disabled:false})},

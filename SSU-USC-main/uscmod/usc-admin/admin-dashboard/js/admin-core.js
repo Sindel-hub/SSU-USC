@@ -94,6 +94,7 @@ export function normalizeUser(docSnap) {
     officePosition: role === "admin"
       ? (String(data.officePosition || "").trim() || "System Administrator")
       : String(data.officePosition || "").trim(),
+    officerAssignmentId: String(data.officerAssignmentId || ""),
     officerPermissionsConfigured: Array.isArray(data.officerPermissions),
     storedOfficerPermissions: Array.isArray(data.officerPermissions) ? normalizeOfficerPermissions(data.officerPermissions, { legacyFullAccess: false }) : [],
     officerPermissionSource: String(data.officerPermissionSource || "").trim(),

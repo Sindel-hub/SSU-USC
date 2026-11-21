@@ -108,11 +108,13 @@ test("officer dashboard keeps complaint analytics and recent records without ele
 test("Firestore rules enforce officer permissions on privileged writes", () => {
   const rules = read("firestore.rules");
   assert.match(rules, /function officeDefaultHasPermission\(permission\)/);
+  assert.match(rules, /return officerHasPermission\(permission\)/);
+  assert.match(rules, /!\("officerAssignmentId" in ownProfile\(\)\)/);
   assert.match(rules, /function officerHasPermission\(permission\)/);
   assert.match(rules, /ownProfile\(\)\.officePosition == "Secretary"/);
-  assert.match(rules, /officerHasPermission\("bulletin\.manage"\)/);
-  assert.match(rules, /officerHasPermission\("events\.manage"\)/);
-  assert.match(rules, /officerHasPermission\("complaints\.review"\)/);
+  assert.match(rules, /moduleWriter\("bulletin\.manage"\)/);
+  assert.match(rules, /moduleWriter\("events\.manage"\)/);
+  assert.match(rules, /moduleWriter\("complaints\.review"\)/);
   assert.match(rules, /officerHasPermission\("complaints\.status"\)/);
   assert.match(rules, /officerHasPermission\("complaints\.classify"\)/);
   assert.match(rules, /officerHasPermission\("elections\.view"\)/);
