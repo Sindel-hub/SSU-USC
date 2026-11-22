@@ -68,9 +68,10 @@
             </div>
             <form class="complaint-form redesigned" id="complaintForm">
               <div class="form-row two-col">
-                <div class="field"><label for="category">Complaint Category</label><div class="input-wrap select-wrap"><select id="category" name="category" required><option value="">Select category</option><option>Facilities Concern</option><option>Academic Concern</option><option>Faculty / Staff Concern</option><option>Student Misconduct</option><option>Bullying / Harassment</option><option>Organization Concern</option><option>Other Concern</option></select><i class="fa-solid fa-chevron-down"></i></div></div>
+                <div class="field"><label for="category">Complaint Category</label><div class="input-wrap select-wrap"><select id="category" name="category" required><option value="">Select category</option></select><i class="fa-solid fa-chevron-down"></i></div></div>
                 <div class="field"><label for="incidentDate">Date of Incident</label><div class="input-wrap"><input id="incidentDate" name="incidentDate" type="date" required /></div></div>
               </div>
+              <div class="field"><label for="specificConcern">Specific Concern</label><div class="input-wrap select-wrap"><select id="specificConcern" name="specificConcern" required disabled><option value="">Select a category first</option></select><i class="fa-solid fa-chevron-down" aria-hidden="true"></i></div></div>
               <div class="form-row two-col">
                 <div class="field"><label for="subject">Subject</label><div class="input-wrap"><input id="subject" maxlength="120" name="subject" placeholder="Brief title or summary of your complaint..." required type="text" /></div></div>
                 <div class="field"><label for="department">College Department (auto-filled)</label><div class="input-wrap"><input id="department" name="department" type="text" readonly /></div></div>
