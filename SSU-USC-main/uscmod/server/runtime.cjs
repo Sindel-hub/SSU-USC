@@ -8,6 +8,16 @@ const { createActivationMailer } = require("./activation-mail.cjs");
 const { createStudentRecordHandlers } = require("../functions/student-records.js");
 const { createNeedsAssessmentHandlers } = require("../functions/needs-assessment.js");
 let cached;
+function startupStep(step, operation) {
+  try { return operation(); }
+  catch (error) {
+    const wrapped = new Error("Hosted startup failed.");
+    wrapped.startupStep = step;
+    wrapped.code = error?.code;
+    wrapped.name = error?.name;
+    throw wrapped;
+  }
+}
 function createPublicLimiter({ db, key, clock = Date.now }) {
   return async (action, ip) => {
     const bucket = action === "needsAssessmentPublic" ? "read" : "write";
@@ -31,10 +41,10 @@ function getRuntime() {
   const { getFirestore, Timestamp } = require("firebase-admin/firestore");
   const { getAppCheck } = require("firebase-admin/app-check");
   const nodemailer = require("nodemailer");
-  const app = initializeApp({ projectId: settings.projectId, credential: cert(settings.account) }, "usc-hosted-management");
-  const db = getFirestore(app);
-  db.settings({ ignoreUndefinedProperties: true });
-  const adminAuth = getAuth(app);
+  const app = startupStep("firebase-app", () => initializeApp({ projectId: settings.projectId, credential: cert(settings.account) }, "usc-hosted-management"));
+  const db = startupStep("firestore-client", () => getFirestore(app));
+  startupStep("firestore-settings", () => db.settings({ ignoreUndefinedProperties: true }));
+  const adminAuth = startupStep("auth-client", () => getAuth(app));
   const authorization = createAuthorization({ db });
   const sendActivation = createActivationMailer({ publicOrigin: settings.publicOrigin, createTransport: nodemailer.createTransport });
   const dependencies = { db, adminAuth, ...authorization, HttpsError: ServiceError, sendActivation };
