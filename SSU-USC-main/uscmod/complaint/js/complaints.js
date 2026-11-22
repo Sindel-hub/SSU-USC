@@ -1,3 +1,4 @@
+import { bindComplaintCategories, selectedComplaintCategory } from "../../shared/complaint-categories.js";
 import { auth, db } from "../../firebase/firebase-config.js";
 import {
   collection,
@@ -97,6 +98,7 @@ const attachmentInput = document.getElementById("attachment");
 const fileName = document.getElementById("fileName");
 const attachmentError = document.getElementById("attachmentError");
 const complaintForm = document.getElementById("complaintForm");
+bindComplaintCategories(complaintForm);
 const submitButton = document.getElementById("submitComplaintBtn") || complaintForm?.querySelector('button[type="submit"]');
 const modal = document.getElementById("complaintSuccessModal");
 const modalCloseButtons = [
@@ -341,7 +343,7 @@ complaintForm?.addEventListener("submit", async (event) => {
     return;
   }
   const p = { ...storedProfile, uid: authenticatedUid };
-  const category = document.getElementById("category")?.value || "";
+  const category = selectedComplaintCategory(complaintForm);
   const incidentDate = document.getElementById("incidentDate")?.value || "";
   const subject = document.getElementById("subject")?.value.trim() || "";
   const details = document.getElementById("details")?.value.trim() || "";
