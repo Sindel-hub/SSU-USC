@@ -152,12 +152,12 @@ test('configuration and unexpected errors never disclose private details in resp
   await createManagementHTTPHandler({ getRuntime: () => { throw Error('SECRET'); }, log() {} })({ method: 'POST', headers: { 'content-type': 'application/json' }, body: { action: 'studentRecordsList', data: {} } }, response);
   assert.equal(response.statusCode, 503);assert.equal(response.body.includes('SECRET'), false);
 });
-test('browser transport sends protected requests to the same-origin API and omits auth for anonymous actions', async () => {
+test('browser transport sends protected requests to the same-origin API with access cookies and omits Firebase auth for anonymous actions', async () => {
   const source = (await fs.readFile(new URL('../shared/hosted-management-client.js', import.meta.url), 'utf8')).replace(/^import .*\n/, '').replace('export async function', 'async function');
   const calls = [], context = vm.createContext({ auth: { currentUser: { getIdToken: async () => 'synthetic-token' } }, appCheck: null, functions: {}, AbortSignal, fetch: async (url, options) => { calls.push({ url, options }); return { ok: true, json: async () => ({ data: { ok: true } }) }; } });
   vm.runInContext(source + '\nglobalThis.testCall = hostedManagementCall;', context);
   await context.testCall('studentRecordsList', {});await context.testCall('studentActivateAccount', { token: 'synthetic' });
-  assert.equal(calls[0].url, '/api/management');assert.equal(calls[0].options.headers.Authorization, 'Bearer synthetic-token');assert.equal(calls[0].options.credentials, 'omit');assert.equal(calls[1].options.headers.Authorization, undefined);
+  assert.equal(calls[0].url, '/api/management');assert.equal(calls[0].options.headers.Authorization, 'Bearer synthetic-token');assert.equal(calls[0].options.credentials, 'same-origin');assert.equal(calls[1].options.headers.Authorization, undefined);assert.equal(calls[1].options.credentials, 'same-origin');
   context.auth.currentUser = null;await assert.rejects(context.testCall('studentRecordsList', {}), /sign in/i);
 });
 test('public build excludes backend, exports, secrets and backups and injects only matching web config', async () => {

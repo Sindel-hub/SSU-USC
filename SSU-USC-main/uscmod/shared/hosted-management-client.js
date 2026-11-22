@@ -19,7 +19,7 @@ export async function hostedManagementCall(action, data = {}) {
   try {
     response = await fetch('/api/management', {
       method: 'POST', headers, body: JSON.stringify({ action, data }),
-      credentials: 'omit', cache: 'no-store', redirect: 'error', signal: AbortSignal.timeout(310000)
+      credentials: 'same-origin', cache: 'no-store', redirect: 'error', signal: AbortSignal.timeout(310000)
     });
   } catch { throw new Error('The hosted service could not be reached. Please try again.'); }
   const result = await response.json().catch(() => null);
