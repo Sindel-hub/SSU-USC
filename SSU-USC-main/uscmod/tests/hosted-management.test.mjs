@@ -177,3 +177,20 @@ test('public build excludes backend, exports, secrets and backups and injects on
     await assert.rejects(buildHosted({ root, output: root, env: environment() }));
   } finally { await fs.rm(root, { recursive: true, force: true }); }
 });
+
+test('startup diagnostics classify failures without logging private exception data', async () => {
+  const cases = [
+    [new ServiceError('failed-precondition', 'Firebase service account must be configured as a JSON object.'), 'service-account-json-invalid'],
+    [Object.assign(new Error('PRIVATE-KEY-PASSWORD-TOKEN'), {code:'app/invalid-credential'}), 'firebase-credential-invalid'],
+    [Object.assign(new Error('PRIVATE-KEY-PASSWORD-TOKEN'), {code:'PRIVATE-KEY-PASSWORD-TOKEN'}), 'runtime-startup-failed']
+  ];
+  for (const [error, category] of cases) {
+    const logs = [], response = {setHeader() {}, end(body) {this.body = body;}};
+    await createManagementHTTPHandler({getRuntime: () => {throw error;}, log: entry => logs.push(entry)})({method:'POST', headers:{'content-type':'application/json'}, body:{action:'studentRecordsList',data:{}}}, response);
+    assert.equal(response.statusCode,503);
+    assert.equal(logs[0].category,category);
+    assert.equal(logs[0].stage,'runtime-startup');
+    assert.equal(JSON.stringify([logs,response.body]).includes('PRIVATE-KEY-PASSWORD-TOKEN'),false);
+    assert.equal(response.body.includes(category),false);
+  }
+});
