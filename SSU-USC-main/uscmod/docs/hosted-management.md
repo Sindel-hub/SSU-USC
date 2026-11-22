@@ -25,6 +25,23 @@ Officer assignments, historical records and automatic activity capture are descr
 
 Use Preview scope first. Do not set or change Production scope until the user separately approves the production deployment/configuration.
 
+### Build failure: `Set USC_ENVIRONMENT to staging or production.`
+
+This is the fatal error in the supplied Vercel log for main commit `e0b22ba`. Dependency installation completed; the public build stopped because `USC_ENVIRONMENT` was absent or invalid. The earlier engine/deprecation messages were warnings, not this build's exit condition. The log does not establish whether the other required values are configured.
+
+The source runtime now selects Node 24, matching the project's reported Node 24 setting and the pinned Firebase database dependencies' minimum of 24.12.0. This corrects the earlier Node 22 pin but does not supply deployment configuration or make the survey service live by itself.
+
+Prepare an isolated Preview before changing Production:
+
+1. In Vercel, open project `ssu-usc` → Settings → Environment Variables. Select **Preview** scope only; branch-scope values to the approved staging branch if appropriate. Set `USC_ENVIRONMENT` to `staging`.
+2. Provide `USC_FIREBASE_PROJECT_ID=ssu-usc-email-staging` and that project's **public web-app configuration** as `USC_FIREBASE_WEB_CONFIG_JSON`. Never use the production web configuration for this Preview, and never put a service-account key in the web configuration variable.
+3. Provide the matching staging service account privately as `USC_FIREBASE_SERVICE_ACCOUNT_JSON`. It is required for the hosted API, but not for generating static public files. Store its full JSON only in Vercel's server secret settings, never in chat, Git or the browser bundle.
+4. Leave `USC_PUBLIC_ORIGIN` unset for an automatic Vercel Preview URL, or configure the exact verified HTTPS staging origin. Review any existing App Check configuration; enforcement needs its matching registered public site key. Do not weaken existing protections to get a build to pass.
+5. After approval for the exact branch/deployment, build the Preview and check both the website and an authenticated survey-list request. A green static build alone does not prove the API's Firebase credentials, IAM, administrator/officer profile or permissions work. A browser GET of `/api/management` returns 405 by design; use the actual website flow for authenticated checks.
+6. Only after staging succeeds, present the exact Production environment changes and release scope for separate explicit approval. Never set Production to `staging`, reuse a staging service account for Production, remove project-isolation checks, or infer deployment authorization from an earlier code approval.
+
+Survey listing, creation and responses do **not** require Gmail SMTP credentials. Gmail is consulted when sending activation emails, so unresolved App Password setup must not be misdiagnosed as a survey-list build failure. The officer-facing generic survey-unavailable message can represent deployment/configuration failures; repeated refreshing does not supply missing configuration. Diagnose the deployment logs and actual API response before changing code or permissions.
+
 | Variable | Preview / staging value | Sensitivity |
 |---|---|---|
 | `USC_ENVIRONMENT` | `staging` | Configuration |
@@ -39,7 +56,7 @@ Use Preview scope first. Do not set or change Production scope until the user se
 
 Do not set `FIRESTORE_EMULATOR_HOST`, `FIREBASE_AUTH_EMULATOR_HOST` or `FUNCTIONS_EMULATOR` on Vercel; hosted initialization rejects them. Vercel Preview also rejects demo/emulator project IDs. Keep the Vercel root directory pointed at `SSU-USC-main/uscmod`.
 
-`vercel.json` retains the existing redirects and adds the public build command/output directory, Node function duration and Singapore region. The package targets Node 22 and locks production dependencies. Vercel must build the public directory and bundle the Node API, not publish the entire repository as static files. These source changes do not apply any live Vercel settings before an approved deployment.
+`vercel.json` retains the existing redirects and adds the public build command/output directory, Node function duration and Singapore region. The package targets Node 24 (24.12.0 or newer) and locks production dependencies. Firebase Admin’s pinned database dependencies require Node >=24.12.0; the earlier Node 22 pin produced engine warnings. Vercel must build the public directory and bundle the Node API, not publish the entire repository as static files. These source changes do not apply any live Vercel settings before an approved deployment.
 
 For Production, the explicit expected Firebase project is `universitystudentcouncil-856cc` and the canonical activation origin is `https://ssu-usc.vercel.app`. A production environment must not use staging credentials; a staging build must not use the production project. Never copy the Windows emulator testing configuration or helper files into the hosted source.
 
