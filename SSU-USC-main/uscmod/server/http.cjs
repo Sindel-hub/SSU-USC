@@ -5,6 +5,21 @@ const { ServiceError } = require("./settings.cjs");
 const PUBLIC_ACTIONS = new Set(["needsAssessmentPublic", "needsAssessmentSubmit", "studentActivateAccount"]);
 const ACTIONS = new Set([...PUBLIC_ACTIONS, "officerCandidateFind", "officerAssignmentManage", "officerAssignments", "officerTracklist", "officerRecord", "officerReportSubmit", "officerModuleAction", "needsAssessmentManage", "needsAssessmentList", "needsAssessmentResponses", "studentAnnualPreview", "studentAnnualApply", "studentAnnualJob", "studentActivationResend", "studentRecordsList", "studentRecordDetail"]);
 const STATUS = { "invalid-argument": 400, unauthenticated: 401, "permission-denied": 403, "not-found": 404, "already-exists": 409, "failed-precondition": 412, aborted: 409, "resource-exhausted": 429, unavailable: 503 };
+// Static categories only: never log raw exceptions or configuration values.
+function startupCategory(error) {
+  const messages = new Map([
+    ["Firebase service account must be configured as a JSON object.", "service-account-json-invalid"],
+    ["Use a service account belonging to the configured Firebase project.", "service-account-fields-invalid"],
+    ["Configure an exact HTTPS website origin without a path or trailing slash.", "website-origin-invalid"],
+    ["Set USC_ENVIRONMENT to staging or production.", "environment-missing"],
+    ["Configure the target Firebase project ID.", "firebase-project-invalid"],
+    ["Firebase web configuration must be configured as a JSON object.", "firebase-web-json-invalid"],
+    ["Firebase web configuration must match the target project and include apiKey/authDomain.", "firebase-web-fields-invalid"]
+  ]);
+  if (error instanceof ServiceError && messages.has(error.message)) return messages.get(error.message);
+  const codes = new Map([["app/invalid-credential", "firebase-credential-invalid"], ["app/invalid-app-options", "firebase-app-options-invalid"], ["app/duplicate-app", "firebase-app-already-initialized"], ["MODULE_NOT_FOUND", "runtime-dependency-missing"]]);
+  return codes.get(error?.code) || "runtime-startup-failed";
+}
 const MAX_BYTES = 1024 * 1024;
 async function readBody(req) {
   let body = req.body;
@@ -42,7 +57,10 @@ function createManagementHTTPHandler({ getRuntime, hosted = Boolean(process.env.
       if (!/^application\/json(?:\s*;|$)/i.test(req.headers["content-type"] || "")) throw new ServiceError("invalid-argument", "Use application/json.");
       const { action, data } = await readBody(req);
       let runtime;
-      try { runtime = await getRuntime(); } catch { throw new ServiceError("unavailable", "Hosted services are not configured. Contact the administrator."); }
+      try { runtime = await getRuntime(); } catch (error) {
+        log({ requestId, stage: "runtime-startup", category: startupCategory(error) });
+        throw new ServiceError("unavailable", "Hosted services are not configured. Contact the administrator.");
+      }
       const origin = req.headers.origin;
       if (origin && !runtime.settings.allowedOrigins.has(origin)) throw new ServiceError("permission-denied", "This website origin is not authorized.");
       if (runtime.settings.enforceAppCheck) {
