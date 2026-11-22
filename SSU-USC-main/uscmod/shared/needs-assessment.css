@@ -5,3 +5,10 @@ body.officer-app-shell .na-workspace input[type=checkbox],body.officer-app-shell
 body.needs-assessment-page aside.sidebar .nav-btn[href$="overview.html"]:not(.active){background:transparent!important;box-shadow:none!important;color:#102744!important;text-shadow:none!important;backdrop-filter:none!important;font-weight:500!important}
 @media print{body.officer-app-shell,body.officer-app-shell .page,body.officer-app-shell .app-shell,body.officer-app-shell .layout,body.officer-app-shell .na-workspace{height:auto!important;max-height:none!important;overflow:visible!important;display:block!important}#naResults details{display:block}#naResults .na-table-wrap{overflow:visible}}
 @media print{body.officer-app-shell :is(.top-banner,.top-nav,.sidebar,.officer-shared-footer,.page-label,.sidebar-overlay){display:none!important}body.officer-app-shell .na-workspace>:not(#naResults){display:none!important}body.officer-app-shell .na-workspace{position:static!important}#naResults{position:static!important;margin:0!important;padding:0!important}}
+/* Compact officer survey list; keep action controls from stretching with details. */
+body.needs-assessment-page #naSurveys .na-survey{grid-template-columns:minmax(0,1fr) auto;align-items:start;gap:12px;padding:14px 0}
+body.needs-assessment-page #naSurveys .na-survey h3{font-size:18px;line-height:1.35;margin:0 0 6px;overflow-wrap:anywhere}
+body.needs-assessment-page #naSurveys .na-muted{font-size:14px;line-height:1.45;margin:6px 0 0;overflow-wrap:anywhere}
+body.needs-assessment-page #naSurveys .na-actions{align-items:center;align-content:start;gap:8px;margin:0;max-width:520px}
+body.needs-assessment-page #naSurveys .na-actions :is(button,.na-button){display:inline-flex;align-items:center;justify-content:center;align-self:start;min-height:40px;height:auto;padding:8px 12px;font-size:14px;line-height:1.4}
+@media(max-width:1000px){body.needs-assessment-page #naSurveys .na-survey{grid-template-columns:minmax(0,1fr)}body.needs-assessment-page #naSurveys .na-actions{max-width:none}}
