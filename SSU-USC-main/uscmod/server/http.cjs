@@ -58,7 +58,11 @@ function createManagementHTTPHandler({ getRuntime, hosted = Boolean(process.env.
       const { action, data } = await readBody(req);
       let runtime;
       try { runtime = await getRuntime(); } catch (error) {
-        log({ requestId, stage: "runtime-startup", category: startupCategory(error) });
+        log({ requestId, stage: "runtime-startup", category: startupCategory(error),
+          step: new Set(["settings", "firebase-app", "firestore-client", "firestore-settings", "auth-client"]).has(error?.startupStep) ? error.startupStep : "other",
+          kind: new Set(["Error", "TypeError", "SyntaxError", "RangeError", "FirebaseAppError"]).has(error?.name) ? error.name : "other",
+          reason: new Set(["ERR_MODULE_NOT_FOUND", "ERR_PACKAGE_PATH_NOT_EXPORTED", "ERR_REQUIRE_ESM", "ERR_REQUIRE_ASYNC_MODULE", "MODULE_NOT_FOUND", "app/invalid-credential", "app/invalid-app-options", "app/duplicate-app", "failed-precondition"]).has(error?.code) ? error.code : "other"
+        });
         throw new ServiceError("unavailable", "Hosted services are not configured. Contact the administrator.");
       }
       const origin = req.headers.origin;
