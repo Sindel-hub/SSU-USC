@@ -182,7 +182,7 @@ test('startup diagnostics classify failures without logging private exception da
   const cases = [
     [new ServiceError('failed-precondition', 'Firebase service account must be configured as a JSON object.'), 'service-account-json-invalid'],
     [Object.assign(new Error('PRIVATE-KEY-PASSWORD-TOKEN'), {code:'app/invalid-credential'}), 'firebase-credential-invalid'],
-    [Object.assign(new Error('PRIVATE-KEY-PASSWORD-TOKEN'), {code:'PRIVATE-KEY-PASSWORD-TOKEN'}), 'runtime-startup-failed']
+    [Object.assign(new Error('PRIVATE-KEY-PASSWORD-TOKEN'), {code:'PRIVATE-KEY-PASSWORD-TOKEN',startupStep:'PRIVATE-KEY-PASSWORD-TOKEN',name:'PRIVATE-KEY-PASSWORD-TOKEN'}), 'runtime-startup-failed']
   ];
   for (const [error, category] of cases) {
     const logs = [], response = {setHeader() {}, end(body) {this.body = body;}};
