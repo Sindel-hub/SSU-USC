@@ -9,7 +9,7 @@ const preview=source.slice(source.indexOf('function syncPreviewCard()'),source.i
 const submit=source.slice(source.indexOf('announcementForm?.addEventListener("submit"'),source.indexOf('\nfunction setPostMenu'));
 function fixture(body){
  const saved=[],alerts=[];let handler;
- const context=vm.createContext({trackedOfficerAction:async()=>null,String,Date,console,surveyIdFromLink,surveyLinkInput:{value:""},location:{origin:"https://portal.test"},
+ const context=vm.createContext({saveReviewDraft:async data=>{saved.push(structuredClone(data));},draftImage:async()=>'',trackedOfficerAction:async()=>null,String,Date,console,surveyIdFromLink,surveyLinkInput:{value:""},location:{origin:"https://portal.test"},
   announcementForm:{addEventListener:(event,fn)=>{handler=fn;}},
   announcementTitleInput:{value:'Synthetic notice'},announcementCategoryInput:{value:'Official Notice'},announcementAudienceInput:{value:'All Students'},announcementContentInput:{value:body},
   publishAnnouncementBtn:{disabled:false},document:{getElementById:()=>({checked:false,disabled:false})},
@@ -23,7 +23,7 @@ function fixture(body){
  vm.runInContext(preview+submit,context);
  return {context,saved,alerts,publish:()=>handler({preventDefault(){}})};
 }
-test('actual publish handler retains all newlines and whitespace through save/reload/re-save',async()=>{
+test('actual draft submission handler retains all newlines and whitespace through save/reload/re-save',async()=>{
  const body='\nFirst paragraph\nSecond line\n\nSecond paragraph\n\n\nFinal paragraph\n';
  const first=fixture(body);await first.publish();assert.equal(first.saved.length,1);assert.equal(first.saved[0].content,body);
  const loaded=JSON.parse(JSON.stringify(first.saved[0]));const second=fixture(loaded.content);await second.publish();assert.equal(second.saved[0].content,body);

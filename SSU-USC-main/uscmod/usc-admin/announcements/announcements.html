@@ -21,6 +21,7 @@
 <link rel="stylesheet" href="../../shared/announcement-text.css?v=1" />
 <link rel="stylesheet" href="../../shared/announcement-reader.css?v=2-dialog-visibility" />
 <link rel="stylesheet" href="../../shared/scrollbars.css?v=2" />
+<link rel="stylesheet" href="css/announcement-review.css" />
 </head>
 
 <body class="officer-app-shell announcement-management-page">
@@ -182,6 +183,10 @@
 
 
 
+                    <section class="card announcement-review-panel" aria-labelledby="announcementReviewTitle">
+                      <div class="card-head"><h3 id="announcementReviewTitle">Announcement review</h3><button type="button" class="mini-btn light" id="announcementReviewRefresh">Refresh drafts</button></div>
+                      <div class="card-body"><p class="review-muted">Draft → Content review → Ready to publish → Published</p><p class="review-muted">Review checks accuracy, dates, attachments and confidentiality. Council decisions are made in person.</p><p id="announcementReviewMessage" role="status" aria-live="polite"></p><div id="announcementReviewList"></div><button type="button" id="announcementReviewMore" class="mini-btn light" hidden>Load more drafts</button></div>
+                    </section>
                     <section class="grid-2 announcement-workspace module-management-grid">
                         <article class="card" id="announcementFormCard">
                             <div class="card-head module-card-head">
@@ -189,7 +194,7 @@
                                 <span class="module-card-badge"><i class="fa-solid fa-plus"></i> Create</span>
                             </div>
 
-                            <form class="card-body" id="announcementForm" data-rbac-permission="bulletin.manage">
+                            <form class="card-body" id="announcementForm"><p id="editingAnnouncementDraft" class="review-muted">New draft</p><p class="review-muted">Save privately, then send for content review before publication.</p>
                                 <div class="field">
                                     <label for="announcementTitle"><i class="fa-solid fa-heading"></i> Announcement Title</label>
                                     <input id="announcementTitle" type="text" placeholder="Enter announcement title"
@@ -244,7 +249,7 @@
 
                                 <div class="facebook-publish-option"><label><input type="checkbox" id="alsoPostFacebook" disabled> Also post to Facebook</label><p id="facebookConnectionHint" role="status">Checking Facebook connection…</p><button type="button" id="openFacebookConnection" class="mini-btn light">Facebook Connection in Settings</button></div>
                                 <div class="row-actions form-actions">
-                                    <button class="mini-btn primary" type="submit" id="publishAnnouncementBtn"><i class="fa-solid fa-paper-plane"></i> Post Announcement</button>
+                                    <button class="mini-btn primary" type="submit" id="publishAnnouncementBtn"><i class="fa-solid fa-paper-plane"></i> Save draft</button><button class="mini-btn light" type="submit" id="sendAnnouncementReviewBtn">Save &amp; send for review</button>
                                     <button class="mini-btn light" type="button" id="clearAnnouncementBtn"><i class="fa-solid fa-eraser"></i> Cancel</button>
                                 </div>
                             </form>

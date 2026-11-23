@@ -1,11 +1,11 @@
+import { initializeAnnouncementReview, saveReviewDraft, clearReviewDraft, draftImage } from './announcement-review.js';
 import { trackedOfficerAction } from '../../../shared/officer-activity-client.js';
 import { surveyIdFromLink } from '../../../shared/survey-links.mjs';
 import { initializeFacebookPublishing, hydrateFacebookDeliveries, facebookRequest } from './facebook-publishing.js';
 import { RETENTION_MS, daysRemaining, canRestore } from "./announcement-retention.mjs";
 import { db, auth } from "../../../firebase/firebase-config.js";
-import { secureUpload, hydrateMediaImages, resolveMediaUrl } from "../../../shared/security-client.js";
+import { hydrateMediaImages, resolveMediaUrl } from "../../../shared/security-client.js";
 import {
-    addDoc,
     collection,
     runTransaction,
     Timestamp,
@@ -280,6 +280,7 @@ function setImageFileLabel(fileName = "No image selected") {
 }
 
 function resetAnnouncementForm() {
+    clearReviewDraft();
     endCompose();
     announcementForm?.reset();
     selectedImageFile = null;
@@ -413,15 +414,6 @@ function renderRecentAnnouncements(announcements) {
     hydrateMediaImages(recentAnnouncementsList).catch((error) => console.warn("Unable to load announcement media:", error));
 }
 
-async function uploadImage(file) {
-    if (!file) return { imageUrl: "", imagePath: "" };
-    const allowedTypes = new Set(["image/jpeg", "image/jpg", "image/png", "image/webp"]);
-    const maxFileSize = 5 * 1024 * 1024;
-    if (!allowedTypes.has(file.type)) throw new Error("Only JPG, PNG, and WEBP files are allowed.");
-    if (file.size > maxFileSize) throw new Error("Image size must not exceed 5MB.");
-    const ticket = await secureUpload(file, "announcement-media");
-    return { imageUrl: ticket.publicUrl, imagePath: ticket.path };
-}
 
 announcementTitleInput?.addEventListener("input", syncPreviewCard);
 announcementCategoryInput?.addEventListener("change", syncPreviewCard);
@@ -461,15 +453,6 @@ scrollToFormBtn?.addEventListener("click", () => {
     });
 });
 
-function confirmPublication(title) {
-  const dialog = document.getElementById('confirmAnnouncementPublish');
-  document.getElementById('publishConfirmationTitle').textContent = title;
-  dialog.returnValue = '';
-  return new Promise(resolve => {
-    dialog.addEventListener('close', () => resolve(dialog.returnValue === 'publish'), {once:true});
-    dialog.showModal();
-  });
-}
 announcementForm?.addEventListener("submit", async (event) => {
     event.preventDefault();
     if (publishAnnouncementBtn?.disabled) return;
@@ -496,14 +479,10 @@ announcementForm?.addEventListener("submit", async (event) => {
     const facebookToggle = document.getElementById('alsoPostFacebook');
     const wantsFacebook = facebookToggle.checked && !facebookToggle.disabled;
     publishAnnouncementBtn.disabled = true;
-    if (!await confirmPublication(title + (wantsFacebook ? ' — Bulletin Board and Facebook' : ' — Bulletin Board only'))) {
-        publishAnnouncementBtn.disabled = false;
-        return;
-    }
-    publishAnnouncementBtn.textContent = "Publishing...";
+    publishAnnouncementBtn.textContent = "Saving draft...";
 
     try {
-        const { imageUrl, imagePath } = await uploadImage(selectedImageFile);
+        const imageUrl = await draftImage(selectedImageFile), imagePath = "";
 
         const postInput = {
             title,
@@ -519,23 +498,17 @@ announcementForm?.addEventListener("submit", async (event) => {
             facebookRequested: wantsFacebook,
             createdAtMs: Date.now()
         };
-        const savedPost = await trackedOfficerAction({ module: "announcements", action: "publish", input: postInput }) || await addDoc(announcementsCollection, postInput);
-
+        const submitForReview = event.submitter?.id === 'sendAnnouncementReviewBtn';
+        await saveReviewDraft(postInput, submitForReview);
         resetAnnouncementForm();
-        if (wantsFacebook) {
-          try {
-            const result=await facebookRequest('publish',{announcementId:savedPost.id});
-            alert(result.delivery?.status==='succeeded' ? 'Announcement published to the Bulletin Board and Facebook.' : 'Bulletin Board announcement saved. '+(result.delivery?.error || 'Facebook publishing is in progress. Check the post status below.'));
-          } catch(error) { alert('Bulletin Board announcement saved. Facebook publishing did not complete: '+error.message+' Use Retry Facebook on this post.'); }
-          hydrateFacebookDeliveries(recentAnnouncementsList, bulletinView);
-        } else alert('Announcement published to the Bulletin Board.');
+        alert(submitForReview ? 'Draft sent for content review. It is not published yet.' : 'Draft saved privately. Send it for review when ready.');
     } catch (error) {
         console.error("Announcement publish error:", error);
         alert(error.message || "Failed to publish announcement.");
     } finally {
         if (publishAnnouncementBtn) {
             publishAnnouncementBtn.disabled = false;
-            publishAnnouncementBtn.textContent = "Publish Announcement";
+            publishAnnouncementBtn.textContent = "Save draft";
         }
     }
 });
@@ -684,3 +657,12 @@ setInterval(()=>{if(bulletinView==='deleted')renderLibrary();},60000);
 
 initializeFacebookPublishing(endCompose);
 setInterval(() => { if (!document.hidden) hydrateFacebookDeliveries(recentAnnouncementsList, bulletinView); }, 30000);
+
+await initializeAnnouncementReview(content => {
+  resetAnnouncementForm();
+  announcementTitleInput.value=content.title;announcementCategoryInput.value=content.category;announcementAudienceInput.value=content.audience;announcementContentInput.value=content.content;
+  surveyLinkInput.value=content.surveyId ? new URL(`/survey/index.html?id=${content.surveyId}`,location.origin).href : '';
+  document.getElementById('alsoPostFacebook').checked=content.facebookRequested;
+  setDraftPreviewImage(content.imageUrl || '');syncPreviewCard();
+  document.getElementById('announcementFormCard').scrollIntoView({block:'start'});
+});

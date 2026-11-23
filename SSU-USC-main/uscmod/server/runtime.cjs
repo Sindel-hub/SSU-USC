@@ -7,6 +7,7 @@ const { createOfficerModuleHandlers } = require("./officer-modules.cjs");
 const { createActivationMailer } = require("./activation-mail.cjs");
 const { createStudentRecordHandlers } = require("../functions/student-records.js");
 const { createNeedsAssessmentHandlers } = require("../functions/needs-assessment.js");
+const { createAnnouncementWorkflow } = require("./announcement-workflow.cjs");
 let cached;
 function startupStep(step, operation) {
   try { return operation(); }
@@ -51,7 +52,7 @@ function getRuntime() {
   const history = createOfficerHistory({ ...dependencies });
   cached = {
     settings,
-    handlers: { ...createNeedsAssessmentHandlers({ ...dependencies, history }), ...createStudentRecordHandlers(dependencies), ...history.handlers, ...createOfficerModuleHandlers({ ...dependencies, history, Timestamp }) },
+    handlers: { ...createAnnouncementWorkflow({ ...dependencies, history, Timestamp, publicOrigin: settings.publicOrigin }), ...createNeedsAssessmentHandlers({ ...dependencies, history }), ...createStudentRecordHandlers(dependencies), ...history.handlers, ...createOfficerModuleHandlers({ ...dependencies, history, Timestamp }) },
     verifyIdToken: token => adminAuth.verifyIdToken(token, true),
     verifyAppCheckToken: token => getAppCheck(app).verifyToken(token),
     limitPublicRequest: createPublicLimiter({ db, key: settings.account.private_key })
