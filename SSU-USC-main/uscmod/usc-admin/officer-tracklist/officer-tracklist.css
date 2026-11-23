@@ -1,0 +1,35 @@
+/* Use the existing officer shell; keep Tracklist rules inside its workspace. */
+.officer-tracklist-page .history-app{min-width:0;box-sizing:border-box;color:#173450}
+.officer-tracklist-page .history-links{display:flex;gap:20px;flex-wrap:wrap;margin-bottom:16px}
+.officer-tracklist-page .history-links a{color:#1953a0}
+.officer-tracklist-page .history-heading{display:flex;justify-content:space-between;align-items:center;gap:16px;flex-wrap:wrap}
+.officer-tracklist-page .history-heading h1{margin:0;color:#1953a0;font-size:28px}
+.officer-tracklist-page .history-eyebrow{display:none}
+.officer-tracklist-page .history-heading p{margin:8px 0;color:#52667d}
+.officer-tracklist-page .history-card{background:#fff;border:1px solid #dce6f0;border-radius:16px;padding:24px;margin:20px 0;box-shadow:0 5px 20px #17345008;min-width:0}
+.officer-tracklist-page .history-card h2{margin:0;color:#173450;font-size:24px}
+.officer-tracklist-page .history-card p{color:#52667d;line-height:1.6;overflow-wrap:anywhere}
+.officer-tracklist-page .history-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px}
+.officer-tracklist-page .history-app label,.officer-tracklist-page .history-field{display:flex;flex-direction:column;gap:6px;font-weight:600;margin:12px 0}
+.officer-tracklist-page .history-app :is(input,select,textarea){font:inherit;width:100%;padding:11px;box-sizing:border-box;border:1px solid #a8bdd2;border-radius:8px;background:#fff;color:#173450;min-width:0}
+.officer-tracklist-page .history-app textarea{resize:vertical;min-height:120px}
+.officer-tracklist-page .history-app button{font:inherit;border:1px solid #bed0e2;background:#edf5fc;color:#164782;border-radius:8px;padding:10px 16px;min-height:44px;cursor:pointer;margin:8px 8px 8px 0;max-width:100%;white-space:normal}
+.officer-tracklist-page .history-app button:hover{background:#e0edf9}
+.officer-tracklist-page .history-app button[aria-pressed=true]{background:#1c56a0;border-color:#1c56a0;color:#fff}
+.officer-tracklist-page .history-app button:disabled{opacity:.55;cursor:wait}
+.officer-tracklist-page .history-app :focus-visible{outline:3px solid #209bd4;outline-offset:3px}
+.officer-tracklist-page .history-app fieldset{border:1px solid #dce6f0;border-radius:12px;margin:18px 0;padding:18px;display:flex;gap:12px;flex-wrap:wrap}
+.officer-tracklist-page .history-app .history-check{flex-direction:row;align-items:flex-start;gap:10px;font-weight:400}
+.officer-tracklist-page .history-app input[type=checkbox]{width:18px!important;height:18px!important;min-height:18px!important;padding:0!important;margin:0!important;flex:0 0 18px!important}
+.officer-tracklist-page .history-field output{font-weight:400}
+.officer-tracklist-page :is(.history-term,.history-activity){padding:16px;border:1px solid #dce6f0;border-radius:12px;margin:12px 0;overflow-wrap:anywhere}
+.officer-tracklist-page :is(.history-term,.history-activity) h3{margin:0;color:#1953a0;font-size:18px}
+.officer-tracklist-page :is(.history-term,.history-activity) p{margin:6px 0}
+.officer-tracklist-page .history-error{color:#a51c30!important}
+.officer-tracklist-page .history-app pre{white-space:pre-wrap;overflow-wrap:anywhere;max-height:480px;overflow:auto;padding:16px;background:#f0f7fd;border-radius:8px}
+.officer-tracklist-page .history-app [hidden]{display:none!important}
+.officer-tracklist-page #historyStatus{padding:12px 0;white-space:pre-wrap;overflow-wrap:anywhere}
+.officer-tracklist-page #assignmentScope{min-width:180px}
+@media(max-width:700px){.officer-tracklist-page .history-card{padding:16px}.officer-tracklist-page .history-grid{grid-template-columns:minmax(0,1fr)}.officer-tracklist-page .history-heading h1{font-size:24px}.officer-tracklist-page .history-card h2{font-size:21px}.officer-tracklist-page .history-app fieldset{display:block}}
+/* Match the existing modules' correction for the theme's always-highlighted Dashboard. */
+body.officer-tracklist-page aside.sidebar .nav-btn[href$="overview.html"]:not(.active){background:transparent!important;box-shadow:none!important;color:#102744!important;text-shadow:none!important;backdrop-filter:none!important;font-weight:500!important}
