@@ -1,4 +1,7 @@
 export const OFFICER_PERMISSION_DEFINITIONS = Object.freeze([
+  { key: "bulletin.draft", group: "Bulletin Board", label: "Prepare Announcement Drafts", description: "Save and submit your own announcement drafts for content review." },
+  { key: "bulletin.review", group: "Bulletin Board", label: "Review Announcement Content", description: "Request revisions or mark another author’s post Ready to publish." },
+  { key: "bulletin.publish", group: "Bulletin Board", label: "Publish Reviewed Announcements", description: "Publish the exact version marked Ready to publish." },
   { key: "dashboard.view", group: "Dashboard", label: "View Officer Dashboard", description: "Open the officer dashboard and see aggregate USC summaries." },
   { key: "elections.view", group: "Elections", label: "Assigned Election Module", description: "Marks Elections as an assigned office module. All officers may still open it read-only; assigned officers can use granted election functions." },
   { key: "elections.roster", group: "Elections", label: "Manage Voter Roster", description: "Import, validate, and finalize the voter masterlist." },
@@ -10,7 +13,7 @@ export const OFFICER_PERMISSION_DEFINITIONS = Object.freeze([
   { key: "complaints.feedback", group: "Complaints", label: "Provide USC Feedback", description: "Send one-way USC feedback to the student." },
   { key: "complaints.status", group: "Complaints", label: "Update Complaint Status", description: "Move a complaint through Under Review, In Progress, Resolved, or Closed." },
   { key: "complaints.report", group: "Complaints", label: "Generate Complaint Reports", description: "Generate or export complaint reports when reporting tools are available." },
-  { key: "bulletin.manage", group: "Bulletin Board", label: "Manage Bulletin Board", description: "Create, edit, or delete announcements. Officers without this permission may still open the Bulletin Board Center in read-only mode." },
+  { key: "bulletin.manage", group: "Bulletin Board", label: "Manage Bulletin Board", description: "Prepare drafts, publish reviewed announcements, and manage published posts. Content review requires its separate permission." },
   { key: "events.manage", group: "Events", label: "Manage Events", description: "Create, edit, or delete USC events. Officers without this permission may still open the Events module in read-only mode." },
   { key: "programs.manage", group: "Programs", label: "Manage External Programs", description: "Create, edit, or delete outside-university programs and opportunities. Officers without this permission may still open the Programs module in read-only mode." },
   { key: "organization.view", group: "Organization", label: "View Organizational Chart", description: "Open the USC Organizational Chart module." },
@@ -33,7 +36,10 @@ export const OFFICER_POSITION_PERMISSION_PRESETS = Object.freeze({
   // Primary module ownership defaults:
   // - President manages Complaints; Elections remain read-only unless explicitly granted.
   // - Vice President manages Elections; Complaints remain read-only unless explicitly granted.
+  "Executive Secretary": Object.freeze(["dashboard.view", "organization.view", "bulletin.draft"]),
+  "Public Information Officer": Object.freeze(["dashboard.view", "organization.view", "bulletin.draft", "bulletin.publish", "bulletin.manage"]),
   "President": Object.freeze([
+    "bulletin.review",
     "dashboard.view",
     "complaints.view",
     "complaints.review",

@@ -41,6 +41,7 @@ function createOfficerModuleHandlers({ db, history, requireActiveRole, requireOf
     async officerModuleAction(request) {
       await requireActiveRole(request, ["officer"]);
       const { module, action, input = {}, recordId, operationId, sourceCollection } = request.data || {};
+      if (module === "announcements" && action === "publish") throw new ServiceError("failed-precondition", "Save a draft and complete content review before publishing.");
       const permission = permissions[module];
       if (!permission) fail("Unsupported officer module.");
       await requireOfficerPermission(request, permission);

@@ -3,7 +3,8 @@ const { createHash, randomUUID } = require("node:crypto");
 const { ServiceError } = require("./settings.cjs");
 const { DEPARTMENTS } = require("../functions/needs-assessment-model.js");
 const POSITIONS = Object.freeze({
-  President: ["dashboard.view", "organization.view", "complaints.view", "complaints.review", "complaints.classify", "complaints.feedback", "complaints.status", "complaints.report", "bulletin.manage", "events.manage", "programs.manage", "reports.generate"],
+  "Executive Secretary": ["dashboard.view", "organization.view", "bulletin.draft"],
+  President: ["bulletin.review","dashboard.view", "organization.view", "complaints.view", "complaints.review", "complaints.classify", "complaints.feedback", "complaints.status", "complaints.report", "bulletin.manage", "events.manage", "programs.manage", "reports.generate"],
   Treasurer: ["dashboard.view", "organization.view", "reports.generate"],
   "Public Information Officer": ["dashboard.view", "organization.view", "bulletin.manage", "events.manage", "programs.manage"],
   "USC Representative": ["dashboard.view", "organization.view", "complaints.view", "complaints.review"]
@@ -101,7 +102,7 @@ function createOfficerHistory({ db, adminAuth, requireActiveRole, requireRecentA
         const d = request.data || {};
         if (d.action === "assign") {
           const position = text(d.position, "position");
-          if (!Object.hasOwn(POSITIONS, position)) fail("invalid-argument", "Choose one of the four capstone positions.");
+          if (!Object.hasOwn(POSITIONS, position)) fail("invalid-argument", "Choose a supported officer position.");
           const department = position === "USC Representative" ? text(d.department, "represented department", 120) : "University-wide";
           if (position === "USC Representative" && !DEPARTMENTS.includes(department)) fail("invalid-argument", "Select a recognized SSU department.");
           const administration = text(d.administration, "administration period", 80);

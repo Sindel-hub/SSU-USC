@@ -8,9 +8,9 @@ const require = createRequire(import.meta.url);
 const { historyFixture } = require('./helpers/officer-history-fixture.cjs');
 const { POSITIONS } = require('../server/officer-history.cjs');
 const { DEPARTMENTS } = require('../functions/needs-assessment-model.js');
-test('only the four representative offices can be appointed, with safe permission subsets', async () => {
+test('supported offices can be appointed, including draft-only Executive Secretary', async () => {
   const f = historyFixture();
-  assert.deepEqual(Object.keys(POSITIONS), ['President', 'Treasurer', 'Public Information Officer', 'USC Representative']);
+  assert.deepEqual(Object.keys(POSITIONS), ['Executive Secretary', 'President', 'Treasurer', 'Public Information Officer', 'USC Representative']);
   await assert.rejects(f.assign('first', 'Secretary'), { code: 'invalid-argument' });
   await assert.rejects(f.assign('first', 'Treasurer', { permissions: ['dashboard.view', 'bulletin.manage'] }), { code: 'invalid-argument' });
   await assert.rejects(f.assign('first', 'USC Representative', { department: 'Made-up department' }), { code: 'invalid-argument' });
@@ -84,11 +84,18 @@ test('an Auth synchronization outage does not restore ended profile access and i
   f.adminAuth.setCustomUserClaims = original;
   assert.equal((await f.h.officerAssignmentManage(f.req('admin', { action: 'sync', assignmentId: r.id }))).authSyncPending, false);
 });
+async function reviewedBulletin(f, key, input) {
+  await f.assign('other', 'President');
+  await f.h.announcementWorkflow(f.req('first', {action:'save',draftId:key,expectedVersion:0,input:{category:'Official Notice',audience:'All Students',...input}}));
+  await f.h.announcementWorkflow(f.req('first', {action:'submit',draftId:key,expectedVersion:1}));
+  await f.h.announcementWorkflow(f.req('other', {action:'ready',draftId:key,expectedVersion:1}));
+  await f.h.announcementWorkflow(f.req('first', {action:'publish',draftId:key,expectedVersion:1}));
+}
 test('publishing a bulletin atomically records a sanitized snapshot and prevents successor takeover', async () => {
   const f = historyFixture(); await f.assign('first', 'Public Information Officer');
   const action = { module: 'announcements', action: 'publish', operationId: 'bulletin-one', input: { title: 'Synthetic bulletin', content: 'A public notice', officerName: 'Spoof', extraPrivateData: 'must not copy' } };
-  await f.h.officerModuleAction(f.req('first', action)); await f.h.officerModuleAction(f.req('first', action));
-  assert.equal(f.reports().length, 1); assert.equal(f.reports()[0].snapshot.extraPrivateData, undefined);
+  await reviewedBulletin(f,'bulletin-one',action.input); await f.h.announcementWorkflow(f.req('first',{action:'publish',draftId:'bulletin-one',expectedVersion:1}));
+  assert.equal(f.reports().filter(r=>r.status==='published').length, 1); assert.equal(f.reports().find(r=>r.status==='published').snapshot.extraPrivateData, undefined);
   assert.equal(f.records.get('announcements/bulletin-one').createdByUid, 'first');
   await f.h.officerAssignmentManage(f.req('admin', { action: 'complete', assignmentId: 'assignment-first', reason: 'Turnover' }));
   await f.assign('second', 'Public Information Officer');
@@ -97,12 +104,12 @@ test('publishing a bulletin atomically records a sanitized snapshot and prevents
 });
 test('announcement archive/delete/restore retain the original immutable snapshot', async () => {
   const f = historyFixture(); await f.assign('first', 'Public Information Officer');
-  await f.h.officerModuleAction(f.req('first', { module: 'announcements', action: 'publish', operationId: 'post', input: { title: 'Post', content: 'Preserved text' } }));
+  await reviewedBulletin(f,'post',{title:'Post',content:'Preserved text'});
   for (const [action, sourceCollection] of [['archive', 'announcements'], ['delete', 'archived_announcements'], ['restore', 'deleted_announcements']]) {
     await f.h.officerModuleAction(f.req('first', { module: 'announcements', action, operationId: 'op-' + action, recordId: 'post', sourceCollection }));
   }
-  assert.ok(f.records.has('archived_announcements/post')); assert.equal(f.reports().length, 4);
-  assert.equal(f.reports()[0].snapshot.content, 'Preserved text');
+  assert.ok(f.records.has('archived_announcements/post')); assert.equal(f.reports().length, 7);
+  assert.equal(f.reports().find(r=>r.status==='published').snapshot.content, 'Preserved text');
 });
 test('events and programs publish with server attribution and preserve registrations when archived', async () => {
   const f = historyFixture(); await f.assign('first', 'Public Information Officer');
