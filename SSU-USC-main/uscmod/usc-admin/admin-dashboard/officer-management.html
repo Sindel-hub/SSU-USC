@@ -1,6 +1,75 @@
 <!DOCTYPE html>
-<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Officer Management | SSU-USC</title><link rel="stylesheet" href="../../shared/officer-history.css"><script src="../../shared/app-config.js"></script><script type="module" src="../../shared/auth-guard.js?v=rbac7"></script></head><body><header class="history-brand"><img src="../../shared/../usc-admin/shared/assets/USClogo.webp" alt="USC logo"><div><strong>SSU UNIVERSITY STUDENT COUNCIL</strong><span>Officer records and administration</span></div></header>
-<main class="history-app"><nav class="history-links" aria-label="Module navigation"><a id="backLink" href="admin-dashboard.html">Back to dashboard</a><a href="#responsibilities">Administration guide</a></nav>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>USC Officer Management</title>
+    <link rel="stylesheet" href="../shared/css/usc-theme.css?v=officer-readable-1" />
+    <link rel="stylesheet" href="css/admin-dashboard.css?v=officer-readable-1" />
+    <link rel="stylesheet" href="../shared/css/officer-ui.css?v=instant-shell-2" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+<link rel="stylesheet" href="../../shared/profile-manager.css" />
+  <script src="../../shared/app-config.js"></script>
+  <script type="module" src="../../shared/auth-guard.js?v=rbac7"></script>
+<link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet" />
+
+    <link rel="stylesheet" href="css/admin-navigation.css?v=2" />
+
+    <script type="module" src="js/admin-navigation.js?v=1"></script>
+<link rel="stylesheet" href="../../shared/scrollbars.css?v=2" />
+<link rel="stylesheet" href="css/officer-management.css">
+</head>
+<body class="officer-app-shell admin-officer-management-page">
+    <div class="sidebar-backdrop" onclick="document.querySelector('.sidebar').classList.remove('mobile-open');this.classList.remove('active');document.getElementById('usersMenuButton').setAttribute('aria-expanded','false')"></div>
+    <div class="page">
+        <div class="page-label">Admin Control</div>
+        <div class="app-shell">
+            <header class="top-banner">
+                <div class="brand-logos">
+                    <img src="../shared/assets/SSUlogo.webp" alt="Samar State University Logo" class="brand-logo" onerror="this.style.display='none'" />
+                    <img src="../shared/assets/USClogo.webp" alt="University Student Council Logo" class="brand-logo" onerror="this.style.display='none'" />
+                </div>
+                <div class="brand">
+                    <h1>SSU UNIVERSITY STUDENT COUNCIL</h1>
+                    <p>LEADERSHIP | EXCELLENCE | DISCIPLINE | SERVICE</p>
+                </div>
+            </header>
+            <nav class="top-nav">
+                <div class="nav-left">
+                    <button id="usersMenuButton" class="admin-mobile-menu-btn" type="button" aria-label="Toggle admin navigation" aria-expanded="false" aria-controls="usersSidebar" onclick="const sidebar=document.getElementById('usersSidebar');const expanded=sidebar.classList.toggle('mobile-open');document.querySelector('.sidebar-backdrop').classList.toggle('active',expanded);this.setAttribute('aria-expanded',String(expanded))"><i class="fa-solid fa-bars" aria-hidden="true"></i></button><div class="breadcrumb">Officer Management</div>
+                </div>
+                <div class="nav-right">
+                    <div class="user-badge admin-pill">ADMIN ACCESS PANEL</div>
+                    <div class="avatar" data-admin-initials>UA</div>
+                    <div class="admin-headline">
+                        <span data-admin-name>USC Admin</span>
+                        <small data-admin-role>System Administrator</small>
+                    </div>
+                </div>
+            </nav>
+            <main class="layout">
+                <aside class="sidebar" id="usersSidebar">
+                    <div class="officer-sidebar-mark"><i class="fa-solid fa-user-tie"></i></div>
+                    <h2>Admin Modules</h2>
+                    <div class="sidebar-group">
+                        <a class="nav-btn" data-admin-nav href="admin-dashboard.html"><span><i class="fa-solid fa-chart-line" aria-hidden="true"></i></span><span>Overview</span></a>
+                        <a class="nav-btn" data-admin-nav href="users.html"><span><i class="fa-solid fa-users" aria-hidden="true"></i></span><span>User Directory</span></a>
+                        <a class="nav-btn" data-admin-nav href="student-records.html"><span><i class="fa-solid fa-address-book" aria-hidden="true"></i></span><span>Student Records</span></a>
+                        <a class="nav-btn" data-admin-nav href="queue.html"><span><i class="fa-solid fa-inbox" aria-hidden="true"></i></span><span>Registration Queue</span></a>
+                        <a class="nav-btn active" aria-current="page" data-admin-nav href="officer-management.html"><span aria-hidden="true"><i class="fa-solid fa-user-tie"></i></span><span>Officer Management</span></a>
+                        <a class="nav-btn" data-admin-nav href="audit.html"><span><i class="fa-solid fa-clock-rotate-left" aria-hidden="true"></i></span><span>Audit & Reports</span></a>
+                    </div>
+                    <div class="note-box admin-note">
+                        <strong>Admin restrictions</strong>
+                        <ul>
+                            <li>Only accounts carrying the trusted <strong>admin</strong> server-side role may use this dashboard.</li>
+                            <li>The admin account cannot access officer modules.</li>
+                            <li>Student-linked records and activity are restricted to authorized administrators.</li>
+                        </ul>
+                    </div>
+                    <button class="nav-btn logout-btn" type="button" onclick="logoutAdminOnly()"><span><i class="fa-solid fa-arrow-right-from-bracket" aria-hidden="true"></i></span><span>Log Out</span></button>
+                </aside>
+<section class="main officer-management-workspace history-app" aria-label="Officer Management"><nav class="history-links" aria-label="Module navigation"><a id="backLink" href="admin-dashboard.html">Back to dashboard</a><a href="#responsibilities">Administration guide</a></nav>
 <div class="history-heading"><div><p class="history-eyebrow">SSU-USC</p><h1>Officer Management</h1><p>Preserve each officer’s work under their own name, position and term.</p></div><button id="refreshHistory" type="button">Refresh</button></div>
 <p id="historyStatus" role="status" aria-live="polite">Loading authorized records…</p>
 <section id="appointmentPanel" class="history-card" hidden><h2>Assign an officer</h2><p>Record a formally authorized appointment. Assignment does not determine student eligibility or university policy.</p>
@@ -9,4 +78,35 @@
 <section id="financialReportPanel" class="history-card" hidden><h2>Submit financial report</h2><p>Submit an immutable report for your current Treasurer assignment. This records a submission; it is not a financial approval or audit certification. Submit a new report for corrections.</p><form id="financialReportForm"><label>Report title<input id="financialReportTitle" maxlength="160" required></label><label>Report content<textarea id="financialReportContent" rows="8" maxlength="20000" required></textarea></label><label class="history-check"><input id="financialReportConfirmed" type="checkbox" required>I reviewed this report and understand it will be preserved under my name and term.</label><button type="submit">Submit report</button></form></section>
 <section class="history-card"><h2 id="activityHeading">Officer Tracklist</h2><p>Choose a term to review its activities. Only completed module actions are recorded; page visits do not count. Results load in pages of 50.</p><div id="activityList"></div><button id="moreActivities" type="button" hidden>Load more activities</button></section>
 <section id="recordPreview" class="history-card" hidden><div class="history-heading"><h2>Preserved record</h2><button id="closeRecord" type="button">Close</button></div><p id="recordAttribution"></p><pre id="recordContent" tabindex="0"></pre><button id="downloadRecord" type="button">Download preserved record</button></section>
-<section id="responsibilities" class="history-card"><h2>System Administrator: responsibilities and limits</h2><p><strong>Appointment: Pending USC and appropriate university office approval.</strong> The displayed account role does not appoint an individual or office.</p><p>The designated administrator manages authorized accounts, role assignments, access, records, configurations, monitoring, documented maintenance, troubleshooting and reviewed updates. Technical maintenance belongs to the designated university IT support or formally authorized maintainer, whose appointment is also pending.</p><p>The administrator does not independently determine USC policy, certify student eligibility, approve financial reports or change official academic records. Use authorized USC lists and approval references. University offices remain responsible for official verification.</p><ol><li>Verify written authorization before provisioning an account or assigning access. Use User Directory and the validated student import process.</li><li>Assign the approved office, administration period, term dates and minimum required module permissions.</li><li>Review activity records and access periodically. Resolve synchronization failures before advising an officer to sign in again.</li><li>At turnover, complete the outgoing assignment, check access revocation, then assign the successor. Never share passwords or rename an old account to a new officer.</li><li>For incidents, record the time, affected module and non-sensitive error reference; restrict affected access, notify the authorized university contact and preserve evidence.</li><li>Test maintenance in staging, document changes and recovery, and obtain explicit approval before pushing or deploying. Keep credentials private.</li></ol><p>Historical records and activity logs cannot be edited or deleted here. Retention and exceptional corrections require an approved university procedure; do not invent or backdate missing historical accomplishments.</p></section></main><script type="module" src="../../shared/officer-history.js"></script></body></html>
+<section id="responsibilities" class="history-card"><h2>System Administrator: responsibilities and limits</h2><p><strong>Appointment: Pending USC and appropriate university office approval.</strong> The displayed account role does not appoint an individual or office.</p><p>The designated administrator manages authorized accounts, role assignments, access, records, configurations, monitoring, documented maintenance, troubleshooting and reviewed updates. Technical maintenance belongs to the designated university IT support or formally authorized maintainer, whose appointment is also pending.</p><p>The administrator does not independently determine USC policy, certify student eligibility, approve financial reports or change official academic records. Use authorized USC lists and approval references. University offices remain responsible for official verification.</p><ol><li>Verify written authorization before provisioning an account or assigning access. Use User Directory and the validated student import process.</li><li>Assign the approved office, administration period, term dates and minimum required module permissions.</li><li>Review activity records and access periodically. Resolve synchronization failures before advising an officer to sign in again.</li><li>At turnover, complete the outgoing assignment, check access revocation, then assign the successor. Never share passwords or rename an old account to a new officer.</li><li>For incidents, record the time, affected module and non-sensitive error reference; restrict affected access, notify the authorized university contact and preserve evidence.</li><li>Test maintenance in staging, document changes and recovery, and obtain explicit approval before pushing or deploying. Keep credentials private.</li></ol><p>Historical records and activity logs cannot be edited or deleted here. Retention and exceptional corrections require an approved university procedure; do not invent or backdate missing historical accomplishments.</p></section></section></main></div></div>
+<footer class="officer-shared-footer">
+  <div class="officer-footer-main">
+    <div class="officer-footer-col">
+      <h3>ABOUT US</h3>
+      <a href="../overview/overview.html">USC Officer Portal</a>
+      <a href="../../dashboard/organizational-chart.html">University Student Council</a>
+      <a href="../../dashboard/organizational-chart.html">Organizational Chart</a>
+    </div>
+    <div class="officer-footer-col">
+      <h3>CONTACT US</h3>
+      <p><strong>Samar State University</strong></p>
+      <p>Arteche Boulevard</p>
+      <p>Catbalogan, Samar 6700</p>
+    </div>
+    <div class="officer-footer-col officer-footer-links">
+      <a href="https://ssu.edu.ph" target="_blank" rel="noopener"><i class="fa-brands fa-square-facebook"></i> ssu.edu.ph</a>
+      <a href="mailto:ssuuniversitystudentcouncil@gmail.com"><i class="fa-regular fa-envelope"></i> ssuuniversitystudentcouncil@gmail.com</a>
+    </div>
+  </div>
+  <div class="officer-footer-bottom">
+    <img src="../shared/assets/SSUlogo.webp" alt="SSU Logo" />
+    <img src="../shared/assets/USClogo.webp" alt="USC Logo" />
+    <div><strong>SSU UNIVERSITY STUDENT COUNCIL</strong><span>LEADERSHIP&nbsp;&nbsp;|&nbsp;&nbsp;EXCELLENCE&nbsp;&nbsp;|&nbsp;&nbsp;DISCIPLINE&nbsp;&nbsp;|&nbsp;&nbsp;SERVICE</span></div>
+  </div>
+</footer>
+
+    <script type="module" src="../../shared/officer-history.js"></script>
+    <script type="module" src="../shared/js/admin-only-auth.js"></script>
+<script type="module" src="../../shared/profile-manager.js?v=admin-settings-1&amp;refinements=1"></script>
+</body>
+</html>

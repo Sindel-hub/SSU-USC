@@ -1,0 +1,31 @@
+/* Reuse the Admin Dashboard shell; module styling never changes shared layout. */
+body.admin-officer-management-page .history-app{min-width:0;padding:24px!important;display:flex!important;flex-direction:column;gap:20px!important;color:#23496d}
+.admin-officer-management-page .history-links{display:flex;gap:20px;flex-wrap:wrap;font-size:13px}
+.admin-officer-management-page .history-links a{color:#52657a;text-decoration:none}
+.admin-officer-management-page .history-links a:hover{text-decoration:underline;color:#1953a0}
+.admin-officer-management-page .history-heading{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap}
+.admin-officer-management-page .history-heading h1{font-size:28px;letter-spacing:-.5px;color:#1953a0;margin:0}
+.admin-officer-management-page .history-eyebrow{display:none}
+.admin-officer-management-page .history-heading p{font-size:13px;color:#60758b;line-height:1.6;margin:8px 0 0}
+.admin-officer-management-page .history-card{background:#fff;border:1px solid #e3ebf3;border-radius:16px;padding:22px;min-width:0;box-shadow:0 4px 18px #17345005}
+.admin-officer-management-page .history-card h2{font-size:19px;margin:0 0 12px;color:#23496d}
+.admin-officer-management-page .history-card p,.admin-officer-management-page .history-card li{font-size:13px;line-height:1.7;color:#52657a;overflow-wrap:anywhere}
+.admin-officer-management-page .history-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px}
+.admin-officer-management-page .history-app label,.admin-officer-management-page .history-field{display:flex;flex-direction:column;gap:7px;margin:12px 0;font-size:13px;font-weight:600}
+.admin-officer-management-page .history-app :is(input,select,textarea){width:100%;min-width:0;font:inherit;padding:11px 12px;border:1px solid #d7e4ef;border-radius:8px;background:#f7fafc;color:#23496d;box-sizing:border-box}
+.admin-officer-management-page .history-app button{font:inherit;font-size:13px;font-weight:600;background:#edf5fc;color:#1953a0;border:1px solid #bed0e2;border-radius:8px;min-height:40px;padding:10px 16px;margin:8px 8px 8px 0;cursor:pointer;max-width:100%;white-space:normal}
+.admin-officer-management-page .history-app button:hover{background:#e0edf9}
+.admin-officer-management-page .history-app button:disabled{opacity:.55;cursor:wait}
+.admin-officer-management-page .history-app button[type=submit]{background:#1953a0;color:#fff;border-color:#1953a0}
+.admin-officer-management-page .history-app fieldset{border:1px solid #e3ebf3;border-radius:12px;margin:20px 0;padding:16px;display:flex;flex-wrap:wrap;gap:12px}
+.admin-officer-management-page .history-app .history-check{flex-direction:row;align-items:flex-start;gap:10px;font-weight:400}
+.admin-officer-management-page .history-app input[type=checkbox]{width:18px!important;height:18px!important;min-height:18px!important;padding:0!important;flex:0 0 18px!important;margin:0!important}
+.admin-officer-management-page .history-field output{font-weight:400}
+.admin-officer-management-page :is(.history-term,.history-activity){border:1px solid #e3ebf3;border-radius:12px;padding:16px;margin:12px 0;overflow-wrap:anywhere}
+.admin-officer-management-page :is(.history-term,.history-activity) h3{font-size:16px;margin:0;color:#1953a0}
+.admin-officer-management-page .history-error{color:#a51c30!important}
+.admin-officer-management-page #historyStatus{padding:12px 14px;border-radius:10px;background:#f0f7fd;font-size:13px;margin:0}
+.admin-officer-management-page .history-app pre{white-space:pre-wrap;overflow-wrap:anywhere;max-height:480px;overflow:auto;padding:16px;background:#f0f7fd;border-radius:8px}
+.admin-officer-management-page .history-app [hidden]{display:none!important}
+.admin-officer-management-page .history-app :focus-visible{outline:3px solid #209bd4;outline-offset:3px}
+@media(max-width:700px){body.admin-officer-management-page .history-app{padding:16px!important}.admin-officer-management-page .history-grid{grid-template-columns:minmax(0,1fr)}.admin-officer-management-page .history-card{padding:16px}.admin-officer-management-page .history-heading h1{font-size:24px}}

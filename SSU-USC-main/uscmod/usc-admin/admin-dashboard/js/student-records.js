@@ -5,12 +5,16 @@ import { SSU_PROGRAMS } from '../../student-registration/js/ssu-programs.js';
 const allowed=await(globalThis.USC_AUTH_READY||Promise.resolve(false));if(allowed!==true)await new Promise(()=>{});
 const $=id=>document.getElementById(id);
 let preview=null,students=[],next=null,busy=false,selected=null;
+let recordOpener=null;
+const detailDialog=$('studentDetail');
+$('closeStudentDetail').onclick=()=>detailDialog.close();
+detailDialog.addEventListener('close',()=>{document.documentElement.classList.remove('student-record-modal-open');recordOpener?.focus({preventScroll:true});});
 const year=new Date().getFullYear();$('importYear').value=`${year}-${year+1}`;
 $('programGuide').innerHTML=Object.entries(SSU_PROGRAMS).map(([d,p])=>`<details><summary>${e(d)}</summary><ul>${p.map(v=>`<li>${e(v)}</li>`).join('')}</ul></details>`).join('');
 try{$('resumeImportId').value=sessionStorage.getItem('uscAnnualImportId')||'';}catch{}
 function message(text,error=false){$('recordsMessage').textContent=text;$('recordsMessage').dataset.error=error;}
 function refreshApply(){ $('applyStudentImport').disabled=busy||!preview||preview.hasErrors||!$('confirmImport').checked; }
-async function run(fn){if(busy)return;busy=true;document.querySelectorAll('.records-workspace button,.records-workspace input').forEach(el=>el.disabled=true);try{await fn();}catch(error){message(error.message,true);}finally{busy=false;document.querySelectorAll('.records-workspace button,.records-workspace input').forEach(el=>el.disabled=false);refreshApply();}}
+async function run(fn){if(busy)return;busy=true;document.querySelectorAll('.records-workspace button:not([data-record-close]),.records-workspace input').forEach(el=>el.disabled=true);try{await fn();}catch(error){message(error.message,true);}finally{busy=false;document.querySelectorAll('.records-workspace button:not([data-record-close]),.records-workspace input').forEach(el=>el.disabled=false);refreshApply();if(!detailDialog.open&&document.activeElement===document.body)recordOpener?.focus({preventScroll:true});}}
 function renderPreview(){
  $('importPreview').hidden=false;$('confirmImport').checked=false;
  const entries=preview.entries;preview.hasErrors=entries.some(r=>r.error);
@@ -30,12 +34,18 @@ function renderStudents(){
 const date=value=>value?new Date(value).toLocaleString():'Not recorded';
 function snapshot(p){if(!p)return 'No earlier academic record';return`${e(p?.academicYear||'Legacy record')} · ${e(p?.college||'—')} · ${e(p?.program||'—')} · Year ${e(p?.yearLevel||'—')} · ${e(p?.studentStanding||'—')}`;}
 async function detail(studentId){
- const r=await call('studentRecordDetail',{studentId});selected=r.profile;$('studentDetailTitle').textContent=`${selected.fullName} · ${selected.studentId}`;
+ $('studentDetailTitle').textContent='Student record';
+ $('studentDetailStatus').textContent='Loading student record…';
+ $('studentProfile').replaceChildren();$('studentAcademicHistory').replaceChildren();$('studentActivity').replaceChildren();$('resendStudentActivation').hidden=true;
+ if(!detailDialog.open){document.documentElement.classList.add('student-record-modal-open');detailDialog.showModal();}
+ let r;
+ try{r=await call('studentRecordDetail',{studentId});}catch(error){$('studentDetailStatus').textContent=error.message||'The student record could not be loaded. Close this window and try again.';throw error;}
+ $('studentDetailStatus').textContent='';selected=r.profile;$('studentDetailTitle').textContent=`${selected.fullName} · ${selected.studentId}`;
  $('studentProfile').innerHTML=[['Account UID',selected.uid],['Email',selected.institutionalEmail],['Department',selected.college],['Program',selected.program],['Year level',selected.yearLevel],['Academic year',selected.academicYear],['Standing',selected.studentStanding],['Account',`${selected.accountStatus} · ${selected.isActive?'Active':'Blocked'}`],['Activation',selected.activationStatus||'Existing account'],['Activation email',selected.activationDelivery||'Not applicable']].map(([k,v])=>`<p><strong>${e(k)}</strong><br>${e(v||'Not recorded')}</p>`).join('');
  $('resendStudentActivation').hidden=selected.activationStatus!=='pending';
  $('studentAcademicHistory').innerHTML=r.history.length?r.history.map(h=>`<article class="history-record"><h4>${e(h.academicYear)} · ${e(date(h.recordedAt))}</h4><p>Before: ${snapshot(h.before)}</p><p>After: ${snapshot(h.after)}</p><small>Import ${e(h.importId)}</small></article>`).join(''):'<p>No annual import history yet. Existing records have not been deleted.</p>';
  $('studentActivity').innerHTML=`<p><strong>Recorded sign-ins:</strong> ${r.signins?.count||0} · Last sign-in: ${e(date(r.signins?.lastSignInAt))}</p><h4>Complaints (${r.complaints.length})</h4>${r.complaints.length?`<ul>${r.complaints.map(c=>`<li>${e(c.subject||c.id)} · ${e(c.status)} · ${e(date(c.createdAt))}</li>`).join('')}</ul>`:'<p>No complaint records found.</p>'}<h4>Event / program registrations (${r.participation.length})</h4>${r.activityWarning?`<p class="danger-note">${e(r.activityWarning)}</p>`:''}${r.participation.length?`<ul>${r.participation.map(p=>`<li>${e(p.source)} · ${e(p.itemId)} · ${e(p.status)} · ${e(date(p.registeredAt))}</li>`).join('')}</ul>`:'<p>No registrations returned.</p>'}`;
- $('studentDetail').hidden=false;$('studentDetail').scrollIntoView({behavior:'smooth'});
+ $('studentDetail').querySelector('.student-record-modal-body').scrollTop=0;
 }
 $('studentImportForm').onsubmit=event=>{event.preventDefault();run(async()=>{
  const file=$('studentImportFile').files[0];if(!file||file.size>2*1024*1024)throw Error('Choose a CSV or .xlsx file up to 2 MB.');
@@ -56,6 +66,6 @@ $('applyStudentImport').onclick=()=>run(async()=>{
 $('resumeImportButton').onclick=()=>run(async()=>{preview=await call('studentAnnualJob',{importId:$('resumeImportId').value.trim()});$('importYear').value=preview.academicYear;renderPreview();message('Import loaded. Review results before retrying.');});
 $('studentStatusFilter').onchange=renderStudents;$('importYear').onchange=()=>{renderStudents();if(preview){preview=null;$('importPreview').hidden=true;}};
 $('findStudent').onclick=()=>run(()=>list());$('clearStudentSearch').onclick=()=>run(async()=>{$('findStudentId').value='';await list();});$('refreshStudents').onclick=()=>run(()=>list());$('moreStudents').onclick=()=>run(()=>list(true));
-$('studentRecordRows').onclick=event=>{const b=event.target.closest('[data-student]');if(b)run(()=>detail(b.dataset.student));};
-$('resendStudentActivation').onclick=()=>run(async()=>{if(!selected||!confirm(`Send new activation instructions to ${selected.institutionalEmail}? Previous activation links will be invalidated.`))return;await call('studentActivationResend',{studentId:selected.studentId});message('Activation instructions sent.');await detail(selected.studentId);});
+$('studentRecordRows').onclick=event=>{const b=event.target.closest('[data-student]');if(b){recordOpener=b;run(()=>detail(b.dataset.student));}};
+$('resendStudentActivation').onclick=()=>run(async()=>{if(!selected||!confirm(`Send new activation instructions to ${selected.institutionalEmail}? Previous activation links will be invalidated.`))return;await call('studentActivationResend',{studentId:selected.studentId});message('Activation instructions sent.');await detail(selected.studentId);$('studentDetailStatus').textContent='Activation instructions sent.';});
 await run(()=>list());

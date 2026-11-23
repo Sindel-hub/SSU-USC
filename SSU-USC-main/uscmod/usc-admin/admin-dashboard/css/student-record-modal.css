@@ -1,0 +1,17 @@
+/* Same white card, blue headings and borders as the existing admin detail cards. */
+html.student-record-modal-open,html.student-record-modal-open body{overflow:hidden!important}
+body.admin-student-records-page dialog.student-record-dialog{position:fixed;inset:0;margin:auto;width:min(900px,calc(100vw - 32px));max-width:calc(100vw - 32px);max-height:calc(100dvh - 32px);padding:0;border:1px solid #d7e4ef;border-radius:18px;background:#fff;color:#23496d;box-shadow:0 24px 64px #0f172a33;box-sizing:border-box;overflow:hidden}
+body.admin-student-records-page dialog.student-record-dialog:not([open]){display:none!important}
+body.admin-student-records-page dialog.student-record-dialog[open]{display:flex;flex-direction:column}
+.student-record-dialog::backdrop{background:rgba(15,23,42,.45)}
+.student-record-modal-head{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:20px 24px;border-bottom:1px solid #e3ebf3;background:#f7fafc;flex-shrink:0}
+.student-record-modal-head h2{margin:0;font-size:20px;color:#23496d;overflow-wrap:anywhere}
+body.admin-student-records-page #closeStudentDetail{display:grid;place-items:center;flex:0 0 40px;width:40px;height:40px;min-height:40px;padding:0;margin:0;border:1px solid #d7e4ef;border-radius:10px;background:#fff;color:#1953a0;font-size:26px;line-height:1;cursor:pointer}
+.student-record-modal-body{padding:24px;overflow-y:auto;overscroll-behavior:contain;min-height:0;font-size:13px;line-height:1.6;overflow-wrap:anywhere}
+.student-record-modal-body h3{font-size:17px;color:#23496d;margin-top:24px}
+.student-record-modal-body h4{font-size:14px}
+.student-record-dialog .record-profile{padding:16px;background:#f7fafc;border:1px solid #e3ebf3;border-radius:12px}
+.student-record-dialog .record-profile:empty{display:none}
+.student-record-dialog #studentDetailStatus:empty{display:none}
+.student-record-dialog :focus-visible{outline:3px solid #209bd4;outline-offset:2px}
+@media(max-width:600px){body.admin-student-records-page dialog.student-record-dialog{width:calc(100vw - 16px);max-width:calc(100vw - 16px);max-height:calc(100dvh - 16px);border-radius:14px}.student-record-modal-head{padding:16px}.student-record-modal-head h2{font-size:18px}.student-record-modal-body{padding:16px}}
