@@ -1,0 +1,97 @@
+/* Use the existing officer shell; keep Tracklist rules inside its workspace. */
+.officer-tracklist-page .history-app{min-width:0;box-sizing:border-box;color:#173450}
+.officer-tracklist-page .history-links{display:flex;gap:20px;flex-wrap:wrap;margin-bottom:16px}
+.officer-tracklist-page .history-links a{color:#1953a0}
+.officer-tracklist-page .history-heading{display:flex;justify-content:space-between;align-items:center;gap:16px;flex-wrap:wrap}
+.officer-tracklist-page .history-heading h1{margin:0;color:#1953a0;font-size:28px}
+.officer-tracklist-page .history-eyebrow{display:none}
+.officer-tracklist-page .history-heading p{margin:8px 0;color:#52667d}
+.officer-tracklist-page .history-card{background:#fff;border:1px solid #dce6f0;border-radius:16px;padding:24px;margin:20px 0;box-shadow:0 5px 20px #17345008;min-width:0}
+.officer-tracklist-page .history-card h2{margin:0;color:#173450;font-size:24px}
+.officer-tracklist-page .history-card p{color:#52667d;line-height:1.6;overflow-wrap:anywhere}
+.officer-tracklist-page .history-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px}
+.officer-tracklist-page .history-app label,.officer-tracklist-page .history-field{display:flex;flex-direction:column;gap:6px;font-weight:600;margin:12px 0}
+.officer-tracklist-page .history-app :is(input,select,textarea){font:inherit;width:100%;padding:11px;box-sizing:border-box;border:1px solid #a8bdd2;border-radius:8px;background:#fff;color:#173450;min-width:0}
+.officer-tracklist-page .history-app textarea{resize:vertical;min-height:120px}
+.officer-tracklist-page .history-app button{font:inherit;border:1px solid #bed0e2;background:#edf5fc;color:#164782;border-radius:8px;padding:10px 16px;min-height:44px;cursor:pointer;margin:8px 8px 8px 0;max-width:100%;white-space:normal}
+.officer-tracklist-page .history-app button:hover{background:#e0edf9}
+.officer-tracklist-page .history-app button[aria-pressed=true]{background:#1c56a0;border-color:#1c56a0;color:#fff}
+.officer-tracklist-page .history-app button:disabled{opacity:.55;cursor:wait}
+.officer-tracklist-page .history-app :focus-visible{outline:3px solid #209bd4;outline-offset:3px}
+.officer-tracklist-page .history-app fieldset{border:1px solid #dce6f0;border-radius:12px;margin:18px 0;padding:18px;display:flex;gap:12px;flex-wrap:wrap}
+.officer-tracklist-page .history-app .history-check{flex-direction:row;align-items:flex-start;gap:10px;font-weight:400}
+.officer-tracklist-page .history-app input[type=checkbox]{width:18px!important;height:18px!important;min-height:18px!important;padding:0!important;margin:0!important;flex:0 0 18px!important}
+.officer-tracklist-page .history-field output{font-weight:400}
+.officer-tracklist-page :is(.history-term,.history-activity){padding:16px;border:1px solid #dce6f0;border-radius:12px;margin:12px 0;overflow-wrap:anywhere}
+.officer-tracklist-page :is(.history-term,.history-activity) h3{margin:0;color:#1953a0;font-size:18px}
+.officer-tracklist-page :is(.history-term,.history-activity) p{margin:6px 0}
+.officer-tracklist-page .history-error{color:#a51c30!important}
+.officer-tracklist-page .history-app pre{white-space:pre-wrap;overflow-wrap:anywhere;max-height:480px;overflow:auto;padding:16px;background:#f0f7fd;border-radius:8px}
+.officer-tracklist-page .history-app [hidden]{display:none!important}
+.officer-tracklist-page #historyStatus{padding:12px 0;white-space:pre-wrap;overflow-wrap:anywhere}
+.officer-tracklist-page #assignmentScope{min-width:180px}
+@media(max-width:700px){.officer-tracklist-page .history-card{padding:16px}.officer-tracklist-page .history-grid{grid-template-columns:minmax(0,1fr)}.officer-tracklist-page .history-heading h1{font-size:24px}.officer-tracklist-page .history-card h2{font-size:21px}.officer-tracklist-page .history-app fieldset{display:block}}
+/* Match the existing modules' correction for the theme's always-highlighted Dashboard. */
+body.officer-tracklist-page aside.sidebar .nav-btn[href$="overview.html"]:not(.active){background:transparent!important;box-shadow:none!important;color:#102744!important;text-shadow:none!important;backdrop-filter:none!important;font-weight:500!important}
+/* Tracklist content follows the existing officer palette and card treatment. */
+.officer-tracklist-page .history-app{padding:24px!important}
+.officer-tracklist-page .history-links{justify-content:space-between;margin-bottom:22px;font-size:13px}
+.officer-tracklist-page .history-links a{text-decoration:none;display:inline-flex;align-items:center;gap:8px;color:#52667d}
+.officer-tracklist-page .history-links a:hover{color:#1953a0;text-decoration:underline}
+.officer-tracklist-page .history-heading{gap:20px}
+.officer-tracklist-page .history-heading h1{font-size:28px;letter-spacing:-.5px;line-height:1.25}
+.officer-tracklist-page .history-heading p{font-size:14px;line-height:1.5;margin:8px 0 0}
+.officer-tracklist-page .history-card{margin:18px 0 0;padding:22px;box-shadow:0 4px 18px #17345005}
+.officer-tracklist-page .history-card h2{font-size:20px;line-height:1.35;letter-spacing:-.2px}
+.officer-tracklist-page .history-section-title{display:flex;gap:12px;align-items:center;min-width:0;flex:1}
+.officer-tracklist-page .history-section-title p{font-size:13px;line-height:1.5;margin:4px 0 0}
+.officer-tracklist-page .history-section-icon{display:grid;place-items:center;flex:0 0 40px;height:40px;border-radius:12px;background:#eaf4fc;color:#1953a0;font-size:18px}
+.officer-tracklist-page .history-app button{font-size:13px;font-weight:600;min-height:40px;margin:0;padding:10px 16px;display:inline-flex;align-items:center;justify-content:center;gap:8px}
+.officer-tracklist-page .history-app button+button{margin-left:8px}
+.officer-tracklist-page #refreshHistory{background:#fff;flex-shrink:0}
+.officer-tracklist-page #historyStatus{padding:0;margin:16px 0 0;font-size:13px;line-height:1.6;color:#52667d}
+.officer-tracklist-page #historyStatus:empty{display:none}
+.officer-tracklist-page #historyStatus.history-error{padding:10px 14px;border:1px solid #f0d3d9;border-radius:10px;background:#fff7f8}
+.officer-tracklist-page #officeScopeLabel{margin:0;gap:5px;font-size:12px;color:#52667d}
+.officer-tracklist-page #assignmentScope{min-width:185px;font-size:13px;font-weight:500;padding:10px 32px 10px 12px;background:#f7fafc;min-height:40px}
+.officer-tracklist-page .history-card .history-help{font-size:12px;margin:16px 0;color:#6b7d90;line-height:1.5}
+.officer-tracklist-page .history-empty{display:flex;align-items:center;gap:16px;border:1px dashed #cbdbe9;background:#f8fbfe;border-radius:12px;padding:24px;min-width:0}
+.officer-tracklist-page .history-empty-icon{display:grid;place-items:center;flex:0 0 44px;height:44px;border-radius:50%;background:#e8f2fb;color:#3c6b9b;font-size:20px}
+.officer-tracklist-page .history-empty h3{margin:0;color:#244560;font-size:15px;font-weight:600}
+.officer-tracklist-page .history-empty p{font-size:13px;margin:5px 0 0;line-height:1.6;max-width:650px}
+.officer-tracklist-page .history-term{position:relative;padding:18px;margin:12px 0 0;background:#fff}
+.officer-tracklist-page .history-term h3{font-size:16px;padding-right:160px;line-height:1.5}
+.officer-tracklist-page .history-term p{font-size:13px;margin:6px 0;line-height:1.6}
+.officer-tracklist-page .history-term button{margin-top:10px}
+.officer-tracklist-page .history-term-status{position:absolute;right:18px;top:18px;font-size:11px;font-weight:600;line-height:1.5;padding:4px 9px;border-radius:20px;background:#eef2f7;color:#52667d;max-width:145px}
+.officer-tracklist-page .history-term-status.is-active{background:#e6f5ef;color:#24664e}
+.officer-tracklist-page .history-activity{border-width:0 0 1px;border-radius:0;margin:0;padding:18px 0}
+.officer-tracklist-page .history-activity:last-child{border-bottom:0}
+.officer-tracklist-page .history-activity h3{font-size:15px;line-height:1.5}
+.officer-tracklist-page .history-activity p,.officer-tracklist-page .history-activity small{font-size:12px;line-height:1.6}
+.officer-tracklist-page .history-activity small{display:block;color:#6b7d90;margin-bottom:12px}
+.officer-tracklist-page :is(#moreAssignments,#moreActivities){margin-top:16px}
+.officer-tracklist-page .history-guide{padding:0!important;box-shadow:none}
+.officer-tracklist-page .history-guide summary{cursor:pointer;padding:18px 22px;display:flex;align-items:center;justify-content:space-between;gap:12px;color:#244560;font-weight:600;font-size:14px;list-style:none}
+.officer-tracklist-page .history-guide summary::-webkit-details-marker{display:none}
+.officer-tracklist-page .history-guide summary>span:first-child{display:flex;align-items:center;gap:10px}
+.officer-tracklist-page .history-guide summary::after{content:'+';font-size:20px;font-weight:400}
+.officer-tracklist-page .history-guide[open] summary::after{content:'−'}
+.officer-tracklist-page .history-guide-hint{font-size:12px;color:#6b7d90;font-weight:400;margin-left:auto}
+.officer-tracklist-page .history-guide-content{border-top:1px solid #dce6f0;padding:20px 22px;font-size:13px;line-height:1.7;color:#52667d}
+.officer-tracklist-page .history-guide-content h2{font-size:17px}
+.officer-tracklist-page .history-guide-content li{margin-bottom:8px}
+@media(max-width:700px){
+ .officer-tracklist-page .history-app{padding:16px!important}
+ .officer-tracklist-page .history-links{font-size:12px;gap:12px;margin-bottom:20px}
+ .officer-tracklist-page .history-heading h1{font-size:24px}
+ .officer-tracklist-page .history-card{padding:16px}
+ .officer-tracklist-page .history-card h2{font-size:18px}
+ .officer-tracklist-page #officeScopeLabel{width:100%}
+ .officer-tracklist-page .history-empty{padding:18px;align-items:flex-start;gap:12px}
+ .officer-tracklist-page .history-empty-icon{flex-basis:34px;height:34px;font-size:16px}
+ .officer-tracklist-page .history-term h3{padding-right:0}
+ .officer-tracklist-page .history-term-status{position:static;display:inline-block;margin:6px 0;max-width:none}
+ .officer-tracklist-page .history-guide-hint{display:none}
+ .officer-tracklist-page .history-guide summary{padding:16px}
+}
