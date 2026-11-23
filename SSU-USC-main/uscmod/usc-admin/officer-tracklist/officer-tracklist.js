@@ -11,6 +11,14 @@ const state = { assignments: [], assignmentNext: null, activities: [], activityN
 let assignmentRequest = 0, activityRequest = 0, recordRequest = 0;
 const date = value => Number.isFinite(value) ? new Date(value).toLocaleString() : 'Not recorded';
 function node(tag, text, className) { const el = document.createElement(tag); if (text !== undefined) el.textContent = text; if (className) el.className = className; return el; }
+function emptyState(title, description, icon = 'fa-folder-open') {
+  const box = node('div', undefined, 'history-empty');
+  const mark = node('span', undefined, 'history-empty-icon');
+  mark.setAttribute('aria-hidden', 'true');
+  mark.innerHTML = icon === 'fa-calendar' ? '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M16 3v4M8 3v4M3 11h18m-13 5 2 2 4-4"/></svg>' : '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 8V6a2 2 0 0 1 2-2h5l2 3h7a2 2 0 0 1 2 2v1M3 8h18l-3 10H3L1 8z"/></svg>';
+  const copy = node('div'); copy.append(node('h3', title), node('p', description));
+  box.append(mark, copy); return box;
+}
 function status(message, error = false) { $('historyStatus').textContent = message; $('historyStatus').classList.toggle('history-error', error); }
 async function run(button, operation) {
   if (button) button.disabled = true;
@@ -34,12 +42,12 @@ function renderPermissions() {
 }
 function renderAssignments() {
   const list = $('assignmentList'); list.replaceChildren();
-  if (!state.assignments.length) list.append(node('p', 'No authorized officer assignments found. Existing legacy officers must be assigned a position and term before tracked activity begins.'));
+  if (!state.assignments.length) list.append(emptyState('No assignments yet', 'No authorized officer assignments found. An administrator must record your position and term before tracked activity begins.'));
   for (const a of state.assignments) {
     const card = node('article', undefined, 'history-term');
     card.append(node('h3', `${a.position} · ${a.administration}`), node('p', `${a.officerName} · ${a.department}`), node('p', `${date(a.startsAtMs)} – ${date(a.endsAtMs)}`));
     const termStatus = a.status === 'completed' ? 'Completed' : a.endsAtMs <= Date.now() ? 'Expired — turnover required' : a.startsAtMs > Date.now() ? 'Scheduled' : 'Active';
-    card.append(node('strong', termStatus), node('p', `Permissions: ${(a.permissions || []).map(p => permissionDefinition(p)?.label || p).join(', ')}`));
+    card.append(node('strong', termStatus, 'history-term-status' + (termStatus === 'Active' ? ' is-active' : '')), node('p', `Permissions: ${(a.permissions || []).map(p => permissionDefinition(p)?.label || p).join(', ')}`));
     if (a.authSyncPending) card.append(node('p', 'Authentication synchronization pending. Administrator action required.', 'history-error'));
     const viewButton = button('View tracklist', () => loadActivities(a));
     viewButton.setAttribute('aria-pressed', String(state.selected?.id === a.id));
@@ -71,8 +79,8 @@ function clearActivities() {
   activityRequest++;
   state.selected = null; state.activities = []; state.activityNext = null;
   clearRecord();
-  $('activityHeading').textContent = 'Officer Tracklist';
-  $('activityList').replaceChildren(node('p', 'Choose a term above to view its recorded activities.'));
+  $('activityHeading').textContent = 'Recorded activities';
+  $('activityList').replaceChildren(emptyState('Select a term to get started', 'Choose a term above to view its recorded activities.', 'fa-calendar'));
   $('moreActivities').hidden = true;
 }
 async function loadAssignments(more = false) {
@@ -98,7 +106,7 @@ async function loadAssignments(more = false) {
     renderPermissions();
   }
   renderAssignments();
-  status(state.assignments.length ? 'Authorized assignments loaded. Select a term to review its tracklist.' : 'No authorized assignments found. No historical activities have been invented.');
+  status(state.assignments.length ? 'Assignments loaded. Select a term to view activities.' : '');
 }
 function formatSnapshot(snapshot) {
   if (snapshot.content) return `${snapshot.title || ''}\n\n${snapshot.content}`;
@@ -108,7 +116,7 @@ function formatSnapshot(snapshot) {
 }
 function renderActivities() {
   const list = $('activityList'); list.replaceChildren();
-  if (!state.activities.length) list.append(node('p', 'No recorded activities for this term. Earlier or off-system work is not reconstructed automatically.'));
+  if (!state.activities.length) list.append(emptyState('No activities recorded', 'No recorded activities for this term. Completed work will appear here as it is recorded.'));
   for (const activity of [...state.activities].sort((a, b) => b.createdAtMs - a.createdAtMs)) {
     const row = node('article', undefined, 'history-activity');
     row.append(node('h3', activity.action), node('p', `${activity.officerName} · ${activity.position} · ${activity.administration}`), node('p', `${activity.module} · ${activity.status} · ${date(activity.createdAtMs)}`), node('small', `Related record: ${activity.recordId}`));
@@ -177,3 +185,5 @@ $('downloadRecord').addEventListener('click', () => {
   const link = node('a'); link.href = url; link.download = `usc-officer-record-${state.record.id}.json`; link.click(); setTimeout(() => URL.revokeObjectURL(url), 1000);
 });
 await run(null, () => loadAssignments());
+
+document.querySelector('a[href="#responsibilities"]')?.addEventListener('click', () => { $('responsibilities').open = true; });
