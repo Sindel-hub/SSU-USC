@@ -1,3 +1,5 @@
+import { createNotificationReadStore } from '../../shared/notification-read-store.mjs';
+import { hostedManagementCall } from '../../shared/hosted-management-client.js';
 import { auth, db } from "../../firebase/firebase-config.js";
 import {
   collection,
@@ -16,6 +18,21 @@ if (uscAuthAllowed !== true) await new Promise(() => {});
 const notificationOwner = auth.currentUser?.uid;
 const PROFILE_KEY = "studentProfile";
 const READ_KEY_PREFIX = "uscNotificationRead:";
+let browserStorage;
+try { browserStorage = localStorage; } catch {}
+const readStore = createNotificationReadStore({
+  uid: notificationOwner,
+  isCurrentOwner: () => Boolean(notificationOwner && auth.currentUser?.uid === notificationOwner),
+  call: hostedManagementCall,
+  storage: browserStorage,
+  onChange: () => render(),
+  onSyncError: pending => {
+    let message = document.getElementById('notificationReadSync');
+    const notificationPanel = document.getElementById('notificationPanel');
+    if (!message && notificationPanel) { message = document.createElement('p'); message.id = 'notificationReadSync'; message.setAttribute('role','status'); message.style.cssText='font-size:12px;padding:8px 14px;margin:0;color:#52667d'; notificationPanel.appendChild(message); }
+    if (message) { message.textContent = pending ? 'Read marks are saved here. Account sync will retry when connected.' : ''; message.hidden = !pending; }
+  }
+});
 const feeds = { announcements: [], events: [], programs: [], complaints: [] };
 
 function dashboardHref(fileName) {
@@ -73,16 +90,8 @@ function relativeTime(v) {
   const h=Math.round(min/60); if (h<24) return `${h} hour${h===1?"":"s"} ago`;
   const days=Math.round(h/24); return `${days} day${days===1?"":"s"} ago`;
 }
-function readSet() {
-  const p=profile();
-  try { return new Set(JSON.parse(localStorage.getItem(`${READ_KEY_PREFIX}${clean(auth.currentUser?.uid,"guest")}`) || "[]")); }
-  catch { return new Set(); }
-}
-function saveRead(set) {
-  if (auth.currentUser?.uid !== notificationOwner) return;
-  const p=profile();
-  localStorage.setItem(`${READ_KEY_PREFIX}${clean(auth.currentUser?.uid,"guest")}`, JSON.stringify([...set]));
-}
+function readSet() { return readStore.getRead(); }
+function saveRead(set) { readStore.mark([...set]); }
 function item(id,type,title,message,at,icon,href="") { return { id,type,title,message,at,icon,href }; }
 function buildItems() {
   const p=profile();
@@ -132,11 +141,11 @@ function render() {
 function escapeHtml(v){return clean(v).replace(/[&<>'"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;","'":"&#39;",'"':"&quot;"}[c]));}
 function listen() {
   const p=profile();
-  onSnapshot(query(collection(db,"announcements"),orderBy("createdAtMs","desc"),limit(5)),s=>{feeds.announcements=s.docs.map(d=>({id:d.id,...d.data()}));render();},()=>{});
-  onSnapshot(query(collection(db,"events"),orderBy("eventDate","asc"),limit(8)),s=>{feeds.events=s.docs.map(d=>({id:d.id,...d.data()}));render();},()=>{});
-  onSnapshot(query(collection(db,"programs"),orderBy("eventDate","asc"),limit(8)),s=>{feeds.programs=s.docs.map(d=>({id:d.id,...d.data()}));render();},()=>{});
+  onSnapshot(query(collection(db,"announcements"),orderBy("createdAtMs","desc"),limit(5)),s=>{feeds.announcements=s.docs.map(d=>({...d.data(),id:d.id}));render();},()=>{});
+  onSnapshot(query(collection(db,"events"),orderBy("eventDate","asc"),limit(8)),s=>{feeds.events=s.docs.map(d=>({...d.data(),id:d.id}));render();},()=>{});
+  onSnapshot(query(collection(db,"programs"),orderBy("eventDate","asc"),limit(8)),s=>{feeds.programs=s.docs.map(d=>({...d.data(),id:d.id}));render();},()=>{});
   const studentUid=clean(auth.currentUser?.uid || p?.uid);
-  if (studentUid) onSnapshot(query(collection(db,"complaints"),where("studentUid","==",studentUid)),s=>{feeds.complaints=s.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>(toDate(b.updatedAt||b.createdAt)?.getTime()||0)-(toDate(a.updatedAt||a.createdAt)?.getTime()||0));render();},error=>{console.warn("Complaint notification feed unavailable:",error);});
+  if (studentUid) onSnapshot(query(collection(db,"complaints"),where("studentUid","==",studentUid)),s=>{feeds.complaints=s.docs.map(d=>({...d.data(),id:d.id})).sort((a,b)=>(toDate(b.updatedAt||b.createdAt)?.getTime()||0)-(toDate(a.updatedAt||a.createdAt)?.getTime()||0));render();},error=>{console.warn("Complaint notification feed unavailable:",error);});
 
 }
 
@@ -178,7 +187,7 @@ function positionPanel(){
 }
 function setPanelOpen(open,restoreFocus=false){
   if(!panel)return;
-  if(open)positionPanel();
+  if(open){positionPanel();void readStore.sync({refresh:true}).catch(()=>{});}
   panel.classList.toggle('hidden',!open);
   panel.setAttribute('aria-hidden',String(!open));
   btn?.setAttribute('aria-expanded',String(open));
@@ -211,5 +220,8 @@ document.addEventListener('keydown',event=>{
 });
 window.addEventListener('resize',()=>{if(panel && !panel.classList.contains('hidden'))positionPanel();});
 
-window.addEventListener("storage", event=>{if(event.key===`${READ_KEY_PREFIX}${notificationOwner}`)render();});
+window.addEventListener("storage", event=>{if(event.key===`${READ_KEY_PREFIX}${notificationOwner}`){render();void readStore.sync({refresh:true}).catch(()=>{});}});
+window.addEventListener('online',()=>{void readStore.sync({refresh:true}).catch(()=>{});});
+window.addEventListener('focus',()=>{void readStore.sync({refresh:true}).catch(()=>{});});
+await Promise.race([readStore.sync().catch(()=>{}),new Promise(resolve=>setTimeout(resolve,4000))]);
 listen();
