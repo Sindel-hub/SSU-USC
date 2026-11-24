@@ -11,12 +11,22 @@ export function surveyIdFromLink(value, origin, publicOrigin = origin) {
 export function surveyAnnouncementLink(post) {
   return /^[a-zA-Z0-9]{20}$/.test(post?.surveyId || '') ? `/survey/index.html?id=${post.surveyId}` : '';
 }
+// Retain the exported name for existing callers; survey links are ordinary
+// inline content links rather than a separate call-to-action button.
 export function attachSurveyButton(host, post) {
   if (!host) return;
-  linkAnnouncementText(host); registerAnnouncementMedia(post);
   host.parentElement.querySelector('[data-survey-link]')?.remove();
+  linkAnnouncementText(host);
+  registerAnnouncementMedia(post);
   const href = surveyAnnouncementLink(post);
   if (!href) return;
-  const a = document.createElement('a'); a.href = href; a.textContent = 'Take Survey';a.dataset.surveyLink = '';a.className = 'bulletin-read-more';a.style.cssText = 'display:inline-block;margin:14px 0;padding:10px 16px;background:#1c56a0;color:white;border-radius:8px;text-decoration:none';
-  host.after(a);
+  const absolute = new URL(href, location.href).href;
+  if ([...host.querySelectorAll('a')].some(link => link.href === absolute)) return;
+  const a = document.createElement('a');
+  a.href = href;
+  a.textContent = absolute;
+  a.target = '_blank';
+  a.rel = 'noopener noreferrer';
+  a.dataset.surveyLink = '';
+  host.append(document.createTextNode('\n\n'), a);
 }
