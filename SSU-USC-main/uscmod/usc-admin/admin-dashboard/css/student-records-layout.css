@@ -7,20 +7,11 @@ body.admin-student-records-page .main.records-workspace {
   background: #f5f8fc;
   border-radius: 20px;
 }
-.admin-student-records-page .records-eyebrow {
-  display: block;
-  margin-bottom: 8px;
-  color: #60758d;
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: .12em;
-}
-.admin-student-records-page .records-page-heading h1 { font-size: clamp(24px, 2.4vw, 32px); letter-spacing: -.025em; }
+.admin-student-records-page .records-page-heading { justify-content: flex-end; }
 .admin-student-records-page .records-workspace .na-muted { margin: 6px 0 0; }
 .admin-student-records-page .records-workspace .na-panel { margin: 0; padding: clamp(18px, 2vw, 28px); box-shadow: 0 4px 18px #17345006; }
 .admin-student-records-page .records-workspace h2 { margin: 0; font-size: 20px; line-height: 1.35; }
 .admin-student-records-page .records-section-heading { display: flex; align-items: center; gap: 14px; }
-.admin-student-records-page .records-step { display: grid; place-items: center; flex: 0 0 44px; height: 44px; border-radius: 12px; background: #eaf2fc; color: #1953a0; font-size: 15px; font-weight: 700; }
 .admin-student-records-page #recordsMessage:empty { display: none; }
 .admin-student-records-page #recordsMessage:not(:empty) { margin: 0; padding: 14px 18px; border: 1px solid #dce6f0; border-radius: 12px; background: #fff; }
 .admin-student-records-page .records-workspace .import-alert { margin: 20px 0; font-size: 14px; }
