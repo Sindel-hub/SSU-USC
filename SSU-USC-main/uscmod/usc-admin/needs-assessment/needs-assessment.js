@@ -8,7 +8,7 @@ const $ = id => document.getElementById(id);
 const departments = Object.keys(SSU_PROGRAMS);
 const resultsDialog = $('naResults');
 let resultsRequest = 0;
-let surveys = [], next = null, editing = '', reportSurvey = null, responses = [], report = null, loading = false;
+let surveys = [], next = null, statusFilter = '', editing = '', reportSurvey = null, responses = [], report = null, loading = false;
 function message(text, error = false) { $('naMessage').textContent = text; $('naMessage').dataset.error = error; }
 async function run(task) {
   if (loading) return;
@@ -40,13 +40,60 @@ function edit(s = null) {
   $('naOpens').value=local(s?.opensAt || Date.now()); $('naCloses').value=local(s?.closesAt || Date.now()+7*86400000);
   $('naDepartments').innerHTML=departments.map(d=>`<label class="na-choice"><input type="checkbox" value="${e(d)}" ${!s || s.departments.includes(d)?'checked':''}>${e(d)}</label>`).join('');
   $('naQuestions').replaceChildren(); (s?.questions || [{label:'',type:'single',options:[],required:true}]).forEach(addQuestion);
-  $('naEditor').hidden=false; $('naTitle').focus();
+  $('naEditor').open = true; $('naTitle').focus();
 }
 const surveyDate = new Intl.DateTimeFormat(undefined, { dateStyle: 'medium', timeStyle: 'short' });
+const overviewStatuses = [
+  ['open', 'Open', 'fa-circle-play'],
+  ['scheduled', 'Scheduled', 'fa-calendar'],
+  ['closed', 'Closed', 'fa-circle-check'],
+  ['draft', 'Draft', 'fa-file-pen']
+];
+function renderOverview() {
+  const statuses = overviewStatuses.map(([key, option, icon]) => ({
+    key, option, icon, count: surveys.filter(survey => survey.lifecycle === key).length
+  }));
+  const metrics = [
+    ['Published', 'fa-circle-check', surveys.filter(survey => survey.status === 'published').length],
+    ['Responses', 'fa-users', surveys.reduce((total, survey) => total + (survey.responseCount || 0), 0)],
+    ['Archived', 'fa-box-archive', surveys.filter(survey => survey.status === 'archived').length]
+  ];
+  $('naOverview').innerHTML = `
+    <section class="engagement-status-panel" aria-label="Survey status filters">
+      <div class="engagement-status-grid">
+        ${statuses.map(({ key, option, icon, count }) => `
+          <button class="engagement-status-card" type="button" data-survey-status="${key}" aria-pressed="${statusFilter === key}">
+            <span>${option}</span><span class="engagement-count-row"><i class="fa-solid ${icon}" aria-hidden="true"></i><strong>${count}</strong></span>
+          </button>`).join('')}
+      </div>
+      <section class="engagement-summary" aria-labelledby="naOverviewTitle">
+        <h2 id="naOverviewTitle">${next ? 'Overview of loaded surveys' : 'Overview'}</h2>
+        <div class="engagement-metrics">${metrics.map(([label, icon, count]) => `
+          <article class="engagement-metric"><i class="fa-solid ${icon}" aria-hidden="true"></i><div><span>${label}</span><strong>${count}</strong></div></article>`).join('')}</div>
+      </section>
+    </section>
+    <section class="engagement-chart-panel na-status-chart" aria-labelledby="naStatusChartTitle">
+      <h2 id="naStatusChartTitle">Survey status</h2>
+      ${pieChart(statuses, statuses.reduce((total, status) => total + status.count, 0), 'No surveys to chart.')}
+    </section>`;
+}
+$('naOverview').addEventListener('click', event => {
+  const button = event.target.closest('[data-survey-status]');
+  if (!button) return;
+  const status = button.dataset.surveyStatus;
+  statusFilter = statusFilter === status ? '' : status;
+  $('naOverview').querySelectorAll('[data-survey-status]').forEach(control => {
+    control.setAttribute('aria-pressed', String(control.dataset.surveyStatus === statusFilter));
+  });
+  renderSurveys();
+});
+
 function renderSurveys() {
   const manage = hasOfficerPermission('bulletin.manage');
   $('naNew').hidden = !manage;
-  $('naSurveys').innerHTML = surveys.length ? surveys.map(survey => {
+  $('naEditor').hidden = !manage;
+  const visible = statusFilter ? surveys.filter(survey => survey.lifecycle === statusFilter) : surveys;
+  $('naSurveys').innerHTML = visible.length ? visible.map(survey => {
     const id = e(survey.id);
     const button = (action, label, style = 'light') => `<button class="mini-btn ${style}" type="button" data-action="${action}" data-id="${id}">${label}</button>`;
     const shareable = ['published', 'closed'].includes(survey.status);
@@ -71,11 +118,11 @@ function renderSurveys() {
         ${secondary ? `<details class="na-survey-more"><summary class="mini-btn light">More actions</summary><div>${secondary}</div></details>` : ''}
       </div>
     </article>`;
-  }).join('') : '<p>No surveys yet.</p>';
+  }).join('') : (statusFilter ? '<p>No surveys with this status.</p>' : '<p>No surveys yet.</p>');
   $('naMore').hidden = !next;
 }
 async function refresh(more = false) {
-  const result=await surveyCall('List',more?{after:next}:{});surveys=more?[...surveys,...result.surveys]:result.surveys;next=result.next;renderSurveys();
+  const result=await surveyCall('List',more?{after:next}:{});surveys=more?[...surveys,...result.surveys]:result.surveys;next=result.next;renderOverview();renderSurveys();
 }
 function updateReport() {
   const filter=$('naDepartmentFilter').value; report=summarize(reportSurvey,responses,filter);
@@ -101,8 +148,8 @@ const chartColors = ['#2563a8', '#bb421e', '#9e590c', '#217747', '#8b43a4', '#00
 const shareFormat = new Intl.NumberFormat(undefined, { style: 'percent', maximumFractionDigits: 1 });
 const share = (count, total) => shareFormat.format(total ? count / total : 0);
 
-function pieChart(choices, total) {
-  if (!total) return '<p>No responses yet.</p>';
+function pieChart(choices, total, empty = 'No responses yet.') {
+  if (!total) return `<p>${e(empty)}</p>`;
   const point = (angle, radius) => [100 + Math.sin(angle) * radius, 100 - Math.cos(angle) * radius];
   let start = 0;
   const slices = [], labels = [];
@@ -163,11 +210,23 @@ async function loadResults(survey) {
 }
 resultsDialog.addEventListener('close', () => { if (!resultsDialog.open) resultsRequest++; });
 function download(rows,name) { const url=URL.createObjectURL(new Blob([csv(rows)],{type:'text/csv;charset=utf-8'}));const a=document.createElement('a');a.href=url;a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(url),1000); }
-$('naNew').onclick=()=>edit();$('naCancel').onclick=()=>{$('naEditor').hidden=true;};
+const editor = $('naEditor');
+$('naNew').onclick = () => edit();
+$('naCancel').onclick = () => { editor.open = false; $('naNew').focus(); };
+editor.querySelector('summary').addEventListener('click', event => {
+  if (!editor.open) {
+    event.preventDefault();
+    edit();
+  }
+});
+editor.addEventListener('toggle', () => {
+  $('naNew').setAttribute('aria-expanded', String(editor.open));
+  if (!editor.open) $('naEditorTitle').textContent = 'Create survey';
+});
 $('naAddQuestion').onclick=()=>{if($('naQuestions').children.length>=30)return message('Maximum 30 questions.',true);addQuestion();};
 $('naForm').onsubmit=event=>{event.preventDefault();run(async()=>{
   const input={title:$('naTitle').value,description:$('naDescription').value,opensAt:new Date($('naOpens').value).getTime(),closesAt:new Date($('naCloses').value).getTime(),departments:[...$('naDepartments').querySelectorAll('input:checked')].map(x=>x.value),questions:[...$('naQuestions').children].map(f=>({label:f.querySelector('[data-label]').value,type:f.querySelector('[data-type]').value,options:f.querySelector('[data-options]').value.split('\n').map(x=>x.trim()).filter(Boolean),required:f.querySelector('[data-required]').checked}))};
-  await surveyCall('Manage',{action:'save',surveyId:editing||undefined,input});$('naEditor').hidden=true;await refresh();message('Draft saved. Publish when you are ready.');
+  await surveyCall('Manage',{action:'save',surveyId:editing||undefined,input});editor.open = false;await refresh();message('Draft saved. Publish when you are ready.');
 });};
 $('naSurveys').onclick=event=>{const b = event.target.closest('button[data-action]');
   if (!b) return;
