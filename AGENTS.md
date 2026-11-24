@@ -274,3 +274,33 @@ For every development change, inspect the existing system, implement on a separa
 Then ask exactly: "Are you satisfied with these changes? Would you like me to revise anything, or do you approve these changes for pushing to GitHub?"
 
 Stop and wait. The original change request, silence, and past approvals do not authorize a push. Without explicit approval for the reviewed changes, never push, create a pull request, publish, deploy, or change GitHub Actions, Vercel settings, or branch protections. This overrides older instructions above to automatically push and create a Vercel Preview. Local commits are allowed. If code changes after approval, repeat review and obtain approval again. After approval, verify the exact reviewed scope before submitting only that scope to the authorized branch. The existing manual-merge restriction remains in force: the user performs the final merge.
+
+## Current mandatory workflow — development, Vercel Preview, and manual merge
+
+This section governs all future system modifications, including bug fixes, features, UI improvements, and functionality updates. It supersedes conflicting earlier workflow instructions. For those tasks, the user has authorized pushing the development branch, opening or updating its pull request, and generating the Vercel Preview as part of the requested workflow. The review gate is after the Preview and pull request are ready.
+
+### Isolate and validate changes
+
+- Start each new task on a descriptively named Git branch based on the latest production branch. Make all changes on that development branch.
+- Preserve existing functionality unless the user explicitly requests a change. Keep unrelated files out of the change.
+- Check for errors, regressions, and compatibility issues. Run applicable build, lint, and test commands before deployment and verify the existing system remains functional.
+
+### Create and verify the Preview
+
+- Commit the changes and push only the development branch. Open a GitHub pull request targeting the production branch.
+- Use the existing GitHub integration to generate the Vercel Preview. Verify that the deployment succeeded, corresponds to the latest commit, and serves the working Preview URL.
+- Use designated staging or Preview services for testing. Protect production databases, Firebase and Supabase configuration, environment variables, authentication settings, and existing user records. Keep sensitive credentials out of commits and output.
+- Deploy backend changes only to designated staging services when authorized. Report Preview configuration problems and keep production credentials out of staging.
+
+### Hand off for review
+
+- Report the changes, modified files, build and test results, development branch, latest commit ID, verified Vercel Preview URL, GitHub pull request URL, known issues or limitations, recommended functionality to test, and production deployment status.
+- If a branch, pull request, or Preview cannot be created, explain the specific blocker and provide the manual steps needed. Report only links and outcomes that have been verified.
+- Once the Preview and pull request are ready, stop for user review. Apply requested revisions on the same branch, update the same pull request, and verify and share the updated Preview URL.
+
+### Reserve production for the user's manual merge
+
+- The user personally merges the pull request in GitHub. Conversational approval never authorizes Codex to merge, schedule a merge, use a merge queue, or enable auto-merge.
+- Never push directly to the production branch, deploy directly to Vercel Production, run `vercel --prod`, or promote a Preview to Production.
+- Keep required approvals, checks, and branch protections in effect. Preserve the development branch through the user's review.
+- Production deployment may proceed through the existing integration after the user's manual GitHub merge. Any production backend change requires separate explicit authorization.
