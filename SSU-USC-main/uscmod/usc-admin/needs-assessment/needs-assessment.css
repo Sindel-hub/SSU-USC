@@ -130,10 +130,7 @@ body.officer-app-shell.needs-assessment-page .na-hero {
 .needs-assessment-page :is(.na-hero, .na-management) :is(.btn, .mini-btn).light { background: #fff !important; border: 1px solid #cedae7 !important; color: #315477 !important; }
 .needs-assessment-page .engagement-analytics button.engagement-status-card { width: 100%; }
 .needs-assessment-page .engagement-status-card[aria-pressed="true"] { outline: 2px solid #2459a3; outline-offset: -2px; }
-.needs-assessment-page .engagement-analytics .na-status-chart { display: block; }
-.needs-assessment-page .na-status-chart .na-pie-chart { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 12px; }
-.needs-assessment-page .na-status-chart .na-pie-legend { font-size: 13px; }
-.needs-assessment-page .na-status-chart .na-pie-legend li { gap: 5px; }
+.needs-assessment-page .engagement-analytics.na-status-filters { grid-template-columns: minmax(0, 1fr); }
 
 .needs-assessment-page .na-management { display: grid; gap: 20px; }
 .needs-assessment-page .na-management > .card { margin: 0; padding: 0 !important; border: 1px solid #dfe7ef !important; }

@@ -27,7 +27,8 @@ const server=http.createServer(async(req,res)=>{
  await officer.locator('#naOpens').fill(await officer.evaluate(()=>{const d=new Date(Date.now()-3600000);return new Date(d-d.getTimezoneOffset()*60000).toISOString().slice(0,16);}));await officer.locator('#question-1').fill('Which student service should USC prioritize?');await officer.locator('#options-1').fill('Mental health support\nStudy spaces\nSports and recreation');
  await officer.locator('#naAddQuestion').click();await officer.locator('#question-2').fill('What would improve your campus experience?');await officer.locator('#type-2').selectOption('text');await officer.locator('#naAddQuestion').click();await officer.locator('#question-3').fill('Which activities interest you?');await officer.locator('#type-3').selectOption('multiple');await officer.locator('#options-3').fill('Arts\nSports');await officer.locator('#naEditor').evaluate(el=>el.closest('.na-workspace').scrollTop=0);await officer.screenshot({path:path.join(out,'survey-builder-desktop.png'),fullPage:true});
  await officer.getByRole('button',{name:'Save draft',exact:true}).click();await officer.getByRole('button',{name:'Publish',exact:true}).click();await officer.getByRole('button',{name:'Copy survey link'}).waitFor();
- await officer.getByRole('heading',{name:'Survey status'}).waitFor();
+ await officer.getByRole('region',{name:'Survey status filters'}).waitFor();
+ assert.equal(await officer.locator('.na-hero .na-pie-chart, .na-hero .engagement-summary').count(),0);
  assert.equal(await officer.locator('.na-hero').evaluate(hero => hero.querySelector('.hero-left').getBoundingClientRect().width / hero.clientWidth > .9),true);
  const openFilter = officer.locator('[data-survey-status=open]');
  await openFilter.click();
