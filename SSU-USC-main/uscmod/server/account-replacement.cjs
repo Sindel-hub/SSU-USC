@@ -47,7 +47,8 @@ function createAccountReplacementHandlers({ db, adminAuth, requireActiveRole, re
       throw new ServiceError('already-exists', 'Replacement already completed. Use the directory to reset the replacement account password if its login slip was lost.');
     }
     if (!eligible(old)) throw new ServiceError('failed-precondition', 'Only a suspended student or officer can be replaced.');
-    try { await adminAuth.getUser(oldUid); } catch (error) {
+    let previousAuthUser = null;
+    try { previousAuthUser = await adminAuth.getUser(oldUid); } catch (error) {
       if (error.code !== 'auth/user-not-found') throw error;
     }
     // Each attempt has a separate disabled Auth identity. The transaction below
@@ -76,7 +77,15 @@ function createAccountReplacementHandlers({ db, adminAuth, requireActiveRole, re
         if (!eligible(snapshots[0].data())) throw new ServiceError('failed-precondition', 'The previous account changed. Refresh the directory before retrying.');
         for (let i = 1; i < snapshots.length; i++) {
           const data = snapshots[i].data();
-          if (data && data.uid !== oldUid && !(i === 4 && !data.uid && snapshots[1].data()?.uid === oldUid)) throw new ServiceError('already-exists', 'This ID, name or email is already owned by another account.');
+          if (!data || data.uid === oldUid) continue;
+          const idOwnerConfirmed = snapshots[1].data()?.uid === oldUid;
+          const legacyMasterlist = i === 4 && !data.uid && idOwnerConfirmed;
+          const legacyLoginAlias = (i === 3 || i === 6) && !data.uid && idOwnerConfirmed
+            && typeof data.authEmail === 'string' && Boolean(previousAuthUser?.email)
+            && data.authEmail.trim().toLowerCase() === previousAuthUser.email.trim().toLowerCase();
+          if (legacyMasterlist || legacyLoginAlias) continue;
+          const label = ['Student ID reservation', 'School account', 'Student ID login', 'Student masterlist', 'Full name reservation', 'Email login'][i - 1];
+          throw new ServiceError('already-exists', `${label} belongs to another account or its ownership could not be confirmed.`);
         }
         const now = clock();
         const profile = {uid, studentId, fullName, institutionalEmail, email: institutionalEmail || '', institutionalEmailVerified:false, authEmail, role, college:text('college'), program:text('program'), yearLevel:text('yearLevel',40), studentStanding:standing, enrollmentStatus, accountStatus:'approved', isActive:active, schoolProvisioned:true, isVerifiedStudent:active && input.eligible !== false, candidacyApproved:false, mustChangePassword:false, createdAt:new Date(now), updatedAt:new Date(now), updatedAtMs:now};
