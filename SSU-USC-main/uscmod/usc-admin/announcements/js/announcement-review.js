@@ -1,3 +1,4 @@
+import { activityAttributionText } from '../../../shared/officer-activity-client.js';
 import { hostedManagementCall as call } from '../../../shared/hosted-management-client.js';
 import { auth } from '../../../firebase/firebase-config.js';
 import { facebookRequest } from './facebook-publishing.js';
@@ -14,7 +15,13 @@ export async function draftImage(file) {
   const image=canvas.toDataURL('image/webp',0.75);if(image.length>400000)throw new Error('This image is too detailed. Choose a smaller image.');return image;
 }
 export async function saveReviewDraft(input, submit) {
-  const result=await call('announcementWorkflow',{action:'save',draftId:editing?.id || crypto.randomUUID(),expectedVersion:editing?.version || 0,input});
+  const payload = { action: 'save', draftId: editing?.id || crypto.randomUUID(), expectedVersion: editing?.version || 0, input };
+  let result;
+  try { result = await call('announcementWorkflow', payload); }
+  catch (error) {
+    if (error.code && error.code !== 'unavailable') throw error;
+    result = await call('announcementWorkflow', payload);
+  }
   editing={id:result.id,version:result.version,content:input};
   if(submit)await call('announcementWorkflow',{action:'submit',draftId:result.id,expectedVersion:result.version});
   await refreshReviewDrafts();
@@ -37,6 +44,8 @@ function render() {
     const card=el('article',undefined,'announcement-review-item'),head=el('div',undefined,'announcement-review-heading');
     head.append(el('h4',row.content.title),el('span',labels[row.status]||row.status,'review-status'));
     card.append(head,el('p',`${row.content.category} · ${row.content.audience} · Version ${row.version}`,'review-muted'));
+    const attribution = activityAttributionText(row.activityAttribution);
+    if (attribution) card.append(el('p', attribution, 'review-muted'));
     const preview=el('details'),summary=el('summary','Read full draft');preview.append(summary,el('p',row.content.content,'review-content'));
     if(row.content.imageUrl){const img=el('img');img.src=row.content.imageUrl;img.alt='Draft announcement image';preview.append(img);}
     if(row.content.surveyId)preview.append(el('p',`Attached survey: ${row.content.surveyId}`));

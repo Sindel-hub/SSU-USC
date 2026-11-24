@@ -9,6 +9,22 @@ const POSITIONS = Object.freeze({
   "Public Information Officer": ["dashboard.view", "organization.view", "bulletin.manage", "events.manage", "programs.manage"],
   "USC Representative": ["dashboard.view", "organization.view", "complaints.view", "complaints.review"]
 });
+const ACTIVITY_MODULES = {
+  "Bulletin Board": ["bulletin.draft", "bulletin.review", "bulletin.publish", "bulletin.manage"],
+  Events: ["events.manage"],
+  Programs: ["programs.manage"],
+  Complaints: ["complaints.view", "complaints.review"]
+};
+const ACTIVITY_LABELS = { Events: "Events & Programs", Programs: "Events & Programs", Complaints: "Complaint Management", "Bulletin Board": "Bulletin Board Center" };
+const BULLETIN_ACTIVITY = new Set(["Draft saved", "Created", "Updated", "Published reviewed announcement", "Published", "archive", "delete", "permanent-delete", "restore"]);
+const activityDateFormatter = new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Manila", year: "numeric", month: "2-digit", day: "2-digit" });
+function activityDate(ms) {
+  const parts = Object.fromEntries(activityDateFormatter.formatToParts(ms).map(({ type, value }) => [type, value]));
+  return `${parts.year}-${parts.month}-${parts.day}`;
+}
+function actorAttribution(actor, at) {
+  return { name: actor.officerName, position: actor.position, administration: actor.administration, at };
+}
 const fail = (code, message) => { throw new ServiceError(code, message); };
 function text(value, name, max = 120, optional = false) {
   if (optional && (value === undefined || value === "")) return "";
@@ -23,21 +39,27 @@ function createOfficerHistory({ db, adminAuth, requireActiveRole, requireRecentA
   async function admin(request) { await requireActiveRole(request, ["admin"]); requireRecentAuth(request); }
   // Read the profile AND assignment inside the mutation transaction. A completed
   // or expired assignment cannot race a cached browser/profile authorization.
-  async function context(tx, request, permission) {
+  async function context(tx, request, permission, { includeLegacy = false } = {}) {
     const profile = (await tx.get(db.doc(`users/${request.auth.uid}`))).data();
     if (!profile || profile.isActive === false || profile.accountStatus !== "approved" || profile.accountRemoved || profile.accountRemovalPending || (profile.studentStanding && profile.studentStanding !== "active")) fail("permission-denied", "This account cannot perform officer activities.");
     if (profile.role === "admin" && request.auth.token.role === "admin") return null;
     if (profile.role !== "officer") fail("permission-denied", "An active officer assignment is required.");
-    if (!profile.officerAssignmentId) return null; // Unmigrated records are never attributed to an invented term.
+    if (includeLegacy) {
+      const { effectiveOfficerPermissions } = await import("../shared/officer-permissions.js");
+      const permissions = effectiveOfficerPermissions(profile, { legacyFullAccess: !profile.officerAssignmentId });
+      if (permission && !permissions.includes(permission)) fail("permission-denied", "This office does not permit this action.");
+      if (!profile.officerAssignmentId) return { assignmentId: null, officerUid: request.auth.uid, officerName: profile.fullName || profile.displayName || "", position: profile.officePosition || "", department: profile.representedDepartment || "", administration: null, permissions };
+    }
+    if (!profile.officerAssignmentId) return null;
     const a = (await tx.get(assignments.doc(id(profile.officerAssignmentId)))).data();
-    if (!active(a, clock()) || a.officerUid !== request.auth.uid || a.position !== profile.officePosition || (permission && !a.permissions.includes(permission))) fail("permission-denied", "The officer assignment has ended, is not active yet, or does not permit this action.");
+    if (!active(a, clock()) || a.officerUid !== request.auth.uid || a.position !== profile.officePosition || (permission && !a.permissions?.includes(permission))) fail("permission-denied", "The officer assignment has ended, is not active yet, or does not permit this action.");
     return { ...a, assignmentId: profile.officerAssignmentId };
   }
-  function append(tx, a, { module, action, status, recordId, snapshot = null }) {
+  function append(tx, a, { module, action, status, recordId, recordTitle = null, snapshot = null }) {
     if (!a) return;
     const ref = records.doc();
     // Metadata is generated from the trusted assignment, never from browser input.
-    tx.create(ref, { assignmentId: a.assignmentId, officerUid: a.officerUid, officerName: a.officerName, position: a.position, department: a.department, administration: a.administration, module, action, status, recordId, createdAtMs: clock(), snapshot });
+    tx.create(ref, { assignmentId: a.assignmentId, officerUid: a.officerUid, officerName: a.officerName, position: a.position, department: a.department, administration: a.administration, module, action, status, recordId, ...(recordTitle ? { recordTitle } : {}), createdAtMs: clock(), snapshot });
     return ref.id;
   }
   async function roleIndexes(tx, profile, uid) {
@@ -61,6 +83,14 @@ function createOfficerHistory({ db, adminAuth, requireActiveRole, requireRecentA
       if (active(current, clock()) && current.officerUid === request.auth.uid && current.position === a.position && current.department === a.department) return a;
     }
     fail("permission-denied", "Only this officer, an active successor in the same office, or an administrator may view these records.");
+  }
+  async function canReadComplaintHistory(request) {
+    const profile = request.trustedProfile || await requireActiveRole(request, ["student", "officer", "admin"]);
+    if (profile.role === "admin") return true;
+    if (profile.role !== "officer") return false;
+    const { effectiveOfficerPermissions } = await import("../shared/officer-permissions.js");
+    const permissions = effectiveOfficerPermissions(profile, { legacyFullAccess: !profile.officerAssignmentId });
+    return ACTIVITY_MODULES.Complaints.some(permission => permissions.includes(permission));
   }
   async function sync(a, assignmentId) {
     // Profile controls revoke access immediately; claim synchronization can be
@@ -172,15 +202,69 @@ function createOfficerHistory({ db, adminAuth, requireActiveRole, requireRecentA
         if (p.role !== "admin") result.items = result.items.map(({ authorization, appointedBy, completionReason, completedBy, ...safe }) => safe);
         return { ...result, positions: POSITIONS, departments: DEPARTMENTS };
       },
+      async officerActivityList(request) {
+        const profile = await requireActiveRole(request, ["officer", "admin"], { useOfficerProfile: true });
+        const { effectiveOfficerPermissions } = await import("../shared/officer-permissions.js");
+        const permissions = effectiveOfficerPermissions(profile, { legacyFullAccess: !profile.officerAssignmentId });
+        const authorizedModules = Object.keys(ACTIVITY_MODULES).filter(module => profile.role === "admin" || ACTIVITY_MODULES[module].some(p => permissions.includes(p)));
+        const allOfficers = profile.role === "admin" || (profile.officePosition === "President" && permissions.includes("dashboard.view"));
+        const { recordModule, recordId, search = "", module = "", officer = "", year = "", from = "", to = "", after } = request.data || {};
+        const onRecord = Boolean(recordModule || recordId);
+        if (onRecord && (!authorizedModules.includes(recordModule) || !recordId)) fail("permission-denied", "This office cannot view this record's activity.");
+        const modules = onRecord ? [recordModule] : allOfficers ? authorizedModules :
+          Object.keys(ACTIVITY_MODULES).filter(name => name !== "Complaints" || authorizedModules.includes(name));
+        const filters = { search, module, officer, year, from, to };
+        for (const [key, value] of Object.entries(filters)) if (typeof value !== "string" || value.length > 160) fail("invalid-argument", `Invalid ${key} filter.`);
+        if ([from, to].some(date => date && !/^\d{4}-\d{2}-\d{2}$/.test(date)) || (from && to && from > to)) fail("invalid-argument", "Choose a valid date range.");
+        let query = records;
+        if (onRecord) query = query.where("recordId", "==", id(recordId));
+        else if (!allOfficers) query = query.where("officerUid", "==", request.auth.uid);
+        else if (modules.length) query = query.where("module", "in", modules);
+        // Only select metadata. Older bulletin entries can derive a title from their saved snapshot,
+        // but historical complaint snapshots and private review content never enter the response.
+        if (query.select) query = query.select("module", "action", "status", "recordId", "recordTitle", "snapshot.title", "officerUid", "officerName", "position", "administration", "createdAtMs");
+        const docs = modules.length ? (await query.get()).docs : [];
+        const entries = docs.map(doc => ({ id: doc.id, ...doc.data() })).filter(row =>
+          Number.isFinite(row.createdAtMs) && modules.includes(row.module) && (!onRecord || row.module === recordModule) &&
+          (row.module !== "Bulletin Board" || row.status !== "draft" || row.officerUid === request.auth.uid ||
+            profile.role === "admin" || permissions.some(p => ["bulletin.review", "bulletin.manage", "bulletin.publish"].includes(p))) &&
+          (row.module !== "Bulletin Board" || BULLETIN_ACTIVITY.has(row.action))
+        ).map(({ id, module, action, status, recordId, recordTitle, snapshot, officerUid, officerName, position, administration, createdAtMs }) => ({
+          id, module, action, status, recordId, recordTitle: module === "Complaints" ? null : recordTitle || snapshot?.title || null,
+          officerUid, officerName, position, administration, createdAtMs
+        })).sort((a, b) => b.createdAtMs - a.createdAtMs || a.id.localeCompare(b.id));
+        const month = activityDate(clock()).slice(0, 7);
+        const summary = { total: entries.length, month: 0, modules: Object.fromEntries(modules.map(name => [name, 0])) };
+        const officers = new Map(), years = new Set(), matches = [], term = search.trim().toLowerCase();
+        for (const row of entries) {
+          const day = activityDate(row.createdAtMs);
+          if (day.startsWith(month)) summary.month++;
+          summary.modules[row.module]++;
+          if (!officers.has(row.officerUid)) officers.set(row.officerUid, row.officerName || row.officerUid);
+          if (row.administration) years.add(row.administration);
+          if (module && row.module !== module && ACTIVITY_LABELS[row.module] !== module || officer && row.officerUid !== officer || year && row.administration !== year || from && day < from || to && day > to) continue;
+          if (term && ![row.action, row.recordId, row.recordTitle, row.officerName, row.position].some(value => value?.toLowerCase().includes(term))) continue;
+          matches.push(row);
+        }
+        const cursorId = after && id(after);
+        const cursorIndex = cursorId ? matches.findIndex(row => row.id === cursorId) : -1;
+        if (cursorId && cursorIndex < 0) fail("invalid-argument", "Refresh the activities before loading more.");
+        const start = cursorIndex + 1;
+        const items = matches.slice(start, start + 30);
+        return { items, next: matches.length > start + items.length ? items.at(-1).id : null, summary,
+          officers: allOfficers || onRecord ? [...officers].map(([value, label]) => ({ value, label })) : [], years: [...years].sort().reverse() };
+      },
       async officerTracklist(request) {
         await access(request, request.data?.assignmentId);
         const result = await page(records, request, { assignmentId: id(request.data.assignmentId) });
-        return { ...result, items: result.items.map(({ snapshot, ...metadata }) => metadata) };
+        const complaints = await canReadComplaintHistory(request);
+        return { ...result, items: result.items.filter(item => complaints || item.module !== "Complaints").map(({ snapshot, ...metadata }) => metadata) };
       },
       async officerRecord(request) {
         const ref = records.doc(id(request.data?.recordId)), snap = await ref.get();
         if (!snap.exists) fail("not-found", "Historical record not found.");
         await access(request, snap.data().assignmentId);
+        if (snap.data().module === "Complaints" && !await canReadComplaintHistory(request)) fail("permission-denied", "This office cannot view complaint activity.");
         return { id: snap.id, ...snap.data() };
       },
       async officerReportSubmit(request) {
@@ -202,4 +286,4 @@ function createOfficerHistory({ db, adminAuth, requireActiveRole, requireRecentA
     }
   };
 }
-module.exports = { createOfficerHistory, POSITIONS, active, id, text };
+module.exports = { createOfficerHistory, POSITIONS, active, actorAttribution, id, text };

@@ -1,4 +1,4 @@
-import { trackedOfficerAction, canModifyTermRecord } from '../../../shared/officer-activity-client.js';
+import { trackedOfficerAction, activityAttributionText, activityHistoryHref } from '../../../shared/officer-activity-client.js';
 import { classifyEngagement } from "../../../shared/engagement-report-model.mjs";
 import { mountEngagementAnalytics } from "../../../shared/engagement-analytics.js?v=3";
 import { hasOfficerPermission } from "../../shared/js/officer-rbac.js?v=6";
@@ -6,6 +6,7 @@ import { db, auth } from "../../../firebase/firebase-config.js";
 import { secureUpload, hydrateMediaImages } from "../../../shared/security-client.js?v=program-media-1";
 import {
   addDoc,
+  updateDoc,
   collection,
   deleteDoc,
   doc,
@@ -322,10 +323,12 @@ function renderEvents(events) {
             ${mode !== "none" ? `<span class="event-deadline"><i class="fa-solid fa-hourglass-end" aria-hidden="true"></i> Registration closes: ${escapeHtml(formatRegistrationDeadline(eventItem))}</span>` : ""}
           </div>
           ${eventItem.participationNotes ? `<div class="event-participation-note"><i class="fa-solid fa-circle-info" aria-hidden="true"></i><div><strong>Participation instructions</strong><span>${escapeHtml(eventItem.participationNotes)}</span></div></div>` : ""}
+          ${eventItem.activityAttribution ? `<p class="event-meta-line">${escapeHtml(activityAttributionText(eventItem.activityAttribution))}</p>` : ''}
           <div class="event-card-actions">
             ${participantButton}
-            ${canModifyTermRecord(eventItem) ? `<button class="mini-btn danger" type="button" data-delete-event="${escapeHtml(eventItem.id)}" data-rbac-permission="events.manage"><i class="fa-solid fa-trash-can" aria-hidden="true"></i> ${eventItem.officerAssignmentId ? "Archive" : "Delete"}</button>` : '<span>Previous term · read-only</span>'}
-            ${eventItem.officerAssignmentId && canModifyTermRecord(eventItem) ? `<button class="mini-btn light" type="button" data-edit-event="${escapeHtml(eventItem.id)}" data-rbac-permission="events.manage">Edit current record</button>` : ''}
+            <button class="mini-btn danger" type="button" data-delete-event="${escapeHtml(eventItem.id)}" data-rbac-permission="events.manage"><i class="fa-solid fa-trash-can" aria-hidden="true"></i> Archive</button>
+            <button class="mini-btn light" type="button" data-edit-event="${escapeHtml(eventItem.id)}" data-rbac-permission="events.manage">Edit</button>
+            <a class="mini-btn light" href="${escapeHtml(activityHistoryHref('Events', eventItem.id))}">Activity history</a>
           </div>
         </article>
       `;
@@ -577,9 +580,15 @@ eventForm?.addEventListener("submit", async (event) => {
       publishedAtMs: Date.now(),
       updatedAt: serverTimestamp()
     };
-    await trackedOfficerAction({ module: "events", action: editingEventId ? "update" : "publish", recordId: editingEventId || undefined, input: publicationInput }) || await addDoc(eventsCollection, publicationInput);
+    const tracked = await trackedOfficerAction({ module: "events", action: editingEventId ? "update" : "publish", recordId: editingEventId || undefined, input: publicationInput });
+    if (!tracked) {
+      if (editingEventId) {
+        const { createdByUid, createdByEmail, publishedAt, publishedAtMs, registeredParticipants, confirmedAttendance, ...changes } = publicationInput;
+        await updateDoc(doc(eventsCollection, editingEventId), changes);
+      } else await addDoc(eventsCollection, publicationInput);
+    }
 
-    alert(editingEventId ? "Current record updated. Earlier versions remain preserved in Officer Tracklist." : imageUrl
+    alert(editingEventId ? "Current record updated. Earlier versions remain preserved in My O-Tracklists." : imageUrl
       ? "Event published successfully. Students can now view its participation options."
       : "Event published successfully. Students can now view its participation options.");
     resetEventForm();
@@ -595,7 +604,7 @@ recentEventsList?.addEventListener("click", async (event) => {
   const editButton = event.target.closest('[data-edit-event]');
   if (editButton) {
     const saved = lastEvents.find(row => row.id === editButton.dataset.editEvent);
-    if (!saved || !canModifyTermRecord(saved)) return;
+    if (!saved || saved.officerArchived) return;
     resetEventForm(); editingEventId = saved.id;
     const fields = { title: eventTitleInput, eventDate: eventDateInput, venue: eventVenueInput, startTime: eventStartTimeInput, endTime: eventEndTimeInput, category: eventCategoryInput, description: eventDescriptionInput, audience: eventAudienceInput, registrationMode: eventRegistrationModeInput, externalRegistrationUrl: eventExternalRegistrationUrlInput, participationNotes: eventParticipationNotesInput };
     for (const [key, input] of Object.entries(fields)) if (input) input.value = saved[key] || '';
@@ -621,10 +630,7 @@ recentEventsList?.addEventListener("click", async (event) => {
   if (!eventId) return;
 
   const title = deleteButton.closest(".list-item")?.querySelector(".item-title")?.textContent?.trim() || "this event";
-  const termManaged = Boolean(lastEvents.find(row => row.id === eventId)?.officerAssignmentId);
-  const confirmed = window.confirm(termManaged ? `Archive "${title}" from live views? Its history and registrations will be preserved.` :
-    `Delete "${title}"?\n\nThis will remove it from the officer dashboard, student Events module, and its website registrations.`
-  );
+  const confirmed = window.confirm(`Archive "${title}" from live views? Its history and registrations will be preserved.`);
   if (!confirmed) return;
 
   deleteButton.disabled = true;

@@ -1,10 +1,11 @@
 "use strict";
+const { isDeepStrictEqual } = require('node:util');
 const { ServiceError } = require('./settings.cjs');
-const { id, text } = require('./officer-history.cjs');
+const { id, text, actorAttribution } = require('./officer-history.cjs');
 function createAnnouncementWorkflow({ db, requireActiveRole, history, Timestamp, publicOrigin = 'https://example.invalid', clock = Date.now }) {
   const flags = p => ({ draft: p.includes('bulletin.draft') || p.includes('bulletin.manage'), review: p.includes('bulletin.review'), publish: p.includes('bulletin.publish') || p.includes('bulletin.manage') });
   async function capabilities(request) {
-    const profile = await requireActiveRole(request, ['officer', 'admin']);
+    const profile = await requireActiveRole(request, ['officer', 'admin'], { useOfficerProfile: true });
     const { effectiveOfficerPermissions } = await import('../shared/officer-permissions.js');
     const p = effectiveOfficerPermissions(profile, { legacyFullAccess: false });
     const caps = flags(p);
@@ -29,8 +30,8 @@ function createAnnouncementWorkflow({ db, requireActiveRole, history, Timestamp,
     const profile = (await tx.get(db.doc(`users/${request.auth.uid}`))).data();
     const fresh = { ...request, trustedProfile: profile };
     const caps = await capabilities(fresh);
-    const assignment = history ? await history.context(tx, fresh) : null;
-    if (assignment) { const term = flags(assignment.permissions || []); for (const key of Object.keys(caps)) caps[key] = caps[key] && term[key]; }
+    const assignment = history ? await history.context(tx, fresh, undefined, { includeLegacy: true }) : null;
+    if (assignment?.assignmentId) { const term = flags(assignment.permissions || []); for (const key of Object.keys(caps)) caps[key] = caps[key] && term[key]; }
     return { caps, assignment };
   }
   return {
@@ -61,6 +62,11 @@ function createAnnouncementWorkflow({ db, requireActiveRole, history, Timestamp,
         const { caps, assignment } = await authority(tx, request);
         const snap = await tx.get(ref), draft = snap.data();
         if (action === 'publish' && draft?.status === 'published' && caps.publish) { result = { id: ref.id, status: 'published', facebookRequested: draft.content.facebookRequested }; return; }
+        if (action === 'save' && caps.draft && draft?.authorUid === request.auth.uid && draft.status === 'draft' &&
+            [draft.version - 1, draft.version].includes(expectedVersion) && isDeepStrictEqual(content(input), draft.content)) {
+          result = { id: ref.id, version: draft.version, status: draft.status, facebookRequested: draft.content.facebookRequested };
+          return;
+        }
         if (!Number.isSafeInteger(expectedVersion) || expectedVersion < 0 || expectedVersion !== (draft?.version || 0)) throw new ServiceError('aborted', 'This draft changed. Refresh and review the latest version.');
         const at = clock(), actor = request.auth.uid;
         let patch, event;
@@ -73,7 +79,11 @@ function createAnnouncementWorkflow({ db, requireActiveRole, history, Timestamp,
             if (!survey.exists || survey.data().status !== 'published') throw new ServiceError('failed-precondition', 'Attach a published survey.');
           }
           patch = { content: payload, status: 'draft', version: expectedVersion + 1, reviewedVersion: null, reviewedBy: '', reviewedAtMs: null, reviewNote: '', authorUid: actor, authorAssignmentId: assignment?.assignmentId || '', createdAtMs: draft?.createdAtMs || at };
-          event = 'Draft saved';
+          if (assignment) patch.activityAttribution = {
+            ...draft?.activityAttribution,
+            [draft ? 'updated' : 'created']: actorAttribution(assignment, at)
+          };
+          event = draft ? 'Updated' : 'Created';
         } else {
           if (!draft) throw new ServiceError('not-found', 'Draft not found.');
           if (action === 'submit') {
@@ -95,13 +105,13 @@ function createAnnouncementWorkflow({ db, requireActiveRole, history, Timestamp,
               const survey = await tx.get(db.doc(`needs_assessment_surveys/${draft.content.surveyId}`));
               if (!survey.exists || survey.data().status !== 'published') throw new ServiceError('failed-precondition', 'The attached survey is no longer published.');
             }
-            tx.create(post, { ...draft.content, imageUrl: draft.content.imageUrl ? `${publicOrigin}/api/announcement-image?id=${encodeURIComponent(ref.id)}` : '', createdByUid: actor, createdByEmail: '', createdAt: Timestamp.fromMillis(at), createdAtMs: at, ...(assignment ? { officerAssignmentId: assignment.assignmentId } : {}), reviewDraftId: ref.id, reviewedVersion: draft.version, reviewedByUid: draft.reviewedBy });
+            tx.create(post, { ...draft.content, imageUrl: draft.content.imageUrl ? `${publicOrigin}/api/announcement-image?id=${encodeURIComponent(ref.id)}` : '', createdByUid: actor, createdByEmail: '', createdAt: Timestamp.fromMillis(at), createdAtMs: at, ...(assignment?.assignmentId ? { officerAssignmentId: assignment.assignmentId } : {}), activityAttribution: { ...draft.activityAttribution, ...(assignment ? { published: actorAttribution(assignment, at) } : {}) }, reviewDraftId: ref.id, reviewedVersion: draft.version, reviewedByUid: draft.reviewedBy });
             patch = { status: 'published', publishedBy: actor, publishedAtMs: at }; event = 'Published reviewed announcement';
           }
         }
         tx.set(ref, { ...(draft || {}), ...patch, updatedAtMs: at });
         tx.create(ref.collection('events').doc(), { action: event, actorUid: actor, version: patch.version || draft.version, atMs: at });
-        if (history) history.append(tx, assignment, { module: 'Bulletin Board', action: event, status: patch.status, recordId: ref.id, snapshot: action === 'publish' ? draft.content : null });
+        if (history && ['save', 'publish'].includes(action)) history.append(tx, assignment, { module: 'Bulletin Board', action: event, status: patch.status, recordId: ref.id, recordTitle: (patch.content || draft.content).title, snapshot: action === 'publish' ? draft.content : null });
         result = { id: ref.id, version: patch.version || draft.version, status: patch.status, facebookRequested: (patch.content || draft.content).facebookRequested };
       });
       return result;
