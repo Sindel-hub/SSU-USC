@@ -159,3 +159,32 @@ test('native Gmail SDK UID mismatch is signed out and never accepted',async()=>{
  const h=browser({verified:false,nativeGmail:true,returnedUid:'wrong-native-uid'});
  await assert.rejects(h.ctx.signInByIdentifier('personal@gmail.com','correct-password'));assert.equal(h.auth.currentUser,null);assert.equal(h.signouts(),1);
 });
+
+for (const role of ['student','officer']) test(`school-created ${role} signs in with an unverified institutional email and issued password`,async()=>{
+ const h=browser();h.profile.role=role;h.elements.signinIdentifier.value='student@ssu.edu.ph';
+ await h.handlers.submit({preventDefault(){}});
+ assert.equal(h.alerts.length,0);
+ assert.equal(h.auth.currentUser.uid,'school-uid');
+ assert.equal(h.profile.institutionalEmailVerified,false);
+ assert.equal(h.auth.currentUser.emailVerified,false);
+ assert.equal(h.requests.length,0);
+ assert.equal(JSON.parse(h.storage.get('studentProfile')).role,role);
+});
+for(const change of [h=>h.profile.schoolProvisioned=false,h=>h.profile.institutionalEmail='different@ssu.edu.ph'])test('unverified emails outside the issued identity remain blocked',async()=>{
+ const h=browser();h.elements.signinIdentifier.value='student@ssu.edu.ph';change(h);
+ await h.handlers.submit({preventDefault(){}});
+ assert.match(h.alerts.join(' '),/verify your institutional email/);
+ assert.equal(h.auth.currentUser,null);
+});
+test('unverified school-issued email still requires the password',async()=>{
+ const h=browser();h.elements.signinIdentifier.value='student@ssu.edu.ph';h.elements.signinPassword.value='incorrect';
+ await h.handlers.submit({preventDefault(){}});
+ assert.match(h.alerts.join(' '),/Invalid school account or password/);
+ assert.equal(h.auth.currentUser,null);
+});
+test('school-issued email cannot restore suspended access',async()=>{
+ const h=browser();h.elements.signinIdentifier.value='student@ssu.edu.ph';h.profile.accountStatus='suspended';h.profile.isActive=false;
+ await h.handlers.submit({preventDefault(){}});
+ assert.match(h.alerts.join(' '),/suspended or inactive/);
+ assert.equal(h.auth.currentUser,null);
+});

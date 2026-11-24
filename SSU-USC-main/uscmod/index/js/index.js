@@ -241,7 +241,10 @@ function bindSignin() {
         return;
       }
       const profile = profileSnap.data();
-      if (isEmail(identifier) && credential.verifiedGmailUid !== user.uid && profile.institutionalEmailVerified === false
+      const schoolIssuedEmail = profile.schoolProvisioned === true
+        && ["student", "officer"].includes(profile.role)
+        && normalizeEmail(identifier) === normalizeEmail(profile.institutionalEmail);
+      if (isEmail(identifier) && !schoolIssuedEmail && credential.verifiedGmailUid !== user.uid && profile.institutionalEmailVerified === false
           && !(user.emailVerified === true && normalizeEmail(user.email) === normalizeEmail(profile.institutionalEmail))) {
         await cleanupAndAlert("Sign in with your Student ID, then verify your institutional email in Profile → Account Settings before using email login.");
         return;
