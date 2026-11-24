@@ -13,10 +13,27 @@ function fixture(){
  const deps={now:()=>1000000,randomToken:()=>`audit-${++sequence}`,get:async path=>structuredClone(records.get(path)),
  commit:async ops=>{
  for(const op of ops)if((records.get(op.path)?.version||null)!==op.version)throw Error('version conflict');
- for(const op of ops)records.set(op.path,{data:{...records.get(op.path)?.data,...op.data},version:(records.get(op.path)?.version||0)+1});
+ for(const op of ops)if(op.remove)records.delete(op.path);else records.set(op.path,{data:{...records.get(op.path)?.data,...op.data},version:(records.get(op.path)?.version||0)+1});
  },disableAuth:async()=>{disabled=true;},unlinkGmail:async uid=>gmail.delete(uid)};
  return {records,gmail,actor,deps,remove:(uid='student')=>createAccountRemovalService(deps)(actor,uid),disabled:()=>disabled};
 }
+test('removal releases owned reservations atomically and keeps UID history',async()=>{
+ const h=fixture();
+ const paths=['student_id_claims/001','school_accounts/001','login_aliases/id_001'];
+ for(const path of paths)h.records.set(path,{version:1,data:{uid:'student',studentId:'001'}});
+ h.records.set('student_masterlist/001',{version:1,data:{studentId:'001'}});
+ await h.remove();
+ for(const path of [...paths,'student_masterlist/001'])assert.equal(h.records.has(path),false);
+ assert.equal(h.records.get('users/student').data.idReservationsReleased,true);
+ assert.equal(h.records.has('historical/ballot'),true);
+});
+test('conflicting ownership never releases another account reservation',async()=>{
+ const h=fixture();
+ h.records.set('school_accounts/001',{version:1,data:{uid:'another'}});
+ await assert.rejects(h.remove(),/ownership conflicts/);
+ assert.equal(h.records.get('school_accounts/001').data.uid,'another');
+ assert.equal(h.disabled(),false);
+});
 for(const role of ['student','officer'])test(`suspended ${role} removal disables login, detaches Gmail and retains UID/history`,async()=>{
  const h=fixture();h.records.get('users/student').data.role=role;await h.remove();
  assert.equal(h.records.get('users/student').data.accountRemoved,true);assert.equal(h.disabled(),true);assert.equal(h.gmail.has('student'),false);

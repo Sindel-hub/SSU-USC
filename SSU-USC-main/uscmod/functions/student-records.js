@@ -10,8 +10,8 @@ function createStudentRecordHandlers({db,adminAuth,requireActiveRole,requireRece
  const jobId=value=>{if(typeof value!=='string'||! /^[a-zA-Z0-9]{20}$/.test(value))error('invalid-argument','Invalid import reference.');return value;};
  async function admin(request,write=false){await requireActiveRole(request,['admin']);if(write)requireRecentAuth(request);}
  async function resolve(studentId){
-  const [claim,account,users]=await Promise.all([db.doc(`student_id_claims/${studentId}`).get(),db.doc(`school_accounts/${studentId}`).get(),db.collection('users').where('studentId','==',studentId).limit(3).get()]);
-  const uids=[...new Set([claim.data()?.uid,account.data()?.uid,...users.docs.map(d=>d.id)].filter(Boolean))];
+  const [claim,account,users]=await Promise.all([db.doc(`student_id_claims/${studentId}`).get(),db.doc(`school_accounts/${studentId}`).get(),db.collection('users').where('studentId','==',studentId).get()]);
+  const uids=[...new Set([claim.data()?.uid,account.data()?.uid,...users.docs.filter(d=>!d.data().idReservationsReleased).map(d=>d.id)].filter(Boolean))];
   if(uids.length>1)error('failed-precondition','Conflicting Student ID ownership records; reconcile these before importing.');
   if(!uids.length)return null;
   const snap=await db.doc(`users/${uids[0]}`).get();

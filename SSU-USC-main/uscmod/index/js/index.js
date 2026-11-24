@@ -157,12 +157,12 @@ async function resolveLoginCandidates(identifier) {
     const id = normalizeStudentId(value);
     const alias = await schoolAuthAliasForStudentId(id);
     // Manual accounts without institutional email use an internal Firebase alias.
-    return [...new Set([alias, `${id}@student.ssu-usc.local`].filter(Boolean))];
+    return [alias || `${id}@student.ssu-usc.local`];
   }
   if (!isEmail(value)) throw new Error("Enter your institutional email address or your Student ID.");
   const direct = normalizeEmail(value);
   const alias = await schoolAuthAliasForEmail(direct);
-  return [...new Set([direct, alias].filter(Boolean))];
+  return [alias || direct];
 }
 
 async function signInByIdentifier(identifier, password) {

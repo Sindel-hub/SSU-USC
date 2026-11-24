@@ -86,6 +86,19 @@ export function generateTemporaryPassword() {
   return chars.join("");
 }
 
+async function replaceInactiveReservation(claim, studentId, input, role) {
+  if (!claim.exists()) return null;
+  const previousUid = claim.data().uid;
+  const snapshot = previousUid ? await getDoc(doc(db, "users", previousUid)) : null;
+  const previous = snapshot?.data();
+  if (previous?.accountStatus !== "suspended" || previous.isActive !== false || previous.studentId !== studentId)
+    throw new Error("This Student ID is already assigned to a school account. Duplicate Student IDs are not allowed.");
+  const { hostedManagementCall } = await import("./hosted-management-client.js");
+  return hostedManagementCall("accountReplace", {
+    ...input, studentId, previousUid, role, temporaryPassword: generateTemporaryPassword()
+  });
+}
+
 async function requireAdmin() {
   const user = auth.currentUser;
   if (!user) throw new Error("Sign in as System Administrator first.");
@@ -136,7 +149,8 @@ export async function provisionStudentAccount(input = {}) {
     }
     throw error;
   }
-  if (existingClaim.exists()) throw new Error("This Student ID is already assigned to a school account. Duplicate Student IDs are not allowed.");
+  const replacement = await replaceInactiveReservation(existingClaim, studentId, input, "student");
+  if (replacement) return replacement;
   if (existingNameClaim.exists()) throw new Error("This full name is already assigned to a school account. Duplicate account names are not allowed.");
   if (institutionalEmail) {
     const emailAlias = await getDoc(doc(db, "login_aliases", `email_${await sha256Hex(institutionalEmail)}`));
@@ -368,7 +382,8 @@ export async function provisionOfficerAccount(input = {}) {
     }
     throw error;
   }
-  if (existingClaim.exists()) throw new Error("This Student ID is already assigned to a school account. Duplicate Student IDs are not allowed.");
+  const replacement = await replaceInactiveReservation(existingClaim, studentId, input, "officer");
+  if (replacement) return replacement;
   if (existingNameClaim.exists()) throw new Error("This full name is already assigned to a school account. Duplicate account names are not allowed.");
   if (institutionalEmail) {
     const emailAlias = await getDoc(doc(db, "login_aliases", `email_${await sha256Hex(institutionalEmail)}`));

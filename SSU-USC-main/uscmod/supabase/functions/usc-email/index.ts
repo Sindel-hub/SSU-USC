@@ -31,7 +31,7 @@ import {
 
 const supabase = adminClient();
 const removeSuspendedAccount = createAccountRemovalService({
-  get: firestoreVersionedGet, commit: firestoreIdentityCommit, randomToken,
+  get: firestoreVersionedGet, commit: firestoreIdentityCommit, randomToken, sha256,
   disableAuth: disableFirebaseAuthAccount,
   unlinkGmail: async (uid: string) => {
     const { error } = await supabase.from("student_email_accounts").delete().eq("firebase_uid", uid);
