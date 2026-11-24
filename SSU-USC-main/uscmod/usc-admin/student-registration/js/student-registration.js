@@ -1,6 +1,6 @@
 import { copyTemporaryPassword } from "../../../shared/pasted-password.js";
 import { SSU_PROGRAMS, isValidSsuProgram } from "./ssu-programs.js";
-import { provisionStudentAccount } from "../../../shared/browser-provisioning.js?v=3-numeric-id-1";
+import { provisionStudentAccount } from "../../../shared/browser-provisioning.js?v=3-id-replacement-1";
 import { enrollmentStatusForStanding, isActiveStudentStanding, studentStandingLabel } from "../../../shared/student-standing.js";
 
 const form = document.getElementById("studentForm");
@@ -195,7 +195,7 @@ form?.addEventListener("submit",async(e)=>{
   try{
     const result=await provisionStudentAccount(row);
     renderSlip(result.credential);
-    showSubmissionFeedback("Student account created. The login slip is ready.", "success");
+    showSubmissionFeedback((result.retirementPending ? "Account created and previous portal access blocked. Firebase sign-in cleanup needs an administrator retry." : "Student account created. The login slip is ready."), "success");
   }catch(err){
     showSubmissionFeedback(err.message || "Student account creation failed.", "error");
     console.error("Student account creation failed:", err);

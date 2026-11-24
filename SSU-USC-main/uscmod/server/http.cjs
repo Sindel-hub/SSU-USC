@@ -3,7 +3,7 @@ const { randomUUID } = require("node:crypto");
 const { isIP } = require("node:net");
 const { ServiceError } = require("./settings.cjs");
 const PUBLIC_ACTIONS = new Set(["needsAssessmentPublic", "needsAssessmentSubmit", "studentActivateAccount"]);
-const ACTIONS = new Set([...PUBLIC_ACTIONS, "officerCandidateFind", "officerAssignmentManage", "officerAssignments", "officerTracklist", "officerRecord", "officerReportSubmit", "officerModuleAction", "announcementDraftList", "announcementWorkflow", "notificationReadList", "notificationReadMark", "needsAssessmentManage", "needsAssessmentList", "needsAssessmentResponses", "studentAnnualPreview", "studentAnnualApply", "studentAnnualJob", "studentActivationResend", "studentRecordsList", "studentRecordDetail"]);
+const ACTIONS = new Set([...PUBLIC_ACTIONS, "officerCandidateFind", "officerAssignmentManage", "officerAssignments", "officerTracklist", "officerRecord", "officerReportSubmit", "officerModuleAction", "announcementDraftList", "announcementWorkflow", "accountReplace", "notificationReadList", "notificationReadMark", "needsAssessmentManage", "needsAssessmentList", "needsAssessmentResponses", "studentAnnualPreview", "studentAnnualApply", "studentAnnualJob", "studentActivationResend", "studentRecordsList", "studentRecordDetail"]);
 const STATUS = { "invalid-argument": 400, unauthenticated: 401, "permission-denied": 403, "not-found": 404, "already-exists": 409, "failed-precondition": 412, aborted: 409, "resource-exhausted": 429, unavailable: 503 };
 // Static categories only: never log raw exceptions or configuration values.
 function startupCategory(error) {

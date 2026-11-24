@@ -1,6 +1,6 @@
 import { copyTemporaryPassword } from "../../../shared/pasted-password.js";
 import { SSU_PROGRAMS, isValidSsuProgram } from "./ssu-programs.js";
-import { provisionOfficerAccount, sendSchoolPasswordReset } from "../../../shared/browser-provisioning.js?v=3-numeric-id-1";
+import { provisionOfficerAccount, sendSchoolPasswordReset } from "../../../shared/browser-provisioning.js?v=3-id-replacement-1";
 import { enrollmentStatusForStanding, isActiveStudentStanding, studentStandingLabel } from "../../../shared/student-standing.js";
 
 const form = document.getElementById("officerForm");
@@ -127,6 +127,7 @@ form?.addEventListener("submit",async(e)=>{
       roleEffectiveDate:effectiveDate.value
     });
     renderSlip(result.credential);
+    if (result.retirementPending) alert("Account created and previous portal access blocked. Firebase sign-in cleanup needs an administrator retry.");
     if(!result.verificationEmailSent) console.info("Officer account created. Optional email verification message was not sent.");
   }catch(err){alert(err.message||"Officer account creation failed.");}
   finally{createBtn.disabled=false;createBtn.textContent="Create Officer Account";}

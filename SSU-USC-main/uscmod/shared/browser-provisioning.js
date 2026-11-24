@@ -86,20 +86,17 @@ export function generateTemporaryPassword() {
   return chars.join("");
 }
 
-async function repairRemovedReservation(claim, studentId) {
-  if (!claim.exists()) return;
-  const uid = claim.data().uid;
-  if (!uid) throw new Error("The Student ID reservation has no owner. Review its directory record.");
-  const profile = await getDoc(doc(db, "users", uid));
-  const account = profile.data();
-  if (account?.accountRemoved && account.studentId === studentId) {
-    const { callStudentEmailService } = await import("./supabase-email-service.js");
-    await callStudentEmailService("admin_remove_suspended_account", {uid});
-    return;
-  }
-  if (account?.accountStatus === "suspended" && account.isActive === false)
-    throw new Error("This ID belongs to a suspended account. Use Remove in the User Directory to release it permanently, then retry registration.");
-  throw new Error("This Student ID is already assigned to a school account. Duplicate Student IDs are not allowed.");
+async function replaceInactiveReservation(claim, studentId, input, role) {
+  if (!claim.exists()) return null;
+  const previousUid = claim.data().uid;
+  const snapshot = previousUid ? await getDoc(doc(db, "users", previousUid)) : null;
+  const previous = snapshot?.data();
+  if (previous?.accountStatus !== "suspended" || previous.isActive !== false || previous.studentId !== studentId)
+    throw new Error("This Student ID is already assigned to a school account. Duplicate Student IDs are not allowed.");
+  const { hostedManagementCall } = await import("./hosted-management-client.js");
+  return hostedManagementCall("accountReplace", {
+    ...input, studentId, previousUid, role, temporaryPassword: generateTemporaryPassword()
+  });
 }
 
 async function requireAdmin() {
@@ -152,8 +149,8 @@ export async function provisionStudentAccount(input = {}) {
     }
     throw error;
   }
-  await repairRemovedReservation(existingClaim, studentId);
-  if (existingClaim.exists()) existingNameClaim = await getDoc(nameClaimRef);
+  const replacement = await replaceInactiveReservation(existingClaim, studentId, input, "student");
+  if (replacement) return replacement;
   if (existingNameClaim.exists()) throw new Error("This full name is already assigned to a school account. Duplicate account names are not allowed.");
   if (institutionalEmail) {
     const emailAlias = await getDoc(doc(db, "login_aliases", `email_${await sha256Hex(institutionalEmail)}`));
@@ -385,8 +382,8 @@ export async function provisionOfficerAccount(input = {}) {
     }
     throw error;
   }
-  await repairRemovedReservation(existingClaim, studentId);
-  if (existingClaim.exists()) existingNameClaim = await getDoc(nameClaimRef);
+  const replacement = await replaceInactiveReservation(existingClaim, studentId, input, "officer");
+  if (replacement) return replacement;
   if (existingNameClaim.exists()) throw new Error("This full name is already assigned to a school account. Duplicate account names are not allowed.");
   if (institutionalEmail) {
     const emailAlias = await getDoc(doc(db, "login_aliases", `email_${await sha256Hex(institutionalEmail)}`));
