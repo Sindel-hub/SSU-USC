@@ -183,18 +183,15 @@
 
 
 
-                    <section class="card announcement-review-panel" aria-labelledby="announcementReviewTitle">
-                      <div class="card-head"><h3 id="announcementReviewTitle">Announcement review</h3><button type="button" class="mini-btn light" id="announcementReviewRefresh">Refresh drafts</button></div>
-                      <div class="card-body"><p id="announcementReviewMessage" role="status" aria-live="polite"></p><div id="announcementReviewList"></div><button type="button" id="announcementReviewMore" class="mini-btn light" hidden>Load more drafts</button></div>
-                    </section>
+<div class="announcement-review-toolbar"><button type="button" class="mini-btn primary" id="openAnnouncementReview">Review Announcements<span id="announcementReviewBadge" class="announcement-review-badge" hidden></span></button></div>
                     <section class="grid-2 announcement-workspace module-management-grid">
                         <article class="card" id="announcementFormCard">
                             <div class="card-head module-card-head">
                                 <div class="module-card-title"><span class="module-card-icon"><i class="fa-solid fa-pen-to-square"></i></span><div><h3>Create Announcement</h3></div></div>
-                                <span class="module-card-badge"><i class="fa-solid fa-plus"></i> Create</span>
+
                             </div>
 
-                            <form class="card-body" id="announcementForm"><p id="editingAnnouncementDraft" class="review-muted">New draft</p>
+                            <form class="card-body" id="announcementForm"><p id="editingAnnouncementDraft" class="review-muted"></p>
                                 <div class="field">
                                     <label for="announcementTitle"><i class="fa-solid fa-heading"></i> Announcement Title</label>
                                     <input id="announcementTitle" type="text" placeholder="Enter announcement title"
@@ -223,22 +220,22 @@
                                 </div>
 
                                 <div class="field">
-                                    <label for="announcementSurveyLink">Needs Assessment survey link (optional)</label><input id="announcementSurveyLink" type="url" placeholder="Paste the survey link">
+
                                     <label for="announcementContent"><i class="fa-solid fa-align-left"></i> Announcement Content</label>
                                     <textarea id="announcementContent"
                                         placeholder="Write the official announcement here..." required></textarea>
                                 </div>
 
                                 <div class="field">
-                                    <label><i class="fa-regular fa-image"></i> Announcement Image</label>
+                                    <label><i class="fa-regular fa-image"></i> Announcement Images</label>
                                     <div class="upload-box">
-                                        <input id="announcementImage" type="file" accept="image/*" hidden />
-                                        <button class="mini-btn primary" type="button" id="imagePickerBtn"><i class="fa-solid fa-image"></i> Add Image</button>
+                                        <input id="announcementImage" type="file" accept="image/jpeg,image/png,image/webp" multiple hidden />
+                                        <button class="mini-btn primary" type="button" id="imagePickerBtn"><i class="fa-solid fa-image"></i> Add Images</button>
                                         <span class="upload-file-name" id="imageFileName">No image selected</span>
                                     </div>
                                 </div>
 
-                                <div class="preview-thumb-wrap">
+                                <div id="selectedAnnouncementImages" class="selected-announcement-images"></div><div class="preview-thumb-wrap" hidden>
                                     <img
     id="draftImagePreview"
     class="preview-thumb"
@@ -258,7 +255,7 @@
                         <article class="card">
                             <div class="card-head module-card-head">
                                 <div class="module-card-title"><span class="module-card-icon"><i class="fa-solid fa-eye"></i></span><div><h3>Live Preview</h3></div></div>
-                                <span class="module-card-badge preview"><i class="fa-regular fa-eye"></i> Preview</span>
+
                             </div>
 
                             <div class="card-body">
@@ -356,6 +353,10 @@
 <dialog id="announcementComposeDialog" aria-label="Create announcement and live preview"></dialog>
 <dialog id="bulletinPhotoViewer" aria-label="Photo viewer"><button type="button" id="closeBulletinPhotoViewer" class="mini-btn light" aria-label="Close photo">Close</button><img id="bulletinFullPhoto" alt="Announcement photo"><div class="photo-navigation"><button type="button" class="mini-btn light" data-photo-step="-1" aria-label="Previous photo">&#8592; Previous</button><span id="bulletinPhotoPosition" aria-live="polite"></span><button type="button" class="mini-btn light" data-photo-step="1" aria-label="Next photo">Next &#8594;</button></div></dialog>
 <dialog id="confirmAnnouncementPublish" aria-labelledby="publishConfirmHeading" aria-describedby="publishConfirmDescription"><form method="dialog"><h2 id="publishConfirmHeading">Publish this announcement?</h2><p id="publishConfirmationTitle"></p><p id="publishConfirmDescription">Please check your announcement before posting. It will be visible to students once published.</p><div class="publish-confirm-actions"><button class="mini-btn light" value="cancel" autofocus>Keep editing</button><button class="mini-btn primary" value="publish">Yes, publish</button></div></form></dialog>
+                    <dialog id="announcementReviewDialog" class="card announcement-review-panel" aria-labelledby="announcementReviewTitle">
+                      <div class="card-head"><button type="button" id="closeAnnouncementReview" class="mini-btn light" aria-label="Close announcement review">×</button><h3 id="announcementReviewTitle">Announcement review</h3><button type="button" class="mini-btn light" id="announcementReviewRefresh">Refresh drafts</button></div>
+                      <div class="card-body"><p id="announcementReviewMessage" role="status" aria-live="polite"></p><div id="announcementReviewList"></div><button type="button" id="announcementReviewMore" class="mini-btn light" hidden>Load more drafts</button></div>
+                    </dialog>
 </body>
 
 </html>

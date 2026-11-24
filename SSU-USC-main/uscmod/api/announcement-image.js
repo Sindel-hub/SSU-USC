@@ -6,7 +6,7 @@ module.exports = async function announcementImage(req, res) {
   if (req.method !== 'GET' && req.method !== 'HEAD') { res.statusCode=405;res.setHeader('Allow','GET, HEAD');return res.end(); }
   try {
     const key = new URL(req.url, 'https://localhost').searchParams.get('id');
-    const image = await getRuntime().handlers.announcementPublishedImage(key);
+    const image = await getRuntime().handlers.announcementPublishedImage(key, new URL(req.url, 'https://localhost').searchParams.get('image'));
     const match = /^data:(image\/(?:png|jpeg|webp));base64,([A-Za-z0-9+/=]+)$/.exec(image);
     if (!match) throw Error('Invalid image');
     res.setHeader('Content-Type',match[1]);res.statusCode=200;

@@ -1,3 +1,4 @@
+import { registerAnnouncementMedia } from '../../shared/announcement-media.mjs';
 import { attachSurveyButton } from '../../shared/survey-links.mjs';
 import { announcementExcerpt } from "../../shared/announcement-excerpt.mjs";
 import { auth, db } from "../../firebase/firebase-config.js";
@@ -212,6 +213,7 @@ function renderAnnouncements() {
   }
 
   const cards = announcements.map((announcement, index) => {
+ registerAnnouncementMedia(announcement);
     const excerpt = announcementExcerpt(announcement.content);
     const image = announcement.imageUrl
       ? `<img src="${escapeHtml(announcement.imageUrl)}" alt="${escapeHtml(announcement.title || "USC announcement")}">`

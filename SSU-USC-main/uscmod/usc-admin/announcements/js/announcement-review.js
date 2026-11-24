@@ -1,3 +1,4 @@
+import { mountAnnouncementGallery, linkAnnouncementText } from '../../../shared/announcement-media.mjs';
 import { activityAttributionText } from '../../../shared/officer-activity-client.js';
 import { hostedManagementCall as call } from '../../../shared/hosted-management-client.js';
 import { attachSurveyButton } from '../../../shared/survey-links.mjs';
@@ -7,7 +8,7 @@ let editing = null, editCallback, items = [], caps = {}, next = null;
 const $ = id => document.getElementById(id);
 const labels = { draft:'Draft', 'in-review':'In review', 'needs-revision':'Needs revision', ready:'Ready to publish', published:'Published' };
 function el(tag, text, className) { const n=document.createElement(tag);if(text!==undefined)n.textContent=text;if(className)n.className=className;return n; }
-export function clearReviewDraft() { editing=null; $('editingAnnouncementDraft').textContent='New draft'; }
+export function clearReviewDraft() { editing=null; $('editingAnnouncementDraft').textContent=''; }
 export async function draftImage(file) {
   if(!file)return editing?.content.imageUrl || '';
   if(!['image/jpeg','image/png','image/webp'].includes(file.type)||file.size>5*1024*1024)throw new Error('Choose a JPEG, PNG, or WebP image up to 5 MB.');
@@ -30,7 +31,7 @@ export async function saveReviewDraft(input, submit) {
 async function act(row, action, note, button) {
   button.disabled=true;
   try {
-    if(action==='edit'){editCallback(row.content);editing=row;$('editingAnnouncementDraft').textContent=`Editing: ${row.content.title}`;return;}
+    if(action==='edit'){$('announcementReviewDialog').close();await editCallback({...row.content,_draftId:row.id});editing=row;$('editingAnnouncementDraft').textContent=`Editing: ${row.content.title}`;return;}
     if(action==='publish'&&!confirm(`Publish the reviewed version of “${row.content.title}”?`))return;
     const result=await call('announcementWorkflow',{action,draftId:row.id,expectedVersion:row.version,note:note.value});
     if(action==='publish'&&result.facebookRequested){try{const f=await facebookRequest('publish',{announcementId:result.id});if(f.delivery?.status!=='succeeded')$('announcementReviewMessage').textContent='Bulletin Board published. Check Facebook delivery in the published post.';}catch(e){$('announcementReviewMessage').textContent='Bulletin Board published. Facebook delivery needs attention: '+e.message;}}
@@ -39,18 +40,25 @@ async function act(row, action, note, button) {
   }catch(e){$('announcementReviewMessage').textContent=e.message;}finally{button.disabled=false;}
 }
 function render() {
-  const list=$('announcementReviewList');list.replaceChildren();
+  const list=$('announcementReviewList'), expanded=new Set([...list.querySelectorAll('article[data-draft-id]')].filter(card=>card.querySelector('details')?.open).map(card=>card.dataset.draftId));list.replaceChildren();
   if (!items.length && !next) list.append(el('p', 'No drafts in the review queue.', 'review-muted'));
   for(const row of items){
     const card=el('article',undefined,'announcement-review-item'),head=el('div',undefined,'announcement-review-heading');
+    card.dataset.draftId=row.id;
     head.append(el('h4',row.content.title),el('span',labels[row.status]||row.status,'review-status'));
     card.append(head,el('p',`${row.content.category} · ${row.content.audience}`,'review-muted'));
     const attribution = activityAttributionText(row.activityAttribution);
-    if (attribution) card.append(el('p', attribution, 'review-muted'));
+    card.append(el('p', attribution || `Author: ${row.authorUid}`, 'review-muted'));
     const preview=el('details'),summary=el('summary','Read full draft');
+    preview.open=expanded.has(row.id);
     const body = el('p', row.content.content, 'review-content');
     preview.append(summary, body);
-    if(row.content.imageUrl){const img=el('img');img.src=row.content.imageUrl;img.alt='Draft announcement image';preview.append(img);}
+    card.append(el('p',row.content.content.length>180?row.content.content.slice(0,180)+'…':row.content.content,'review-content'));
+    const gallery=el('div');card.append(gallery);
+    if(row.content.imageIds?.length) Promise.all(row.content.imageIds.map(id=>loadReviewImage(row.id,id))).then(imageUrls=>mountAnnouncementGallery(gallery,{...row.content,imageUrls})).catch(error=>{$('announcementReviewMessage').textContent=error.message;});
+    else mountAnnouncementGallery(gallery,row.content);
+    linkAnnouncementText(body);
+    card.append(el('p', `Submitted: ${new Date(row.submittedAtMs || row.createdAtMs).toLocaleString()}`, 'review-muted'));
     attachSurveyButton(body, row.content);
     if (row.content.facebookRequested) preview.append(el('p', 'Also publish to Facebook', 'review-muted'));
     card.append(preview);
@@ -72,7 +80,9 @@ function render() {
   $('announcementReviewMore').hidden=!next;
 }
 export async function refreshReviewDrafts(more=false) {
-  const result=await call('announcementDraftList',more?{after:next}:{});caps=result.capabilities;const drafts = result.items.filter(row => row.status !== 'published');
+  const result=await call('announcementDraftList',more?{after:next}:{});caps=result.capabilities;
+  const badge=$('announcementReviewBadge');badge.textContent=String(result.pendingCount || 0);badge.hidden=!result.pendingCount;
+  $('openAnnouncementReview').setAttribute('aria-label',`Review Announcements${result.pendingCount ? ', '+result.pendingCount+' pending' : ''}`);const drafts = result.items.filter(row => row.status !== 'published');
   items = more ? [...items, ...drafts] : drafts;
   next = result.next;
   render();
@@ -80,7 +90,16 @@ export async function refreshReviewDrafts(more=false) {
 }
 export async function initializeAnnouncementReview(edit) {
   editCallback=edit;
+  const dialog=$('announcementReviewDialog');
+  $('openAnnouncementReview').onclick=()=>{dialog.showModal();document.documentElement.classList.add('announcement-review-open');refreshReviewDrafts().catch(e=>{$('announcementReviewMessage').textContent=e.message;});};
+  $('closeAnnouncementReview').onclick=()=>dialog.close();
+  dialog.addEventListener('close',()=>document.documentElement.classList.remove('announcement-review-open'));
+  document.addEventListener('visibilitychange',()=>{if(!document.hidden)refreshReviewDrafts().catch(()=>{});});
+  setInterval(()=>{if(!document.hidden)refreshReviewDrafts().catch(()=>{});},15000);
   $('announcementReviewRefresh').onclick=()=>refreshReviewDrafts().catch(e=>{$('announcementReviewMessage').textContent=e.message;});
   $('announcementReviewMore').onclick=()=>refreshReviewDrafts(true).catch(e=>{$('announcementReviewMessage').textContent=e.message;});
   try{await refreshReviewDrafts();}catch(e){$('announcementReviewMessage').textContent=e.message;$('announcementFormCard').hidden=true;}
 }
+
+export async function uploadReviewImage(imageUrl) { return call('announcementWorkflow',{action:'uploadImage',draftId:crypto.randomUUID(),input:{imageUrl}}); }
+export async function loadReviewImage(draftId,imageId) { return (await call('announcementWorkflow',{action:'readImage',draftId,imageId})).imageUrl; }

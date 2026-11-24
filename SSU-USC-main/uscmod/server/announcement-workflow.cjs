@@ -22,6 +22,10 @@ function createAnnouncementWorkflow({ db, requireActiveRole, history, Timestamp,
     // copies the reviewed image into the existing public announcement document.
     result.imageUrl = text(input.imageUrl, 'image', 400000, true);
     result.imagePath = '';
+    if (input.imageIds !== undefined) {
+      if (!Array.isArray(input.imageIds)) throw new ServiceError('invalid-argument', 'Invalid image attachments.');
+      result.imageIds = [...new Set(input.imageIds.map(id))];
+    }
     if (result.imageUrl && !/^data:image\/(?:png|jpeg|webp);base64,[A-Za-z0-9+/=]+$/.test(result.imageUrl)) throw new ServiceError('invalid-argument', 'Choose a JPEG, PNG, or WebP image.');
     result.content = input.content; // Preserve paragraph formatting.
     return result;
@@ -39,10 +43,16 @@ function createAnnouncementWorkflow({ db, requireActiveRole, history, Timestamp,
     return { caps, assignment };
   }
   return {
-    async announcementPublishedImage(draftId) {
+    async announcementPublishedImage(draftId, imageId) {
       const key = id(draftId);
       const [draft, post] = await Promise.all([db.doc(`announcement_drafts/${key}`).get(), db.doc(`announcements/${key}`).get()]);
-      const image = draft.data()?.content?.imageUrl;
+      let image = draft.data()?.content?.imageUrl;
+      if (imageId) {
+        const mediaId = id(imageId);
+        if (!post.data()?.imageIds?.includes(mediaId)) throw new ServiceError('not-found', 'Image not found.');
+        const media = (await db.doc(`announcement_images/${mediaId}`).get()).data();
+        image = media?.ownerUid === draft.data()?.authorUid ? media.imageUrl : null;
+      }
       if (!post.exists || post.data().reviewDraftId !== key || draft.data()?.status !== 'published' || !image) throw new ServiceError('not-found', 'Image not found.');
       return image;
     },
@@ -54,10 +64,31 @@ function createAnnouncementWorkflow({ db, requireActiveRole, history, Timestamp,
       q = q.orderBy('__name__').limit(51);
       if (request.data?.after) q = q.startAfter(id(request.data.after));
       const docs = (await q.get()).docs;
-      return { capabilities: caps, items: docs.slice(0, 50).filter(d => d.data().status !== 'published').map(d => ({ id: d.id, ...d.data() })), next: docs.length > 50 ? docs[49].id : null };
+      // Count the whole authorized queue, independently of the current page.
+      const queueDocs = (caps.review || caps.publish) ? (await db.collection('announcement_drafts').get()).docs : [];
+      const pendingCount = queueDocs.filter(d => { const row=d.data(); return (row.status === 'in-review' && caps.review && (row.authorUid !== request.auth.uid || caps.approveOwn)) || (row.status === 'ready' && caps.publish); }).length;
+      return { capabilities: caps, pendingCount, items: docs.slice(0, 50).filter(d => d.data().status !== 'published').map(d => ({ id: d.id, ...d.data() })), next: docs.length > 50 ? docs[49].id : null };
     },
     async announcementWorkflow(request) {
-      await capabilities(request);
+      const initialCaps = await capabilities(request);
+      if (request.data?.action === 'readImage') {
+        const draft = (await db.doc(`announcement_drafts/${id(request.data.draftId)}`).get()).data();
+        if (!draft || (!initialCaps.review && !initialCaps.publish && (!initialCaps.draft || draft.authorUid !== request.auth.uid)) || !draft.content?.imageIds?.includes(id(request.data.imageId))) throw new ServiceError('permission-denied', 'Image access denied.');
+        const media = (await db.doc(`announcement_images/${id(request.data.imageId)}`).get()).data();
+        return { imageUrl: media?.imageUrl || '' };
+      }
+      if (request.data?.action === 'uploadImage') {
+        if (!initialCaps.draft) throw new ServiceError('permission-denied', 'Draft access is required.');
+        const media = content({ title: 'Image', content: 'Image', category: 'Image', audience: 'Image', imageUrl: request.data.input?.imageUrl });
+        if (!media.imageUrl) throw new ServiceError('invalid-argument', 'Choose an image.');
+        const ref = db.doc(`announcement_images/${id(request.data.draftId)}`);
+        await db.runTransaction(async tx => {
+          const existing = await tx.get(ref);
+          if (existing.exists && (existing.data().ownerUid !== request.auth.uid || existing.data().imageUrl !== media.imageUrl)) throw new ServiceError('already-exists', 'Image reference already exists.');
+          tx.set(ref, { ownerUid: request.auth.uid, imageUrl: media.imageUrl, createdAtMs: clock() });
+        });
+        return { id: ref.id };
+      }
       const { action, draftId, expectedVersion, input, note } = request.data || {};
       if (!['save', 'submit', 'ready', 'revise', 'publish'].includes(action)) throw new ServiceError('invalid-argument', 'Unknown announcement action.');
       const ref = db.doc(`announcement_drafts/${id(draftId)}`);
@@ -78,6 +109,10 @@ function createAnnouncementWorkflow({ db, requireActiveRole, history, Timestamp,
           if (!caps.draft || (draft && draft.authorUid !== actor)) throw new ServiceError('permission-denied', 'Only the draft author can edit it.');
           if (draft && !['draft', 'needs-revision', 'ready'].includes(draft.status)) throw new ServiceError('failed-precondition', 'This draft cannot be edited while in review or after publication.');
           const payload = content(input);
+          for (const mediaId of payload.imageIds || []) {
+            const media = (await tx.get(db.doc(`announcement_images/${mediaId}`))).data();
+            if (!media || media.ownerUid !== actor) throw new ServiceError('permission-denied', 'Image attachments must belong to the draft author.');
+          }
           if (payload.surveyId) {
             const survey = await tx.get(db.doc(`needs_assessment_surveys/${payload.surveyId}`));
             if (!survey.exists || survey.data().status !== 'published') throw new ServiceError('failed-precondition', 'Attach a published survey.');
@@ -93,7 +128,7 @@ function createAnnouncementWorkflow({ db, requireActiveRole, history, Timestamp,
           if (action === 'submit') {
             if (!caps.draft || draft.authorUid !== actor) throw new ServiceError('permission-denied', 'Only the author can submit a draft.');
             if (!['draft', 'needs-revision'].includes(draft.status)) throw new ServiceError('failed-precondition', 'Save the draft before submitting for review.');
-            patch = { status: 'in-review', reviewNote: '' }; event = 'Submitted for content review';
+            patch = { status: 'in-review', reviewNote: '', submittedAtMs: at }; event = 'Submitted for content review';
           } else if (action === 'ready' || action === 'revise') {
             const ownDraft = draft.authorUid === actor;
             const presidentApproval = ownDraft && action === 'ready' && caps.approveOwn;
@@ -111,7 +146,7 @@ function createAnnouncementWorkflow({ db, requireActiveRole, history, Timestamp,
               const survey = await tx.get(db.doc(`needs_assessment_surveys/${draft.content.surveyId}`));
               if (!survey.exists || survey.data().status !== 'published') throw new ServiceError('failed-precondition', 'The attached survey is no longer published.');
             }
-            tx.create(post, { ...draft.content, imageUrl: draft.content.imageUrl ? `${publicOrigin}/api/announcement-image?id=${encodeURIComponent(ref.id)}` : '', createdByUid: actor, createdByEmail: '', createdAt: Timestamp.fromMillis(at), createdAtMs: at, ...(assignment?.assignmentId ? { officerAssignmentId: assignment.assignmentId } : {}), activityAttribution: { ...draft.activityAttribution, ...(assignment ? { published: actorAttribution(assignment, at) } : {}) }, reviewDraftId: ref.id, reviewedVersion: draft.version, reviewedByUid: draft.reviewedBy });
+            tx.create(post, { ...draft.content, ...(draft.content.imageIds?.length ? { imageUrls: draft.content.imageIds.map(mediaId => `${publicOrigin}/api/announcement-image?id=${encodeURIComponent(ref.id)}&image=${encodeURIComponent(mediaId)}`) } : {}), imageUrl: draft.content.imageIds?.length ? `${publicOrigin}/api/announcement-image?id=${encodeURIComponent(ref.id)}&image=${encodeURIComponent(draft.content.imageIds[0])}` : draft.content.imageUrl ? `${publicOrigin}/api/announcement-image?id=${encodeURIComponent(ref.id)}` : '', createdByUid: actor, createdByEmail: '', createdAt: Timestamp.fromMillis(at), createdAtMs: at, ...(assignment?.assignmentId ? { officerAssignmentId: assignment.assignmentId } : {}), activityAttribution: { ...draft.activityAttribution, ...(assignment ? { published: actorAttribution(assignment, at) } : {}) }, reviewDraftId: ref.id, reviewedVersion: draft.version, reviewedByUid: draft.reviewedBy });
             patch = { status: 'published', publishedBy: actor, publishedAtMs: at }; event = 'Published reviewed announcement';
           }
         }

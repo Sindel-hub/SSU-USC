@@ -1,3 +1,4 @@
+import { linkAnnouncementText, registerAnnouncementMedia } from './announcement-media.mjs';
 export function surveyIdFromLink(value, origin, publicOrigin = origin) {
   if (!String(value || '').trim()) return '';
   try {
@@ -12,6 +13,7 @@ export function surveyAnnouncementLink(post) {
 }
 export function attachSurveyButton(host, post) {
   if (!host) return;
+  linkAnnouncementText(host); registerAnnouncementMedia(post);
   host.parentElement.querySelector('[data-survey-link]')?.remove();
   const href = surveyAnnouncementLink(post);
   if (!href) return;
