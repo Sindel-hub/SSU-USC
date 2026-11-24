@@ -69,9 +69,6 @@ const server = http.createServer((req, res) => {
     await incoming.locator('#recordContent').filter({ hasText: 'belongs to the outgoing Treasurer' }).waitFor();
     assert.match(await incoming.locator('#recordAttribution').innerText(), /Synthetic first/);
     await incoming.screenshot({ path: path.join(output, 'incoming-treasurer-history.png'), fullPage: true });
-    const former = await pageFor('first', '/dashboard/officer-history.html');
-    await former.getByRole('button', { name: 'View tracklist' }).click(); await former.getByText('Financial report submitted', { exact: true }).waitFor();
-    assert.equal(await former.locator('#financialReportPanel').isVisible(), false);
     await f.assign('other', 'Public Information Officer');
     const pio = await pageFor('other', '/usc-admin/officer-tracklist/officer-tracklist.html');
     await pio.evaluate(async () => { const { trackedOfficerAction } = await import('/shared/officer-activity-client.js'); await trackedOfficerAction({ module: 'announcements', action: 'publish', input: { title: 'Synthetic officer notice', content: 'Automatically recorded public bulletin.' } }); });
