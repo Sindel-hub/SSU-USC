@@ -47,6 +47,27 @@
 .needs-assessment-page .na-analytics-section { border: 1px solid #dce6f0; border-radius: 12px; padding: 16px; margin-top: 14px; overflow-wrap: anywhere; }
 .needs-assessment-page .na-analytics-section h3 { margin: 0; color: #1b4a79; font-size: 1rem; }
 .needs-assessment-page .na-answer-count { margin: 6px 0 12px; color: #52667d; }
+.needs-assessment-page .na-pie-chart {
+  display: grid;
+  grid-template-columns: minmax(140px, 230px) minmax(0, 1fr);
+  align-items: center;
+  justify-content: center;
+  gap: 18px 32px;
+  padding-block: 14px;
+}
+.needs-assessment-page .na-pie-chart svg { width: 100%; height: auto; }
+.needs-assessment-page .na-pie-chart text { fill: white; font: 700 12px Roboto, Arial, sans-serif; }
+.needs-assessment-page .na-pie-legend { list-style: none; margin: 0; padding: 0; }
+.needs-assessment-page .na-pie-legend li {
+  display: grid;
+  grid-template-columns: 12px minmax(0, 1fr) auto;
+  align-items: baseline;
+  gap: 8px;
+  padding-block: 5px;
+}
+.needs-assessment-page .na-pie-swatch { width: 11px; height: 11px; border-radius: 50%; background: var(--slice-color); }
+.needs-assessment-page .na-chart-value { color: #465b72; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.needs-assessment-page .na-bar { grid-template-columns: minmax(0, 1fr) minmax(0, 2fr) auto; }
 .needs-assessment-page .na-bar meter::-webkit-meter-optimum-value { background: #1c75b9; }
 .needs-assessment-page .na-bar meter::-moz-meter-bar { background: #1c75b9; }
 .needs-assessment-page .na-bar > span:last-child { text-align: end; font-variant-numeric: tabular-nums; }
@@ -54,6 +75,8 @@
   .needs-assessment-page .na-results[open] { width: calc(100% - 1rem); max-height: 92dvh; }
   .needs-assessment-page .na-stats { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
   .needs-assessment-page .na-stat { min-width: 0; padding: 12px; }
+  .needs-assessment-page .na-pie-chart { grid-template-columns: minmax(0, 1fr); gap: 12px; }
+  .needs-assessment-page .na-pie-chart svg { width: min(190px, 75%); justify-self: center; }
   .needs-assessment-page .na-bar { grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr) auto; gap: 8px; }
 }
 @media print {
@@ -61,5 +84,5 @@
   .needs-assessment-page .na-results::backdrop { display: none; }
   .needs-assessment-page .na-results-scroll { overflow: visible; }
   .needs-assessment-page :is(.na-results-tools, #naRawResponses) { display: none !important; }
-  .needs-assessment-page .na-analytics-section { break-inside: avoid; }
+  .needs-assessment-page .na-analytics-section { break-inside: avoid; print-color-adjust: exact; }
 }
