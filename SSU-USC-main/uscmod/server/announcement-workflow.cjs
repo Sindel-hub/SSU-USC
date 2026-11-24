@@ -54,7 +54,7 @@ function createAnnouncementWorkflow({ db, requireActiveRole, history, Timestamp,
       q = q.orderBy('__name__').limit(51);
       if (request.data?.after) q = q.startAfter(id(request.data.after));
       const docs = (await q.get()).docs;
-      return { capabilities: caps, items: docs.slice(0, 50).map(d => ({ id: d.id, ...d.data() })), next: docs.length > 50 ? docs[49].id : null };
+      return { capabilities: caps, items: docs.slice(0, 50).filter(d => d.data().status !== 'published').map(d => ({ id: d.id, ...d.data() })), next: docs.length > 50 ? docs[49].id : null };
     },
     async announcementWorkflow(request) {
       await capabilities(request);

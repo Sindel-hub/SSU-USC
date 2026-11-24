@@ -1,5 +1,6 @@
 import { activityAttributionText } from '../../../shared/officer-activity-client.js';
 import { hostedManagementCall as call } from '../../../shared/hosted-management-client.js';
+import { attachSurveyButton } from '../../../shared/survey-links.mjs';
 import { auth } from '../../../firebase/firebase-config.js';
 import { facebookRequest } from './facebook-publishing.js';
 let editing = null, editCallback, items = [], caps = {}, next = null;
@@ -39,17 +40,20 @@ async function act(row, action, note, button) {
 }
 function render() {
   const list=$('announcementReviewList');list.replaceChildren();
-  if(!items.length)list.append(el('p','No announcement drafts yet. Save a draft to start the review process.','review-muted'));
+  if (!items.length && !next) list.append(el('p', 'No drafts in the review queue.', 'review-muted'));
   for(const row of items){
     const card=el('article',undefined,'announcement-review-item'),head=el('div',undefined,'announcement-review-heading');
     head.append(el('h4',row.content.title),el('span',labels[row.status]||row.status,'review-status'));
-    card.append(head,el('p',`${row.content.category} · ${row.content.audience} · Version ${row.version}`,'review-muted'));
+    card.append(head,el('p',`${row.content.category} · ${row.content.audience}`,'review-muted'));
     const attribution = activityAttributionText(row.activityAttribution);
     if (attribution) card.append(el('p', attribution, 'review-muted'));
-    const preview=el('details'),summary=el('summary','Read full draft');preview.append(summary,el('p',row.content.content,'review-content'));
+    const preview=el('details'),summary=el('summary','Read full draft');
+    const body = el('p', row.content.content, 'review-content');
+    preview.append(summary, body);
     if(row.content.imageUrl){const img=el('img');img.src=row.content.imageUrl;img.alt='Draft announcement image';preview.append(img);}
-    if(row.content.surveyId)preview.append(el('p',`Attached survey: ${row.content.surveyId}`));
-    preview.append(el('p',row.content.facebookRequested?'Publish destinations: Bulletin Board and Facebook':'Publish destination: Bulletin Board','review-muted'));card.append(preview);
+    attachSurveyButton(body, row.content);
+    if (row.content.facebookRequested) preview.append(el('p', 'Also publish to Facebook', 'review-muted'));
+    card.append(preview);
     if(row.reviewNote)card.append(el('p','Reviewer note: '+row.reviewNote,'review-note'));
     const note=el('textarea');note.placeholder='Review notes (required when requesting revision)';note.maxLength=2000;note.setAttribute('aria-label',`Review note for ${row.content.title}`);
     const actions=el('div',undefined,'review-actions');
@@ -68,7 +72,10 @@ function render() {
   $('announcementReviewMore').hidden=!next;
 }
 export async function refreshReviewDrafts(more=false) {
-  const result=await call('announcementDraftList',more?{after:next}:{});caps=result.capabilities;items=more?[...items,...result.items]:result.items;next=result.next;render();
+  const result=await call('announcementDraftList',more?{after:next}:{});caps=result.capabilities;const drafts = result.items.filter(row => row.status !== 'published');
+  items = more ? [...items, ...drafts] : drafts;
+  next = result.next;
+  render();
   $('announcementFormCard').hidden=!caps.draft;
 }
 export async function initializeAnnouncementReview(edit) {

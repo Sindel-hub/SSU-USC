@@ -185,7 +185,7 @@
 
                     <section class="card announcement-review-panel" aria-labelledby="announcementReviewTitle">
                       <div class="card-head"><h3 id="announcementReviewTitle">Announcement review</h3><button type="button" class="mini-btn light" id="announcementReviewRefresh">Refresh drafts</button></div>
-                      <div class="card-body"><p class="review-muted">Draft → Content review → Ready to publish → Published</p><p class="review-muted">Review checks accuracy, dates, attachments and confidentiality. Council decisions are made in person.</p><p id="announcementReviewMessage" role="status" aria-live="polite"></p><div id="announcementReviewList"></div><button type="button" id="announcementReviewMore" class="mini-btn light" hidden>Load more drafts</button></div>
+                      <div class="card-body"><p id="announcementReviewMessage" role="status" aria-live="polite"></p><div id="announcementReviewList"></div><button type="button" id="announcementReviewMore" class="mini-btn light" hidden>Load more drafts</button></div>
                     </section>
                     <section class="grid-2 announcement-workspace module-management-grid">
                         <article class="card" id="announcementFormCard">
@@ -194,7 +194,7 @@
                                 <span class="module-card-badge"><i class="fa-solid fa-plus"></i> Create</span>
                             </div>
 
-                            <form class="card-body" id="announcementForm"><p id="editingAnnouncementDraft" class="review-muted">New draft</p><p class="review-muted">Save privately, then send for content review before publication.</p>
+                            <form class="card-body" id="announcementForm"><p id="editingAnnouncementDraft" class="review-muted">New draft</p>
                                 <div class="field">
                                     <label for="announcementTitle"><i class="fa-solid fa-heading"></i> Announcement Title</label>
                                     <input id="announcementTitle" type="text" placeholder="Enter announcement title"
@@ -223,7 +223,7 @@
                                 </div>
 
                                 <div class="field">
-                                    <label for="announcementSurveyLink">Needs Assessment survey link (optional)</label><input id="announcementSurveyLink" type="url" placeholder="Paste the internal survey link"><small>Students can open this questionnaire without signing in.</small>
+                                    <label for="announcementSurveyLink">Needs Assessment survey link (optional)</label><input id="announcementSurveyLink" type="url" placeholder="Paste the survey link">
                                     <label for="announcementContent"><i class="fa-solid fa-align-left"></i> Announcement Content</label>
                                     <textarea id="announcementContent"
                                         placeholder="Write the official announcement here..." required></textarea>
@@ -348,7 +348,7 @@
 </footer>
 
     <script src="../shared/js/nav-active.js?v=7"></script>
-    <script type="module" src="js/announcements.js?v=survey-attachment-1&amp;paragraphs=1&amp;mobile=1"></script>
+    <script type="module" src="js/announcements.js?v=review-queue-2&amp;paragraphs=1&amp;mobile=1"></script>
     <script type="module" src="../shared/js/admin-auth.js?v=rbac4"></script>
 <script type="module" src="../../shared/profile-manager.js?v=registered-name-2&amp;refinements=1"></script>
   <script type="module" src="../shared/js/officer-rbac.js?v=6"></script>

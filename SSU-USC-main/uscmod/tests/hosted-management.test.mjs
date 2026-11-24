@@ -47,6 +47,19 @@ test('preview links derive from the trusted deployment environment, never reques
   assert.throws(() => readPublicSettings(environment({ USC_PUBLIC_ORIGIN: 'https://user:password@example.invalid' })));
   assert.throws(() => readPublicSettings(environment({ USC_PUBLIC_ORIGIN: 'https://example.invalid/extra' })));
 });
+test('production API accepts the stable public site and deployment aliases', () => {
+  const projectId = 'universitystudentcouncil-856cc';
+  const env = environment({
+    USC_ENVIRONMENT: 'production', VERCEL_ENV: 'production', USC_PUBLIC_ORIGIN: '',
+    VERCEL_URL: 'ssu-usc-generated-deployment.vercel.app',
+    USC_FIREBASE_PROJECT_ID: projectId,
+    USC_FIREBASE_WEB_CONFIG_JSON: JSON.stringify({ projectId, apiKey: 'synthetic-key', authDomain: 'synthetic.firebaseapp.com' })
+  });
+  const settings = readPublicSettings(env);
+  assert.equal(settings.publicOrigin, 'https://ssu-usc.vercel.app');
+  assert.deepEqual([...settings.allowedOrigins], ['https://ssu-usc.vercel.app', 'https://ssu-usc-generated-deployment.vercel.app']);
+  assert.equal(readPublicSettings({ ...env, VERCEL_PROJECT_PRODUCTION_URL: 'ssu-usc.example.edu' }).publicOrigin, 'https://ssu-usc.example.edu');
+});
 test('Gmail app-password settings accept grouped passwords and require a dedicated Gmail sender', () => {
   assert.equal(readGmailSettings({ USC_GMAIL_USER: 'usc.notifications@gmail.com', USC_GMAIL_APP_PASSWORD: 'abcd efgh ijkl mnop' }).pass, 'abcdefghijklmnop');
   assert.throws(() => readGmailSettings({ USC_GMAIL_USER: 'someone@example.invalid', USC_GMAIL_APP_PASSWORD: 'abcdefghijklmnop' }));

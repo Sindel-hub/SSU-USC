@@ -32,3 +32,17 @@ test('President self-approval respects the active term permissions', async () =>
   assert.equal((await f.w.announcementDraftList(f.req('second', {}))).capabilities.approveOwn, false);
   await assert.rejects(f.call('second', 'ready'), /reviewer/);
 });
+
+test('published drafts leave review without changing pagination or published records', async () => {
+  const f = await setup();
+  for (let index = 0; index < 50; index++) {
+    f.records.set('announcement_drafts/a-' + String(index).padStart(2, '0'), { status: 'published', authorUid: 'first' });
+  }
+  f.records.set('announcements/a-00', { title: 'Published notice' });
+  f.records.set('announcement_drafts/z-draft', { status: 'in-review', authorUid: 'first' });
+  const page = await f.w.announcementDraftList(f.req('second', {}));
+  assert.deepEqual(page.items, []);
+  const more = await f.w.announcementDraftList(f.req('second', { after: page.next }));
+  assert.deepEqual(more.items.map(item => item.id), ['z-draft']);
+  assert.equal(f.records.get('announcements/a-00').title, 'Published notice');
+});
