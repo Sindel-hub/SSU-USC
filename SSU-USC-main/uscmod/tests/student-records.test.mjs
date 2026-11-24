@@ -4,7 +4,12 @@ import{SSU_PROGRAMS,formatSsuCollege,formatSsuProgram}from'../usc-admin/student-
 const require=createRequire(import.meta.url),M=require('../functions/student-records-model'),{fixture}=require('./helpers/student-records-fixture.cjs'),ExcelJS=require('../vendor/exceljs/exceljs-4.4.0.min.js');
 const row=(patch={})=>({studentId:'000123',fullName:'Synthetic Student',department:M.DEPARTMENTS[3],program:'Bachelor of Science in Civil Engineering',yearLevel:'2',email:'synthetic@example.invalid',status:'active',...patch});
 const preview=async(f,rows=[row()],year='2026-2027')=>f.handlers.studentAnnualPreview({...f.admin,data:{rows,academicYear:year,authorized:true}});
-const apply=(f,id)=>f.handlers.studentAnnualApply({...f.admin,data:{importId:id,start:0}});
+const apply=(f,id)=>f.handlers.studentAnnualApply({...f.admin,data:{importId:id,start:0,confirmed:true}});
+const lookup=(f,studentId='000123')=>f.handlers.studentRegistrationLookup({...f.admin,data:{studentId}});
+const issue=async(f,patch={})=>{
+ const studentId=patch.studentId||'000123',record=await lookup(f,studentId);
+ return f.handlers.studentRegistrationIssue({...f.admin,data:{studentId,recordRevision:record.recordRevision,verifiedInPerson:true,...patch}});
+};
 const baseProfile=patch=>({studentId:'000123',fullName:'Synthetic Student',college:M.DEPARTMENTS[3],program:'Bachelor of Science in Civil Engineering',yearLevel:'1',academicYear:'2025-2026',studentStanding:'active',enrollmentStatus:'Enrolled',institutionalEmail:'synthetic@example.invalid',email:'synthetic@example.invalid',accountStatus:'approved',isActive:true,role:'student',...patch});
 test('CSV accepts the exact template and preserves leading zeros and quoted values', () => {
  const header=IMPORT_HEADERS.join(',');
@@ -29,15 +34,36 @@ test('all admin endpoints reject officers/students, and writes require recent au
  const f=fixture();for(const[name,fn]of Object.entries(f.handlers)){if(name==='studentActivateAccount')continue;await assert.rejects(fn({auth:{token:{role:'officer'},active:true,recent:true},data:{}}),{code:'permission-denied'});}
  await assert.rejects(f.handlers.studentAnnualPreview({...f.admin,auth:{...f.admin.auth,recent:false},data:{}}),{code:'failed-precondition'});
 });
-test('preview is non-mutating for identities, validates email ownership and blocks bad imports',async()=>{
- const f=fixture();let p=await preview(f,[row(),row()]);assert.equal(p.hasErrors,true);assert.equal(f.authUsers.size,0);assert.equal([...f.records].filter(([k])=>k.startsWith('users/')).length,0);await assert.rejects(apply(f,p.importId),{code:'failed-precondition'});
- p=await preview(f,[row({email:''})]);assert.equal(p.hasErrors,false);p=await preview(f,[row({program:'Unknown'})]);assert.equal(p.hasErrors,true);
- await assert.rejects(f.handlers.studentAnnualPreview({...f.admin,data:{rows:[row()],academicYear:'2026-2027',authorized:false}}),{code:'failed-precondition'});
+test('apply saves only Ready rows from a mixed preview and neither creates accounts nor sends email', async () => {
+ const f=fixture();
+ const p=await preview(f,[row(),row({studentId:'000124',program:'Invalid'}),row({studentId:'000125'}),row({studentId:'000125'})]);
+ assert.equal(p.hasErrors,true);
+ assert.equal(f.records.has('student_record_ids/000123'),false);
+ await assert.rejects(f.handlers.studentAnnualApply({...f.admin,data:{importId:p.importId,start:0}}),{code:'failed-precondition'});
+ const result=await apply(f,p.importId);
+ assert.deepEqual(result.results.map(row=>row.studentId),['000123']);
+ assert.equal(f.authUsers.size,0);
+ assert.equal(f.sent.length,0);
+ assert.equal(f.records.has('student_record_ids/000124'),false);
+ assert.equal(f.records.has('student_record_ids/000125'),false);
+ assert.equal((await f.handlers.studentAnnualJob({...f.admin,data:{importId:p.importId}})).entries.filter(row=>row.error).length,3);
+ await apply(f,p.importId);
+ assert.equal([...f.records.keys()].filter(k=>k.includes('/academic_history/')).length,1);
 });
-test('new accounts await activation; retries preserve UID and count/history, no plaintext credentials returned',async()=>{
- const f=fixture(),p=await preview(f),result=await apply(f,p.importId);assert.equal(result.results[0].action,'created');assert.equal(f.authUsers.size,1);const uid=result.results[0].uid,user=f.records.get('users/'+uid);
- assert.equal(user.isActive,false);assert.equal(user.accountStatus,'pending');assert.equal(f.authUsers.get(uid).emailVerified,false);assert.equal(f.sent.length,1);assert.equal(JSON.stringify(result).includes('password'),false);assert.equal(JSON.stringify(result).includes(f.sent[0].token),false);
- await apply(f,p.importId);assert.equal(f.authUsers.size,1);assert.equal(f.sent.length,1);assert.equal([...f.records.keys()].filter(k=>k.includes('/academic_history/')).length,1);
+
+test('office issuance requires a saved record and verified presence, then blocks duplicate accounts', async () => {
+ const f=fixture();
+ await assert.rejects(issue(f),{code:'failed-precondition'});
+ await apply(f,(await preview(f)).importId);
+ const {record}=await lookup(f);
+ await assert.rejects(issue(f,{verifiedInPerson:false}),{code:'failed-precondition'});
+ const {token}=await issue(f);
+ assert.match(token,/^[a-f0-9]{64}$/);
+ assert.equal(f.records.get('users/'+record.uid).accountStatus,'pending');
+ assert.equal(f.authUsers.get(record.uid).disabled,true);
+ assert.equal(f.sent.length,0);
+ assert.equal((await lookup(f)).account.uid,record.uid);
+ await assert.rejects(issue(f),{code:'already-exists'});
 });
 test('continuing students keep credentials, role, permissions and activity while academic history is appended',async()=>{
  const f=fixture(),uid=f.seed(baseProfile({role:'officer',officerPermissions:['bulletin.manage']}),{password:'Existing-password',customClaims:{role:'officer'}});f.records.set('complaints/old',{studentUid:uid,subject:'Synthetic concern',status:'Submitted'});
@@ -54,39 +80,57 @@ test('stale previews and conflicting Student ID ownership fail closed',async()=>
  const f=fixture(),uid=f.seed(baseProfile()),p=await preview(f);f.records.get('users/'+uid).yearLevel='3';const r=await apply(f,p.importId);assert.equal(r.results[0].state,'failed');assert.equal(f.records.get('users/'+uid).yearLevel,'3');
  f.records.set('school_accounts/000123',{uid:'different'});assert.equal((await preview(f)).hasErrors,true);
 });
-test('provisioning failures preserve records and retry without creating duplicate accounts', async () => {
+test('office issuance retries preserve UID and history after an Auth failure', async () => {
  const f=fixture();
+ const result=await apply(f,(await preview(f)).importId),uid=result.results[0].uid;
  const setClaims=f.adminAuth.setCustomUserClaims;
  f.adminAuth.setCustomUserClaims=async()=>{throw Error('Temporary Auth outage');};
- const p=await preview(f),first=await apply(f,p.importId);
- assert.equal(first.results[0].state,'failed');
- assert.equal([...f.records.keys()].filter(key=>key.startsWith('student_records/')).length,1);
+ await assert.rejects(issue(f),/Temporary Auth outage/);
+ assert.equal(f.records.get('student_records/'+uid).accountUid,null);
  f.adminAuth.setCustomUserClaims=setClaims;
- assert.equal((await apply(f,p.importId)).results[0].state,'complete');
+ await issue(f);
  assert.equal(f.authUsers.size,1);
+ assert.equal(f.records.get('student_records/'+uid).accountUid,uid);
  assert.equal([...f.records.keys()].filter(k=>k.includes('/academic_history/')).length,1);
 });
-test('activation verifies mailbox, sets student-chosen password, and consumes a single-use token',async()=>{
- const f=fixture(),p=await preview(f),r=await apply(f,p.importId),uid=r.results[0].uid,token=f.sent[0].token;
- await assert.rejects(f.handlers.studentActivateAccount({data:{token,password:'short'}}),{code:'invalid-argument'});
- const result=await f.handlers.studentActivateAccount({data:{token,password:'Student-chosen-password'}});assert.equal(result.canAccess,true);assert.equal(f.authUsers.get(uid).emailVerified,true);assert.equal(f.authUsers.get(uid).password,'Student-chosen-password');assert.equal(f.authUsers.get(uid).disabled,false);assert.equal(f.records.get('users/'+uid).isActive,true);
- await assert.rejects(f.handlers.studentActivateAccount({data:{token,password:'Different-password-now'}}),{code:'failed-precondition'});assert.equal(f.authUsers.get(uid).password,'Student-chosen-password');
-});
-test('expired and replaced activation tokens reject; mail failure is visible, not falsely sent',async()=>{
- const f=fixture(),p=await preview(f);f.setFailEmail(true);const result=await apply(f,p.importId);assert.equal(result.results[0].emailStatus,'unconfirmed');assert.equal(f.records.get('users/'+result.results[0].uid).activationDelivery,'unconfirmed');f.setFailEmail(false);f.advance(61000);
- await f.handlers.studentActivationResend({...f.admin,data:{studentId:'000123'}});const first=f.sent[0].token;f.advance(61000);await f.handlers.studentActivationResend({...f.admin,data:{studentId:'000123'}});await assert.rejects(f.handlers.studentActivateAccount({data:{token:first,password:'Student-chosen-password'}}),{code:'failed-precondition'});f.advance(86400001);await assert.rejects(f.handlers.studentActivateAccount({data:{token:f.sent[1].token,password:'Student-chosen-password'}}),{code:'failed-precondition'});
-});
-test('student records without email await provisioning and later retain their permanent ID',async()=>{
- const f=fixture(),p=await preview(f,[row({email:''})]),r=await apply(f,p.importId);
- const uid=r.results[0].uid;
+test('a student without email can use a single-use in-person link and set their own password', async () => {
+ const f=fixture();
+ const result=await apply(f,(await preview(f,[row({email:''})])).importId),uid=result.results[0].uid;
  assert.equal(f.authUsers.size,0);
- assert.equal(r.results[0].emailStatus,'awaiting-email');
- const detail=await f.handlers.studentRecordDetail({...f.admin,data:{studentId:'000123'}});
- assert.equal(detail.profile.accountUid,null);
- const next=await preview(f);
- assert.equal((await apply(f,next.importId)).results[0].uid,uid);
- assert.equal(f.authUsers.size,1);
- assert.equal(f.sent.length,1);
+ const {token}=await issue(f);
+ assert.equal(f.authUsers.get(uid).email,'000123@student.ssu-usc.local');
+ assert.equal(f.records.get('users/'+uid).institutionalEmail,'');
+ await assert.rejects(f.handlers.studentActivateAccount({data:{token,password:'short'}}),{code:'invalid-argument'});
+ assert.equal((await f.handlers.studentActivateAccount({data:{token,password:'Student-chosen-password'}})).canAccess,true);
+ assert.equal(f.authUsers.get(uid).emailVerified,false);
+ assert.equal(f.authUsers.get(uid).password,'Student-chosen-password');
+ await assert.rejects(f.handlers.studentActivateAccount({data:{token,password:'Different-password-now'}}),{code:'failed-precondition'});
+});
+test('authorized retries replace in-person tokens and separately sent email still verifies mailbox', async () => {
+ const f=fixture();await apply(f,(await preview(f)).importId);
+ const first=await issue(f);
+ await assert.rejects(issue(f,{reissue:true}),{code:'resource-exhausted'});
+ f.advance(61000);
+ const replacement=await issue(f,{reissue:true});
+ await assert.rejects(f.handlers.studentActivateAccount({data:{token:first.token,password:'Student-chosen-password'}}),{code:'failed-precondition'});
+ f.advance(86400001);
+ await assert.rejects(f.handlers.studentActivateAccount({data:{token:replacement.token,password:'Student-chosen-password'}}),{code:'failed-precondition'});
+ await f.handlers.studentActivationResend({...f.admin,data:{studentId:'000123'}});
+ const {token}=f.sent[0];
+ await f.handlers.studentActivateAccount({data:{token,password:'Student-chosen-password'}});
+ assert.equal(f.authUsers.get((await lookup(f)).account.uid).emailVerified,true);
+});
+test('verified legacy name review applies the masterlist correction without changing the existing account',async()=>{
+ const f=fixture(),uid=f.seed(baseProfile({fullName:'Legacy Name'}),{password:'Original-password'});
+ const p=await preview(f);
+ assert.equal(p.entries[0].reviewName,'Legacy Name');
+ assert.equal((await apply(f,p.importId)).results.length,0);
+ await f.handlers.studentAnnualResolve({...f.admin,data:{importId:p.importId,index:0,samePerson:true,verificationReference:'In-person ID checked'}});
+ await apply(f,p.importId);
+ assert.equal(f.records.get('student_records/'+uid).fullName,'Synthetic Student');
+ assert.equal(f.records.get('users/'+uid).fullName,'Legacy Name');
+ assert.equal(f.authUsers.get(uid).password,'Original-password');
+ await assert.rejects(issue(f),{code:'already-exists'});
 });
 test('admin monitoring is UID-linked and never returns anonymous survey answers or credentials',async()=>{
  const f=fixture(),uid=f.seed(baseProfile());f.records.set('complaints/one',{studentUid:uid,subject:'Synthetic concern',status:'Submitted'});f.records.set('complaints/two',{studentUid:'other',subject:'Other private concern'});f.records.set('student_signin_stats/'+uid,{signInCount:3,lastSignInAt:f.now});f.records.set('events/fixture/registrations/'+uid,{studentUid:uid,status:'registered',registeredAt:f.now});
@@ -94,7 +138,7 @@ test('admin monitoring is UID-linked and never returns anonymous survey answers 
 });
 
 test('activation retries after Auth enable failure without consuming the token early',async()=>{
- const f=fixture(),p=await preview(f),r=await apply(f,p.importId),uid=r.results[0].uid,token=f.sent[0].token;
+ const f=fixture(),p=await preview(f),r=await apply(f,p.importId),uid=r.results[0].uid,{token}=await issue(f);
  f.failNextEnable();await assert.rejects(f.handlers.studentActivateAccount({data:{token,password:'Student-chosen-password'}}));assert.equal(f.records.get('users/'+uid).isActive,false);assert.equal(f.records.get('users/'+uid).activationStatus,'pending');assert.equal(f.authUsers.get(uid).disabled,true);
  f.advance(61000);assert.equal((await f.handlers.studentActivateAccount({data:{token,password:'Student-chosen-password'}})).canAccess,true);assert.equal(f.authUsers.get(uid).disabled,false);
 });
@@ -112,7 +156,7 @@ test('annual imports preserve existing verification flags',async()=>{
  const f=fixture(),uid=f.seed(baseProfile({isVerifiedStudent:true}));await apply(f,(await preview(f,[row({status:'inactive'})])).importId);assert.equal(f.records.get('users/'+uid).isVerifiedStudent,true);
 });
 test('a repeated current-year correction preserves both earlier history entries and stable account identity',async()=>{
- const f=fixture(),uid=f.seed(baseProfile());await apply(f,(await preview(f)).importId);await apply(f,(await preview(f,[row({yearLevel:'3'})])).importId);assert.equal(f.authUsers.size,1);assert.equal(f.records.get('users/'+uid).yearLevel,'3rd Year');assert.equal([...f.records.keys()].filter(k=>k.includes('/academic_history/')).length,2);
+ const f=fixture(),uid=f.seed(baseProfile());await apply(f,(await preview(f)).importId);await apply(f,(await preview(f,[row({yearLevel:'3'})])).importId);assert.equal(f.authUsers.size,1);assert.equal(f.records.get('student_records/'+uid).yearLevel,'3rd Year');assert.equal(f.records.get('users/'+uid).yearLevel,'1');assert.equal([...f.records.keys()].filter(k=>k.includes('/academic_history/')).length,2);
 });
 
 test('index source supports private monitoring and exempts bulky preview entries',()=>{
@@ -126,6 +170,7 @@ test('split fields format a consistent display name and block reused IDs with di
  const p=await preview(f,[data]), result=await apply(f,p.importId);
  const uid=result.results[0].uid;
  assert.equal(f.records.get('student_records/'+uid).fullName,'Roger E. Crisostomo Jr.');
+ await issue(f);
  assert.equal(f.records.get('users/'+uid).middleName,'Elo');
  assert.equal(f.records.get('users/'+uid).enrollmentClassification,'Regular');
  assert.equal((await preview(f,[{...data,firstName:'Someone'}])).hasErrors,true);
@@ -138,9 +183,10 @@ test('manual status on a record without an account invalidates stale imports and
  await f.handlers.studentRecordSetStanding({...f.admin,data:{studentId:'000123',standing:'withdrawn'}});
  assert.equal((await apply(f,pending.importId)).results[0].state,'failed');
  const current=await preview(f);
- assert.equal((await apply(f,current.importId)).results[0].action,'record-saved');
+ assert.equal((await apply(f,current.importId)).results[0].action,'updated');
+ await assert.rejects(issue(f),{code:'failed-precondition'});
  assert.equal(f.authUsers.size,0);
- const found=await f.handlers.studentRecordsList({...f.admin,data:{filters:{studentStanding:'withdrawn',accountStatus:'Pending activation'}}});
+ const found=await f.handlers.studentRecordsList({...f.admin,data:{filters:{studentStanding:'withdrawn',accountStatus:'No account'}}});
  assert.equal(found.students[0].studentId,'000123');
 });
 
@@ -162,6 +208,7 @@ test('program aliases and college abbreviations resolve to the supplied official
  const p=await preview(f,[record]);
  assert.equal(p.hasErrors,false);
  const result=await apply(f,p.importId);
+ await issue(f);
  assert.equal(f.records.get('users/'+result.results[0].uid).program,'Bachelor of Science in Information Technology');
  assert.equal((await preview(f,[{...record,department:'COEd'}])).hasErrors,true);
 });
