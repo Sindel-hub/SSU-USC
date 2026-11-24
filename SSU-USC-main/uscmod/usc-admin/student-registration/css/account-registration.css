@@ -1,0 +1,68 @@
+/* Shared account-entry design. Screen-only rules preserve the credential print layout. */
+@media screen {
+  body.account-registration-page { background: #f3f6fb; color: #20334f; font-family: Arial, sans-serif; }
+  .account-registration-page .page { width: 100%; max-width: 1000px; margin: 0 auto; padding: 28px 32px 56px; }
+  .account-registration-page .top-row { margin-bottom: 32px; gap: 16px; }
+  .account-registration-page .back-link { display: inline-flex; align-items: center; min-height: 44px; color: #526580; font-size: 14px; font-weight: 600; text-decoration: none; }
+  .account-registration-page .back-link:hover { color: #1953a0; }
+  .registration-brand { font-size: 15px; font-weight: 800; letter-spacing: .08em; white-space: nowrap; color: #193c70; }
+  .registration-brand span { margin: 0 8px; color: #a3b2c7; font-weight: 400; }
+  .account-registration-page .registration-heading { display: flex; align-items: center; gap: 18px; margin: 0 0 28px; }
+  .registration-title-icon { display: grid; place-items: center; flex: 0 0 54px; height: 54px; background: #e4ecfa; border: 1px solid #d5e1f5; border-radius: 16px; color: #1953a0; }
+  .registration-title-icon svg { width: 28px; height: 28px; }
+  .account-registration-page h1 { margin: 0; color: #16345a; font-size: clamp(24px, 3vw, 32px); line-height: 1.25; letter-spacing: -.7px; }
+  .registration-tabs { display: flex; gap: 6px; padding: 6px; margin-bottom: 24px; background: #e8edf5; border: 1px solid #dfe6f0; border-radius: 13px; width: fit-content; }
+  .registration-tabs a { display: flex; justify-content: center; align-items: center; min-height: 44px; padding: 10px 24px; border-radius: 9px; text-decoration: none; font-size: 14px; font-weight: 600; color: #526580; }
+  .registration-tabs a[aria-current=page] { color: #1953a0; background: #fff; box-shadow: 0 2px 6px #1b335415; }
+  .registration-tabs a:hover { color: #123f7b; }
+  .account-registration-page .panel { background: #fff; border: 1px solid #dfe6f0; border-radius: 18px; padding: 30px; margin: 0 0 22px; box-shadow: 0 6px 22px #20334f05; }
+  .account-registration-page .registration-panel-head { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; margin-bottom: 24px; }
+  .account-registration-page h2 { margin: 0; font-size: 20px; color: #203b60; }
+  .registration-tag { padding: 6px 10px; border-radius: 7px; background: #edf3fb; font-size: 12px; font-weight: 600; color: #456588; }
+  .account-registration-page .form-grid { display: block; }
+  .account-registration-page .registration-group { padding: 0; margin: 0 0 28px; border: 0; min-width: 0; }
+  .account-registration-page .registration-group + .registration-group { border-top: 1px solid #e5ebf3; padding-top: 26px; }
+  .account-registration-page .registration-group legend { float: left; width: 100%; margin: 0 0 20px; padding: 0; font-size: 16px; line-height: 1.5; font-weight: 700; color: #203b60; }
+  .account-registration-page .registration-fields { display: grid; clear: both; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 22px 24px; }
+  .account-registration-page label { display: flex; flex-direction: column; gap: 8px; min-width: 0; color: #4b607b; font-size: 14px; font-weight: 600; line-height: 1.5; }
+  .account-registration-page :is(input:not([type=checkbox]), select) { display: block; box-sizing: border-box; width: 100%; min-width: 0; height: 48px; padding: 11px 14px; border: 1px solid #cbd7e5; border-radius: 10px; background: #fff; color: #20334f; font: 400 16px/1.5 Arial,sans-serif; transition: border-color .15s; }
+  .account-registration-page input::placeholder { color: #8a99ad; opacity: 1; }
+  .account-registration-page :is(input[readonly], select:disabled) { background: #f5f7fa; border-color: #e0e6ef; color: #5d7089; }
+  .account-registration-page :is(input, select):hover:not(:disabled):not([readonly]) { border-color: #91aacb; }
+  .account-registration-page :is(a, button, input, select, summary):focus-visible { outline: 3px solid #2563eb42; outline-offset: 3px; }
+  .account-registration-page .form-action { display: flex; justify-content: flex-end; align-items: center; gap: 12px; flex-wrap: wrap; margin-top: 24px; padding-top: 24px; border-top: 1px solid #e5ebf3; }
+  .account-registration-page :is(.form-action button, .reset-row button, .password-recovery-directory-link) { display: inline-flex; align-items: center; justify-content: center; min-height: 48px; padding: 12px 22px; border: 1px solid #1953a0; border-radius: 10px; background: #1953a0; color: #fff; text-decoration: none; font: 600 14px/1.5 Arial,sans-serif; cursor: pointer; }
+  .account-registration-page button:hover:not(:disabled) { filter: brightness(.96); }
+  .account-registration-page button:disabled { opacity: .55; cursor: not-allowed; }
+  .account-registration-page .lookup-controls { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 12px; margin-top: 8px; }
+  .account-registration-page .lookup-controls .form-action { margin: 0; padding: 0; border: 0; }
+  .account-registration-page #registrationStatus:empty { display: none; }
+  .account-registration-page #registrationStatus:not(:empty) { padding: 14px 16px; margin: 0 0 24px; border: 1px solid #dbe5f2; border-radius: 10px; background: #f4f8ff; line-height: 1.6; overflow-wrap: anywhere; }
+  .account-registration-page #officerStatus { margin: 0 0 28px; padding: 12px 16px; font-size: 14px; line-height: 1.5; }
+  .account-registration-page #verifyStudentLabel { flex-direction: row; align-items: flex-start; padding: 16px; border: 1px solid #dbe5f2; border-radius: 10px; background: #f6f9fd; }
+  .account-registration-page input[type=checkbox] { width: 18px; height: 18px; flex: 0 0 18px; margin: 1px 0 0; accent-color: #1953a0; }
+  .account-registration-page #activationHandoff { margin: 28px 0 0; padding: 22px; border: 1px solid #cce5db; border-radius: 12px; background: #f3fbf7; }
+  .account-registration-page #activationHandoff h3 { margin-top: 0; }
+  .account-registration-page #activationHandoff p { line-height: 1.6; }
+  .account-registration-page #activationHandoff input { margin-top: 8px; }
+  .account-registration-page .registration-recovery { padding: 0; background: #f9fbfe; box-shadow: none; }
+  .account-registration-page .registration-recovery summary { padding: 20px 24px; font-size: 14px; font-weight: 600; color: #526580; cursor: pointer; }
+  .account-registration-page .registration-recovery-content { padding: 0 24px 24px; }
+  .account-registration-page .registration-recovery-content p { color: #60758b; font-size: 14px; line-height: 1.6; }
+  .account-registration-page .reset-row { margin-top: 10px; }
+  .account-registration-page [hidden] { display: none !important; }
+  @media (max-width: 600px) {
+    .account-registration-page .page { padding: 16px 16px 32px; }
+    .account-registration-page .top-row { margin-bottom: 24px; }
+    .account-registration-page .registration-heading { gap: 12px; }
+    .registration-title-icon { flex-basis: 44px; height: 44px; border-radius: 12px; }
+    .registration-tabs { width: 100%; box-sizing: border-box; }
+    .registration-tabs a { flex: 1; padding: 10px 8px; }
+    .account-registration-page .panel { padding: 22px 18px; }
+    .account-registration-page .registration-fields, .account-registration-page .lookup-controls { grid-template-columns: minmax(0, 1fr); }
+    .account-registration-page .form-action button { flex: 1; }
+    .account-registration-page .registration-recovery { padding: 0; }
+    .account-registration-page .reset-row { grid-template-columns: minmax(0, 1fr); }
+  }
+  @media (prefers-reduced-motion: reduce) { .account-registration-page input, .account-registration-page select { transition: none; } }
+}

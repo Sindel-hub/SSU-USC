@@ -8,23 +8,24 @@
   <link rel="stylesheet" href="css/student-registration.css?v=officer-readable-2-password-copy" />
   <script src="../../shared/app-config.js"></script>
 <link rel="stylesheet" href="../../shared/scrollbars.css?v=2" />
+  <link rel="stylesheet" href="css/account-registration.css?v=1" />
 </head>
-<body>
+<body class="officer-registration-page account-registration-page">
   <main class="page">
-    <div class="top-row no-print">
-      <a href="../admin-dashboard/users.html" class="back-link">← Back to User Directory</a>
-      <span class="mode-badge">ADMIN OFFICER PROVISIONING</span>
-    </div>
+    <div class="top-row no-print"><a href="../admin-dashboard/users.html" class="back-link">← User Directory</a><span class="registration-brand">SSU <span>/</span> USC</span></div>
+    <header class="registration-heading no-print"><div class="registration-title-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="10" cy="8" r="3"/><path d="M4 20v-2a6 6 0 0 1 12 0v2M19 7v6m-3-3h6"/></svg></div><h1>Create officer account</h1></header>
+    <nav class="registration-tabs no-print" aria-label="Account type"><a href="student-registration.html" >Student account</a><a href="officer-registration.html" aria-current="page">Officer account</a></nav>
 
-    <section class="panel no-print">
-      <h1>Create USC Officer Account</h1>
-      <p>Create an officer login with a Student ID and temporary password. Institutional email is optional.</p>
-      <div id="officerStatus" class="status-box ok">Officer account provisioning is ready.</div>
+    <section class="panel registration-panel no-print" aria-label="Officer registration">
+      <div id="officerStatus" class="status-box ok" role="status" aria-live="polite">Officer account provisioning is ready.</div>
 
       <form id="officerForm" class="form-grid">
+<fieldset class="registration-group"><legend>Personal information</legend><div class="registration-fields">
         <label>Student ID<input id="officerStudentId" inputmode="numeric" pattern="[0-9]+" title="Numbers only" maxlength="64" placeholder="260001" required /></label>
         <label>Full Name<input id="officerName" placeholder="Juan Dela Cruz" required /></label>
         <label>Institutional Email (optional)<input id="officerEmail" type="email" placeholder="Officer’s institutional email" /></label>
+</div></fieldset>
+<fieldset class="registration-group"><legend>Office assignment</legend><div class="registration-fields">
         <label>USC Position
           <select id="officerPosition" required>
             <option value="">Select officer position</option>
@@ -39,12 +40,13 @@
             <option>Department Representative</option>
           </select>
         </label>
+<label>Role Effective Date<input id="officerEffectiveDate" type="date" required /></label></div></fieldset>
+<fieldset class="registration-group"><legend>Academic information</legend><div class="registration-fields">
         <label>College / Campus
           <select id="officerCollege" required><option value="">Select college or campus</option></select>
         </label>
         <label class="program-field">Program
           <select id="officerProgram" required disabled><option value="">Select college/campus first</option></select>
-          <small>Programs follow the SSU program list already used by student registration.</small>
         </label>
         <label>Year Level
           <select id="officerYearLevel" required>
@@ -58,19 +60,18 @@
           </select>
         </label>
         
-        <label>Role Effective Date<input id="officerEffectiveDate" type="date" required /></label>
+
+</div></fieldset>
         <div class="form-action"><button id="createOfficerBtn" type="submit">Create Officer Account</button></div>
       </form>
     </section>
 
-    <section class="panel no-print">
-      <h2>Officer Password Recovery</h2>
-      <p>Send a Firebase password-reset link to the officer's institutional email.</p>
+    <details class="panel registration-recovery no-print"><summary>Officer password recovery</summary><div class="registration-recovery-content"><label for="officerResetIdentifier">Student ID or institutional email</label>
       <div class="reset-row">
         <input id="officerResetIdentifier" placeholder="Student ID or institutional email" />
         <button id="officerResetBtn" type="button">Send Password Reset Link</button>
       </div>
-    </section>
+    </div></details>
 
     <section id="officerSlipSection" class="slip-section slip-modal-overlay" hidden aria-hidden="true">
       <div class="slip-modal-backdrop" data-close-slip="true"></div>
