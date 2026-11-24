@@ -51,3 +51,16 @@ test('definite provider rejection is retryable; uncertain delivery never automat
 test('the same request nonce in different elections cannot collide in the notification outbox',async()=>{const h=harness();await h.service.submit({uid},h.input);h.seed('election_config/current',{electionId:'A'});await h.service.submit({uid},{...h.input,electionId:'A'});assert.equal(h.events().length,2);assert.equal(h.records.get('elections/B/applications/student').electionId,'B');assert.equal(h.records.get('elections/A/applications/student').electionId,'A')});
 
 test('a deleted submission nonce cannot be replayed to recreate its removed registration',async()=>{const h=harness();await h.service.submit({uid},h.input);h.seed('elections/B/applications/student',{...h.records.get('elections/B/applications/student'),removed:true});await assert.rejects(h.service.submit({uid},h.input),{code:'failed-precondition'});await h.service.submit({uid},{...h.input,requestId:randomUUID()});assert.equal(h.events().length,2)});
+
+for (const source of ['gmail','institutional','none']) test(`private email status resolves ${source} contact without creating records`, async()=>{
+ const h=harness();
+ if(source!=='gmail')h.gmail=null;
+ if(source==='institutional')h.seed('users/student',{...h.records.get('users/student'),institutionalEmail:'student@ssu.edu.ph',institutionalEmailVerified:true});
+ const status=await h.service.emailStatus({uid});
+ assert.equal(status.verified,source!=='none');
+ assert.equal(status.email,source==='gmail'?'verified@gmail.com':source==='institutional'?'student@ssu.edu.ph':'');
+ assert.equal(h.events().length,0);assert.equal(h.sends.length,0);
+});
+test('another student cannot retrieve a connected contact by supplying a target UID',async()=>{
+ const h=harness();await assert.rejects(h.service.emailStatus({uid:'stranger'},{uid:'student'}));
+});

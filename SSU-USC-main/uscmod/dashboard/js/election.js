@@ -1,4 +1,4 @@
-import {verifiedCandidateEmail,showCandidateEmailRequired,restoreCandidateDraft,clearCandidateDraft} from "../../shared/candidate-email-registration.js";
+import {candidateEmailStatus,verifiedCandidateEmail,showCandidateEmailRequired,restoreCandidateDraft,clearCandidateDraft} from "../../shared/candidate-email-registration.js";
 import { auth, db } from "../../firebase/firebase-config.js";
 import { callSecure, secureUpload, hydrateMediaImages, resolveMediaUrl } from "../../shared/security-client.js";
 import {
@@ -448,7 +448,7 @@ function renderRegistration(step = 1, resetDraft = false) {
   const standing = clean(student.studentStandingLabel || student.studentStanding || student.enrollmentStatus, "Active / Enrolled");
   const contact = clean(student.contactNumber || student.phoneNumber || student.phone, "Not provided");
   const status = clean(student.status || student.accountStatus, "Verified Student");
-  const email = clean(student.email || student.institutionalEmail, "Institutional email on file");
+  const email = "Checking verified email…";
 
   let body = "";
   if (candidateRegistrationStep === 1) {
@@ -459,7 +459,7 @@ function renderRegistration(step = 1, resetDraft = false) {
         <label>Contact Number<input value="${esc(contact)}" readonly></label>
         <label>Full Name<input value="${esc(student.fullName)}" readonly></label>
         <label>Status<input value="${esc(status)}" readonly></label>
-        <label>Email<input value="${esc(email)}" readonly></label>
+        <label>Email<input data-candidate-email value="${esc(email)}" readonly><button type="button" data-connect-candidate-email hidden>Connect Gmail / Institutional Email</button></label>
         <label>Enrollment Status<input value="${esc(standing)}" readonly></label>
         <label>Program / Course<input value="${esc(student.program || "Verified program")}" readonly></label>
         <div class="candidate-eligibility-check">
@@ -524,7 +524,7 @@ function renderRegistration(step = 1, resetDraft = false) {
       <div class="candidate-review-top">
         <section>
           <h4>Candidate Information</h4>
-          <div class="candidate-review-person"><img src="${esc(candidatePhotoPreviewUrl())}" alt="Selected campaign photo"><div><strong>${esc(student.fullName)}</strong><span>${esc(student.studentId)}</span><span>${esc(student.program || "")}</span><span>${esc(email)}</span><span>${esc(contact)}</span></div></div>
+          <div class="candidate-review-person"><img src="${esc(candidatePhotoPreviewUrl())}" alt="Selected campaign photo"><div><strong>${esc(student.fullName)}</strong><span>${esc(student.studentId)}</span><span>${esc(student.program || "")}</span><span data-candidate-email>${esc(email)}</span><span>${esc(contact)}</span></div></div>
         </section>
         <section><h4>Position</h4><p>${esc(candidateDraft.position)}</p><h4>Party / Affiliation</h4><p>${esc(candidateDraft.partylist || "Independent")}</p></section>
         <section><h4>Documents</h4><div class="candidate-review-documents">${candidateReviewDocumentRows()}</div></section>
@@ -537,6 +537,8 @@ function renderRegistration(step = 1, resetDraft = false) {
 
   app.innerHTML = registrationShell(candidateRegistrationStep, body);
   wireRegistrationDetailsButton();
+  refreshCandidateEmailDisplay();
+  app.querySelector("[data-connect-candidate-email]")?.addEventListener("click", () => showCandidateEmailRequired({saveProgress:saveCandidateEmailProgress}));
   document.getElementById("candidateBack")?.addEventListener("click", () => renderRegistration(candidateRegistrationStep - 1));
 
   if (candidateRegistrationStep === 1) {
@@ -603,13 +605,37 @@ function renderRegistration(step = 1, resetDraft = false) {
   }
 }
 
+async function refreshCandidateEmailDisplay() {
+ const fields = [...app.querySelectorAll('[data-candidate-email]')];
+ if (!fields.length) return;
+ const uid = auth.currentUser?.uid;
+ const connect = app.querySelector('[data-connect-candidate-email]');
+ let label, missing = false;
+ try {
+  const status = await candidateEmailStatus();
+  missing = status.verified !== true;
+  label = status.verified === true && status.email ? status.email : status.verified === true ? 'Verified email connected' : 'No verified email connected';
+ } catch (error) {
+  label = error.code === 'candidate-service-unavailable' ? 'Email verification service unavailable' : 'Unable to check verified email';
+ }
+ if (auth.currentUser?.uid !== uid) return;
+ if (connect?.isConnected) connect.hidden = !missing;
+ for (const field of fields) {
+  if (!field.isConnected) continue;
+  if (field.tagName === 'INPUT') field.value = label;
+  else field.textContent = label;
+ }
+}
+window.addEventListener('usc-profile-updated', refreshCandidateEmailDisplay);
+window.addEventListener('focus', () => { if (currentView === 'registration') refreshCandidateEmailDisplay(); });
+
 async function cacheCandidateUploads(){
  if(!candidateDraft.photoTicket){if(!candidateDraft.photoFile)throw new Error('Campaign photo is required.');const ticket=await secureUpload(candidateDraft.photoFile,'candidate-photo');candidateDraft.photoTicket={path:ticket.path};}
  for(let i=candidateDraft.docTickets.length;i<candidateDraft.supportingFiles.length&&i<8;i++){const ticket=await secureUpload(candidateDraft.supportingFiles[i],'candidate-document');candidateDraft.docTickets.push({path:ticket.path});}
 }
 async function saveCandidateEmailProgress(save){
  const uid=student?.uid;if(!uid||auth.currentUser?.uid!==uid)throw new Error("Sign in again before saving your draft.");
- await cacheCandidateUploads();
+ if(candidateDraft.photoFile||candidateDraft.photoTicket)await cacheCandidateUploads();
  if(auth.currentUser?.uid!==uid)throw new Error("Your account changed. Please reopen Election.");
  const {requestId,position,partylist,platform,statement,photoTicket,docTickets}=candidateDraft;
  await save(context.electionId,{electionId:context.electionId,requestId,position,partylist,platform,statement,photoTicket,docTickets,photoName:candidateDraft.photoFile?.name||candidateDraft.photoName||'Campaign photo',documentNames:candidateDraft.supportingFiles.length?candidateDraft.supportingFiles.map(f=>f.name):candidateDraft.documentNames});
@@ -624,7 +650,7 @@ async function resumeCandidateEmailDraft(){
  const restored={...createCandidateDraft(),...saved};
  if(restored.photoTicket?.path)restored.photoPreviewUrl=await resolveMediaUrl(restored.photoTicket.path).catch(()=>null);
  if(context?.electionId!==electionId||currentView!=='landing')return;
- candidateDraft=restored;renderRegistration(4);
+ candidateDraft=restored;renderRegistration(restored.photoTicket?.path&&restored.platform&&restored.statement?4:1);
 }
 
 async function submitApplication() {

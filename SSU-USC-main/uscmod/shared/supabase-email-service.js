@@ -32,6 +32,11 @@ export async function callStudentEmailService(action, payload = {}, { requireSes
   if (!response.ok || data?.ok === false) {
     const error = new Error(data?.message || `Supabase email service failed (${response.status}).`);
     if (typeof data?.code === "string") error.code = data.code;
+    if (["candidate_email_status", "candidate_submit", "candidate_review", "candidate_notification_retry"].includes(action)
+        && response.status === 400 && data?.message === "Unknown email-service action.") {
+      error.code = "candidate-service-unavailable";
+      error.message = "Candidate registration is temporarily unavailable because the email service needs an update. Your form is still open. Please try again after the administrator updates the service.";
+    }
     if (action === "authenticate_gmail" && response.status === 401) error.code = "auth/invalid-credential";
     throw error;
   }
