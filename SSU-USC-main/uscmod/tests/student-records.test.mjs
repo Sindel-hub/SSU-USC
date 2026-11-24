@@ -1,6 +1,6 @@
 import test from 'node:test';import assert from 'node:assert/strict';import {createRequire}from'node:module';
 import {parseStudentCsv,readStudentWorkbook,IMPORT_HEADERS,rowsFromTable,validateWorkbookZip}from'../shared/student-import-file.mjs';
-import{SSU_PROGRAMS}from'../usc-admin/student-registration/js/ssu-programs.js';
+import{SSU_PROGRAMS,formatSsuCollege,formatSsuProgram}from'../usc-admin/student-registration/js/ssu-programs.js';
 const require=createRequire(import.meta.url),M=require('../functions/student-records-model'),{fixture}=require('./helpers/student-records-fixture.cjs'),ExcelJS=require('../vendor/exceljs/exceljs-4.4.0.min.js');
 const row=(patch={})=>({studentId:'000123',fullName:'Synthetic Student',department:M.DEPARTMENTS[3],program:'Bachelor of Science in Civil Engineering',yearLevel:'2',email:'synthetic@example.invalid',status:'active',...patch});
 const preview=async(f,rows=[row()],year='2026-2027')=>f.handlers.studentAnnualPreview({...f.admin,data:{rows,academicYear:year,authorized:true}});
@@ -142,4 +142,26 @@ test('manual status on a record without an account invalidates stale imports and
  assert.equal(f.authUsers.size,0);
  const found=await f.handlers.studentRecordsList({...f.admin,data:{filters:{studentStanding:'withdrawn',accountStatus:'Pending activation'}}});
  assert.equal(found.students[0].studentId,'000123');
+});
+
+test('program aliases and college abbreviations resolve to the supplied official catalog', async () => {
+ for (const [department, label, program, expected] of [
+   ['College of Arts and Sciences', 'College   of Arts and Sciences (CAS)', 'Bachelor of Information Technology', 'Bachelor of Science in Information Technology'],
+   ['College of Arts and Sciences', 'CAS', 'BS-Information   System', 'Bachelor of Science in Information Systems'],
+   ['College of Education', 'College of Education (COEd)', 'BSED Major in Science', 'Bachelor of Secondary Education Major in Science'],
+   ['College of Industrial Technology', 'College of Industrial Technology (CIT)', 'Electrical Technology', 'Bachelor of Industrial Technology Major in Electrical Technology']
+ ]) {
+   assert.equal(M.canonicalDepartment(label), department);
+   assert.equal(M.canonicalProgram(department, program), expected);
+   assert.ok(SSU_PROGRAMS[department].includes(expected));
+ }
+ assert.equal(formatSsuCollege('College of Arts and Sciences'), 'College of Arts and Sciences (CAS)');
+ assert.equal(formatSsuProgram('College of Arts and Sciences', 'Bachelor of Information System'), 'Bachelor of Science in Information Systems');
+ const f=fixture();
+ const record=row({department:'College of Arts and Sciences (CAS)',program:'Bachelor of Science in Information Technology)'});
+ const p=await preview(f,[record]);
+ assert.equal(p.hasErrors,false);
+ const result=await apply(f,p.importId);
+ assert.equal(f.records.get('users/'+result.results[0].uid).program,'Bachelor of Science in Information Technology');
+ assert.equal((await preview(f,[{...record,department:'COEd'}])).hasErrors,true);
 });

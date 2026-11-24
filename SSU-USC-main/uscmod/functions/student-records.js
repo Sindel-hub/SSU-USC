@@ -1,7 +1,6 @@
 "use strict";
 const crypto=require('node:crypto');
 const M=require('./student-records-model');
-const PROGRAMS=require('./student-programs.json');
 const hash=value=>crypto.createHash('sha256').update(value).digest('hex');
 const identityName=value=>String(value||'').normalize('NFKC').toLowerCase().replace(/[^\p{L}\p{N}]+/gu,' ').trim();
 function createStudentRecordHandlers({db,adminAuth,requireActiveRole,requireRecentAuth,HttpsError,sendActivation,clock=Date.now,randomToken=()=>crypto.randomBytes(32).toString('hex')}){
@@ -176,7 +175,6 @@ function createStudentRecordHandlers({db,adminAuth,requireActiveRole,requireRece
    for(let i=0;i<rows.length;i++){
     const row=rows[i];if(row.error){entries.push({line:i+2,error:row.error,studentId:row.studentId});continue;}
     try{
-     if(!PROGRAMS[row.department]?.includes(row.program))error('invalid-argument','Program does not match the selected department.');
      const current=await resolve(row.studentId);
      const record=await getRecord(row.studentId);
      verifyIdentity(current,record,row);
@@ -270,7 +268,10 @@ function createStudentRecordHandlers({db,adminAuth,requireActiveRole,requireRece
    const matches=row=>filters.every(([key,value])=>{
     const term=value.trim().toLowerCase();
     if(!term)return true;
-    const actual=String((key==='accountStatus'?accountState(row):row[key])||'').toLowerCase();
+    if(key==='college'&&M.canonicalDepartment(term))return M.canonicalDepartment(row.college)===M.canonicalDepartment(term);
+    const valueToMatch=key==='program'?M.canonicalProgram(M.canonicalDepartment(row.college),row.program)||row.program:
+     key==='accountStatus'?accountState(row):row[key];
+    const actual=String(valueToMatch||'').toLowerCase();
     if(key==='yearLevel'&&/^[1-6]$/.test(term))return actual.startsWith(term);
     return ['fullName','college','program','enrollmentStatus'].includes(key)?actual.includes(term):actual===term;
    });

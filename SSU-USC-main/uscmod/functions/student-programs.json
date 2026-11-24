@@ -1,16 +1,16 @@
 {
   "College of Education": [
     "Bachelor of Elementary Education",
-    "Bachelor of Secondary Education major in English",
-    "Bachelor of Secondary Education major in Mathematics",
-    "Bachelor of Secondary Education major in Science",
-    "Bachelor of Secondary Education major in Social Studies",
+    "Bachelor of Early Childhood Education",
     "Bachelor of Physical Education",
-    "Bachelor of Early Childhood Education"
+    "Bachelor of Secondary Education Major in English",
+    "Bachelor of Secondary Education Major in Mathematics",
+    "Bachelor of Secondary Education Major in Science",
+    "Bachelor of Secondary Education Major in Social Studies"
   ],
   "College of Arts and Sciences": [
-    "Bachelor of Information System",
-    "Bachelor of Information Technology",
+    "Bachelor of Science in Information Technology",
+    "Bachelor of Science in Information Systems",
     "Bachelor of Science in Psychology",
     "Bachelor of Science in Statistics"
   ],
@@ -26,15 +26,15 @@
     "Bachelor of Science in Electronics Engineering"
   ],
   "College of Industrial Technology": [
-    "Bachelor of Industrial Technology major in Automotive Technology",
-    "Bachelor of Industrial Technology major in Culinary Technology",
-    "Bachelor of Industrial Technology major in Electrical Technology",
-    "Bachelor of Industrial Technology major in Electronics Technology",
-    "Bachelor of Industrial Technology major in Architectural Drafting Technology",
-    "Bachelor of Industrial Technology major in Mechanical Technology",
-    "Bachelor of Industrial Technology major in Heating, Ventilating Air-Conditioning and Refrigeration Technology",
-    "Bachelor of Industrial Technology major in Beauty Care and Wellness Technology",
-    "Bachelor of Industrial Technology major in Apparel and Fashion Technology",
-    "Bachelor of Science in Architecture"
+    "Bachelor of Science in Architecture",
+    "Bachelor of Industrial Technology Major in Automotive Technology",
+    "Bachelor of Industrial Technology Major in Culinary Technology",
+    "Bachelor of Industrial Technology Major in Electrical Technology",
+    "Bachelor of Industrial Technology Major in Electronics Technology",
+    "Bachelor of Industrial Technology Major in Architectural Drafting Technology",
+    "Bachelor of Industrial Technology Major in Mechanical Technology",
+    "Bachelor of Industrial Technology Major in Heating, Ventilating Air-Conditioning and Refrigeration Technology",
+    "Bachelor of Industrial Technology Major in Beauty Care and Wellness Technology",
+    "Bachelor of Industrial Technology Major in Apparel and Fashion Technology"
   ]
 }
