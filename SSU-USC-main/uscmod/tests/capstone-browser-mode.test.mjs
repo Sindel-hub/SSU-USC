@@ -42,7 +42,7 @@ test('admin authority remains custom-claim protected in Firestore rules', () => 
   const rules = read('firestore.rules');
   assert.match(rules, /function isAdmin\(\).*role\(\) == "admin"/s);
   assert.doesNotMatch(rules, /request\.auth\.token\.email_verified/);
-  assert.match(rules, /allow create: if isAdmin\(\)[\s\S]{0,500}?role in \["student", "officer"\]/);
+  assert.match(rules, /allow create: if isAdmin\(\)[\s\S]{0,500}?role == "officer"/);
 });
 
 

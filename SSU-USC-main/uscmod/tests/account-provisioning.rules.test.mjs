@@ -94,7 +94,7 @@ test('malformed name reservations and forged creator IDs are rejected', async ()
   await assertFails(firestore.setDoc(firestore.doc(db, 'student_name_claims', 'invalid-key'), { ...claim, nameKey: 'invalid-key' }));
 });
 
-for (const role of ['student', 'officer']) {
+for (const role of ['officer']) {
   test(`actual ${role} provisioning commits the complete account batch and blocks duplicates`, async () => {
     const db = adminDb(), api = provisioner(db);
     const result = await (role === 'student' ? api.provisionStudentAccount(input) : api.provisionOfficerAccount({ ...input, officePosition: 'Secretary' }));
@@ -113,13 +113,21 @@ for (const role of ['student', 'officer']) {
   });
 }
 
+test('browser student creation cannot bypass the centralized records workflow', async () => {
+  const db=adminDb(), api=provisioner(db);
+  await assert.rejects(api.provisionStudentAccount(input));
+  assert.equal((await firestore.getDocs(firestore.collection(db,'users'))).docs.some(doc => doc.data().studentId===input.studentId),false);
+  await assertFails(firestore.setDoc(firestore.doc(db,'student_records','forged'),{studentId:input.studentId}));
+  await assertFails(firestore.setDoc(firestore.doc(db,'student_record_ids',input.studentId),{uid:'forged'}));
+});
+
 test('non-admin provisioning is rejected before Authentication creates an account', async () => {
   const api = provisioner(env.authenticatedContext('officer', { role: 'officer' }).firestore(), 'officer');
   await assert.rejects(api.provisionStudentAccount(input), /System Administrator access is required/);
   assert.equal(api.created.length, 0);
 });
 
-for (const role of ['student', 'officer']) {
+for (const role of ['officer']) {
   test(`manual ${role} provisioning without email preserves all required records and never persists a password`, async () => {
     const db = adminDb(), api = provisioner(db);
     const row = { ...input, institutionalEmail: '', officePosition: 'Secretary' };
@@ -171,7 +179,7 @@ test('alias writes remain privileged, existing owners cannot be replaced, and ve
   }
 });
 
-for (const role of ['student', 'officer']) for (const studentId of ['123', '00123456789', '12345678901234567890']) {
+for (const role of ['officer']) for (const studentId of ['123', '00123456789', '12345678901234567890']) {
   test(`manual ${role} accepts ${studentId} without truncating its aliases or records`, async () => {
     const db = adminDb(), api = provisioner(db);
     const row = {...input, studentId, institutionalEmail: '', officePosition: 'Secretary'};

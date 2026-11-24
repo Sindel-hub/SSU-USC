@@ -4,39 +4,23 @@
 
 ## Administrator workflow
 
-Open **Student Records** in the System Administrator sidebar or use **Bulk student import** in User Directory. This is restricted to a trusted, approved, active administrator. Officers and students cannot call the record-management/monitoring endpoints.
-
-1. Download the CSV template. Use an authorized USC list, not a direct Registrar connection. Replace the non-deliverable sample email with a real authorized address.
-2. Select an academic year (`2026-2027`) and upload CSV or Excel `.xlsx`. Confirm the list is authorized, then Validate and preview. No student identity is created or changed during preview.
-3. Review each proposed creation, update, status and validation error. Correct errors and upload again. An invalid preview cannot be applied. Every row is normalized and validated again on the server; frontend file parsing is not an authorization boundary.
-4. Explicitly confirm and apply the reviewed import. Processing occurs in groups of ten, with per-row results. A resume reference is saved in session storage (not student records or passwords). You can load that reference after an interruption and retry. Completed rows are idempotent; partially applied Auth synchronization resumes without duplicating account/history records.
-5. Existing Student IDs retain the same UID, role, permissions, password, email identity, complaints and activity records. Academic information is updated. Conflicting UID ownership or an email-identity change blocks the row for separate administrator reconciliation.
-6. New students receive an unpredictable initial password that is never displayed, exported or emailed. Their Auth account is disabled and profile remains pending/inactive until activation. An expiring email link lets the student verify mailbox possession and choose a password of 12–128 characters.
-7. Check activation delivery state. An unconfirmed delivery is not reported as sent. An administrator may explicitly resend after one minute, invalidating previous links. New links expire in 24 hours. Delivery does not mean the recipient has read the message or activated.
-8. Students missing from a file remain unchanged and are labeled **Needs annual review** when their stored academic year differs from the selected year. Missing from one upload is not proof of graduation or discontinuation. To change access, import an explicitly authorized status for that student.
-
-The original individual student/officer registration and existing User Directory remain available. The new bulk import is the primary annual-update path; no existing account is deleted by it.
+1. Open **Student Records** from User Directory. Download the CSV template, select the academic year, and upload an authorized CSV or Excel workbook. Use the first sheet and store Student IDs as text. Each upload supports up to 500 rows and 2 MB.
+2. Validate and review the preview before confirming. It distinguishes matched accounts, new accounts, and records that will wait for an email. Resolve conflicts and correct invalid rows, then generate a new preview. Previewing never changes student records or Auth accounts.
+3. Apply the confirmed import. Each row saves the academic record and its history before the service attempts account provisioning. New eligible accounts use the saved record and remain disabled until the student activates from the emailed link and chooses a password. A missing address leaves a record without an account. Add the confirmed address on a subsequent import for the same identity.
+4. Retry interrupted provisioning from the import reference. The saved record's permanent ID is reused. Completed rows are idempotent. After the preview expires, rows already saved can resume, and rows never applied require a new preview.
+5. Use User Directory for a linked account's access and student status. For records without an account, set student status in Student Records. An annual file updates enrollment classification and academic information while keeping existing account access unchanged.
 
 ## Import contract
 
-- First sheet only; `.csv` or `.xlsx`, maximum 2 MB and 500 students per import. Split larger lists into reviewed batches.
-- Columns: `studentId`, `fullName`, `department`, `program`, `yearLevel`, `email`, `status`. Descriptive headers such as Student ID / Full Name are normalized. Unknown/duplicate columns are rejected.
-- Student IDs are 1–64 digits and must be stored as text. Excel numeric IDs are rejected rather than silently losing leading zeros. Native `.xls` is unsupported; save it as `.xlsx` or CSV.
-- Full name is required (2–120 characters); department/program must match the existing SSU program catalogue; year level is 1–6 and is stored using the existing labels (for example, `2nd Year`).
-- Email is required for new accounts. The user confirmed that the authorized list will include student email addresses. Duplicate IDs/emails and invalid/missing values are identified before application. Existing accounts may omit email; supplied email must match an existing email identity. Annual imports never replace an existing password or email.
-- Statuses: `active`, `leave`, `inactive`, `graduated`, `transferred`, `withdrawn`, `eliminated`. Blank status defaults to active, clearly shown in preview. Non-active statuses block access, disable Auth and revoke refresh tokens without deleting the account. Non-active imports clear the legacy verified-student flag for compatibility with existing account rules.
-- Current-year corrections append another history entry. Older-year imports cannot overwrite a newer current academic year.
-- Existing suspensions and manual access blocks are preserved on active imports; the import does not approve a suspended account. Reactivation after a status managed by this import service is supported. Separate administrator access review remains necessary for unrelated manual Auth disablement.
+Use these columns in order: Student ID, Last Name, First Name, Middle Name, Suffix, College Department, Course / Program, Year Level, Enrollment Status, Institution Email (Optional). Middle Name, Suffix, and Institution Email may be blank. Student IDs preserve leading zeros. Display names are generated as First Name M.I. Last Name Suffix, with the original name parts retained.
 
-## Identity, consistency and recovery
+Use the official department/program catalogue and year levels 1 through 6. Enrollment classification (for example Regular or Irregular), student status (for example Currently enrolled or Graduated), and account access are managed independently. An import never changes an existing Auth identity, password, activation, role, permissions, or manual access restriction. Existing email changes require the separate verified account workflow. An account absent from the file receives no writes.
 
-The server reconciles `student_id_claims`, `school_accounts` and profiles found by exact Student ID. Conflicting/missing identity ownership blocks processing rather than guessing or creating another account. Removed/removal-pending accounts require authorized recovery. New UIDs are deterministically derived from Student ID so a retried provisioning operation cannot create a second UID. Email collisions with other accounts are rejected by both preview and Firebase Auth.
+## Identity, history, and recovery
 
-A preview records a fingerprint of relevant identity, role, status and academic fields. An apply transaction verifies the fingerprint and ownership before writing the profile, ownership records, masterlist and immutable-per-import academic history. Concurrent changes require another preview. An academic revision number detects even a prior import that wrote otherwise identical data. Each row records its pre-change and post-change academic snapshot, academic year, import ID, actor UID and time. Existing records from before this feature receive a baseline snapshot on their first update; missing historic data is not fabricated.
+`student_records/{uid}` holds the central record, indexed by Student ID in `student_record_ids`. A matched account keeps its Firebase UID. New records receive a permanent random UID before provisioning. A mismatched name, linked account, or competing Student ID/email reservation blocks the row for administrator review. The service does not automatically reassign IDs to new students. Academic history is stored by permanent UID in the existing academic history subcollection. A same-year correction records changed fields, and an older year cannot overwrite a newer one.
 
-Auth and Firestore cannot share a transaction. A per-row journal marks Auth synchronization pending until it succeeds. New profiles and inactive students fail closed. An Auth failure is visible and retryable, without rewriting academic history. After activation, the ticket is consumed only when Auth and Firestore finalization are ready. Failures keep the profile blocked, retain the ticket for retry after its one-minute processing lease, and do not falsely report completed activation.
-
-No import endpoint accepts a caller-provided UID, role, password, permission set or verification flag. Privileged writes require recent administrator authentication. New callable clients never fall back to direct browser writes.
+Schedule a staging backup of Firestore and Firebase Auth under the existing restricted backup process before applying the new rules and hosted workflow. Validate using synthetic records first, including an omitted active account, an email-less record, a conflicting Student ID, a failed provisioning retry, and an annual correction. Capture a recovery point before any separately authorized production rollout. For import reconciliation, use the audit events and per-row journal to identify affected records. Review recovery per UID before making any restorations so later password, activation, or status changes are preserved.
 
 ## Activation and email
 
@@ -54,14 +38,14 @@ Only `studentAnnualApply` and `studentActivationResend` bind the email secret. M
 
 ## Monitoring and history access
 
-Student Records supports exact Student ID search, paginated profiles and filtering of loaded records by status. Records show current department/program/year, academic year, standing, access and activation state. The detail screen reads:
+Student Records supports exact Student ID lookup and paginated filters for name, department, program, year level, academic year, enrollment classification, student status, and account status. Records show current department/program/year, academic year, standing, access and activation state. The detail screen reads:
 
 - Up to 100 most recent academic history entries.
 - Up to 100 UID-linked complaint summaries (not private complaint body text).
 - The existing student sign-in aggregate.
 - Up to 100 UID-linked event/program registrations.
 
-The event/program query may require a collection-group index on `registrations.studentUid`; if unavailable, the interface reports the limitation instead of showing invented activity. Complaint/registration queries are bounded and are not a complete institution-wide monitoring feed. Filtering applies to the currently loaded profile pages. Anonymous Needs Assessment responses are never linked back to these profiles. No tracking outside USC services is introduced.
+The event/program query may require a collection-group index on `registrations.studentUid`; if unavailable, the interface reports the limitation instead of showing invented activity. Complaint/registration queries are bounded and are not a complete institution-wide monitoring feed. Anonymous Needs Assessment responses are never linked back to these profiles. No tracking outside USC services is introduced.
 
 Private collections: `annual_student_imports` (with `results`), `student_activation_tickets` and `/users/{uid}/academic_history`. The existing Firestore default-deny rules prevent direct browser access. Current profiles remain subject to the existing owner/admin permissions; no Firestore rule changes were made. The index source includes the registration query index and an exemption for unqueried preview entries; neither is deployed. The Admin SDK performs controlled backend writes. No automatic retention deletion is added. Import previews expire for application after 24 hours but remain stored until an authorized retention policy is established; history, student accounts and service records are not purged.
 

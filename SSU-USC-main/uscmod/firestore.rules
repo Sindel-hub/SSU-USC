@@ -310,12 +310,11 @@ service cloud.firestore {
     // Student IDs, account status, and officer privileges are server-controlled.
     match /users/{userId} {
       allow read: if ownUser(userId) || isAdmin();
-      // Browser provisioning is create-only and may create ordinary school-provisioned
-      // student or officer profiles. It can never create a System Administrator.
+      // New student profiles are written by the student records service. Officer browser provisioning is unchanged.
       allow create: if isAdmin()
         && !("officerAssignmentId" in request.resource.data)
         && request.resource.data.uid == userId
-        && request.resource.data.role in ["student", "officer"]
+        && request.resource.data.role == "officer"
         && request.resource.data.accountStatus == "approved"
         && request.resource.data.schoolProvisioned == true
         && request.resource.data.yearLevel is string
