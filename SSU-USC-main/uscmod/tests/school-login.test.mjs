@@ -52,3 +52,24 @@ test('student profile always contains the Gmail self-service section above passw
   assert.match(email, /No administrator approval is required/);
   assert.doesNotMatch(email, /<details>/);
 });
+
+test('replacement aliases are authoritative for ID and email login', async () => {
+  const source = read('index/js/index.js');
+  const resolver = source.slice(source.indexOf('async function resolveLoginCandidates('), source.indexOf('async function signInByIdentifier('));
+  const build = new Function('clean','isStudentId','normalizeStudentId','schoolAuthAliasForStudentId','isEmail','normalizeEmail','schoolAuthAliasForEmail', resolver + ';return resolveLoginCandidates;');
+  for (const alias of ['replacement@student.ssu-usc.local', '']) {
+    const resolve = build(String, value => /^\d+$/.test(value), String, async()=>alias, value=>value.includes('@'), value=>value.toLowerCase(), async()=>alias);
+    assert.deepEqual(await resolve('123'), [alias || '123@student.ssu-usc.local']);
+    assert.deepEqual(await resolve('person@ssu.edu.ph'), [alias || 'person@ssu.edu.ph']);
+  }
+});
+test('wrong replacement password never falls through to the disabled previous login', async () => {
+  const source=read('index/js/index.js');
+  const body=source.slice(source.indexOf('async function signInByIdentifier('),source.indexOf('async function signInSecurely('));
+  const attempts=[];
+  const login=new Function('isPersonalGmail','resolveLoginCandidates','signInSecurely',body+';return signInByIdentifier;')(
+    ()=>false,async()=>['replacement@student.ssu-usc.local'],async email=>{attempts.push(email);throw Object.assign(Error('Wrong password'),{code:'auth/invalid-credential'});}
+  );
+  await assert.rejects(login('123','wrong'),{code:'auth/invalid-credential'});
+  assert.deepEqual(attempts,['replacement@student.ssu-usc.local']);
+});
