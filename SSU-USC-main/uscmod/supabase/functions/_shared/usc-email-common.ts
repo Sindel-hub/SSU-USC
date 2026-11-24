@@ -432,7 +432,7 @@ export async function gmailRateLimitHash(value: string): Promise<string> {
 
 export async function disableFirebaseAuthAccount(uid: string, timestamp: number) {
   await googleJson(`https://identitytoolkit.googleapis.com/v1/projects/${env().firebaseProjectId}/accounts:update`, {
-    method: "POST", body: JSON.stringify({ localId: uid, disableUser: true, validSince: String(Math.floor(timestamp / 1000)) })
+    method: "POST", body: JSON.stringify({ localId: uid, email: `${await sha256(uid)}@archived.invalid`, emailVerified: false, disableUser: true, validSince: String(Math.floor(timestamp / 1000)) })
   });
 }
 
