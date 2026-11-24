@@ -16,7 +16,7 @@
 <link rel="stylesheet" href="../../shared/profile-manager.css" />
 <link rel="stylesheet" href="../../shared/engagement-analytics.css?v=4" />
 <link rel="stylesheet" href="../../shared/needs-assessment.css" />
-<link rel="stylesheet" href="needs-assessment.css?v=2" />
+<link rel="stylesheet" href="needs-assessment.css?v=3" />
   <script src="../../shared/app-config.js"></script>
   <script type="module" src="../../shared/auth-guard.js?v=rbac7"></script>
 <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet" />
@@ -138,19 +138,36 @@
                 </aside>
 
 <section class="main na-workspace">
-<div class="na-heading"><h1>Needs Assessment</h1><button id="naNew" data-rbac-permission="bulletin.manage" class="mini-btn primary" type="button">Create survey</button></div>
-<p id="naMessage" class="na-status" role="status" aria-live="polite"></p>
-<section id="naEditor" class="card" hidden><header class="card-head"><h2 id="naEditorTitle">Create survey</h2></header>
+<section class="hero na-hero" aria-labelledby="naTitleHeading">
+  <div class="hero-left">
+    <div class="hero-title">
+      <div class="module-hero-heading">
+        <span class="module-hero-icon" aria-hidden="true"><i class="fa-solid fa-clipboard-list"></i></span>
+        <h1 id="naTitleHeading">Needs Assessment</h1>
+      </div>
+      <div class="hero-actions">
+        <button id="naNew" data-rbac-permission="bulletin.manage" class="btn primary" type="button" aria-controls="naEditor" aria-expanded="false"><i class="fa-solid fa-plus" aria-hidden="true"></i> Create survey</button>
+        <a class="btn light" href="../overview/overview.html"><i class="fa-solid fa-arrow-left" aria-hidden="true"></i> Dashboard</a>
+      </div>
+    </div>
+    <div id="naOverview" class="engagement-analytics"></div>
+    <p id="naMessage" class="na-status" role="status" aria-live="polite"></p>
+  </div>
+</section>
+<div class="na-management">
+<details id="naEditor" class="card na-composer" hidden>
+<summary class="card-head module-card-head"><span class="module-card-title"><span class="module-card-icon" aria-hidden="true"><i class="fa-solid fa-file-circle-plus"></i></span><strong id="naEditorTitle">Create survey</strong></span><span class="na-composer-indicator" aria-hidden="true">+</span></summary>
 <form class="card-body" id="naForm" data-rbac-permission="bulletin.manage"><label for="naTitle">Survey title</label><input id="naTitle" maxlength="160" required>
 <label for="naDescription">Introduction</label><textarea id="naDescription" maxlength="3000"></textarea>
 <div class="na-columns"><div><label for="naOpens">Opens (your local time)</label><input id="naOpens" type="datetime-local" required></div><div><label for="naCloses">Closes (your local time)</label><input id="naCloses" type="datetime-local" required></div></div>
 <fieldset class="na-question"><legend>Target departments</legend><div id="naDepartments"></div></fieldset>
 <h3>Questions</h3><div id="naQuestions"></div><button id="naAddQuestion" class="mini-btn light" type="button">Add question</button>
-<div class="na-actions"><button class="mini-btn primary" type="submit">Save draft</button><button id="naCancel" class="mini-btn light" type="button">Cancel</button></div></form></section>
+<div class="na-actions"><button class="mini-btn primary" type="submit">Save draft</button><button id="naCancel" class="mini-btn light" type="button">Cancel</button></div></form></details>
 <section class="card" aria-labelledby="naSurveysTitle">
-  <header class="card-head"><h2 id="naSurveysTitle">Surveys</h2><button class="mini-btn light" id="naRefresh" type="button">Refresh</button></header>
+  <header class="card-head module-card-head"><span class="module-card-title"><span class="module-card-icon" aria-hidden="true"><i class="fa-solid fa-list-check"></i></span><h2 id="naSurveysTitle">Surveys</h2></span><button class="mini-btn light" id="naRefresh" type="button"><i class="fa-solid fa-rotate-right" aria-hidden="true"></i> Refresh</button></header>
   <div class="card-body"><div id="naSurveys"><p>Loading surveys…</p></div><button id="naMore" class="mini-btn light" type="button" hidden>Load more surveys</button></div>
 </section>
+</div>
 <dialog id="naResults" class="card na-results" aria-labelledby="naResultsTitle">
   <header class="card-head">
     <h2 id="naResultsTitle">Survey results</h2>
@@ -203,7 +220,7 @@
 </footer>
 
     <script src="../shared/js/nav-active.js?v=7"></script>
-    <script type="module" src="needs-assessment.js?v=results-charts-1"></script>
+    <script type="module" src="needs-assessment.js?v=events-layout-1"></script>
     <script type="module" src="../shared/js/admin-auth.js?v=rbac4"></script>
 <script type="module" src="../../shared/profile-manager.js?v=registered-name-2&amp;refinements=1"></script>
   <script type="module" src="../shared/js/officer-rbac.js?v=6"></script>
