@@ -43,22 +43,17 @@ function edit(s = null) {
   $('naEditor').open = true; $('naTitle').focus();
 }
 const surveyDate = new Intl.DateTimeFormat(undefined, { dateStyle: 'medium', timeStyle: 'short' });
-const overviewStatuses = [
+const surveyStatuses = [
   ['open', 'Open', 'fa-circle-play'],
   ['scheduled', 'Scheduled', 'fa-calendar'],
   ['closed', 'Closed', 'fa-circle-check'],
   ['draft', 'Draft', 'fa-file-pen']
 ];
-function renderOverview() {
-  const statuses = overviewStatuses.map(([key, option, icon]) => ({
+function renderStatusFilters() {
+  const statuses = surveyStatuses.map(([key, option, icon]) => ({
     key, option, icon, count: surveys.filter(survey => survey.lifecycle === key).length
   }));
-  const metrics = [
-    ['Published', 'fa-circle-check', surveys.filter(survey => survey.status === 'published').length],
-    ['Responses', 'fa-users', surveys.reduce((total, survey) => total + (survey.responseCount || 0), 0)],
-    ['Archived', 'fa-box-archive', surveys.filter(survey => survey.status === 'archived').length]
-  ];
-  $('naOverview').innerHTML = `
+  $('naStatusFilters').innerHTML = `
     <section class="engagement-status-panel" aria-label="Survey status filters">
       <div class="engagement-status-grid">
         ${statuses.map(({ key, option, icon, count }) => `
@@ -66,23 +61,14 @@ function renderOverview() {
             <span>${option}</span><span class="engagement-count-row"><i class="fa-solid ${icon}" aria-hidden="true"></i><strong>${count}</strong></span>
           </button>`).join('')}
       </div>
-      <section class="engagement-summary" aria-labelledby="naOverviewTitle">
-        <h2 id="naOverviewTitle">${next ? 'Overview of loaded surveys' : 'Overview'}</h2>
-        <div class="engagement-metrics">${metrics.map(([label, icon, count]) => `
-          <article class="engagement-metric"><i class="fa-solid ${icon}" aria-hidden="true"></i><div><span>${label}</span><strong>${count}</strong></div></article>`).join('')}</div>
-      </section>
-    </section>
-    <section class="engagement-chart-panel na-status-chart" aria-labelledby="naStatusChartTitle">
-      <h2 id="naStatusChartTitle">Survey status</h2>
-      ${pieChart(statuses, statuses.reduce((total, status) => total + status.count, 0), 'No surveys to chart.')}
     </section>`;
 }
-$('naOverview').addEventListener('click', event => {
+$('naStatusFilters').addEventListener('click', event => {
   const button = event.target.closest('[data-survey-status]');
   if (!button) return;
   const status = button.dataset.surveyStatus;
   statusFilter = statusFilter === status ? '' : status;
-  $('naOverview').querySelectorAll('[data-survey-status]').forEach(control => {
+  $('naStatusFilters').querySelectorAll('[data-survey-status]').forEach(control => {
     control.setAttribute('aria-pressed', String(control.dataset.surveyStatus === statusFilter));
   });
   renderSurveys();
@@ -122,7 +108,7 @@ function renderSurveys() {
   $('naMore').hidden = !next;
 }
 async function refresh(more = false) {
-  const result=await surveyCall('List',more?{after:next}:{});surveys=more?[...surveys,...result.surveys]:result.surveys;next=result.next;renderOverview();renderSurveys();
+  const result=await surveyCall('List',more?{after:next}:{});surveys=more?[...surveys,...result.surveys]:result.surveys;next=result.next;renderStatusFilters();renderSurveys();
 }
 function updateReport() {
   const filter=$('naDepartmentFilter').value; report=summarize(reportSurvey,responses,filter);
@@ -148,8 +134,8 @@ const chartColors = ['#2563a8', '#bb421e', '#9e590c', '#217747', '#8b43a4', '#00
 const shareFormat = new Intl.NumberFormat(undefined, { style: 'percent', maximumFractionDigits: 1 });
 const share = (count, total) => shareFormat.format(total ? count / total : 0);
 
-function pieChart(choices, total, empty = 'No responses yet.') {
-  if (!total) return `<p>${e(empty)}</p>`;
+function pieChart(choices, total) {
+  if (!total) return '<p>No responses yet.</p>';
   const point = (angle, radius) => [100 + Math.sin(angle) * radius, 100 - Math.cos(angle) * radius];
   let start = 0;
   const slices = [], labels = [];
