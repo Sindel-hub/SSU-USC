@@ -1,3 +1,4 @@
+import { announcementImageUrls, imageSnapshot, snapshotImages, publishFacebookPost } from '../supabase/functions/usc-facebook/media.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
@@ -59,15 +60,16 @@ async function harness({profile=officer,claims={},disabled=false,graphFailure=nu
       if(url.includes('/oauth/access_token'))return Response.json({access_token:'private-user-token'});
       if(url.includes('/me/accounts'))return Response.json({data:[{id:'123',name:'Official Page',access_token:'new-private-page-token',tasks:['CREATE_CONTENT']}]});
       published.push({ url, fields: Object.fromEntries(options.body) });
-      if(graphFailure==='network')throw new TypeError('Network failed');
-      if(graphFailure==='reject')return Response.json({error:{code:190}},{status:400});
+      const failure=typeof graphFailure==='function'?graphFailure({url,fields:Object.fromEntries(options.body),index:published.length}):graphFailure;
+      if(failure==='network')throw new TypeError('Network failed');
+      if(failure==='reject')return Response.json({error:{code:190}},{status:400});
       await new Promise(resolve=>setTimeout(resolve,5));
-      return Response.json({id:'123_456'});
+      return Response.json({id:options.body.get('published')==='false'?String(1000+published.length):'123_456'});
     }
     throw Error('Unexpected request');
   };
-  const init=new Function('createClient','isAdministrator','canPublish','deliveryMessage','withSurveyLink','Deno','fetch',source+'\nreturn {seal};');
-  const helpers=init(()=>db,isAdministrator,canPublish,deliveryMessage,withSurveyLink,{env:{get:name=>env[name]},serve:fn=>{handler=fn;}},apiFetch);
+  const init=new Function('createClient','isAdministrator','canPublish','deliveryMessage','withSurveyLink','announcementImageUrls','imageSnapshot','snapshotImages','publishFacebookPost','Deno','fetch',source+'\nreturn {seal};');
+  const helpers=init(()=>db,isAdministrator,canPublish,deliveryMessage,withSurveyLink,announcementImageUrls,imageSnapshot,snapshotImages,publishFacebookPost,{env:{get:name=>env[name]},serve:fn=>{handler=fn;}},apiFetch);
   tables.facebook_connection.push({id:true,page_id:'123',page_name:'Official Page',token_cipher:await helpers.seal('private-page-token')});
   return {tables,published,get graphCalls(){return graphCalls;},setFailure(value){graphFailure=value;},async call(action,body={}){
     const response=await handler(new Request('https://test.supabase.co/functions/v1/usc-facebook',{method:'POST',headers:{Origin:'https://portal.test','Content-Type':'application/json','x-firebase-token':'verified-test-token'},body:JSON.stringify({action,...body})}));
@@ -133,4 +135,45 @@ test('Facebook feed and photo captions include the attached public survey URL ex
   }
   assert.equal(withSurveyLink(href, surveyId, 'https://portal.test'), href);
   assert.equal(withSurveyLink('Content', 'https://untrusted.test', 'https://portal.test'), 'Content');
+});
+
+test('a gallery uploads every image privately, then publishes one ordered multi-photo post',async()=>{
+ const imageUrls=Array.from({length:6},(_,i)=>`https://portal.test/image-${i}.webp`);
+ const h=await harness({post:{imageUrl:imageUrls[0],imageUrls}});
+ await Promise.all([h.call('publish',{announcementId:'gallery'}),h.call('publish',{announcementId:'gallery'})]);
+ assert.equal(h.published.length,7);
+ for(let i=0;i<6;i++){
+  assert.ok(h.published[i].url.endsWith('/photos'));
+  assert.equal(h.published[i].fields.url,imageUrls[i]);assert.equal(h.published[i].fields.published,'false');
+ }
+ const final=h.published[6];assert.ok(final.url.endsWith('/feed'));assert.equal(final.fields.message,'Test\n\nContent');
+ for(let i=0;i<6;i++)assert.deepEqual(JSON.parse(final.fields[`attached_media[${i}]`]),{media_fbid:String(1001+i)});
+ assert.equal((await h.call('publish',{announcementId:'gallery'})).delivery.status,'succeeded');assert.equal(h.published.length,7);
+ assert.deepEqual(snapshotImages(h.tables.facebook_deliveries[0].image_url),imageUrls);
+});
+test('failed unpublished photo uploads can retry without sending a partial public post',async()=>{
+ const imageUrls=['https://portal.test/one.jpg','https://portal.test/two.jpg','https://portal.test/three.jpg'];
+ const h=await harness({post:{imageUrls},graphFailure:({index})=>index===2?'network':null});
+ const failed=await h.call('publish',{announcementId:'partial'});assert.equal(failed.delivery.status,'failed');
+ assert.equal(h.published.some(row=>row.url.endsWith('/feed')),false);
+ h.setFailure(null);assert.equal((await h.call('publish',{announcementId:'partial'})).delivery.status,'succeeded');
+ assert.equal(h.published.filter(row=>row.url.endsWith('/feed')).length,1);
+});
+test('an ambiguous final gallery post is never automatically resent',async()=>{
+ const h=await harness({post:{imageUrls:['https://portal.test/one.jpg','https://portal.test/two.jpg']},graphFailure:({url})=>url.endsWith('/feed')?'network':null});
+ assert.equal((await h.call('publish',{announcementId:'uncertain-gallery'})).delivery.status,'uncertain');
+ const count=h.graphCalls;h.setFailure(null);
+ assert.equal((await h.call('publish',{announcementId:'uncertain-gallery'})).delivery.status,'uncertain');assert.equal(h.graphCalls,count);
+});
+test('every gallery URL is validated before sending any photo and legacy snapshots still work',async()=>{
+ const h=await harness({post:{imageUrls:['https://portal.test/one.jpg','http://portal.test/unsafe.jpg']}});
+ assert.equal((await h.call('publish',{announcementId:'unsafe'})).ok,false);assert.equal(h.graphCalls,0);
+ assert.deepEqual(snapshotImages('https://portal.test/legacy.jpg'),['https://portal.test/legacy.jpg']);
+ assert.equal(imageSnapshot([]),null);assert.deepEqual(snapshotImages(null),[]);
+ assert.throws(()=>snapshotImages('[broken'),/Invalid/);
+});
+test('multi-photo announcements retain the public survey URL in the one final message',async()=>{
+ const surveyId='B'.repeat(20),h=await harness({post:{surveyId,imageUrls:['https://portal.test/a.jpg','https://portal.test/b.jpg']}});
+ assert.equal((await h.call('publish',{announcementId:'survey-gallery'})).delivery.status,'succeeded');
+ assert.equal(h.published[2].fields.message,`Test\n\nContent\n\nTake the survey: https://portal.test/survey/index.html?id=${surveyId}`);
 });
