@@ -19,7 +19,7 @@ const source=stripTypeScriptTypes(fs.readFileSync(new URL('../supabase/functions
 function wire(data) {
   return {fields:Object.fromEntries(Object.entries(data).map(([key,value])=>[key,typeof value==='boolean'?{booleanValue:value}:Array.isArray(value)?{arrayValue:{values:value.map(v=>({stringValue:v}))}}:{stringValue:String(value)}]))};
 }
-async function harness({profile=officer,claims={},disabled=false,graphFailure=null,post={}}={}) {
+async function harness({profile=officer,claims={},disabled=false,graphFailure=null,post={},publishedRecordExists=true,snapshotUpgradeFails=false}={}) {
   const tables={facebook_connection:[],facebook_deliveries:[],facebook_oauth_sessions:[]};
   let handler, graphCalls=0;
   const published = [];
@@ -34,6 +34,7 @@ async function harness({profile=officer,claims={},disabled=false,graphFailure=nu
     insert(value){tables[this.name].push({phase:"started",...value});return this;}
     upsert(value){tables[this.name]=[value];return this;}
     exec(single=false){
+      if(snapshotUpgradeFails&&this.name==='facebook_deliveries'&&this.operation==='update'&&this.value?.image_url)return {data:null,error:{message:'Unavailable'}};
       const found=tables[this.name].filter(r=>this.filters.every(f=>f(r)));
       if(this.operation==='update')found.forEach(r=>Object.assign(r,this.value));
       if(this.operation==='delete')tables[this.name]=tables[this.name].filter(r=>!found.includes(r));
@@ -54,6 +55,7 @@ async function harness({profile=officer,claims={},disabled=false,graphFailure=nu
     url=String(url);
     if(url.includes('identitytoolkit'))return Response.json({users:[{localId:'officer1',disabled,customAttributes:JSON.stringify(claims)}]});
     if(url.includes('/users/'))return Response.json(wire(profile));
+    if(url.includes('/announcements/')&&!publishedRecordExists)return Response.json({error:'Not found'},{status:404});
     if(url.includes('/announcements/'))return Response.json(wire({title:'Test',content:'Content',facebookRequested:true,imageUrl:'',...post}));
     if(String(url).includes('graph.facebook.com')){
       graphCalls++;
@@ -78,7 +80,7 @@ async function harness({profile=officer,claims={},disabled=false,graphFailure=nu
 }
 test('status never returns Page credentials; officers cannot start administrator OAuth',async()=>{
   const h=await harness();const result=await h.call('status');
-  assert.equal(result.connected,true);assert.equal(result.canConnect,false);
+  assert.equal(result.connected,true);assert.equal(result.canConnect,false);assert.equal(result.mediaVersion,'ordered-gallery-v2');
   assert.equal(JSON.stringify(result).includes('private-page-token'),false);
   assert.equal('token_cipher' in result,false);
   assert.equal((await h.call('begin')).status,403);
@@ -176,4 +178,50 @@ test('multi-photo announcements retain the public survey URL in the one final me
  const surveyId='B'.repeat(20),h=await harness({post:{surveyId,imageUrls:['https://portal.test/a.jpg','https://portal.test/b.jpg']}});
  assert.equal((await h.call('publish',{announcementId:'survey-gallery'})).delivery.status,'succeeded');
  assert.equal(h.published[2].fields.message,`Test\n\nContent\n\nTake the survey: https://portal.test/survey/index.html?id=${surveyId}`);
+});
+
+test('retry of an old first-image-only delivery includes the complete published gallery',async()=>{
+ const imageUrls=Array.from({length:4},(_,i)=>`https://portal.test/legacy-${i}.jpg`);
+ const h=await harness({post:{imageUrl:imageUrls[0],imageUrls}});
+ h.tables.facebook_deliveries.push({announcement_id:'legacy-gallery',page_id:'123',message:'Test\n\nContent',image_url:imageUrls[0],status:'failed',attempts:1,updated_at:new Date().toISOString()});
+ assert.equal((await h.call('publish',{announcementId:'legacy-gallery'})).delivery.status,'succeeded');
+ assert.equal(h.published.length,5);
+ assert.ok(h.published[4].url.endsWith('/feed'));
+ assert.deepEqual(snapshotImages(h.tables.facebook_deliveries[0].image_url),imageUrls);
+});
+
+for(const count of [0,1,2,4,7])test(`official publication with ${count} images sends one Facebook announcement with complete ordered content`,async()=>{
+ const imageUrls=Array.from({length:count},(_,i)=>`https://portal.test/photo-${i}.webp`), content='Announcement details.\n\nhttps://portal.test/survey/index.html?id=Example';
+ const h=await harness({post:{title:'Council news',content,imageUrl:imageUrls[0]||'',imageUrls}});
+ assert.equal((await h.call('publish',{announcementId:'count-'+count})).delivery.status,'succeeded');
+ const final=h.published.at(-1);assert.equal(final.fields.message||final.fields.caption,'Council news\n\n'+content);
+ assert.equal(h.published.filter(row=>row.fields.published!=='false').length,1);
+ if(count>1){assert.equal(h.published.length,count+1);for(let i=0;i<count;i++){assert.equal(h.published[i].fields.url,imageUrls[i]);assert.equal(h.published[i].fields.published,'false');assert.deepEqual(JSON.parse(final.fields[`attached_media[${i}]`]),{media_fbid:String(1001+i)});}}
+ else assert.equal(h.published.length,1);
+});
+test('disabled cross-posting and unpublished announcements never reserve or send a Facebook post',async()=>{
+ for(const config of [{post:{facebookRequested:false}},{publishedRecordExists:false}]){
+  const h=await harness(config);assert.equal((await h.call('publish',{announcementId:'disabled'})).ok,false);assert.equal(h.graphCalls,0);assert.equal(h.tables.facebook_deliveries.length,0);
+ }
+});
+test('old successful and uncertain deliveries are never upgraded or resent',async()=>{
+ const imageUrls=['https://portal.test/a.jpg','https://portal.test/b.jpg'];
+ for(const status of ['succeeded','uncertain']){
+  const h=await harness({post:{imageUrls}});h.tables.facebook_deliveries.push({announcement_id:'old',page_id:'123',message:'Test\n\nContent',image_url:imageUrls[0],status,attempts:1,updated_at:new Date().toISOString()});
+  assert.equal((await h.call('publish',{announcementId:'old'})).delivery.status,status);assert.equal(h.graphCalls,0);assert.equal(h.tables.facebook_deliveries[0].image_url,imageUrls[0]);
+ }
+});
+test('missing or duplicated uploaded photo IDs fail before any public feed post',async()=>{
+ for(const duplicate of [false,true]){
+  const calls=[];
+  await assert.rejects(publishFacebookPost('123','Content',['https://portal.test/a.jpg','https://portal.test/b.jpg'],async(path,params)=>{calls.push({path,params});return duplicate?{id:'12345'}:{};}),error=>error.publicationStarted===false);
+  assert.equal(calls.some(call=>call.path.endsWith('/feed')),false);
+ }
+});
+
+test('a failed snapshot upgrade stops before sending any incomplete Facebook announcement',async()=>{
+ const imageUrls=['https://portal.test/a.jpg','https://portal.test/b.jpg'];
+ const h=await harness({post:{imageUrls},snapshotUpgradeFails:true});h.tables.facebook_deliveries.push({announcement_id:'upgrade-failure',page_id:'123',message:'Test\n\nContent',image_url:imageUrls[0],status:'failed',attempts:1,updated_at:new Date().toISOString()});
+ const result=await h.call('publish',{announcementId:'upgrade-failure'});
+ assert.equal(result.ok,false);assert.match(result.message,/storage is unavailable/);assert.equal(h.graphCalls,0);
 });

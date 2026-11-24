@@ -81,7 +81,7 @@ Deno.serve(async req=>{
     const user=await session(req); const body=await req.json(); const action=String(body.action||'');
     const admin=isAdministrator(user.profile,user.claims);
     if(action==='status') {
-      const c=await connection(); return reply({ok:true,connected:!!c,pageName:c?.page_name||'',pageId:c?.page_id||'',canConnect:admin,canPublish:canPublish(user.profile,user.claims)});
+      const c=await connection(); return reply({ok:true,mediaVersion:'ordered-gallery-v2',connected:!!c,pageName:c?.page_name||'',pageId:c?.page_id||'',canConnect:admin,canPublish:canPublish(user.profile,user.claims)});
     }
     if(['begin','complete','connect','disconnect','reconcile'].includes(action)&&!admin) return reply({ok:false,message:'Only an authorized administrator can manage the Facebook connection.'},403);
     if(action==='begin') {
@@ -156,6 +156,18 @@ Deno.serve(async req=>{
       return reply({ok:true,delivery:publicDelivery(existing)});
     }
     const row=claimed[0];
+    // The reservation RPC deliberately preserves retry snapshots. Old failed
+    // deliveries may contain only the gallery's first URL. Upgrade that exact
+    // legacy case after claiming, before any Graph request, without touching
+    // successful/uncertain deliveries or a snapshot of different content.
+    if (images.length > 1 && row.image_url === images[0] && row.message === message) {
+      const {data:upgraded,error:upgradeError}=await db.from('facebook_deliveries')
+        .update({image_url:image}).eq('announcement_id',id).eq('page_id',c.page_id)
+        .eq('status','sending').eq('attempts',row.attempts).select('image_url').maybeSingle();
+      check(upgradeError);
+      if (!upgraded) throw new Error('Facebook delivery changed. Refresh its status before retrying.');
+      row.image_url=upgraded.image_url;
+    }
     let result;
     try {
       const text = withSurveyLink(row.message, post.surveyId, origin);
