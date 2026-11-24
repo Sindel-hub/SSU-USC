@@ -103,12 +103,12 @@ body.officer-reference-dashboard .overview-content-grid .bulletin-preview-card >
 .overview-content-grid .bulletin-copy { display:flex; flex-direction:column; flex:1; padding:20px; }
 .overview-content-grid .bulletin-copy time { color:#77889b; font-size:13px; }
 .overview-content-grid .bulletin-copy h3 { font-size:18px; margin:12px 0 0; }
-.overview-content-grid .bulletin-copy a { display:block; margin-top:auto; padding:10px 12px; border:1px solid #276a8d; border-radius:14px; background:#5fc9e9; color:#174f98; text-decoration:none; font-weight:700; }
+.overview-content-grid .bulletin-copy > a { display:block; margin-top:auto; padding:10px 12px; border:1px solid #276a8d; border-radius:14px; background:#5fc9e9; color:#174f98; text-decoration:none; font-weight:700; }
 .overview-content-grid .bulletin-copy p { margin-bottom:24px; }
 @media(max-width:1100px) { body.officer-reference-dashboard .overview-content-grid { grid-template-columns:minmax(0,1.6fr) minmax(240px,1fr); } body.officer-reference-dashboard .overview-content-grid .officer-event-card { grid-template-columns:minmax(0,1fr); } }
 @media(max-width:760px) { body.officer-reference-dashboard .overview-content-grid { grid-template-columns:minmax(0,1fr); } body.officer-reference-dashboard .officer-welcome-copy { max-width:100%; min-height:280px; padding:24px 22px 110px; } body.officer-reference-dashboard .officer-welcome-copy small { margin-bottom:28px; font-size:15px; } body.officer-reference-dashboard .officer-welcome-copy h1 { font-size:28px !important; } body.officer-reference-dashboard .officer-welcome-copy p { max-width:65%; } body.officer-reference-dashboard .officer-welcome-art { max-width:30%; height:120px !important; right:8px; } }
 body.officer-reference-dashboard .overview-content-grid .reference-heading h2::before { display:none; }
-body.officer-reference-dashboard .overview-content-grid .bulletin-copy a { display:flex; align-items:center; justify-content:flex-start; height:auto; min-height:44px; line-height:1.3; text-align:left; box-sizing:border-box; }
+body.officer-reference-dashboard .overview-content-grid .bulletin-copy > a { display:flex; align-items:center; justify-content:flex-start; height:auto; min-height:44px; line-height:1.3; text-align:left; box-sizing:border-box; }
 
 /* Officer Bulletin uses the same image support and readable text as other cards. */
 #officerBulletinPreview .officer-bulletin-media {
