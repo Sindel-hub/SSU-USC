@@ -1,7 +1,7 @@
 import { studentRecordCall as call } from '../../../shared/student-records-client.js';
 import { parseStudentCsv, readStudentWorkbook } from '../../../shared/student-import-file.mjs';
 import { escapeHtml as e } from '../../../shared/needs-assessment-client.js';
-import { SSU_PROGRAMS } from '../../student-registration/js/ssu-programs.js';
+import { SSU_PROGRAMS, formatSsuCollege, formatSsuProgram } from '../../student-registration/js/ssu-programs.js';
 const allowed=await(globalThis.USC_AUTH_READY||Promise.resolve(false));if(allowed!==true)await new Promise(()=>{});
 const $=id=>document.getElementById(id);
 let preview=null,students=[],next=null,busy=false,selected=null;
@@ -10,8 +10,8 @@ const detailDialog=$('studentDetail');
 $('closeStudentDetail').onclick=()=>detailDialog.close();
 detailDialog.addEventListener('close',()=>{document.documentElement.classList.remove('student-record-modal-open');recordOpener?.focus({preventScroll:true});});
 const year=new Date().getFullYear();$('importYear').value=`${year}-${year+1}`;
-$('programGuide').innerHTML=Object.entries(SSU_PROGRAMS).map(([d,p])=>`<details><summary>${e(d)}</summary><ul>${p.map(v=>`<li>${e(v)}</li>`).join('')}</ul></details>`).join('');
-$('studentDepartmentOptions').innerHTML=Object.keys(SSU_PROGRAMS).map(value=>`<option value="${e(value)}"></option>`).join('');
+$('programGuide').innerHTML=Object.entries(SSU_PROGRAMS).map(([d,p])=>`<details><summary>${e(formatSsuCollege(d))}</summary><ul>${p.map(v=>`<li>${e(v)}</li>`).join('')}</ul></details>`).join('');
+$('studentDepartmentOptions').innerHTML=Object.keys(SSU_PROGRAMS).map(value=>`<option value="${e(formatSsuCollege(value))}"></option>`).join('');
 try{$('resumeImportId').value=sessionStorage.getItem('uscAnnualImportId')||'';}catch{}
 function message(text,error=false){$('recordsMessage').textContent=text;$('recordsMessage').dataset.error=error;}
 function refreshApply(){ $('applyStudentImport').disabled=busy||!preview||preview.hasErrors||!$('confirmImport').checked; }
@@ -39,12 +39,12 @@ async function list(more=false){
 function renderStudents(){
  const rows=students;
  $('studentListSummary').textContent=`${rows.length} shown from ${students.length} loaded records.`;
- $('studentRecordRows').innerHTML=rows.length?rows.map(s=>`<tr><td>${e(s.studentId)}</td><td>${e(s.fullName)}<br><small>${e(s.college)}</small></td><td>${e(s.academicYear||'Not recorded')}</td><td>${e(standingLabel(s.studentStanding))}</td><td>${e(s.accountState)}<br>${e(s.activationStatus||'Existing account')}${s.activationDelivery?` · Email ${e(s.activationDelivery)}`:''}</td><td><button type="button" data-student="${e(s.studentId)}">View record</button></td></tr>`).join(''):'<tr><td colspan="6">No matching student records.</td></tr>';
+ $('studentRecordRows').innerHTML=rows.length?rows.map(s=>`<tr><td>${e(s.studentId)}</td><td>${e(s.fullName)}<br><small>${e(formatSsuCollege(s.college))}</small></td><td>${e(s.academicYear||'Not recorded')}</td><td>${e(standingLabel(s.studentStanding))}</td><td>${e(s.accountState)}<br>${e(s.activationStatus||'Existing account')}${s.activationDelivery?` · Email ${e(s.activationDelivery)}`:''}</td><td><button type="button" data-student="${e(s.studentId)}">View record</button></td></tr>`).join(''):'<tr><td colspan="6">No matching student records.</td></tr>';
  $('moreStudents').hidden=!next;
 }
 const standingLabel=value=>({active:'Currently enrolled',graduated:'Graduated',inactive:'Inactive',withdrawn:'Discontinued',leave:'On leave',transferred:'Transferred',eliminated:'Eliminated'})[value]||'Not recorded';
 const date=value=>value?new Date(value).toLocaleString():'Not recorded';
-function snapshot(p){if(!p)return 'No earlier academic record';return`${e(p?.academicYear||'Legacy record')} · ${e(p?.college||'—')} · ${e(p?.program||'—')} · Year ${e(p?.yearLevel||'—')} · ${e(p?.studentStanding||'—')}`;}
+function snapshot(p){if(!p)return 'No earlier academic record';return`${e(p?.academicYear||'Legacy record')} · ${e(formatSsuCollege(p?.college)||'—')} · ${e(formatSsuProgram(p?.college,p?.program)||'—')} · Year ${e(p?.yearLevel||'—')} · ${e(p?.studentStanding||'—')}`;}
 async function detail(studentId){
  $('studentDetailTitle').textContent='Student record';
  $('studentDetailStatus').textContent='Loading student record…';
@@ -53,7 +53,7 @@ async function detail(studentId){
  let r;
  try{r=await call('studentRecordDetail',{studentId});}catch(error){$('studentDetailStatus').textContent=error.message||'The student record could not be loaded. Close this window and try again.';throw error;}
  $('studentDetailStatus').textContent='';selected=r.profile;$('studentDetailTitle').textContent=`${selected.fullName} · ${selected.studentId}`;
- $('studentProfile').innerHTML=[['Record ID',selected.uid],['Account UID',selected.accountUid],['Email',selected.institutionalEmail],['Department',selected.college],['Program',selected.program],['Year level',selected.yearLevel],['Academic year',selected.academicYear],['Enrollment classification',selected.enrollmentStatus],['Student status',standingLabel(selected.studentStanding)],['Account',selected.accountState],['Activation',selected.activationStatus||'Existing account'],['Activation email',selected.activationDelivery||'Not applicable']].map(([k,v])=>`<p><strong>${e(k)}</strong><br>${e(v||'Not recorded')}</p>`).join('');
+ $('studentProfile').innerHTML=[['Record ID',selected.uid],['Account UID',selected.accountUid],['Email',selected.institutionalEmail],['Department',formatSsuCollege(selected.college)],['Program',formatSsuProgram(selected.college,selected.program)],['Year level',selected.yearLevel],['Academic year',selected.academicYear],['Enrollment classification',selected.enrollmentStatus],['Student status',standingLabel(selected.studentStanding)],['Account',selected.accountState],['Activation',selected.activationStatus||'Existing account'],['Activation email',selected.activationDelivery||'Not applicable']].map(([k,v])=>`<p><strong>${e(k)}</strong><br>${e(v||'Not recorded')}</p>`).join('');
  $('resendStudentActivation').hidden=selected.activationStatus!=='pending';
  $('recordStandingForm').hidden=Boolean(selected.accountUid);
  $('recordStanding').value=selected.studentStanding||'active';

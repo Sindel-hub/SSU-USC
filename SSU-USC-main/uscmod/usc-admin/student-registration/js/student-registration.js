@@ -1,5 +1,5 @@
 import { copyTemporaryPassword } from "../../../shared/pasted-password.js";
-import { SSU_PROGRAMS, isValidSsuProgram } from "./ssu-programs.js";
+import { SSU_PROGRAMS, formatSsuCollege, isValidSsuProgram } from "./ssu-programs.js";
 import { provisionStudentAccount } from "../../../shared/browser-provisioning.js?v=3-id-replacement-1";
 import { enrollmentStatusForStanding, isActiveStudentStanding, studentStandingLabel } from "../../../shared/student-standing.js";
 
@@ -80,7 +80,7 @@ function populateColleges(){
   Object.keys(SSU_PROGRAMS).forEach(college=>{
     const option=document.createElement("option");
     option.value=college;
-    option.textContent=college;
+    option.textContent=formatSsuCollege(college);
     collegeSelect.appendChild(option);
   });
 }
@@ -121,7 +121,7 @@ function credentialRows(c){
     <span>Student Name</span><span class="credential-value">${esc(c.fullName||"")}</span>
     <span>Student ID</span><span class="credential-value">${esc(c.studentId||"")}</span>
     <span>Institutional Email</span><span class="credential-value">${esc(c.institutionalEmail||"Not Linked")}</span>
-    <span>College / Campus</span><span class="credential-value">${esc(c.college||"")}</span>
+    <span>College / Campus</span><span class="credential-value">${esc(formatSsuCollege(c.college||""))}</span>
     <span>Program</span><span class="credential-value">${esc(c.program||"")}</span>
     <span>Year Level</span><span class="credential-value">${esc(c.yearLevel||"")}</span>
     <span>Student Standing</span><span class="credential-value">${esc(c.studentStandingLabel||c.studentStanding||"")}</span>
@@ -156,7 +156,7 @@ function buildDownloadableSlip(c,title){
   return `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${esc(title)}</title><style>
   body{font-family:Arial,sans-serif;background:#f4f6f9;color:#111;margin:0;padding:30px}.slip{max-width:720px;margin:auto;background:#fff;border:2px solid #122a50;padding:30px}.header{text-align:center;border-bottom:2px solid #122a50;padding-bottom:14px;margin-bottom:20px}.header h1{font-size:22px;margin:0 0 6px}.grid{display:grid;grid-template-columns:190px 1fr;gap:10px 14px}.value{font-weight:700;word-break:break-word}.password{font-family:Consolas,monospace;font-size:22px;letter-spacing:1px}.notice{margin-top:22px;padding:12px;border:1px dashed #666}.actions{text-align:center;margin:20px}.actions button{padding:10px 18px;font-weight:700}@media print{body{background:#fff;padding:0}.slip{max-width:none;min-height:88vh}.actions{display:none}}@media(max-width:600px){.grid{grid-template-columns:1fr}}
   </style></head><body><article class="slip"><div class="header"><h1>SSU UNIVERSITY STUDENT COUNCIL</h1><strong>${esc(title)}</strong></div><div class="grid">
-  <span>Student Name</span><span class="value">${esc(c.fullName||"")}</span><span>Student ID</span><span class="value">${esc(c.studentId||"")}</span><span>Institutional Email</span><span class="value">${esc(c.institutionalEmail||"Not Linked")}</span><span>College / Campus</span><span class="value">${esc(c.college||"")}</span><span>Program</span><span class="value">${esc(c.program||"")}</span><span>Year Level</span><span class="value">${esc(c.yearLevel||"")}</span><span>Student Standing</span><span class="value">${esc(c.studentStandingLabel||c.studentStanding||"")}</span><span>Login Username</span><span class="value">${esc(c.studentId||c.institutionalEmail||"Not Linked")}</span><span>Temporary Password</span><span class="value password">${esc(c.temporaryPassword||"Existing password unchanged")}</span></div><div class="notice"><strong>Important:</strong> ${esc(accessNotice)} If the password is forgotten, ask the System Administrator to issue a new temporary password from the User Directory.</div></article><div class="actions"><button onclick="window.print()">Print This Slip</button></div></body></html>`;
+  <span>Student Name</span><span class="value">${esc(c.fullName||"")}</span><span>Student ID</span><span class="value">${esc(c.studentId||"")}</span><span>Institutional Email</span><span class="value">${esc(c.institutionalEmail||"Not Linked")}</span><span>College / Campus</span><span class="value">${esc(formatSsuCollege(c.college||""))}</span><span>Program</span><span class="value">${esc(c.program||"")}</span><span>Year Level</span><span class="value">${esc(c.yearLevel||"")}</span><span>Student Standing</span><span class="value">${esc(c.studentStandingLabel||c.studentStanding||"")}</span><span>Login Username</span><span class="value">${esc(c.studentId||c.institutionalEmail||"Not Linked")}</span><span>Temporary Password</span><span class="value password">${esc(c.temporaryPassword||"Existing password unchanged")}</span></div><div class="notice"><strong>Important:</strong> ${esc(accessNotice)} If the password is forgotten, ask the System Administrator to issue a new temporary password from the User Directory.</div></article><div class="actions"><button onclick="window.print()">Print This Slip</button></div></body></html>`;
 }
 function downloadSlip(){
   if(!currentCredential)return alert("Create a student account first.");

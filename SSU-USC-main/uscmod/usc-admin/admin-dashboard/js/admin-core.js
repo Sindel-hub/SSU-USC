@@ -1,3 +1,4 @@
+import { formatSsuProgram } from '../../student-registration/js/ssu-programs.js';
 
 import { db } from "../../../firebase/firebase-config.js";
 import { callSecure } from "../../../shared/security-client.js";
@@ -90,7 +91,7 @@ export function normalizeUser(docSnap) {
     studentStandingLabel: studentStandingLabel(data.studentStanding || "active"),
     enrollmentStatus: String(data.enrollmentStatus || "").trim(),
     college: String(data.college || data.department || "").trim(),
-    program: String(data.program || "").trim(),
+    program: formatSsuProgram(String(data.college || data.department || "").trim(), String(data.program || "").trim()),
     officePosition: role === "admin"
       ? (String(data.officePosition || "").trim() || "System Administrator")
       : String(data.officePosition || "").trim(),
