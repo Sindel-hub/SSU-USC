@@ -11,12 +11,17 @@ export function complaintCategoryLabel(category, concern) {
   const item = COMPLAINT_CATEGORIES.find(item => item.name === category);
   return item?.concerns.includes(concern) ? `${item.name} — ${concern}` : '';
 }
+export function suggestedComplaintOffice(label) {
+  const item = COMPLAINT_CATEGORIES.find(item => item.concerns.some(concern => `${item.name} — ${concern}` === label));
+  return item ? `Suggested office: ${item.office}. USC will review and confirm the appropriate referral.` : '';
+}
 export function selectedComplaintCategory(form) {
   return complaintCategoryLabel(form?.querySelector('#category')?.value, form?.querySelector('#specificConcern')?.value);
 }
 export function bindComplaintCategories(form) {
   const category = form?.querySelector('#category');
   const concern = form?.querySelector('#specificConcern');
+  const guidance = form?.querySelector('#complaintOfficeGuidance');
   if (!category || !concern) return;
   function option(label, value = '') { const el = document.createElement('option'); el.textContent = label; el.value = value; return el; }
   category.replaceChildren(option('Select category'), ...COMPLAINT_CATEGORIES.map(item => option(item.name, item.name)));
@@ -24,6 +29,10 @@ export function bindComplaintCategories(form) {
     const item = !reset && COMPLAINT_CATEGORIES.find(item => item.name === category.value);
     concern.replaceChildren(option(item ? 'Select specific concern' : 'Select a category first'), ...(item ? item.concerns.map(label => option(label, label)) : []));
     concern.disabled = !item;
+    if (guidance) {
+      guidance.textContent = item ? `Suggested office: ${item.office}. USC will review and confirm the appropriate referral.` : '';
+      guidance.hidden = !item;
+    }
   }
   category.addEventListener('change', () => sync());
   form.addEventListener('reset', () => sync(true));

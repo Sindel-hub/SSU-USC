@@ -68,9 +68,10 @@
             </div>
             <form class="complaint-form redesigned" id="complaintForm">
               <div class="form-row two-col">
-                <div class="field"><label for="category">Complaint Category</label><div class="input-wrap select-wrap"><select id="category" name="category" required><option value="">Select category</option></select><i class="fa-solid fa-chevron-down"></i></div></div>
+                <div class="field"><label for="category">Complaint Category</label><div class="input-wrap select-wrap"><select id="category" name="category" required aria-describedby="complaintOfficeGuidance"><option value="">Select category</option></select><i class="fa-solid fa-chevron-down"></i></div></div>
                 <div class="field"><label for="incidentDate">Date of Incident</label><div class="input-wrap"><input id="incidentDate" name="incidentDate" type="date" required /></div></div>
               </div>
+              <small id="complaintOfficeGuidance" role="status" hidden></small>
               <div class="field"><label for="specificConcern">Specific Concern</label><div class="input-wrap select-wrap"><select id="specificConcern" name="specificConcern" required disabled><option value="">Select a category first</option></select><i class="fa-solid fa-chevron-down" aria-hidden="true"></i></div></div>
               <div class="form-row two-col">
                 <div class="field"><label for="subject">Subject</label><div class="input-wrap"><input id="subject" maxlength="120" name="subject" placeholder="Brief title or summary of your complaint..." required type="text" /></div></div>

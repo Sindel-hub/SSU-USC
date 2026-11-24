@@ -1,3 +1,4 @@
+import { suggestedComplaintOffice } from "../../../shared/complaint-categories.js";
 import { departmentName, departmentSummary, sortComplaints } from "./complaint-inbox-model.mjs";
 import { db } from "../../../firebase/firebase-config.js";
 import { callSecure } from "../../../shared/security-client.js?v=complaint-review-compat-3";
@@ -450,6 +451,11 @@ function renderDetails() {
   if (detailStatus) detailStatus.value = safeText(selected.status, "Submitted");
   syncClassificationUI(selected.classification);
   if (detailCategory) detailCategory.value = safeText(selected.category);
+  const officeGuidance = document.getElementById("detailOfficeGuidance");
+  if (officeGuidance) {
+    officeGuidance.textContent = suggestedComplaintOffice(selected.category);
+    officeGuidance.hidden = !officeGuidance.textContent;
+  }
   if (detailStudent) detailStudent.value = getAnonymousComplainantLabel();
   if (detailSubject) detailSubject.value = safeText(selected.subject);
   if (detailComplaintText) detailComplaintText.value = safeText(selected.details);
