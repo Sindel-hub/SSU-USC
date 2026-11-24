@@ -10,11 +10,11 @@ const submit=source.slice(source.indexOf('announcementForm?.addEventListener("su
 function fixture(body){
  const saved=[],alerts=[];let handler;
  const context=vm.createContext({saveReviewDraft:async data=>{saved.push(structuredClone(data));},draftImage:async()=>'',trackedOfficerAction:async()=>null,String,Date,console,surveyIdFromLink,surveyLinkInput:{value:""},location:{origin:"https://portal.test"},
-  announcementForm:{addEventListener:(event,fn)=>{handler=fn;}},
+  announcementForm:{querySelectorAll:()=>[],addEventListener:(event,fn)=>{handler=fn;}},
   announcementTitleInput:{value:'Synthetic notice'},announcementCategoryInput:{value:'Official Notice'},announcementAudienceInput:{value:'All Students'},announcementContentInput:{value:body},
   publishAnnouncementBtn:{disabled:false},document:{getElementById:()=>({checked:false,disabled:false})},
   safeText:(value,fallback='')=>String(value||fallback).trim(),
-  confirmPublication:async()=>true,uploadImage:async()=>({imageUrl:'',imagePath:''}),selectedImageFile:null,selectedImageObjectUrl:null,
+  confirmPublication:async()=>true,uploadImage:async()=>({imageUrl:'',imagePath:''}),imageProcessing:false,savingAnnouncement:false,selectedImages:[],legacySurveyId:"",selectedImageFile:null,selectedImageObjectUrl:null,
   auth:{currentUser:{uid:'synthetic-officer',email:'synthetic@example.invalid'}},announcementsCollection:'synthetic-collection',
   addDoc:async(collection,data)=>{saved.push(structuredClone(data));return{id:'synthetic-post'};},serverTimestamp:()=>0,
   resetAnnouncementForm(){},alert:message=>alerts.push(message),

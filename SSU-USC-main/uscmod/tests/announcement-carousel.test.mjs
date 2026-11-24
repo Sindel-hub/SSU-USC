@@ -35,7 +35,7 @@ function studentFixture({ count = 5, visible = 3, reducedMotion = false } = {}) 
   };
   const prevButton = {}, nextButton = {}, position = {};
   const carousel = { classList: classList() };
-  const context = vm.createContext({
+  const context = vm.createContext({registerAnnouncementMedia(){},
     announcements: posts.slice(0, count), carouselIndex: 0, carouselPhysicalIndex: 0, carouselCloneCount: 0,
     carouselAnimating: false, carouselTransitionTimer: 0, carouselQueuedDirection: 0,
     feed, carousel, dotsHost, prevButton, nextButton, announcementExcerpt,
@@ -161,7 +161,7 @@ function officerFixture({ count = 3 } = {}) {
     matches() { return hovered || this.contains(document.activeElement); },
     focus() { document.activeElement = this; }
   };
-  const context = vm.createContext({
+  const context = vm.createContext({registerAnnouncementMedia(){},
     state, document, announcementExcerpt, syncDashboardLayout() {}, setText() {}, collection() {}, db: {},
     onSnapshot: (_, callback) => { snapshot = callback; },
     window: {

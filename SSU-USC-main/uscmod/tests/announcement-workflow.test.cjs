@@ -42,7 +42,38 @@ test('published drafts leave review without changing pagination or published rec
   f.records.set('announcement_drafts/z-draft', { status: 'in-review', authorUid: 'first' });
   const page = await f.w.announcementDraftList(f.req('second', {}));
   assert.deepEqual(page.items, []);
+  assert.equal(page.pendingCount, 1);
   const more = await f.w.announcementDraftList(f.req('second', { after: page.next }));
   assert.deepEqual(more.items.map(item => item.id), ['z-draft']);
   assert.equal(f.records.get('announcements/a-00').title, 'Published notice');
+});
+
+test('multiple private attachments publish in order without a count cap or inline draft growth', async()=>{
+ const f=await setup(), image='data:image/webp;base64,AAAA', imageIds=[];
+ for(let i=0;i<8;i++){const draftId='image-'+i;await f.w.announcementWorkflow(f.req('first',{action:'uploadImage',draftId,input:{imageUrl:image}}));imageIds.push(draftId);}
+ await f.call('first','save',0,{input:{...f.input,imageIds}});
+ assert.equal(f.records.get('announcement_drafts/draft-1').content.imageUrl,'');
+ await assert.rejects(f.w.announcementPublishedImage('draft-1',imageIds[0]),/not found/);
+ assert.equal((await f.w.announcementWorkflow(f.req('second',{action:'readImage',draftId:'draft-1',imageId:imageIds[4]}))).imageUrl,image);
+ await f.call('first','submit');await f.call('second','ready');await f.call('first','publish');
+ const post=f.records.get('announcements/draft-1');assert.equal(post.imageUrls.length,8);assert.equal(post.imageUrl,post.imageUrls[0]);
+ assert.equal(await f.w.announcementPublishedImage('draft-1',imageIds[7]),image);
+ await assert.rejects(f.w.announcementPublishedImage('draft-1','unrelated'),/not found/);
+});
+test('attachment uploads and reads enforce draft permission, ownership and draft membership',async()=>{
+ const f=await setup(),imageUrl='data:image/webp;base64,AAAA';
+ await f.w.announcementWorkflow(f.req('first',{action:'uploadImage',draftId:'private-image',input:{imageUrl}}));
+ await assert.rejects(f.call('other','save',0,{input:{...f.input,imageIds:['private-image']}}),/belong/);
+ await assert.rejects(f.w.announcementWorkflow(f.req('first',{action:'uploadImage',draftId:'bad-image',input:{imageUrl:'data:image/svg+xml;base64,AAAA'}})),/image/);
+ await f.call('first','save',0,{input:{...f.input,imageIds:['private-image']}});
+ await assert.rejects(f.w.announcementWorkflow(f.req('other',{action:'readImage',draftId:'draft-1',imageId:'private-image'})),/denied/);
+});
+test('pending counts use all records and only actionable review/publication permissions',async()=>{
+ const f=await setup();await f.call('first','save',0,{input:f.input});
+ assert.equal((await f.w.announcementDraftList(f.req('second',{}))).pendingCount,0);
+ await f.call('first','submit');assert.equal((await f.w.announcementDraftList(f.req('second',{}))).pendingCount,1);
+ assert.equal((await f.w.announcementDraftList(f.req('other',{}))).pendingCount,0);
+ await f.call('second','revise',1,{note:'Please revise'});assert.equal((await f.w.announcementDraftList(f.req('second',{}))).pendingCount,0);
+ await f.call('first','submit');await f.call('second','ready');assert.equal((await f.w.announcementDraftList(f.req('first',{}))).pendingCount,1);
+ await f.call('first','publish');assert.equal((await f.w.announcementDraftList(f.req('second',{}))).pendingCount,0);
 });

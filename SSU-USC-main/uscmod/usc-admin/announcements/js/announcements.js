@@ -1,6 +1,7 @@
-import { initializeAnnouncementReview, saveReviewDraft, clearReviewDraft, draftImage } from './announcement-review.js';
+import { registerAnnouncementMedia, announcementImages, mountAnnouncementGallery } from '../../../shared/announcement-media.mjs';
+import { initializeAnnouncementReview, saveReviewDraft, clearReviewDraft, draftImage, uploadReviewImage, loadReviewImage } from './announcement-review.js';
 import { activityAttributionText, activityHistoryHref, trackedOfficerAction } from '../../../shared/officer-activity-client.js';
-import { attachSurveyButton, surveyIdFromLink } from '../../../shared/survey-links.mjs';
+import { attachSurveyButton } from '../../../shared/survey-links.mjs';
 import { initializeFacebookPublishing, hydrateFacebookDeliveries, facebookRequest } from './facebook-publishing.js';
 import { RETENTION_MS, daysRemaining, canRestore } from "./announcement-retention.mjs";
 import { db, auth } from "../../../firebase/firebase-config.js";
@@ -20,14 +21,15 @@ const uscAuthAllowed = await (globalThis.USC_AUTH_READY || Promise.resolve(false
 if (uscAuthAllowed !== true) await new Promise(() => {});
 
 
-const surveyLinkInput = document.getElementById('announcementSurveyLink');
-const attachedSurveyId = new URLSearchParams(location.search).get('survey');
-if (/^[a-zA-Z0-9]{20}$/.test(attachedSurveyId || '')) surveyLinkInput.value = new URL(`/survey/index.html?id=${attachedSurveyId}`, location.origin).href;
+let legacySurveyId = '';
+
 const announcementForm = document.getElementById("announcementForm");
 const announcementTitleInput = document.getElementById("announcementTitle");
 const announcementCategoryInput = document.getElementById("announcementCategory");
 const announcementAudienceInput = document.getElementById("announcementAudience");
 const announcementContentInput = document.getElementById("announcementContent");
+const attachedSurveyId = new URLSearchParams(location.search).get("survey");
+if (/^[a-zA-Z0-9]{20}$/.test(attachedSurveyId || "")) announcementContentInput.value = new URL(`/survey/index.html?id=${attachedSurveyId}`, location.origin).href;
 const announcementImageInput = document.getElementById("announcementImage");
 const imagePickerBtn = document.getElementById("imagePickerBtn");
 const imageFileName = document.getElementById("imageFileName");
@@ -65,6 +67,8 @@ const modalAnnouncementContent = document.getElementById("modalAnnouncementConte
 const announcementsCollection = collection(db, "announcements");
 
 let selectedImageFile = null;
+let selectedImages = [];
+let imageProcessing = false, selectionGeneration = 0, savingAnnouncement = false;
 let selectedImageObjectUrl = "";
 let liveAnnouncements = [];
 let archivedAnnouncements = [], deletedAnnouncements = [];
@@ -266,8 +270,8 @@ function syncPreviewCard() {
         );
     }
 
-    if (selectedImageObjectUrl) {
-        setDraftPreviewImage(selectedImageObjectUrl);
+    if (selectedImages[0]?.url || selectedImageObjectUrl) {
+        setDraftPreviewImage(selectedImages[0]?.url || selectedImageObjectUrl);
     } else {
         setDraftPreviewImage("");
     }
@@ -284,6 +288,7 @@ function resetAnnouncementForm() {
     endCompose();
     announcementForm?.reset();
     selectedImageFile = null;
+    selectionGeneration++; selectedImages = []; legacySurveyId = ''; renderSelectedImages();
     releaseDraftObjectUrl();
     setImageFileLabel();
     setDraftPreviewImage("");
@@ -378,6 +383,7 @@ function renderRecentAnnouncements(announcements) {
 
     recentAnnouncementsList.innerHTML = announcements
         .map((announcement, index) => {
+ registerAnnouncementMedia(announcement);
             const hasImage = !!safeText(announcement.imageUrl);
             const imageMarkup = hasImage
                 ? `<img class="recent-announcement-image" src="${escapeHtml(announcement.imageUrl)}" alt="${escapeHtml(
@@ -427,22 +433,18 @@ imagePickerBtn?.addEventListener("click", () => {
     announcementImageInput?.click();
 });
 
-announcementImageInput?.addEventListener("change", (event) => {
-    const file = event.target.files?.[0] || null;
-
-    selectedImageFile = file;
-    releaseDraftObjectUrl();
-
-    if (file) {
-        selectedImageObjectUrl = URL.createObjectURL(file);
-        setImageFileLabel(file.name);
-        setDraftPreviewImage(selectedImageObjectUrl);
-    } else {
-        setImageFileLabel();
-        setDraftPreviewImage("");
-    }
-
-    syncPreviewCard();
+function renderSelectedImages() {
+ const host=document.getElementById('selectedAnnouncementImages');host.replaceChildren();
+ selectedImages.forEach((item,index)=>{const wrap=document.createElement('div'),img=document.createElement('img'),remove=document.createElement('button');img.src=item.url;img.alt=`Selected image ${index+1}`;remove.type='button';remove.className='mini-btn light';remove.textContent='Remove';remove.setAttribute('aria-label',`Remove image ${index+1}`);remove.onclick=()=>{selectedImages.splice(index,1);renderSelectedImages();};wrap.append(img,remove);host.append(wrap);});
+ const previewHost=document.getElementById('selectedImagesLivePreview') || document.createElement('div');previewHost.id='selectedImagesLivePreview';
+ if(selectedImages.length>1){announcementPreviewImageWrap.append(previewHost);mountAnnouncementGallery(previewHost,{title:announcementTitleInput.value,imageUrls:selectedImages.map(item=>item.url)});}else previewHost.remove();
+ setImageFileLabel(selectedImages.length ? `${selectedImages.length} images selected` : 'No images selected');setDraftPreviewImage(selectedImages[0]?.url || '');
+ if(selectedImages.length>1)announcementPreviewImage.hidden=true;
+}
+announcementImageInput?.addEventListener('change', async event => {
+ const files=[...event.target.files], generation=selectionGeneration;event.target.value='';imagePickerBtn.disabled=true;imageProcessing=true;
+ try { for(const file of files) { const url=await draftImage(file);if(generation!==selectionGeneration)break;selectedImages.push({url}); } }
+ catch(error){alert(error.message);}finally{imageProcessing=false;imagePickerBtn.disabled=false;renderSelectedImages();}
 });
 
 clearAnnouncementBtn?.addEventListener("click", () => {
@@ -470,29 +472,26 @@ announcementForm?.addEventListener("submit", async (event) => {
         return;
     }
 
-    let surveyId;
-    try { surveyId = surveyIdFromLink(surveyLinkInput.value, location.origin, globalThis.USC_PUBLIC_ORIGIN); }
-    catch (error) { alert(error.message); return; }
-    if (surveyId) {
-      try {
-        const { surveyCall } = await import('../../../shared/needs-assessment-client.js');
-        await surveyCall('Public', { surveyId });
-      } catch (error) { alert(`Cannot attach survey: ${error.message}`); return; }
-    }
+    if(savingAnnouncement)return;
+    if(imageProcessing){alert('Wait for the selected images to finish processing.');return;}
+    savingAnnouncement=true;
+    announcementForm.querySelectorAll('button').forEach(button=>button.disabled=true);
     const facebookToggle = document.getElementById('alsoPostFacebook');
     const wantsFacebook = facebookToggle.checked && !facebookToggle.disabled;
     publishAnnouncementBtn.disabled = true;
     publishAnnouncementBtn.textContent = "Saving draft...";
 
     try {
-        const imageUrl = await draftImage(selectedImageFile), imagePath = "";
+        for(const item of selectedImages) if(!item.id) { const result=await uploadReviewImage(item.url);item.id=result.id; }
+        const imageIds=selectedImages.map(item=>item.id), imageUrl = '', imagePath = '';
 
         const postInput = {
             title,
             category,
             audience,
             content,
-            surveyId,
+            surveyId: legacySurveyId,
+            imageIds,
             imageUrl,
             imagePath,
             createdByUid: auth.currentUser?.uid || "",
@@ -509,6 +508,8 @@ announcementForm?.addEventListener("submit", async (event) => {
         console.error("Announcement publish error:", error);
         alert(error.message || "Failed to publish announcement.");
     } finally {
+        savingAnnouncement=false;
+        announcementForm.querySelectorAll('button').forEach(button=>button.disabled=false);
         if (publishAnnouncementBtn) {
             publishAnnouncementBtn.disabled = false;
             publishAnnouncementBtn.textContent = "Save draft";
@@ -617,7 +618,7 @@ const photosDialog=document.getElementById('bulletinPhotosDialog');
 let photoRows=[];
 document.getElementById('bulletinPhotos')?.addEventListener('click',()=>{
   endCompose();
-  photoRows=[...new Map([...liveAnnouncements,...archivedAnnouncements].filter(item=>item.imageUrl).map(item=>[item.imageUrl,item])).values()];
+  photoRows=[...new Map([...liveAnnouncements,...archivedAnnouncements].flatMap(item=>announcementImages(item).map(imageUrl=>({...item,imageUrl}))).map(item=>[item.imageUrl,item])).values()];
   document.getElementById('bulletinPhotoGrid').innerHTML=photoRows.length ? photoRows.map((item,index)=>`<button type="button" data-photo-index="${index}" aria-label="View photo: ${escapeHtml(item.title || 'Announcement')}"><img src="${escapeHtml(item.imageUrl)}" alt="${escapeHtml(item.title || 'Announcement')}" loading="lazy"><span>${escapeHtml(item.title || 'Announcement')}</span></button>`).join('') : '<p>No uploaded photos yet.</p>';
   hydrateMediaImages(document.getElementById('bulletinPhotoGrid')).catch(()=>{});
   photosDialog.showModal();
@@ -661,11 +662,15 @@ setInterval(()=>{if(bulletinView==='deleted')renderLibrary();},60000);
 initializeFacebookPublishing(endCompose);
 setInterval(() => { if (!document.hidden) hydrateFacebookDeliveries(recentAnnouncementsList, bulletinView); }, 30000);
 
-await initializeAnnouncementReview(content => {
+await initializeAnnouncementReview(async content => {
   resetAnnouncementForm();
   announcementTitleInput.value=content.title;announcementCategoryInput.value=content.category;announcementAudienceInput.value=content.audience;announcementContentInput.value=content.content;
-  surveyLinkInput.value=content.surveyId ? new URL(`/survey/index.html?id=${content.surveyId}`,location.origin).href : '';
+  legacySurveyId=content.surveyId || '';
+  selectedImages=(content.imageIds || []).map(id=>({id,url:''}));
+  for(const item of selectedImages)item.url=await loadReviewImage(content._draftId,item.id);
+  if(!selectedImages.length && content.imageUrl)selectedImages=[{url:content.imageUrl}];
+  renderSelectedImages();
   document.getElementById('alsoPostFacebook').checked=content.facebookRequested;
-  setDraftPreviewImage(content.imageUrl || '');syncPreviewCard();
+  setDraftPreviewImage(selectedImages[0]?.url || '');syncPreviewCard();
   document.getElementById('announcementFormCard').scrollIntoView({block:'start'});
 });

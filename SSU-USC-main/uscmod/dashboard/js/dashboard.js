@@ -1,3 +1,4 @@
+import { registerAnnouncementMedia } from '../../shared/announcement-media.mjs';
 import { attachSurveyButton } from '../../shared/survey-links.mjs';
 import { announcementExcerpt } from "../../shared/announcement-excerpt.mjs";
 import { auth, db } from "../../firebase/firebase-config.js";
@@ -266,6 +267,7 @@ function applyStudentProfile() {
 }
 
 function buildAnnouncementCard(announcement) {
+ registerAnnouncementMedia(announcement);
   const category = safeText(announcement.category, "Official Notice");
   const publishedDate = formatDate(announcement.createdAt || announcement.createdAtMs);
   const title = safeText(announcement.title, "Untitled announcement");

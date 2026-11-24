@@ -1,3 +1,4 @@
+import { registerAnnouncementMedia } from '../../shared/announcement-media.mjs';
 import { attachSurveyButton } from '../../shared/survey-links.mjs';
 import { db } from "../../firebase/firebase-config.js";
 import {
@@ -171,6 +172,7 @@ function buildSlide(announcement, role = "active") {
     "USC Announcement"
   );
 
+  registerAnnouncementMedia(announcement);
   const imageUrl = safeText(
     announcement.imageUrl
   );

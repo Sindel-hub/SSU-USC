@@ -1,3 +1,4 @@
+import { registerAnnouncementMedia } from '../../../shared/announcement-media.mjs';
 import { announcementExcerpt } from "../../../shared/announcement-excerpt.mjs";
 import { summarizeStudentSignIns } from "./student-signin-model.mjs";
 import { statusBreakdown, renderOverviewChart } from "./overview-charts.js?v=1";
@@ -30,7 +31,7 @@ const escapeHtml = (value) => clean(value).replace(/[&<>"']/g, c => ({"&":"&amp;
 function setText(selector, value) { document.querySelectorAll(selector).forEach(el => el.textContent = String(value)); }
 function canonicalRole(_email, role) { const value=clean(role,"student").toLowerCase(); return ["student","officer","admin"].includes(value)?value:"student"; }
 function getEventDate(item){ return toDate(item?.eventDate || item?.date || item?.startDate); }
-function announcementImage(item){ return clean(item.imageUrl || item.imageURL || item.posterUrl || item.announcementImageUrl); }
+function announcementImage(item){ registerAnnouncementMedia({...item,imageUrl:clean(item.imageUrl || item.imageURL || item.posterUrl || item.announcementImageUrl)}); return clean(item.imageUrl || item.imageURL || item.posterUrl || item.announcementImageUrl); }
 
 function formatTimeRange(item) {
   const start = clean(item.startTime);
