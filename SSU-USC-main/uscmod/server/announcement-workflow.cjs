@@ -14,7 +14,7 @@ function createAnnouncementWorkflow({ db, requireActiveRole, history, Timestamp,
       const term = flags(a?.permissions || []);
       for (const key of Object.keys(caps)) caps[key] = caps[key] && term[key];
     }
-    return caps;
+    return { ...caps, approveOwn: profile.role === 'officer' && profile.officePosition === 'President' && caps.review && caps.publish };
   }
   function content(input = {}) {
     const result = { title: text(input.title, 'title', 160), content: text(input.content, 'content', 20000), category: text(input.category, 'category', 80), audience: text(input.audience, 'audience', 120), surveyId: input.surveyId ? id(input.surveyId) : '', facebookRequested: input.facebookRequested === true };
@@ -31,7 +31,11 @@ function createAnnouncementWorkflow({ db, requireActiveRole, history, Timestamp,
     const fresh = { ...request, trustedProfile: profile };
     const caps = await capabilities(fresh);
     const assignment = history ? await history.context(tx, fresh, undefined, { includeLegacy: true }) : null;
-    if (assignment?.assignmentId) { const term = flags(assignment.permissions || []); for (const key of Object.keys(caps)) caps[key] = caps[key] && term[key]; }
+    if (assignment?.assignmentId) {
+      const term = flags(assignment.permissions || []);
+      for (const key of Object.keys(term)) caps[key] = caps[key] && term[key];
+      caps.approveOwn = caps.approveOwn && assignment.position === 'President' && caps.review && caps.publish;
+    }
     return { caps, assignment };
   }
   return {
@@ -78,7 +82,7 @@ function createAnnouncementWorkflow({ db, requireActiveRole, history, Timestamp,
             const survey = await tx.get(db.doc(`needs_assessment_surveys/${payload.surveyId}`));
             if (!survey.exists || survey.data().status !== 'published') throw new ServiceError('failed-precondition', 'Attach a published survey.');
           }
-          patch = { content: payload, status: 'draft', version: expectedVersion + 1, reviewedVersion: null, reviewedBy: '', reviewedAtMs: null, reviewNote: '', authorUid: actor, authorAssignmentId: assignment?.assignmentId || '', createdAtMs: draft?.createdAtMs || at };
+          patch = { content: payload, status: 'draft', version: expectedVersion + 1, reviewedVersion: null, reviewedBy: '', approvalMode: null, reviewedAtMs: null, reviewNote: '', authorUid: actor, authorAssignmentId: assignment?.assignmentId || '', createdAtMs: draft?.createdAtMs || at };
           if (assignment) patch.activityAttribution = {
             ...draft?.activityAttribution,
             [draft ? 'updated' : 'created']: actorAttribution(assignment, at)
@@ -91,14 +95,16 @@ function createAnnouncementWorkflow({ db, requireActiveRole, history, Timestamp,
             if (!['draft', 'needs-revision'].includes(draft.status)) throw new ServiceError('failed-precondition', 'Save the draft before submitting for review.');
             patch = { status: 'in-review', reviewNote: '' }; event = 'Submitted for content review';
           } else if (action === 'ready' || action === 'revise') {
-            if (!caps.review || draft.authorUid === actor) throw new ServiceError('permission-denied', 'A designated reviewer other than the author must review this post.');
+            const ownDraft = draft.authorUid === actor;
+            const presidentApproval = ownDraft && action === 'ready' && caps.approveOwn;
+            if (!caps.review || (ownDraft && !presidentApproval)) throw new ServiceError('permission-denied', 'A designated reviewer other than the author must review this post.');
             if (draft.status !== 'in-review') throw new ServiceError('failed-precondition', 'Only a submitted draft can be reviewed.');
             const reviewNote = text(note, 'review note', 2000, action === 'ready');
-            patch = { status: action === 'ready' ? 'ready' : 'needs-revision', reviewedBy: actor, reviewedVersion: action === 'ready' ? draft.version : null, reviewedAtMs: at, reviewNote };
-            event = action === 'ready' ? 'Ready to publish' : 'Revision requested';
+            patch = { status: action === 'ready' ? 'ready' : 'needs-revision', reviewedBy: actor, approvalMode: presidentApproval ? 'president-self' : null, reviewedVersion: action === 'ready' ? draft.version : null, reviewedAtMs: at, reviewNote };
+            event = presidentApproval ? 'President approved own draft' : action === 'ready' ? 'Ready to publish' : 'Revision requested';
           } else {
             if (!caps.publish) throw new ServiceError('permission-denied', 'Publishing is not assigned to your office.');
-            if (draft.status !== 'ready' || draft.reviewedVersion !== draft.version || !draft.reviewedBy || draft.reviewedBy === draft.authorUid) throw new ServiceError('failed-precondition', 'The current draft must be reviewed and marked Ready to publish.');
+            if (draft.status !== 'ready' || draft.reviewedVersion !== draft.version || !draft.reviewedBy || (draft.reviewedBy === draft.authorUid && draft.approvalMode !== 'president-self')) throw new ServiceError('failed-precondition', 'The current draft must be reviewed and marked Ready to publish.');
             const post = db.doc(`announcements/${ref.id}`), existing = await tx.get(post);
             if (existing.exists) throw new ServiceError('already-exists', 'This announcement ID already exists.');
             if (draft.content.surveyId) {

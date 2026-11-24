@@ -56,8 +56,10 @@ function render() {
     function add(label,action){const b=el('button',label,'mini-btn light');b.type='button';b.onclick=()=>act(row,action,note,b);actions.append(b);}
     if(caps.draft&&row.authorUid===auth.currentUser?.uid&&['draft','needs-revision','ready'].includes(row.status))add('Edit draft','edit');
     if(caps.draft&&row.authorUid===auth.currentUser?.uid&&['draft','needs-revision'].includes(row.status))add('Send for review','submit');
-    if(caps.review&&row.authorUid!==auth.currentUser?.uid&&row.status==='in-review'){
-      card.append(note);add('Needs revision','revise');add('Ready to publish','ready');
+    const ownDraft = row.authorUid === auth.currentUser?.uid;
+    if (caps.review && (!ownDraft || caps.approveOwn) && row.status === 'in-review') {
+      if (!ownDraft) { card.append(note); add('Needs revision', 'revise'); }
+      add(ownDraft ? 'Approve for publication' : 'Ready to publish', 'ready');
       actions.querySelectorAll('button').forEach(b=>{const handler=b.onclick;b.onclick=()=>{if(!preview.open){preview.open=true;$('announcementReviewMessage').textContent='Read the complete draft and attachments before recording your review.';return;}handler();};});
     }
     if(caps.publish&&row.status==='ready')add('Publish reviewed post','publish');
