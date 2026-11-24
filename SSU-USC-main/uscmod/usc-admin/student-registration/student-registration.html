@@ -9,23 +9,20 @@
   <link rel="stylesheet" href="css/student-registration-modern.css?v=1" />
   <script src="../../shared/app-config.js"></script>
 <link rel="stylesheet" href="../../shared/scrollbars.css?v=2" />
+  <link rel="stylesheet" href="css/account-registration.css?v=1" />
 </head>
-<body class="student-registration-page">
+<body class="student-registration-page account-registration-page">
   <main class="page">
-    <div class="top-row no-print">
-      <a href="../admin-dashboard/users.html" class="back-link">← Back to User Directory</a>
-    </div>
+    <div class="top-row no-print"><a href="../admin-dashboard/users.html" class="back-link">← User Directory</a><span class="registration-brand">SSU <span>/</span> USC</span></div>
+    <header class="registration-heading no-print"><div class="registration-title-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="10" cy="8" r="3"/><path d="M4 20v-2a6 6 0 0 1 12 0v2M19 7v6m-3-3h6"/></svg></div><h1>Register student account</h1></header>
+    <nav class="registration-tabs no-print" aria-label="Account type"><a href="student-registration.html" aria-current="page">Student account</a><a href="officer-registration.html" >Officer account</a></nav>
 
-    <header class="registration-heading no-print">
-      <span class="registration-eyebrow">Account management</span>
-      <h1>Register Student Account</h1>
-    </header>
     <section class="panel registration-panel no-print" aria-label="Student registration">
-      <div class="registration-panel-head"><h2>Masterlist lookup</h2><span class="required-note">Institutional email is optional</span></div>
+      <div class="registration-panel-head"><h2>Find student</h2><span class="registration-tag">Masterlist lookup</span></div>
       <form id="studentLookup" class="registration-group">
-        <label for="studentId">Student ID</label>
-        <input id="studentId" inputmode="numeric" pattern="[0-9]+" maxlength="64" required>
-        <div class="form-action"><button type="submit">Find student</button></div>
+        <label for="studentId">Student ID</label><div class="lookup-controls">
+        <input id="studentId" placeholder="Enter Student ID" inputmode="numeric" pattern="[0-9]+" maxlength="64" required>
+        <div class="form-action"><button type="submit">Find student</button></div></div>
       </form>
       <p id="registrationStatus" role="status" aria-live="polite"></p>
       <form id="studentForm" hidden>
