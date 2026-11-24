@@ -85,17 +85,55 @@ function updateReport() {
       <div class="na-stat"><strong>${report.total}</strong>${filter ? 'Filtered responses' : 'Total responses'}</div>
       <div class="na-stat"><strong>${departmentCount}</strong>Departments represented</div>
     </div>
-    ${!filter ? `<section class="na-analytics-section"><h3>Responses by department</h3>${report.departments.map(d => bar(d.name, d.count, report.total)).join('')}</section>` : ''}
+    ${!filter ? `<section class="na-analytics-section"><h3>Responses by department</h3>${pieChart(report.departments.map(({ name, count }) => ({ option: name, count })), report.total)}</section>` : ''}
     ${report.questions.map((question, index) => `<section class="na-analytics-section">
       <h3>${index + 1}. ${e(question.label)}</h3>
       <p class="na-answer-count">${question.answered} answered${question.average === null ? '' : ` · ${question.average.toFixed(2)} / 5 average`}</p>
-      ${question.answered ? question.counts.map(answer => bar(answer.option, answer.count, question.answered)).join('') : '<p>No answers yet.</p>'}
+      ${question.answered ? question.type === 'multiple'
+        ? question.counts.map(answer => bar(answer.option, answer.count, question.answered)).join('')
+        : question.counts.length ? pieChart(question.counts, question.answered) : '' : '<p>No answers yet.</p>'}
       ${question.texts.length ? `<details><summary>Written responses (${question.texts.length})</summary>${question.texts.map(text => `<p class="na-text-response">${e(text)}</p>`).join('')}</details>` : ''}
     </section>`).join('')}`;
   const rows=filter?responses.filter(r=>r.department===filter):responses;
   $('naResponses').innerHTML=`${rows.length > 100 ? '<p>First 100 responses. Export the CSV for the complete list.</p>' : ''}<div class="na-table-wrap"><table class="na-table"><thead><tr><th>Department</th><th>Submitted</th><th>Answers</th></tr></thead><tbody>${rows.slice(0,100).map(r=>`<tr><td>${e(r.department)}</td><td>${e(new Date(r.submittedAt).toLocaleString())}</td><td>${reportSurvey.questions.map(q=>`${e(q.label)}: ${e(Array.isArray(r.answers[q.id])?r.answers[q.id].join('; '):r.answers[q.id]??'Skipped')}`).join('<br>')}</td></tr>`).join('')}</tbody></table></div>`;
 }
-function bar(label,count,total) { return `<div class="na-bar"><span>${e(label)}</span><meter min="0" max="${Math.max(total,1)}" value="${count}" aria-label="${e(label)}: ${count}"></meter><span>${count}</span></div>`; }
+const chartColors = ['#2563a8', '#bb421e', '#9e590c', '#217747', '#8b43a4', '#007582', '#ae3866', '#5262a0', '#765237', '#366f70', '#75404f', '#61711d', '#285e86', '#6b51a4', '#8a4d72'];
+const shareFormat = new Intl.NumberFormat(undefined, { style: 'percent', maximumFractionDigits: 1 });
+const share = (count, total) => shareFormat.format(total ? count / total : 0);
+
+function pieChart(choices, total) {
+  if (!total) return '<p>No responses yet.</p>';
+  const point = (angle, radius) => [100 + Math.sin(angle) * radius, 100 - Math.cos(angle) * radius];
+  let start = 0;
+  const slices = [], labels = [];
+  const legend = choices.map(({ option, count }, index) => {
+    const color = chartColors[index % chartColors.length];
+    if (count > 0) {
+      const fraction = count / total;
+      const sweep = fraction * 2 * Math.PI;
+      const end = start + sweep;
+      const percentage = share(count, total);
+      slices.push(count === total
+        ? `<circle cx="100" cy="100" r="96" fill="${color}"/>`
+        : `<path d="M 100 100 L ${point(start, 96).join(' ')} A 96 96 0 ${fraction > .5 ? 1 : 0} 1 ${point(end, 96).join(' ')} Z" fill="${color}" stroke="white" stroke-width="1"/>`);
+      if (fraction >= .09) {
+        const [x, y] = count === total ? [100, 100] : point(start + sweep / 2, 61);
+        labels.push(`<text x="${x}" y="${y}" text-anchor="middle" dominant-baseline="central">${percentage}</text>`);
+      }
+      start = end;
+    }
+    return `<li><span class="na-pie-swatch" aria-hidden="true" style="--slice-color:${color}"></span><span>${e(option)}</span><span class="na-chart-value">${count} (${share(count, total)})</span></li>`;
+  });
+  return `<div class="na-pie-chart">
+    <svg viewBox="0 0 200 200" aria-hidden="true" focusable="false">${slices.join('')}${labels.join('')}</svg>
+    <ul class="na-pie-legend">${legend.join('')}</ul>
+  </div>`;
+}
+
+function bar(label, count, total) {
+  const value = `${count} (${share(count, total)})`;
+  return `<div class="na-bar"><span>${e(label)}</span><meter min="0" max="${total}" value="${count}" aria-label="${e(label)}: ${value}"></meter><span>${value}</span></div>`;
+}
 async function loadResults(survey) {
   const request = ++resultsRequest;
   $('naResultsTitle').textContent = survey.title;
