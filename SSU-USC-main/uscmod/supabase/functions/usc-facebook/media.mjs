@@ -26,10 +26,12 @@ export async function publishFacebookPost(pageId, message, images, send) {
   let publicationStarted = false;
   try {
     if (images.length > 1) {
-      const attached = {};
+      const attached = {}, uploadedIds = new Set();
       for (const [index, url] of images.entries()) {
         const photo = await send(`${pageId}/photos`, {url, published: 'false'});
         if (!/^[0-9]+$/.test(String(photo.id || ''))) throw new Error('Facebook did not return an uploaded photo ID.');
+        if (uploadedIds.has(String(photo.id))) throw new Error('Facebook returned a duplicate uploaded photo ID.');
+        uploadedIds.add(String(photo.id));
         attached[`attached_media[${index}]`] = JSON.stringify({media_fbid: String(photo.id)});
       }
       publicationStarted = true;
