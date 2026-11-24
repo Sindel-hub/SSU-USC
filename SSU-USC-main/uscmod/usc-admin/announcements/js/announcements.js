@@ -1,6 +1,6 @@
 import { initializeAnnouncementReview, saveReviewDraft, clearReviewDraft, draftImage } from './announcement-review.js';
 import { activityAttributionText, activityHistoryHref, trackedOfficerAction } from '../../../shared/officer-activity-client.js';
-import { surveyIdFromLink } from '../../../shared/survey-links.mjs';
+import { attachSurveyButton, surveyIdFromLink } from '../../../shared/survey-links.mjs';
 import { initializeFacebookPublishing, hydrateFacebookDeliveries, facebookRequest } from './facebook-publishing.js';
 import { RETENTION_MS, daysRemaining, canRestore } from "./announcement-retention.mjs";
 import { db, auth } from "../../../firebase/firebase-config.js";
@@ -310,6 +310,7 @@ function openAnnouncementModal(announcement) {
     if (modalAnnouncementTitle) modalAnnouncementTitle.textContent = safeText(announcement.title, "Announcement");
     if (modalAnnouncementAudience) modalAnnouncementAudience.textContent = safeText(announcement.audience, "All Students");
     if (modalAnnouncementContent) modalAnnouncementContent.textContent = String(announcement.content ?? "");
+    attachSurveyButton(modalAnnouncementContent, announcement);
 
     announcementModal.hidden = false;
     document.body.classList.add("modal-open");
