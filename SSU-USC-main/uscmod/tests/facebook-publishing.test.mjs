@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import { stripTypeScriptTypes } from 'node:module';
-import { isAdministrator, canPublish, deliveryMessage, retryable } from '../supabase/functions/usc-facebook/policy.mjs';
+import { isAdministrator, canPublish, deliveryMessage, retryable, withSurveyLink } from '../supabase/functions/usc-facebook/policy.mjs';
 
 const officer={role:'officer',isActive:true,accountStatus:'approved',studentStanding:'active',officePosition:'President'};
 test('connection is admin-only and custom permission removal overrides office defaults',()=>{
@@ -18,9 +18,10 @@ const source=stripTypeScriptTypes(fs.readFileSync(new URL('../supabase/functions
 function wire(data) {
   return {fields:Object.fromEntries(Object.entries(data).map(([key,value])=>[key,typeof value==='boolean'?{booleanValue:value}:Array.isArray(value)?{arrayValue:{values:value.map(v=>({stringValue:v}))}}:{stringValue:String(value)}]))};
 }
-async function harness({profile=officer,claims={},disabled=false,graphFailure=null}={}) {
+async function harness({profile=officer,claims={},disabled=false,graphFailure=null,post={}}={}) {
   const tables={facebook_connection:[],facebook_deliveries:[],facebook_oauth_sessions:[]};
   let handler, graphCalls=0;
+  const published = [];
   class Query {
     constructor(name){this.name=name;this.filters=[];this.operation='read';}
     select(){return this;}eq(k,v){this.filters.push(r=>r[k]===v);return this;}
@@ -52,11 +53,12 @@ async function harness({profile=officer,claims={},disabled=false,graphFailure=nu
     url=String(url);
     if(url.includes('identitytoolkit'))return Response.json({users:[{localId:'officer1',disabled,customAttributes:JSON.stringify(claims)}]});
     if(url.includes('/users/'))return Response.json(wire(profile));
-    if(url.includes('/announcements/'))return Response.json(wire({title:'Test',content:'Content',facebookRequested:true,imageUrl:''}));
+    if(url.includes('/announcements/'))return Response.json(wire({title:'Test',content:'Content',facebookRequested:true,imageUrl:'',...post}));
     if(String(url).includes('graph.facebook.com')){
       graphCalls++;
       if(url.includes('/oauth/access_token'))return Response.json({access_token:'private-user-token'});
       if(url.includes('/me/accounts'))return Response.json({data:[{id:'123',name:'Official Page',access_token:'new-private-page-token',tasks:['CREATE_CONTENT']}]});
+      published.push({ url, fields: Object.fromEntries(options.body) });
       if(graphFailure==='network')throw new TypeError('Network failed');
       if(graphFailure==='reject')return Response.json({error:{code:190}},{status:400});
       await new Promise(resolve=>setTimeout(resolve,5));
@@ -64,10 +66,10 @@ async function harness({profile=officer,claims={},disabled=false,graphFailure=nu
     }
     throw Error('Unexpected request');
   };
-  const init=new Function('createClient','isAdministrator','canPublish','deliveryMessage','Deno','fetch',source+'\nreturn {seal};');
-  const helpers=init(()=>db,isAdministrator,canPublish,deliveryMessage,{env:{get:name=>env[name]},serve:fn=>{handler=fn;}},apiFetch);
+  const init=new Function('createClient','isAdministrator','canPublish','deliveryMessage','withSurveyLink','Deno','fetch',source+'\nreturn {seal};');
+  const helpers=init(()=>db,isAdministrator,canPublish,deliveryMessage,withSurveyLink,{env:{get:name=>env[name]},serve:fn=>{handler=fn;}},apiFetch);
   tables.facebook_connection.push({id:true,page_id:'123',page_name:'Official Page',token_cipher:await helpers.seal('private-page-token')});
-  return {tables,get graphCalls(){return graphCalls;},setFailure(value){graphFailure=value;},async call(action,body={}){
+  return {tables,published,get graphCalls(){return graphCalls;},setFailure(value){graphFailure=value;},async call(action,body={}){
     const response=await handler(new Request('https://test.supabase.co/functions/v1/usc-facebook',{method:'POST',headers:{Origin:'https://portal.test','Content-Type':'application/json','x-firebase-token':'verified-test-token'},body:JSON.stringify({action,...body})}));
     return {status:response.status,...await response.json()};
   }};
@@ -117,4 +119,18 @@ test('admin OAuth exchanges and selects a Page without returning any tokens',asy
   const connected=await h.call('connect',{state,verifier,pageId:'123'});assert.equal(connected.ok,true);
   assert.equal(h.tables.facebook_connection[0].token_cipher.includes('new-private-page-token'),false);
   assert.equal((await h.call('connect',{state,verifier,pageId:'123'})).ok,false);
+});
+
+test('Facebook feed and photo captions include the attached public survey URL exactly once', async () => {
+  const surveyId = 'A'.repeat(20);
+  const href = `https://portal.test/survey/index.html?id=${surveyId}`;
+  for (const imageUrl of ['', 'https://portal.test/image.jpg']) {
+    const h = await harness({ post: { surveyId, imageUrl } });
+    assert.equal((await h.call('publish', { announcementId: 'survey' })).delivery.status, 'succeeded');
+    const [{ url, fields }] = h.published;
+    assert.ok(url.endsWith(imageUrl ? '/photos' : '/feed'));
+    assert.equal(imageUrl ? fields.caption : fields.message, `Test\n\nContent\n\nTake the survey: ${href}`);
+  }
+  assert.equal(withSurveyLink(href, surveyId, 'https://portal.test'), href);
+  assert.equal(withSurveyLink('Content', 'https://untrusted.test', 'https://portal.test'), 'Content');
 });

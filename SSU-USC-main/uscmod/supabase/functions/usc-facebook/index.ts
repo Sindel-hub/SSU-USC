@@ -1,5 +1,5 @@
 import { createClient } from 'npm:@supabase/supabase-js@2';
-import { isAdministrator, canPublish, deliveryMessage } from './policy.mjs';
+import { isAdministrator, canPublish, deliveryMessage, withSurveyLink } from './policy.mjs';
 
 function secret(name: string) { const value = Deno.env.get(name); if (!value) throw new Error('Facebook service is not configured.'); return value; }
 const db = createClient(secret('SUPABASE_URL'), secret('SUPABASE_SERVICE_ROLE_KEY'), {auth:{persistSession:false}});
@@ -144,7 +144,7 @@ Deno.serve(async req=>{
     if(post.facebookRequested!==true)throw new Error('Facebook publishing was not enabled for this announcement.');
     const c=await connection(); if(!c)throw new Error('No Facebook Page connected. Connect one in Settings and retry.');
     const message=deliveryMessage(post);
-    if(!message.trim()||message.length>60000)throw new Error('The announcement is too long for Facebook.');
+    if(!message.trim()||withSurveyLink(message,post.surveyId,origin).length>60000)throw new Error('The announcement is too long for Facebook.');
     const image=String(post.imageUrl||'');
     if(image && !/^https:\/\//.test(image))throw new Error('Facebook requires a publicly accessible HTTPS image.');
     // Decrypt before taking the reservation, so configuration errors remain safely retryable.
@@ -158,7 +158,8 @@ Deno.serve(async req=>{
     const row=claimed[0];
     let result;
     try {
-      result=await graph(`${c.page_id}/${row.image_url?'photos':'feed'}`,row.image_url?{url:row.image_url,caption:row.message,published:'true'}:{message:row.message},token,'POST');
+      const text = withSurveyLink(row.message, post.surveyId, origin);
+      result=await graph(`${c.page_id}/${row.image_url?'photos':'feed'}`,row.image_url?{url:row.image_url,caption:text,published:'true'}:{message:text},token,'POST');
     } catch(error:any) {
       const definite=error.definite===true;
       const message=definite?error.message:'Facebook delivery could not be confirmed. Ask an administrator to check the Page; another post has not been sent.';
