@@ -46,6 +46,9 @@ export async function buildHosted({ root = DEFAULT_ROOT, output = path.join(root
   let appConfig = await fs.readFile(appFile, 'utf8');
   appConfig = appConfig.replace(/globalThis\.USC_APP_CHECK_SITE_KEY = [^;]*;/, `globalThis.USC_APP_CHECK_SITE_KEY = ${JSON.stringify(settings.appCheckSiteKey)};`);
   appConfig += `\nglobalThis.USC_ENVIRONMENT = ${JSON.stringify(settings.environment)};\n`;
+  if (settings.environment === 'production') {
+    appConfig += `globalThis.USC_PUBLIC_ORIGIN = ${JSON.stringify(settings.publicOrigin)};\n`;
+  }
   if (settings.environment === 'staging') {
     // Existing Supabase-backed features are deliberately unavailable in staging
     // rather than pointing an isolated preview at production records/services.

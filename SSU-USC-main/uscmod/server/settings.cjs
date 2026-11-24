@@ -28,9 +28,12 @@ function readPublicSettings(env = process.env) {
   if (Object.keys(webConfig).some(key => !PUBLIC_KEYS.has(key))) invalid("Firebase web configuration contains unsupported or private fields.");
   if (webConfig.projectId !== projectId || typeof webConfig.apiKey !== "string" || !webConfig.apiKey || typeof webConfig.authDomain !== "string" || !/^[a-z0-9.-]+$/i.test(webConfig.authDomain)) invalid("Firebase web configuration must match the target project and include apiKey/authDomain.");
   const deploymentOrigin = env.VERCEL_URL ? httpsOrigin(`https://${env.VERCEL_URL}`) : null;
-  const publicOrigin = httpsOrigin(env.USC_PUBLIC_ORIGIN || deploymentOrigin);
+  const productionOrigin = environment === "production"
+    ? httpsOrigin(env.VERCEL_PROJECT_PRODUCTION_URL ? `https://${env.VERCEL_PROJECT_PRODUCTION_URL}` : PRODUCTION_ORIGIN)
+    : null;
+  const publicOrigin = httpsOrigin(env.USC_PUBLIC_ORIGIN || productionOrigin || deploymentOrigin);
   if (environment === "staging" && publicOrigin === PRODUCTION_ORIGIN) invalid("Staging activation links must not point to production.");
-  return { environment, projectId, webConfig, publicOrigin, allowedOrigins: new Set([publicOrigin, deploymentOrigin].filter(Boolean)), appCheckSiteKey: String(env.USC_APP_CHECK_SITE_KEY || "") };
+  return { environment, projectId, webConfig, publicOrigin, allowedOrigins: new Set([publicOrigin, productionOrigin, deploymentOrigin].filter(Boolean)), appCheckSiteKey: String(env.USC_APP_CHECK_SITE_KEY || "") };
 }
 function readServerSettings(env = process.env) {
   const settings = readPublicSettings(env);

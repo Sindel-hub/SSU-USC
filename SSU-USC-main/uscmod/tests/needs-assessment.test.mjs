@@ -32,7 +32,7 @@ test('CSV escapes quotes, line breaks and spreadsheet formulas',()=>{
  const output=csv([['=cmd()', '"quoted"', 'two\nlines', '\t=bad']]);assert.ok(output.includes('"\'=cmd()"'));assert.ok(output.includes('""quoted""'));assert.ok(output.includes('two\nlines'));assert.ok(output.includes("'\t=bad"));
 });
 test('announcement links accept only internal survey paths and safe IDs',()=>{
- const id='A'.repeat(20),origin='https://portal.test';assert.equal(surveyIdFromLink(`${origin}/survey/index.html?id=${id}`,origin),id);assert.equal(surveyAnnouncementLink({surveyId:id}),`/survey/index.html?id=${id}`);
+ const id='A'.repeat(20),origin='https://portal.test';assert.equal(surveyIdFromLink(`${origin}/survey/index.html?id=${id}`,origin),id);assert.equal(surveyIdFromLink(`https://public.test/survey/index.html?id=${id}`,origin,'https://public.test'),id);assert.equal(surveyAnnouncementLink({surveyId:id}),`/survey/index.html?id=${id}`);
  for(const value of ['javascript:alert(1)',`https://evil.test/survey/index.html?id=${id}`,`${origin}/home/home.html?id=${id}`,`${origin}/survey/index.html?id=../bad`])assert.throws(()=>surveyIdFromLink(value,origin));assert.equal(surveyAnnouncementLink({surveyId:'" onclick="x'}),'');
 });
 // Serial transaction double emulates atomic commits without any remote student data.

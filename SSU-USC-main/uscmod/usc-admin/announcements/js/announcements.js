@@ -471,7 +471,7 @@ announcementForm?.addEventListener("submit", async (event) => {
     }
 
     let surveyId;
-    try { surveyId = surveyIdFromLink(surveyLinkInput.value, location.origin); }
+    try { surveyId = surveyIdFromLink(surveyLinkInput.value, location.origin, globalThis.USC_PUBLIC_ORIGIN); }
     catch (error) { alert(error.message); return; }
     if (surveyId) {
       try {

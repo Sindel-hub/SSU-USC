@@ -9,4 +9,4 @@ export async function surveyCall(action, data = {}) {
   }
 }
 export const escapeHtml = value => String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-export const surveyLink = id => new URL(`/survey/index.html?id=${encodeURIComponent(id)}`, location.origin).href;
+export const surveyLink = id => new URL(`/survey/index.html?id=${encodeURIComponent(id)}`, globalThis.USC_PUBLIC_ORIGIN || location.origin).href;
