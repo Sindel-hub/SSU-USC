@@ -27,6 +27,6 @@ test('Firestore rules enforce unique name-claim creation for admin provisioning'
 });
 
 test('account creation pages load the duplicate-guard provisioning code version', () => {
-  assert.match(studentRegistration, /browser-provisioning\.js\?v=3/);
+  assert.match(studentRegistration, /studentRecordCall/);
   assert.match(officerRegistration, /browser-provisioning\.js\?v=3/);
 });

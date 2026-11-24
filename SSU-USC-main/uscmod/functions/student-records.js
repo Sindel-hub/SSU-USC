@@ -59,112 +59,139 @@ function createStudentRecordHandlers({db,adminAuth,requireActiveRole,requireRece
   if(known&&!expected.has(identityName(known.fullName)))error('failed-precondition','Student ID and name do not match the existing identity. Review this record before importing.');
   if(record&&current&&record.uid!==current.uid)error('failed-precondition','Student ID is linked to a different permanent account.');
  }
+ const revision=record=>record?.recordRevision||record?.lastAnnualImportId||null;
  async function applyRow(job,entry,index,request){
-  const itemRef=job.ref.collection('results').doc(String(index));
-  let result=(await itemRef.get()).data();
-  if(result?.state==='complete')return result;
+  const itemRef=job.ref.collection('results').doc(String(index)), prior=(await itemRef.get()).data();
+  if(prior?.state==='complete')return prior;
   const {row}=entry,{studentId}=row;
-  const recordIndex=db.doc(`student_record_ids/${studentId}`);
-  const claimRef=db.doc(`student_id_claims/${studentId}`);
-  const accountRef=db.doc(`school_accounts/${studentId}`);
-  const masterRef=db.doc(`student_masterlist/${studentId}`);
-  const normalizedName=identityName(row.fullName);
-  const nameRef=db.doc(`student_name_claims/${hash(normalizedName)}`);
-  if(!result){
-   const current=await resolve(studentId), saved=await getRecord(studentId);
-   verifyIdentity(current,saved,row);
-   if(M.fingerprint(current)!==entry.fingerprint || (saved?.recordRevision||saved?.lastAnnualImportId||null)!==(entry.recordRevision||null))error('failed-precondition','Student record changed since preview. Create a new preview.');
-   if(current&&row.email){
-    const authUser=await adminAuth.getUser(current.uid);
-    if(authUser.customClaims?.role==='admin'||![current.institutionalEmail,current.email,authUser.email].filter(Boolean).some(value=>value.toLowerCase()===row.email))error('failed-precondition','Existing email identity changed since preview.');
-   }
-   const uid=current?.uid||saved?.uid||crypto.randomUUID();
-   const userRef=db.doc(`users/${uid}`),recordRef=db.doc(`student_records/${uid}`);
-   await db.runTransaction(async tx=>{
-    const [user,record,indexSnap,claim,account,item,name]=await Promise.all([tx.get(userRef),tx.get(recordRef),tx.get(recordIndex),tx.get(claimRef),tx.get(accountRef),tx.get(itemRef),tx.get(nameRef)]);
-    if(item.exists){result=item.data();return;}
-    if([indexSnap,claim,account].some(s=>s.data()?.uid&&s.data().uid!==uid))error('failed-precondition','Student ID ownership changed.');
-    const profile=user.exists?{...user.data(),uid}:null;
-    const prior=record.data();
-    if(M.fingerprint(profile)!==entry.fingerprint||(prior?.recordRevision||prior?.lastAnnualImportId||null)!==(entry.recordRevision||null))error('failed-precondition','Student record changed since preview. Create a new preview.');
-    if(prior?.provisioning==='pending' && !profile)error('failed-precondition','Resume the previous import before changing this pending record.');
-    const {isActive,studentStanding,...academic}=M.nextAcademicProfile(profile||prior,row,job.data.academicYear);
-    Object.assign(academic,Object.fromEntries(['firstName','lastName','middleName','suffix'].filter(key=>Object.hasOwn(row,key)).map(key=>[key,row[key]])),{enrollmentStatus:row.enrollmentStatus||M.enrollment(row.status)});
-    const standing=profile?.studentStanding||prior?.studentStanding||studentStanding;
-    const email=profile?.institutionalEmail||(!profile ? row.email || prior?.institutionalEmail || '' : '');
-    const provision=!profile&&standing==='active'&&Boolean(email);
-    const now=clock();
-    if(provision){
-     if(name.exists&&name.data().uid!==uid)error('already-exists','Name is already reserved by a different account. Review this identity.');
-     if(!name.exists)tx.create(nameRef,{nameKey:nameRef.id,normalizedName,fullName:row.fullName,uid,studentId,accountRole:'student',createdBy:request.auth.uid,createdAt:new Date(now)});
-    }
-    const recordData={...academic,uid,studentId,role:profile?.role||'student',studentStanding:standing,institutionalEmail:email,accountUid:profile?.uid||null,provisioning:provision?'pending':null,lastAnnualImportId:job.ref.id,recordRevision:job.ref.id,updatedAtMs:now};
-    tx.set(recordIndex,{uid});
-    tx.set(recordRef,recordData,{merge:true});
-    if(profile){
-     const {enrollmentStatus,...profileAcademic}=academic;
-     tx.update(userRef,{...profileAcademic,enrollmentClassification:enrollmentStatus,studentRecordId:uid,lastAnnualImportId:job.ref.id,academicRevision:(profile.academicRevision||0)+1,updatedAt:new Date(now),updatedAtMs:now});
-     if(account.exists)tx.set(accountRef,{...profileAcademic,enrollmentClassification:enrollmentStatus,updatedAt:new Date(now)},{merge:true});
-     tx.set(masterRef,{studentId,...profileAcademic,enrollmentClassification:enrollmentStatus,studentRecordId:uid,updatedAt:new Date(now)},{merge:true});
-    }
-    const before=prior||profile;
-    const after=M.academicSnapshot(recordData);
-    if(!before||JSON.stringify(M.academicSnapshot(before))!==JSON.stringify(after))tx.set(userRef.collection('academic_history').doc(job.ref.id),{academicYear:job.data.academicYear,before:before?M.academicSnapshot(before):null,after,importId:job.ref.id,actorUid:request.auth.uid,recordedAt:now});
-    result={studentId,uid,action:profile?'updated':provision?'created':'record-saved',state:provision?'auth-pending':'complete',emailStatus:!profile&&!email?'awaiting-email':undefined,appliedAt:now};
-    if(result.emailStatus===undefined)delete result.emailStatus;
-    tx.set(itemRef,result);
-    audit(tx,request,profile?'STUDENT_ANNUAL_UPDATED':'STUDENT_RECORD_CREATED',studentId,{academicYear:job.data.academicYear,importId:job.ref.id});
+  const account=await resolve(studentId), saved=await getRecord(studentId);
+  if(!entry.reconciled)verifyIdentity(account,saved,row);
+  if(M.fingerprint(account)!==entry.fingerprint||revision(saved)!==(entry.recordRevision||null))error('failed-precondition','Student record changed since preview. Create a new preview.');
+  const uid=account?.uid||saved?.uid||crypto.randomUUID();
+  const userRef=db.doc(`users/${uid}`),recordRef=db.doc(`student_records/${uid}`);
+  const indexRef=db.doc(`student_record_ids/${studentId}`),masterRef=db.doc(`student_masterlist/${studentId}`);
+  return db.runTransaction(async tx=>{
+   const [user,record,identity,claim,school,alias,item]=await Promise.all([
+    tx.get(userRef),tx.get(recordRef),tx.get(indexRef),tx.get(db.doc(`student_id_claims/${studentId}`)),
+    tx.get(db.doc(`school_accounts/${studentId}`)),tx.get(db.doc(`login_aliases/id_${studentId}`)),tx.get(itemRef)
+   ]);
+   if(item.data()?.state==='complete')return item.data();
+   if([identity,claim,school,alias].some(s=>s.data()?.uid&&s.data().uid!==uid))error('failed-precondition','Student ID ownership changed.');
+   const current=user.exists?{...user.data(),uid}:null,before=record.data();
+   if(M.fingerprint(current)!==entry.fingerprint||revision(before)!==(entry.recordRevision||null))error('failed-precondition','Student record changed since preview. Create a new preview.');
+   if(before?.provisioning==='issuing')error('failed-precondition','Account issuance is in progress. Retry this record after issuance.');
+   const {isActive,studentStanding,...academic}=M.nextAcademicProfile(before||current,row,job.data.academicYear);
+   const names=Object.fromEntries(['firstName','lastName','middleName','suffix'].filter(key=>Object.hasOwn(row,key)).map(key=>[key,row[key]]));
+   const updatedAtMs=clock(),accountUid=current?.uid||null;
+   const data={...academic,...names,uid,studentId,role:current?.role||'student',studentStanding:current?.studentStanding||before?.studentStanding||studentStanding,
+    enrollmentStatus:row.enrollmentStatus||M.enrollment(row.status),institutionalEmail:row.email||before?.institutionalEmail||current?.institutionalEmail||'',
+    accountUid,provisioning:before?.provisioning||null,lastAnnualImportId:job.ref.id,recordRevision:job.ref.id,updatedAtMs};
+   tx.set(indexRef,{uid});
+   tx.set(recordRef,data,{merge:true});
+   tx.set(masterRef,{studentId,...academic,...names,enrollmentClassification:data.enrollmentStatus,studentRecordId:uid,updatedAt:new Date(updatedAtMs)},{merge:true});
+   const previous=before||current,after=M.academicSnapshot(data);
+   if(!previous||JSON.stringify(M.academicSnapshot(previous))!==JSON.stringify(after))tx.set(userRef.collection('academic_history').doc(job.ref.id),{
+    academicYear:job.data.academicYear,before:previous?M.academicSnapshot(previous):null,after,importId:job.ref.id,actorUid:request.auth.uid,recordedAt:updatedAtMs
+   });
+   const result={studentId,uid,action:before?'updated':'record-saved',state:'complete',appliedAt:updatedAtMs};
+   tx.set(itemRef,result);
+   audit(tx,request,'SCL_RECORD_APPLIED',studentId,{academicYear:job.data.academicYear,importId:job.ref.id});
+   return result;
+  });
+ }
+
+ function inPersonTicket(tx,profile,request){
+  const token=randomToken(),tokenHash=hash(token),now=clock(),expiresAt=now+86400000;
+  tx.create(db.doc(`student_activation_tickets/${tokenHash}`),{
+   uid:profile.uid,studentId:profile.studentId,email:profile.authEmail,verifyMailbox:false,expiresAt,state:'open',createdAt:now
+  });
+  audit(tx,request,'STUDENT_IN_PERSON_ACTIVATION_ISSUED',profile.studentId,{expiresAt});
+  return {token,expiresAt,fields:{activationTokenHash:tokenHash,activationSentAtMs:now,activationDelivery:'in-person',activationMethod:'in-person'}};
+ }
+
+ async function registerStudent(request){
+  await admin(request,true);
+  const data=request.data||{},studentId=validId(data.studentId);
+  if(data.verifiedInPerson!==true)error('failed-precondition','Confirm that you verified the student in person.');
+  const existing=await resolve(studentId);
+  if(existing){
+   if(data.reissue!==true)error('already-exists','An account already exists for this Student ID.');
+   return db.runTransaction(async tx=>{
+    const userRef=db.doc(`users/${existing.uid}`),profile=(await tx.get(userRef)).data();
+    if(profile?.studentId!==studentId||profile.role!=='student'||profile.accountStatus!=='pending'||profile.activationStatus!=='pending'||profile.activationMethod!=='in-person'||profile.accountRemoved||profile.accountRemovalPending)
+     error('failed-precondition','This account cannot receive an in-person activation link.');
+    if(clock()-profile.activationSentAtMs<60000)error('resource-exhausted','Wait one minute before replacing the activation link.');
+    const {token,expiresAt,fields}=inPersonTicket(tx,{...profile,uid:existing.uid},request);
+    tx.update(userRef,fields);
+    return {token,expiresAt};
    });
   }
-  if(result.state==='complete')return result;
-  const {uid}=result,recordRef=db.doc(`student_records/${uid}`),userRef=db.doc(`users/${uid}`);
-  const record=(await recordRef.get()).data();
-  if(record?.lastAnnualImportId!==job.ref.id||record.provisioning!=='pending'){
-   const latest=(await itemRef.get()).data();
-   if(latest?.state==='complete')return latest;
-   error('failed-precondition','The saved record changed. Check its current provisioning state.');
+  if(data.reissue===true)error('failed-precondition','No issued account was found.');
+  const record=await getRecord(studentId);
+  if(!record||record.accountUid||record.studentStanding!=='active'||!data.recordRevision||revision(record)!==data.recordRevision)
+   error('failed-precondition','Look up the current eligible masterlist record before issuing the account.');
+  const {uid}=record;
+  const email=record.institutionalEmail||`${studentId}@student.ssu-usc.local`;
+  const userRef=db.doc(`users/${uid}`),recordRef=db.doc(`student_records/${uid}`),indexRef=db.doc(`student_record_ids/${studentId}`);
+  const claimRef=db.doc(`student_id_claims/${studentId}`),schoolRef=db.doc(`school_accounts/${studentId}`),aliasRef=db.doc(`login_aliases/id_${studentId}`);
+  const emailRef=db.doc(`login_aliases/email_${hash(email)}`);
+  const duplicateNames=await db.collection('users').where('fullName','==',record.fullName).limit(2).get();
+  if(duplicateNames.docs.some(doc=>doc.id!==uid&&!doc.data().idReservationsReleased))
+   error('already-exists','This name is already linked to a different account. Verify both Student IDs.');
+  const normalizedName=identityName(record.fullName),nameRef=db.doc(`student_name_claims/${hash(normalizedName)}`);
+  const ownership=async tx=>Promise.all([tx.get(recordRef),tx.get(indexRef),tx.get(userRef),tx.get(claimRef),tx.get(schoolRef),tx.get(aliasRef),tx.get(emailRef),tx.get(nameRef)]);
+  function checkOwnership([saved,index,profile,...reservations]){
+   if(revision(saved.data())!==data.recordRevision||saved.data()?.accountUid||saved.data()?.studentStanding!=='active'||index.data()?.uid!==uid||profile.exists||reservations.some(s=>s.exists&&s.data().uid!==uid))
+    error('failed-precondition','Record or account ownership changed. Look up the student again.');
   }
-  const email=record.institutionalEmail;
-  const emailAliasRef=db.doc(`login_aliases/email_${hash(email)}`);
-  const emailAlias=(await emailAliasRef.get()).data();
-  if(emailAlias&&emailAlias.uid!==uid)error('already-exists','Email belongs to another account.');
+  await db.runTransaction(async tx=>{
+   const snaps=await ownership(tx);
+   checkOwnership(snaps);
+   const name=snaps.at(-1);
+   if(!name.exists)tx.create(nameRef,{nameKey:nameRef.id,normalizedName,uid,studentId,fullName:record.fullName,accountRole:'student',createdBy:request.auth.uid,createdAt:new Date(clock())});
+   tx.update(recordRef,{provisioning:'issuing'});
+  });
   let authUser;
   try{authUser=await adminAuth.getUser(uid);}catch(e){if(e.code!=='auth/user-not-found')throw e;}
   if(!authUser){
-   try{authUser=await adminAuth.createUser({uid,email,emailVerified:false,password:crypto.randomBytes(32).toString('base64url'),displayName:record.fullName,disabled:true});}
-   catch(e){if(e.code!=='auth/uid-already-exists')throw e;authUser=await adminAuth.getUser(uid);}
+   try{authUser=await adminAuth.createUser({uid,email,password:crypto.randomBytes(32).toString('base64url'),emailVerified:false,displayName:record.fullName,disabled:true});}
+   catch(e){
+    if(e.code==='auth/email-already-exists'){
+     const owner=await adminAuth.getUserByEmail(email);
+     if(owner.uid!==uid){
+      await db.runTransaction(async tx=>{
+       const snaps=await ownership(tx);
+       checkOwnership(snaps);
+       if(snaps[0].data()?.provisioning==='issuing'){
+        tx.update(recordRef,{provisioning:null});
+       }
+      });
+      error('already-exists','This email belongs to another account. Correct the SCL record before retrying.');
+     }
+     authUser=owner;
+    }else if(e.code==='auth/uid-already-exists')authUser=await adminAuth.getUser(uid);
+    else throw e;
+   }
   }
-  if(authUser.email?.toLowerCase()!==email||authUser.disabled!==true||(authUser.customClaims?.role&&authUser.customClaims.role!=='student')){
-   const latest=(await itemRef.get()).data();
-   if(latest?.state==='complete')return latest;
-   error('failed-precondition','Provisioning identity conflict.');
-  }
+  if(authUser.email?.toLowerCase()!==email||authUser.disabled!==true||(authUser.customClaims?.role&&authUser.customClaims.role!=='student'))
+   error('failed-precondition','Provisioning identity conflict. Review the existing Auth account.');
   await adminAuth.setCustomUserClaims(uid,{...authUser.customClaims,role:'student',annualStudentId:studentId});
-  let created=false;
-  await db.runTransaction(async tx=>{
-   created=false;
-   const [item,saved,profile,claim,account,alias,linkedEmail]=await Promise.all([tx.get(itemRef),tx.get(recordRef),tx.get(userRef),tx.get(claimRef),tx.get(accountRef),tx.get(db.doc(`login_aliases/id_${studentId}`)),tx.get(emailAliasRef)]);
-   if(item.data()?.state==='complete'){result=item.data();return;}
-   if(saved.data()?.lastAnnualImportId!==job.ref.id || profile.exists || [claim,account,alias,linkedEmail].some(s=>s.exists&&s.data().uid!==uid))error('failed-precondition','Student ID ownership changed.');
-   const {fullName,firstName,lastName,middleName,suffix,college,program,yearLevel,academicYear,studentStanding,enrollmentStatus}=record;
-   const names=firstName?{firstName,lastName,middleName,suffix}:{};
-   const academic={fullName,...names,college,program,yearLevel,academicYear,studentStanding,enrollmentStatus:M.enrollment(studentStanding),enrollmentClassification:enrollmentStatus};
-   tx.create(userRef,{...academic,uid,studentId,studentRecordId:uid,role:'student',accountStatus:'pending',activationStatus:'pending',institutionalEmail:email,email,authEmail:email,institutionalEmailVerified:false,schoolProvisioned:true,isVerifiedStudent:false,isActive:false,createdAt:new Date(clock())});
-   tx.set(claimRef,{studentId,uid},{merge:true});
-   tx.set(accountRef,{studentId,uid,...academic,institutionalEmail:email,authEmail:email,loginEmail:email,active:false,isActive:false},{merge:true});
-   tx.set(masterRef,{studentId,uid,...academic,studentRecordId:uid,eligible:false},{merge:true});
-   tx.set(db.doc(`login_aliases/id_${studentId}`),{uid,authEmail:email,kind:'studentId',updatedAt:new Date(clock())});
+  return db.runTransaction(async tx=>{
+   checkOwnership(await ownership(tx));
+   const {fullName,college,program,yearLevel,academicYear,studentStanding,enrollmentStatus}=record;
+   const names=Object.fromEntries(['firstName','middleName','lastName','suffix'].filter(key=>Object.hasOwn(record,key)).map(key=>[key,record[key]]));
+   const academic={...names,fullName,college,program,yearLevel,academicYear,studentStanding,enrollmentStatus:M.enrollment(studentStanding),enrollmentClassification:enrollmentStatus};
+   const contact=record.institutionalEmail||'';
+   const {token,expiresAt,fields}=inPersonTicket(tx,{uid,studentId,authEmail:email},request);
+   tx.create(userRef,{...academic,...fields,uid,studentId,studentRecordId:uid,role:'student',accountStatus:'pending',activationStatus:'pending',
+    institutionalEmail:contact,email:contact,authEmail:email,institutionalEmailVerified:false,schoolProvisioned:true,isVerifiedStudent:false,isActive:false,createdAt:new Date(clock())});
+   tx.set(claimRef,{studentId,uid});
+   tx.set(schoolRef,{studentId,uid,...academic,institutionalEmail:contact,authEmail:email,loginEmail:email,active:false,isActive:false},{merge:true});
+   tx.set(aliasRef,{uid,authEmail:email,kind:'studentId',updatedAt:new Date(clock())});
    tx.update(recordRef,{accountUid:uid,provisioning:null});
-   result={...result,state:'complete',completedAt:clock(),emailStatus:'pending'};
-   tx.set(itemRef,result);
-   created=true;
+   audit(tx,request,'STUDENT_ACCOUNT_ISSUED',studentId,{recordUid:uid});
+   return {token,expiresAt};
   });
-  if(created){
-   try{await issueActivation(studentId,request);result.emailStatus='sent';}
-   catch{result.emailStatus='unconfirmed';}
-   await itemRef.set(result);
-  }
-  return result;
  }
  return{
   async studentAnnualPreview(request){
@@ -177,34 +204,30 @@ function createStudentRecordHandlers({db,adminAuth,requireActiveRole,requireRece
     try{
      const current=await resolve(row.studentId);
      const record=await getRecord(row.studentId);
-     verifyIdentity(current,record,row);
-     M.nextAcademicProfile(current||record,row,year);
-     if(record?.provisioning==='pending'&&!current)error('failed-precondition','Resume the previous import before changing this pending record.');
-     if(current&&row.email){const authUser=await adminAuth.getUser(current.uid);if(![current.institutionalEmail,current.email,authUser.email].filter(Boolean).map(v=>v.toLowerCase()).includes(row.email))error('failed-precondition','Email changes require a separate verified account change.');}
-     if(row.email){
-      const alias=(await db.doc(`login_aliases/email_${hash(row.email)}`).get()).data();
-      if(alias&&(!alias.uid||![current?.uid,record?.uid].includes(alias.uid)))error('already-exists','Email belongs to another account.');
+     M.nextAcademicProfile(record||current,row,year);
+     const entry={line:i+2,row,uid:current?.uid||null,fingerprint:M.fingerprint(current),recordRevision:revision(record),action:record?'update':'record-only'};
+     try{verifyIdentity(current,record,row);}catch(e){
+      entries.push({...entry,error:e.message,...(current&&(!record||record.uid===current.uid)?{reviewName:record?.fullName||current.fullName}: {})});
+      continue;
      }
-     if(!current&&row.email){
-      const [name,legacy]=await Promise.all([db.doc(`student_name_claims/${hash(identityName(row.fullName))}`).get(),db.collection('users').where('fullName','==',row.fullName).limit(2).get()]);
-      if((name.exists&&name.data().uid!==record?.uid)||legacy.docs.some(doc=>doc.id!==record?.uid&&!doc.data().idReservationsReleased))error('already-exists','Name is already linked to a different account. Review this identity.');
-      try{const found=await adminAuth.getUserByEmail(row.email);if(found.uid!==record?.uid)error('already-exists','Email already belongs to another account.');}catch(e){if(e.code!=='auth/user-not-found')throw e;}}
-     entries.push({line:i+2,row,uid:current?.uid||null,fingerprint:M.fingerprint(current),recordRevision:record?.recordRevision||record?.lastAnnualImportId||null,action:current?'update':row.email&&row.status==='active'?'create':'record-only',warning:current?.accountStatus==='suspended'?'Suspended account will remain blocked.':''});
-    }catch(e){entries.push({line:i+2,studentId:row.studentId,error:e.code==='auth/internal-error'?'Account lookup failed. Retry later.':e.message});}
+     entries.push(entry);
+    }catch(e){entries.push({line:i+2,studentId:row.studentId,error:e.message});}
    }
    const ref=jobs.doc(),hasErrors=entries.some(e=>e.error);
-   await ref.set({academicYear:year,entries,createdBy:request.auth.uid,createdAt:clock(),expiresAt:clock()+86400000,status:hasErrors?'invalid':'reviewed',count:entries.length});
-   return{importId:ref.id,academicYear:year,entries:entries.map(({fingerprint,recordRevision,...e})=>e),hasErrors};
+   await ref.set({academicYear:year,entries,createdBy:request.auth.uid,createdAt:clock(),expiresAt:clock()+86400000,status:'records-preview',count:entries.length});
+   return{importId:ref.id,academicYear:year,status:'records-preview',entries:entries.map(({fingerprint,recordRevision,...e})=>e),hasErrors};
   },
   async studentAnnualApply(request){
    await admin(request,true);const job=await getJob(request.data?.importId);
-   if(job.data.status!=='reviewed')error('failed-precondition','Import preview is invalid. Create a new preview.');
+   if(job.data.status!=='records-preview')error('failed-precondition','Create a new SCL preview before applying this file.');
+   if(request.data?.confirmed!==true)error('failed-precondition','Confirm the Ready rows before applying.');
    const expired=clock()>=job.data.expiresAt;
    if(expired&&!(await job.ref.collection('results').limit(1).get()).docs.length)error('failed-precondition','Import preview expired. Create a new preview.');
    const start=request.data?.start;
    if(!Number.isInteger(start)||start<0||start>=job.data.entries.length)error('invalid-argument','Invalid import offset.');
    const results=[];
    for(let i=start;i<Math.min(start+10,job.data.entries.length);i++){
+    if(job.data.entries[i].error)continue;
     try{
      if(expired&&!(await job.ref.collection('results').doc(String(i)).get()).exists)error('failed-precondition','Preview expired before this row was saved. Create a new preview for this row.');
      results.push({index:i,...await applyRow(job,job.data.entries[i],i,request)});
@@ -217,6 +240,36 @@ function createStudentRecordHandlers({db,adminAuth,requireActiveRole,requireRece
    await admin(request);const job=await getJob(request.data?.importId),results=await job.ref.collection('results').get();
    return{importId:job.ref.id,academicYear:job.data.academicYear,count:job.data.count,status:job.data.status,entries:job.data.entries.map(({fingerprint,recordRevision,...e})=>e),results:results.docs.map(d=>({index:Number(d.id),...d.data()}))};
   },
+  async studentAnnualResolve(request){
+   await admin(request,true);
+   const {importId,index,verificationReference}=request.data||{};
+   if(request.data?.samePerson!==true||!Number.isInteger(index)||typeof verificationReference!=='string'||verificationReference.trim().length<4||verificationReference.length>240)
+    error('invalid-argument','Verify the same person and enter a verification reference.');
+   const job=await getJob(importId),entry=job.data.entries[index];
+   if(job.data.status!=='records-preview'||clock()>=job.data.expiresAt||!entry?.reviewName||!entry.error||!entry.uid)
+    error('failed-precondition','This row needs a new preview or a separate ownership review.');
+   const {studentId}=entry.row;
+   const profile=await resolve(studentId), record=await getRecord(studentId);
+   if(profile?.uid!==entry.uid||M.fingerprint(profile)!==entry.fingerprint||revision(record)!==entry.recordRevision)
+    error('failed-precondition','The existing identity changed. Generate a new preview.');
+   await db.runTransaction(async tx=>{
+    const snapshot=(await tx.get(job.ref)).data(),entries=snapshot.entries.slice();
+    if(!entries[index]?.error)return;
+    const {error:reason,reviewName,...ready}=entries[index];
+    entries[index]={...ready,reconciled:true};
+    tx.update(job.ref,{entries});
+    audit(tx,request,'SCL_IDENTITY_REVIEWED',studentId,{importId,accountUid:entry.uid,verificationReference:verificationReference.trim()});
+   });
+   return {verified:true};
+  },
+  async studentRegistrationLookup(request){
+   await admin(request);
+   const studentId=validId(request.data?.studentId),account=await resolve(studentId),record=await getRecord(studentId);
+   if(record&&account&&record.uid!==account.uid)error('failed-precondition','The masterlist and account ownership conflict.');
+   return {record:record?publicProfile(record):null,recordRevision:revision(record),account:account?publicProfile({...account,accountUid:account.uid}):null,
+    canReissue:account?.role==='student'&&account.accountStatus==='pending'&&account.activationStatus==='pending'&&account.activationMethod==='in-person'};
+  },
+  studentRegistrationIssue:registerStudent,
   async studentActivationResend(request){await admin(request,true);return issueActivation(request.data?.studentId,request);},
   async studentActivateAccount(request){
    const{token,password}=request.data||{};
@@ -226,7 +279,7 @@ function createStudentRecordHandlers({db,adminAuth,requireActiveRole,requireRece
     const s=await tx.get(ref);ticket=s.data();
     if(!ticket||ticket.expiresAt<=clock()||ticket.state==='used')error('failed-precondition','Activation link is invalid, expired, or already used. Ask the administrator for a new link.');
     const profile=await tx.get(db.doc(`users/${ticket.uid}`));
-    if(profile.data()?.activationStatus!=='pending'||profile.data()?.activationTokenHash!==ref.id||profile.data()?.institutionalEmail!==ticket.email)error('failed-precondition','Activation link is no longer valid.');
+    if(profile.data()?.activationStatus!=='pending'||profile.data()?.activationTokenHash!==ref.id||(ticket.verifyMailbox===false?profile.data()?.authEmail:profile.data()?.institutionalEmail)!==ticket.email)error('failed-precondition','Activation link is no longer valid.');
     if(ticket.leaseUntil>clock())error('aborted','Activation is already processing. Please wait a minute before retrying.');
     tx.update(ref,{state:'processing',lease,leaseUntil:clock()+60000});
    });
@@ -234,7 +287,7 @@ function createStudentRecordHandlers({db,adminAuth,requireActiveRole,requireRece
    if(authUser.email?.toLowerCase()!==ticket.email||authUser.customClaims?.role!=='student')error('failed-precondition','Account identity requires administrator review.');
    // Ticket possession verifies the imported mailbox. Auth/Firestore finalization
    // is resumable: never consume the ticket before both systems are ready.
-   await adminAuth.updateUser(ticket.uid,{password,emailVerified:true});
+   await adminAuth.updateUser(ticket.uid,{password,...(ticket.verifyMailbox===false?{}:{emailVerified:true})});
    await ref.update({state:'auth-pending'});
    const userRef=db.doc(`users/${ticket.uid}`),current=(await userRef.get()).data();
    const active=current?.studentStanding==='active'&&current.accountStatus==='pending';
@@ -243,7 +296,7 @@ function createStudentRecordHandlers({db,adminAuth,requireActiveRole,requireRece
     await db.runTransaction(async tx=>{
      const[s,p]=await Promise.all([tx.get(ref),tx.get(userRef)]);const profile=p.data();
      if(s.data()?.lease!==lease||profile?.activationTokenHash!==ref.id||profile?.activationStatus!=='pending'||(profile.studentStanding==='active'&&profile.accountStatus==='pending')!==active)error('failed-precondition','Activation state changed. Retry or ask the administrator for a new link.');
-     tx.update(userRef,{activationStatus:'complete',institutionalEmailVerified:true,activationCompletedAt:clock(),activationTokenHash:null,accountStatus:profile.accountStatus==='pending'?'approved':profile.accountStatus,isActive:active,standingManagedDisabled:!active});
+     tx.update(userRef,{activationStatus:'complete',institutionalEmailVerified:ticket.verifyMailbox===false?profile.institutionalEmailVerified===true:true,activationCompletedAt:clock(),activationTokenHash:null,accountStatus:profile.accountStatus==='pending'?'approved':profile.accountStatus,isActive:active,standingManagedDisabled:!active});
      tx.set(db.doc(`school_accounts/${ticket.studentId}`),{active,isActive:active},{merge:true});
      tx.set(db.doc(`student_masterlist/${ticket.studentId}`),{eligible:active},{merge:true});
      tx.update(ref,{state:'used',usedAt:clock()});
@@ -286,7 +339,7 @@ function createStudentRecordHandlers({db,adminAuth,requireActiveRole,requireRece
    const docs=(await q.get()).docs;
    const rows=await Promise.all(docs.slice(0,50).map(async d=>{
     const row={...d.data(),uid:d.id};
-    if(phase==='legacy')return row.studentRecordId?null:combine(null,row);
+    if(phase==='legacy')return (await db.doc(`student_records/${d.id}`).get()).exists?null:combine(null,row);
     const profile=row.accountUid?(await db.doc(`users/${row.accountUid}`).get()).data():null;
     return combine(row,profile && {...profile,uid:row.accountUid});
    }));
@@ -304,7 +357,7 @@ function createStudentRecordHandlers({db,adminAuth,requireActiveRole,requireRece
     const [previous,account]=await Promise.all([tx.get(ref),tx.get(db.doc(`users/${record.uid}`))]);
     const saved=previous.data();
     if(!saved||saved.accountUid||account.exists)error('failed-precondition','Manage linked account access in User Directory.');
-    if(saved.provisioning==='pending')error('failed-precondition','Resume the pending provisioning operation first.');
+    if(['pending','issuing'].includes(saved.provisioning))error('failed-precondition','Resume the pending provisioning operation first.');
     if(saved.studentStanding===standing)return;
     const now=clock();
     tx.update(ref,{studentStanding:standing,recordRevision:history.id,updatedAtMs:now});
@@ -334,11 +387,12 @@ function millis(value){return typeof value?.toMillis==='function'?value.toMillis
 function combine(record,account){
  if(!record&&!account)return null;
  if(!account)return {...record,accountStatus:'pending',isActive:false,activationStatus:'awaiting-provisioning'};
- return {...record,...account,accountUid:account.uid,studentStanding:account.studentStanding||record?.studentStanding||null,enrollmentStatus:account.enrollmentClassification||record?.enrollmentStatus||account.enrollmentStatus};
+ return {...account,...record,accountUid:account.uid,accountStatus:account.accountStatus,isActive:account.isActive,activationStatus:account.activationStatus,activationDelivery:account.activationDelivery,role:account.role,studentStanding:account.studentStanding||record?.studentStanding||null,enrollmentStatus:record?.enrollmentStatus||account.enrollmentClassification||account.enrollmentStatus};
 }
 function accountState(p){
  if(p.accountStatus==='suspended')return 'Suspended';
- if(p.activationStatus==='pending'||p.activationStatus==='awaiting-provisioning'||p.accountStatus==='pending')return 'Pending activation';
+ if(p.activationStatus==='awaiting-provisioning')return 'No account';
+ if(p.activationStatus==='pending'||p.accountStatus==='pending')return 'Pending activation';
  return p.isActive?'Active':'Deactivated';
 }
 function publicProfile(p){return {...Object.fromEntries(['uid','accountUid','studentId','fullName','firstName','lastName','middleName','suffix','enrollmentStatus','college','program','yearLevel','academicYear','studentStanding','accountStatus','isActive','activationStatus','activationDelivery','institutionalEmail','role'].map(k=>[k,p[k]??null])),accountState:accountState(p)};}

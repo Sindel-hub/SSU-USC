@@ -21,77 +21,35 @@
       <h1>Register Student Account</h1>
     </header>
     <section class="panel registration-panel no-print" aria-label="Student registration">
-      <div class="registration-panel-head">
-        <h2>New student</h2>
-        <span class="required-note">Institutional email is optional</span>
-      </div>
-      <div id="bridgeStatus" class="status-box" role="status">Preparing account provisioning...</div>
-      <form id="studentForm" class="form-grid">
-        <fieldset class="registration-group">
-          <legend>Student details</legend>
-          <div class="registration-fields">
-            <label for="studentId">Student ID
-              <input id="studentId" inputmode="numeric" pattern="[0-9]+" title="Numbers only" maxlength="64" placeholder="260001" required aria-describedby="studentIdHint studentIdError" />
-              <small id="studentIdHint">Numbers only. Use the school-issued student ID.</small>
-              <small id="studentIdError" class="field-error" hidden></small>
-            </label>
-            <label for="name">Full name
-              <input id="name" placeholder="Juan Dela Cruz" required autocomplete="name" aria-describedby="nameError" />
-              <small id="nameError" class="field-error" hidden></small>
-            </label>
-            <label for="email" class="registration-wide">Institutional email <small>(optional)</small>
-              <input id="email" type="email" placeholder="Student’s institutional email" autocomplete="email" aria-describedby="emailError" />
-              <small id="emailError" class="field-error" hidden></small>
-            </label>
-          </div>
-        </fieldset>
-        <fieldset class="registration-group">
-          <legend>Academic information</legend>
-          <div class="registration-fields">
-            <label for="college">College / Campus
-              <select id="college" required aria-describedby="collegeError">
-                <option value="">Select college or campus</option>
-              </select>
-              <small id="collegeError" class="field-error" hidden></small>
-            </label>
-            <label for="yearLevel">Year level
-              <select id="yearLevel" required aria-describedby="yearLevelError">
-                <option value="">Select year level</option>
-                <option value="1st Year">1st Year</option>
-                <option value="2nd Year">2nd Year</option>
-                <option value="3rd Year">3rd Year</option>
-                <option value="4th Year">4th Year</option>
-                <option value="5th Year">5th Year</option>
-              </select>
-              <small id="yearLevelError" class="field-error" hidden></small>
-            </label>
-            <label for="program" class="program-field registration-wide">Program
-              <select id="program" required disabled aria-describedby="programError">
-                <option value="">Select college/campus first</option>
-              </select>
-              <small id="programError" class="field-error" hidden></small>
-            </label>
-            <label for="studentStanding" class="registration-wide">Student standing
-              <select id="studentStanding" required aria-describedby="standingHint studentStandingError">
-                <option value="active">Active / Enrolled</option>
-                <option value="leave">Leave of Absence</option>
-                <option value="inactive">Inactive / Not Enrolled</option>
-                <option value="graduated">Graduated</option>
-                <option value="transferred">Transferred / Changed School</option>
-                <option value="withdrawn">Withdrawn</option>
-                <option value="eliminated">Eliminated / Dismissed</option>
-              </select>
-              <small id="standingHint" aria-live="polite">Student standing controls portal access and voting.</small>
-              <small id="studentStandingError" class="field-error" hidden></small>
-            </label>
-          </div>
-        </fieldset>
-        <div id="submissionFeedback" class="submission-feedback" role="status" hidden></div>
-        <div class="form-action">
-          <p>A login slip will be available after account creation.</p>
-          <button id="createBtn" type="submit">Create Student Account</button>
-        </div>
+      <div class="registration-panel-head"><h2>Masterlist lookup</h2><span class="required-note">Institutional email is optional</span></div>
+      <form id="studentLookup" class="registration-group">
+        <label for="studentId">Student ID</label>
+        <input id="studentId" inputmode="numeric" pattern="[0-9]+" maxlength="64" required>
+        <div class="form-action"><button type="submit">Find student</button></div>
       </form>
+      <p id="registrationStatus" role="status" aria-live="polite"></p>
+      <form id="studentForm" hidden>
+        <fieldset class="registration-group">
+          <legend>Student information</legend>
+          <div class="registration-fields">
+            <label>Full name<input id="name" readonly></label>
+            <label>College<input id="college" readonly></label>
+            <label>Program<input id="program" readonly></label>
+            <label>Year level<input id="yearLevel" readonly></label>
+            <label>Institutional email<input id="email" readonly></label>
+            <label>Account status<input id="registrationAccount" readonly></label>
+          </div>
+        </fieldset>
+        <label id="verifyStudentLabel" hidden><input id="verifyStudent" type="checkbox" required> I verified the student's identity in person.</label>
+        <div class="form-action"><button id="createBtn" type="submit" disabled>Create student account</button></div>
+      </form>
+      <section class="registration-group" id="activationHandoff" hidden aria-labelledby="activationHandoffTitle">
+        <h3 id="activationHandoffTitle">In-person activation</h3>
+        <p>Give this private, single-use link to the verified student within 24 hours.</p>
+        <label for="studentActivationLink">Activation link</label>
+        <input id="studentActivationLink" readonly>
+        <div class="form-action"><button id="copyActivationLink" type="button">Copy link</button><button id="clearActivationLink" type="button">Done</button></div>
+      </section>
     </section>
 
     <details class="panel registration-recovery no-print">
@@ -102,29 +60,8 @@
       </div>
     </details>
 
-    <section id="slipSection" class="slip-section slip-modal-overlay" hidden aria-hidden="true">
-      <div class="slip-modal-backdrop" data-close-slip="true"></div>
-      <div class="slip-modal-card" role="dialog" aria-modal="true" aria-labelledby="studentSlipModalTitle">
-        <div class="slip-modal-head no-print">
-          <div>
-            <span class="slip-modal-kicker">Credential ready</span>
-            <h2 id="studentSlipModalTitle">Student account created</h2>
-            <p>Keep these credentials private. Print or download a copy for the student.</p>
-          </div>
-          <button id="closeSlipModalBtn" type="button" class="slip-modal-close" aria-label="Close credential viewer">×</button>
-        </div>
-        <div class="slip-modal-body">
-          <div id="slip"></div>
-        </div>
-        <div class="slip-actions no-print">
-          <button id="printSlipBtn" type="button">Print Login Slip</button>
-          <button id="downloadSlipBtn" type="button">Download Login Slip</button>
-          <button id="clearSlipBtn" type="button" class="secondary">Done</button>
-        </div>
-      </div>
-    </section>
   </main>
   <script type="module" src="../../shared/auth-guard.js?v=rbac7"></script>
-  <script type="module" src="js/student-registration.js?v=9-password-copy-1"></script>
+  <script type="module" src="js/student-registration.js?v=scl-registration-1"></script>
 </body>
 </html>

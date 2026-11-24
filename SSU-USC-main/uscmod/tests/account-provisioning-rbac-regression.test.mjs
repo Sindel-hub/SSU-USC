@@ -35,7 +35,7 @@ test("student provisioning remains independent of officer-only RBAC defaults", (
 
 test("registration pages cache-bust the corrected provisioning module", () => {
   assert.match(officerRegistration, /browser-provisioning\.js\?v=3/);
-  assert.match(studentRegistration, /browser-provisioning\.js\?v=3/);
+  assert.match(studentRegistration, /studentRecordCall/);
   assert.match(officerHtml, /officer-registration\.js\?v=\d+/);
-  assert.match(studentHtml, /student-registration\.js\?v=\d+/);
+  assert.match(studentHtml, /student-registration\.js\?v=scl-registration-1/);
 });

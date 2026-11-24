@@ -8,14 +8,11 @@ const css = fs.readFileSync(new URL("../usc-admin/student-registration/css/stude
 const studentJs = fs.readFileSync(new URL("../usc-admin/student-registration/js/student-registration.js", import.meta.url), "utf8");
 const officerJs = fs.readFileSync(new URL("../usc-admin/student-registration/js/officer-registration.js", import.meta.url), "utf8");
 
-test("student registration uses floating credential modal", () => {
-  assert.match(studentHtml, /class="slip-section slip-modal-overlay"/);
-  assert.match(studentHtml, /id="closeSlipModalBtn"/);
-  assert.match(studentJs, /function openSlipModal\(/);
-  assert.match(studentJs, /function printSlip\(/);
-  assert.match(studentJs, /closeSlipModal\(\)/);
+test("student registration hands off a private single-use activation link", () => {
+  assert.match(studentHtml, /id="activationHandoff" hidden/);
+  assert.match(studentJs, /studentRegistrationIssue/);
+  assert.match(studentJs, /link\.value = ''/);
 });
-
 test("officer registration uses floating credential modal", () => {
   assert.match(officerHtml, /class="slip-section slip-modal-overlay"/);
   assert.match(officerHtml, /id="closeOfficerSlipModalBtn"/);

@@ -1559,6 +1559,6 @@ async function sendStudentActivation({ email, token, studentId, messageId }) {
 const { createStudentRecordHandlers } = require('./student-records');
 const studentRecordHandlers = createStudentRecordHandlers({ db, adminAuth, requireActiveRole, requireRecentAuth, HttpsError, sendActivation: sendStudentActivation });
 for (const [name, handler] of Object.entries(studentRecordHandlers)) {
-  const email = ['studentAnnualApply', 'studentActivationResend'].includes(name);
+  const email = ['studentActivationResend'].includes(name);
   exports[name] = onCall(callableOptions({ maxInstances: 5, timeoutSeconds: name === 'studentAnnualPreview' ? 540 : 180, ...(email ? { secrets: [STUDENT_ACTIVATION_RESEND_KEY] } : {}) }), handler);
 }
