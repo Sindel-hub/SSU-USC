@@ -1,2 +1,1 @@
-studentId,fullName,department,program,yearLevel,email,status
-"000012345",Sample Student,College of Engineering,Bachelor of Science in Civil Engineering,1,student@example.invalid,active
+Student ID,Last Name,First Name,Middle Name,Suffix,College Department,Course / Program,Year Level,Enrollment Status,Institution Email (Optional)

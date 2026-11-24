@@ -19,7 +19,8 @@ test('trusted backend disables self-registration and provisions school accounts'
   const fn = read('functions/index.js');
   assert.match(fn, /Public account registration is disabled/);
   assert.match(fn, /exports\.provisionSchoolAccounts/);
-  assert.match(fn, /school_accounts\/\$\{row\.studentId\}/);
+  assert.match(fn, /Provision new students from the confirmed Student Records import/);
+  assert.match(read('functions/student-records.js'), /student_records\/\$\{uid\}/);
   assert.match(fn, /generateTemporaryPassword/);
 });
 

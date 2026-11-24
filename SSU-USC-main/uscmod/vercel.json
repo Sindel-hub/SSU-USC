@@ -6,6 +6,11 @@
       "permanent": false
     },
     {
+      "source": "/usc-admin/student-registration/student-registration.html",
+      "destination": "/usc-admin/admin-dashboard/student-records.html",
+      "permanent": false
+    },
+    {
       "source": "/dashboard/election.html",
       "destination": "/dashboard/dashboard.html",
       "permanent": false

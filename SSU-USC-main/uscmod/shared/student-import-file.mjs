@@ -1,10 +1,14 @@
-export const IMPORT_HEADERS = ['studentId','fullName','department','program','yearLevel','email','status'];
-const aliases = {studentid:'studentId',fullname:'fullName',department:'department',college:'department',program:'program',yearlevel:'yearLevel',email:'email',institutionalemail:'email',status:'status',studentstanding:'status'};
+export const IMPORT_HEADERS = ['Student ID','Last Name','First Name','Middle Name','Suffix','College Department','Course / Program','Year Level','Enrollment Status','Institution Email (Optional)'];
+const fields = ['studentId','lastName','firstName','middleName','suffix','department','program','yearLevel','enrollmentStatus','email'];
+const aliases = Object.fromEntries(IMPORT_HEADERS.map((header, index) => [headerKey(header), fields[index]]));
+function headerKey(value) {
+  return String(value ?? '').replace(/^\uFEFF/,'').trim().toLowerCase();
+}
 export function rowsFromTable(table) {
   if (!Array.isArray(table) || table.length < 2) throw Error('The file needs a header and at least one student.');
-  const headers=table[0].map(v=>aliases[String(v??'').replace(/^\uFEFF/,'').replace(/[\s_-]/g,'').toLowerCase()]);
+  const headers=table[0].map(v=>aliases[headerKey(v)]);
   if (headers.some(h=>!h)||new Set(headers).size!==headers.length) throw Error('Use the template columns; duplicate or unknown headers are not allowed.');
-  for(const h of IMPORT_HEADERS.slice(0,5))if(!headers.includes(h))throw Error(`Missing column: ${h}`);
+  if (headers.length !== fields.length || headers.some((header,index) => header !== fields[index])) throw Error('Use all template columns in the listed order.');
   const rows=table.slice(1).filter(row=>row.some(v=>String(v??'').trim())).map((values,i)=>{
     if(values.length>headers.length&&values.slice(headers.length).some(v=>String(v??'').trim()))throw Error(`Row ${i+2} has extra columns.`);
     return Object.fromEntries(headers.map((h,j)=>[h,String(values[j]??'').trim()]));
@@ -49,7 +53,7 @@ export async function readStudentWorkbook(buffer,ExcelJS) {
   validateWorkbookZip(buffer);
   const book=new ExcelJS.Workbook();await book.xlsx.load(buffer);
   const sheet=book.worksheets[0];if(!sheet||sheet.rowCount>501||sheet.columnCount>20)throw Error('Use the first sheet, at most 500 students, and the template columns.');
-  let idColumn=0;sheet.getRow(1).eachCell((cell,c)=>{if(aliases[cell.text.replace(/[\s_-]/g,'').toLowerCase()]==='studentId')idColumn=c;});
+  let idColumn=0;sheet.getRow(1).eachCell((cell,c)=>{if(aliases[headerKey(cell.text)]==='studentId')idColumn=c;});
   const table=[];sheet.eachRow({includeEmpty:true},row=>{
     const values=[];for(let c=1;c<=sheet.columnCount;c++){
       const cell=row.getCell(c);if(cell.value&&typeof cell.value==='object'&&('formula'in cell.value||'sharedFormula'in cell.value))throw Error('Replace formulas with text values before importing.');
