@@ -112,9 +112,9 @@ test("Firestore rules enforce officer permissions on privileged writes", () => {
   assert.match(rules, /!\("officerAssignmentId" in ownProfile\(\)\)/);
   assert.match(rules, /function officerHasPermission\(permission\)/);
   assert.match(rules, /ownProfile\(\)\.officePosition == "Secretary"/);
-  assert.match(rules, /moduleWriter\("bulletin\.manage"\)/);
-  assert.match(rules, /moduleWriter\("events\.manage"\)/);
-  assert.match(rules, /moduleWriter\("complaints\.review"\)/);
+  assert.match(rules, /match \/announcements\/[^\n]+[\s\S]*?allow delete: if isAdmin\(\)/);
+  assert.match(rules, /match \/events\/[^\n]+[\s\S]*?allow create, update, delete: if isAdmin\(\)/);
+  assert.match(rules, /match \/complaints\/[^\n]+[\s\S]*?allow update: if isAdmin\(\)/);
   assert.match(rules, /officerHasPermission\("complaints\.status"\)/);
   assert.match(rules, /officerHasPermission\("complaints\.classify"\)/);
   assert.match(rules, /officerHasPermission\("elections\.view"\)/);

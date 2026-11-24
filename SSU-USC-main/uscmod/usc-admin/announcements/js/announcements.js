@@ -1,5 +1,5 @@
 import { initializeAnnouncementReview, saveReviewDraft, clearReviewDraft, draftImage } from './announcement-review.js';
-import { trackedOfficerAction } from '../../../shared/officer-activity-client.js';
+import { activityAttributionText, activityHistoryHref, trackedOfficerAction } from '../../../shared/officer-activity-client.js';
 import { surveyIdFromLink } from '../../../shared/survey-links.mjs';
 import { initializeFacebookPublishing, hydrateFacebookDeliveries, facebookRequest } from './facebook-publishing.js';
 import { RETENTION_MS, daysRemaining, canRestore } from "./announcement-retention.mjs";
@@ -393,6 +393,8 @@ function renderRecentAnnouncements(announcements) {
                             <span class="recent-announcement-date">${escapeHtml(formatAnnouncementDate(announcement))}</span>
                         </div>
                         <h4>${escapeHtml(safeText(announcement.title, "Untitled announcement"))}</h4>
+                        ${announcement.activityAttribution ? `<p class="recent-announcement-excerpt">${escapeHtml(activityAttributionText(announcement.activityAttribution))}</p>` : ''}
+                        <a href="${escapeHtml(activityHistoryHref('Bulletin Board', announcement.id))}">Activity history</a>
                         <p class="recent-announcement-excerpt">${escapeHtml(truncateText(announcement.content, 180))}</p>
                         ${announcement.facebookRequested ? '<div class="facebook-delivery-status" role="status" data-facebook-delivery="'+escapeHtml(announcement.id)+'">Checking Facebook status…</div>' : ''}
                         ${bulletinView === 'deleted' ? `<p class="retention-countdown">${daysRemaining(announcement.expiresAt)} days remaining</p>` : ''}<div class="recent-announcement-footer">

@@ -70,8 +70,8 @@ test('HTTP router rejects methods, wrong content types, forged envelopes and unk
   assert.equal((await request(f, 'removeAccount')).statusCode, 400);
   assert.equal((await request(f, '', {}, { body: { action: 'studentRecordsList', data: {}, auth: { uid: 'admin' } } })).statusCode, 400);
   assert.equal((await request(f, '', {}, { body: { action: 'studentRecordsList', data: { text: 'x'.repeat(1024 * 1024) } } })).statusCode, 400);
-  assert.equal(f.verifiedTokens.length, 0); assert.equal(ACTIONS.size, 24);
-  for (const action of ["officerCandidateFind", "officerAssignmentManage", "officerAssignments", "officerTracklist", "officerRecord", "officerReportSubmit", "officerModuleAction"]) assert.ok(ACTIONS.has(action));
+  assert.equal(f.verifiedTokens.length, 0); assert.equal(ACTIONS.size, 25);
+  for (const action of ["officerCandidateFind", "officerAssignmentManage", "officerAssignments", "officerTracklist", "officerActivityList", "officerRecord", "officerReportSubmit", "officerModuleAction"]) assert.ok(ACTIONS.has(action));
 });
 test('authenticated API calls reject missing, revoked and unauthorized student/officer tokens', async () => {
   const f = hostedFixture();

@@ -1,10 +1,14 @@
 "use strict";
 const { ServiceError } = require("./settings.cjs");
 function createAuthorization({ db, clock = Date.now }) {
-  async function requireActiveRole(request, roles) {
+  async function requireActiveRole(request, roles, { useOfficerProfile = false } = {}) {
     const auth = request.auth;
     if (!auth?.uid) throw new ServiceError("unauthenticated", "Please sign in first.");
-    const role = String(auth.token.role || "").toLowerCase();
+    let role = String(auth.token.role || "").toLowerCase();
+    if (useOfficerProfile && roles.includes("officer") && role !== "admin" && !request.trustedProfile) {
+      request.trustedProfile = (await db.doc(`users/${auth.uid}`).get()).data();
+    }
+    if (useOfficerProfile && roles.includes("officer") && role !== "admin" && request.trustedProfile?.role === "officer") role = "officer";
     if (!roles.includes(role)) throw new ServiceError("permission-denied", "This account is not authorized for this action.");
     if (role === "admin" && auth.token.email_verified !== true) throw new ServiceError("failed-precondition", "Administrator email verification is required.");
     if (!request.trustedProfile) {

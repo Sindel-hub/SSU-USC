@@ -51,6 +51,13 @@ const OFFICER_MODULES = [
     icon: "fa-message",
     keywords:
       "complaint complaints case cases concern concerns"
+  },
+  {
+    name: "My O-Tracklists",
+    detail: "Officer activity history",
+    href: "../officer-tracklist/officer-tracklist.html",
+    icon: "fa-clipboard-check",
+    keywords: "officer tracklist activity history"
   }
 ];
 const MOBILE_BREAKPOINT = 820;

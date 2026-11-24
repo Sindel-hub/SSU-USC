@@ -1,3 +1,5 @@
+import { activityHistoryHref } from '../../../shared/officer-activity-client.js';
+import { hostedManagementCall } from '../../../shared/hosted-management-client.js';
 import { suggestedComplaintOffice } from "../../../shared/complaint-categories.js";
 import { departmentName, departmentSummary, sortComplaints } from "./complaint-inbox-model.mjs";
 import { db } from "../../../firebase/firebase-config.js";
@@ -433,8 +435,38 @@ async function renderAttachmentPreview(selected) {
 }
 
 
+let attributionRequest = 0;
+async function renderComplaintAttribution(selected) {
+  const host = document.getElementById('complaintAttribution');
+  if (!host) return;
+  const request = ++attributionRequest;
+  host.hidden = true;
+  host.replaceChildren();
+  if (!selected) return;
+  try {
+    const { items } = await hostedManagementCall('officerActivityList', { recordId: selected.id, recordModule: 'Complaints' });
+    if (request !== attributionRequest) return;
+    const labels = { Resolved: 'Resolved by', 'Status updated': 'Status updated by', Responded: 'Responded by' };
+    for (const [action, label] of Object.entries(labels)) {
+      const row = items.find(item => item.action === action);
+      if (!row) continue;
+      const line = document.createElement('p');
+      line.textContent = label + ' ' + [row.officerName || row.officerUid, row.position, row.administration].filter(Boolean).join(' · ');
+      host.append(line);
+    }
+    const link = document.createElement('a');
+    link.href = activityHistoryHref('Complaints', selected.id);
+    link.textContent = 'Activity history';
+    host.append(link);
+    host.hidden = false;
+  } catch {
+    // Complaint details remain available if the history service is unavailable.
+  }
+}
+
 function renderDetails() {
   const selected = getSelectedComplaint();
+  void renderComplaintAttribution(selected);
 
   if (!selected) {
     if (emptyState) emptyState.style.display = "block";

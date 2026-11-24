@@ -30,9 +30,9 @@ service cloud.firestore {
     }
     function isOfficer() { return activeProfileRole("officer")
       && (!("officerAssignmentId" in ownProfile()) || currentOfficerTerm()); }
-    // Tracked officers must mutate these modules through the hosted API, which
-    // commits their immutable history and the underlying action together.
-    function moduleWriter(permission) {
+    // Preserve the existing restrictions on registration and case deletion.
+    // Officer publication and review mutations use the hosted API.
+    function legacyModuleWriter(permission) {
       return officerHasPermission(permission)
         && (isAdmin() || !("officerAssignmentId" in ownProfile()));
     }
@@ -200,14 +200,14 @@ service cloud.firestore {
     }
     match /announcements/{announcementId} {
       allow read: if true;
-      allow create: if moduleWriter("bulletin.manage") && restoringPublishedPost(announcementId);
+      allow create: if isAdmin() && restoringPublishedPost(announcementId);
       allow update: if false;
-      allow delete: if moduleWriter("bulletin.manage");
+      allow delete: if isAdmin();
     }
     // Libraries accept only exact copies of already-published content.
     match /archived_announcements/{postId} {
       allow read: if isOfficerOrAdmin();
-      allow create: if moduleWriter("bulletin.manage") && request.resource.data.post is map
+      allow create: if isAdmin() && request.resource.data.post is map
         && ((exists(/databases/$(database)/documents/announcements/$(postId))
           && request.resource.data.post == get(/databases/$(database)/documents/announcements/$(postId)).data
           && !existsAfter(/databases/$(database)/documents/announcements/$(postId)))
@@ -215,11 +215,11 @@ service cloud.firestore {
           && get(/databases/$(database)/documents/deleted_announcements/$(postId)).data.expiresAt > request.time
           && request.resource.data.post == get(/databases/$(database)/documents/deleted_announcements/$(postId)).data.post
           && !existsAfter(/databases/$(database)/documents/deleted_announcements/$(postId))));
-      allow delete: if moduleWriter("bulletin.manage");
+      allow delete: if isAdmin();
     }
     match /deleted_announcements/{postId} {
       allow read: if isOfficerOrAdmin();
-      allow create: if moduleWriter("bulletin.manage") && request.resource.data.post is map
+      allow create: if isAdmin() && request.resource.data.post is map
         && request.resource.data.sourceCollection in ["announcements", "archived_announcements"]
         && request.resource.data.deletedAt == request.time
         && request.resource.data.expiresAt is timestamp
@@ -233,11 +233,11 @@ service cloud.firestore {
           && exists(/databases/$(database)/documents/archived_announcements/$(postId))
           && request.resource.data.post == get(/databases/$(database)/documents/archived_announcements/$(postId)).data.post
           && !existsAfter(/databases/$(database)/documents/archived_announcements/$(postId))));
-      allow delete: if moduleWriter("bulletin.manage") && resource.data.expiresAt > request.time;
+      allow delete: if isAdmin() && resource.data.expiresAt > request.time;
     }
     match /events/{eventId} {
       allow read: if true;
-      allow create, update, delete: if moduleWriter("events.manage");
+      allow create, update, delete: if isAdmin();
 
       // Student event participation is self-service. A student can only create
       // or cancel their own portal registration while the officer-defined
@@ -262,7 +262,7 @@ service cloud.firestore {
           && request.resource.data.status == "registered"
           && request.resource.data.registeredAt == request.time;
         allow update: if false;
-        allow delete: if moduleWriter("events.manage")
+        allow delete: if legacyModuleWriter("events.manage")
           || (schoolStudent()
             && ownUser(userId)
             && get(/databases/$(database)/documents/events/$(eventId)).data.registrationMode == "internal"
@@ -273,7 +273,7 @@ service cloud.firestore {
 
     match /programs/{programId} {
       allow read: if true;
-      allow create, update, delete: if moduleWriter("programs.manage");
+      allow create, update, delete: if isAdmin();
 
       // External program participation mirrors event self-registration but is
       // stored separately so outside-university programs remain independently managed.
@@ -297,7 +297,7 @@ service cloud.firestore {
           && request.resource.data.status == "registered"
           && request.resource.data.registeredAt == request.time;
         allow update: if false;
-        allow delete: if moduleWriter("programs.manage")
+        allow delete: if legacyModuleWriter("programs.manage")
           || (schoolStudent()
             && ownUser(userId)
             && get(/databases/$(database)/documents/programs/$(programId)).data.registrationMode == "internal"
@@ -478,10 +478,9 @@ service cloud.firestore {
           "attachmentName", "attachmentPath", "attachmentStorageBucket", "attachmentStoragePath",
           "attachmentType", "attachmentSize", "thread"
         ]);
-      // Browser-only complaint review updates are restricted to authorized officers/admins.
-      // Officers may assign the review classification, advance the workflow, and append
-      // one official feedback entry at a time. Students remain submit-only.
-      allow update: if moduleWriter("complaints.review")
+      // Officer updates go through the hosted API to commit the case and its history together.
+      // Preserve the administrator browser workflow. Students remain submit-only.
+      allow update: if isAdmin()
         && request.resource.data.diff(resource.data).affectedKeys().hasOnly(["status", "classification", "updatedAt", "thread"])
         && (!request.resource.data.diff(resource.data).affectedKeys().hasAny(["status"]) || officerHasPermission("complaints.status"))
         && (!request.resource.data.diff(resource.data).affectedKeys().hasAny(["classification"]) || officerHasPermission("complaints.classify"))
@@ -505,7 +504,7 @@ service cloud.firestore {
             && request.resource.data.thread.size() <= 200));
       // A complaint becomes deletable only after it has reached a terminal workflow state.
       allow delete: if officerHasPermission("complaints.status") && resource.data.status in ["Resolved", "Closed"]
-        && moduleWriter("complaints.status");
+        && legacyModuleWriter("complaints.status");
 
       // Browser-only capstone attachment storage. Files are split into bounded chunks
       // under the complaint, so they inherit the complaint's student/officer privacy

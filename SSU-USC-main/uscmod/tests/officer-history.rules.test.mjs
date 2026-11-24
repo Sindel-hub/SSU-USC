@@ -10,12 +10,18 @@ test('term-managed officer rules enforce server-only history, expiry and mutatio
     await env.withSecurityRulesDisabled(async c => {
       const db = c.firestore();
       await setDoc(doc(db, 'users', 'officer'), { role: 'officer', accountStatus: 'approved', isActive: true, studentStanding: 'active', officePosition: 'Public Information Officer', officerPermissions: ['dashboard.view', 'bulletin.manage', 'complaints.view'], officerPermissionSource: 'custom', officerAssignmentId: 'term' });
+      await setDoc(doc(db, 'users', 'legacy'), { role: 'officer', accountStatus: 'approved', isActive: true, officePosition: 'President' });
       await setDoc(doc(db, 'officer_assignments', 'term'), { officerUid: 'officer', status: 'active', startsAtMs: now - 10000, endsAtMs: now + 3600000 });
       await setDoc(doc(db, 'officer_records', 'record'), { officerUid: 'officer', assignmentId: 'term', snapshot: { content: 'Private report' } });
       await setDoc(doc(db, 'announcements', 'post'), { title: 'Post', officerAssignmentId: 'term' });
       await setDoc(doc(db, 'complaints', 'case'), { studentUid: 'unrelated-student', status: 'Submitted' });
     });
     const db = env.authenticatedContext('officer', { role: 'officer' }).firestore();
+    const legacy = env.authenticatedContext('legacy', { role: 'officer' }).firestore();
+    await assertFails(setDoc(doc(legacy, 'events', 'event'), { title: 'Bypass history' }));
+    await assertFails(setDoc(doc(legacy, 'programs', 'program'), { title: 'Bypass history' }));
+    await assertFails(deleteDoc(doc(legacy, 'announcements', 'post')));
+    await assertFails(updateDoc(doc(legacy, 'complaints', 'case'), { status: 'Under Review' }));
     await assertFails(getDoc(doc(db, 'officer_records', 'record')));
     await assertFails(setDoc(doc(db, 'officer_records', 'forged'), { officerUid: 'officer', action: 'Claim work' }));
     await assertFails(updateDoc(doc(db, 'officer_records', 'record'), { officerUid: 'someone-else' }));

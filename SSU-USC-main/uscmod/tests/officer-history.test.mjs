@@ -91,7 +91,7 @@ async function reviewedBulletin(f, key, input) {
   await f.h.announcementWorkflow(f.req('other', {action:'ready',draftId:key,expectedVersion:1}));
   await f.h.announcementWorkflow(f.req('first', {action:'publish',draftId:key,expectedVersion:1}));
 }
-test('publishing a bulletin atomically records a sanitized snapshot and prevents successor takeover', async () => {
+test('publishing a bulletin atomically records a sanitized snapshot and preserves attribution when a successor archives it', async () => {
   const f = historyFixture(); await f.assign('first', 'Public Information Officer');
   const action = { module: 'announcements', action: 'publish', operationId: 'bulletin-one', input: { title: 'Synthetic bulletin', content: 'A public notice', officerName: 'Spoof', extraPrivateData: 'must not copy' } };
   await reviewedBulletin(f,'bulletin-one',action.input); await f.h.announcementWorkflow(f.req('first',{action:'publish',draftId:'bulletin-one',expectedVersion:1}));
@@ -99,7 +99,10 @@ test('publishing a bulletin atomically records a sanitized snapshot and prevents
   assert.equal(f.records.get('announcements/bulletin-one').createdByUid, 'first');
   await f.h.officerAssignmentManage(f.req('admin', { action: 'complete', assignmentId: 'assignment-first', reason: 'Turnover' }));
   await f.assign('second', 'Public Information Officer');
-  await assert.rejects(f.h.officerModuleAction(f.req('second', { module: 'announcements', action: 'archive', operationId: 'steal', recordId: 'bulletin-one', sourceCollection: 'announcements' })), { code: 'permission-denied' });
+  await f.h.officerModuleAction(f.req('second', { module: 'announcements', action: 'archive', operationId: 'successor-archive', recordId: 'bulletin-one', sourceCollection: 'announcements' }));
+  const { activityAttribution } = f.records.get('archived_announcements/bulletin-one').post;
+  assert.equal(activityAttribution.published.name, 'Synthetic first');
+  assert.equal(activityAttribution.removed.name, 'Synthetic second');
   assert.equal((await f.h.officerRecord(f.req('second', { recordId: f.reports()[0].id }))).officerName, 'Synthetic first');
 });
 test('announcement archive/delete/restore retain the original immutable snapshot', async () => {
@@ -108,7 +111,7 @@ test('announcement archive/delete/restore retain the original immutable snapshot
   for (const [action, sourceCollection] of [['archive', 'announcements'], ['delete', 'archived_announcements'], ['restore', 'deleted_announcements']]) {
     await f.h.officerModuleAction(f.req('first', { module: 'announcements', action, operationId: 'op-' + action, recordId: 'post', sourceCollection }));
   }
-  assert.ok(f.records.has('archived_announcements/post')); assert.equal(f.reports().length, 7);
+  assert.ok(f.records.has('archived_announcements/post')); assert.equal(f.reports().length, 5);
   assert.equal(f.reports().find(r=>r.status==='published').snapshot.content, 'Preserved text');
 });
 test('events and programs publish with server attribution and preserve registrations when archived', async () => {
@@ -140,6 +143,7 @@ test('complaint review records metadata only and applies permissions against ser
   const f = historyFixture(); await f.assign('first', 'President');
   f.records.set('complaints/private-case', { status: 'Submitted', content: 'Sensitive student details', studentUid: 'secret-student', classification: 'Student Level' });
   await f.h.officerModuleAction(f.req('first', { module: 'complaints', action: 'review', operationId: 'review', recordId: 'private-case', input: { status: 'Under Review', feedback: 'Private feedback' } }));
+  assert.deepEqual(f.reports().map(row => row.action), ['Status updated', 'Responded']);
   const entry = f.reports()[0]; assert.equal(entry.snapshot, null);
   assert.ok(!JSON.stringify(entry).includes('Sensitive student details')); assert.ok(!JSON.stringify(entry).includes('Private feedback')); assert.ok(!JSON.stringify(entry).includes('secret-student'));
   assert.equal(f.records.get('complaints/private-case').thread[0].actorUid, 'first');
@@ -176,4 +180,52 @@ test('the actual User Directory adapter preserves term permissions during status
   assert.equal(updates[0].accountStatus, 'suspended'); assert.deepEqual([...updates[0].officerPermissions], old.officerPermissions); assert.equal(updates[0].officerPermissionSource, 'custom');
   await assert.rejects(context.browserAdminUpdateUser({ uid: 'officer', role: 'student' }), /Officer Management/);
   await assert.rejects(context.browserAdminUpdateUser({ uid: 'officer', officerPermissions: ['dashboard.view'] }), /Officer Management/);
+});
+
+test('activity feed retains authors across turnover, deletion and reuse of a Student ID', async () => {
+  const f = historyFixture();
+  await f.assign('first', 'Public Information Officer');
+  const input = { title: 'Campus workshop', description: 'Public activity', venue: 'SSU', eventDate: '2026-12-01', registrationMode: 'none' };
+  const create = { module: 'events', action: 'publish', operationId: 'workshop', input };
+  await Promise.all([f.h.officerModuleAction(f.req('first', create)), f.h.officerModuleAction(f.req('first', create))]);
+  await f.h.officerAssignmentManage(f.req('admin', { action: 'complete', assignmentId: 'assignment-first', reason: 'Turnover' }));
+  f.records.delete('users/first');
+  f.records.get('users/second').studentId = '990001';
+  await f.assign('second', 'Public Information Officer', { administration: '2027–2028' });
+  const edit = { module: 'events', action: 'update', recordId: 'workshop', operationId: 'workshop-edit', input: { ...input, title: 'Campus workshop updated' } };
+  await f.h.officerModuleAction(f.req('second', edit));
+  assert.equal((await f.h.officerModuleAction(f.req('second', { ...edit, operationId: 'no-change' }))).unchanged, true);
+  assert.deepEqual(Object.values(f.records.get('events/workshop').activityAttribution).map(actor => actor.name), ['Synthetic first', 'Synthetic second']);
+  f.records.delete('events/workshop');
+  const own = await f.h.officerActivityList(f.req('second', {}));
+  assert.deepEqual(own.items.map(row => row.officerUid), ['second']);
+  const record = await f.h.officerActivityList(f.req('second', { recordModule: 'Events', recordId: 'workshop' }));
+  assert.deepEqual(new Set(record.items.map(row => row.officerUid)), new Set(['first', 'second']));
+  const admin = await f.h.officerActivityList(f.req('admin', { search: 'workshop', officer: 'first', module: 'Events & Programs', year: '2026–2027', from: '2026-11-21', to: '2026-11-21' }));
+  assert.equal(admin.summary.modules.Events, 2);
+  assert.equal(admin.items[0].recordTitle, 'Campus workshop');
+  assert.equal(admin.items[0].snapshot, undefined);
+  assert.equal(admin.items.length, 1);
+});
+
+test('complaint activity is private, retry-safe and records real changes for legacy officers', async () => {
+  const f = historyFixture();
+  Object.assign(f.records.get('users/first'), { role: 'officer', officePosition: 'President' });
+  await f.assign('second', 'Public Information Officer');
+  f.records.set('complaints/case', { status: 'Under Review', studentUid: 'confidential', subject: 'Private subject', thread: [{ classification: 'Student Level' }] });
+  const data = { module: 'complaints', action: 'review', operationId: 'resolution', recordId: 'case', input: { status: 'Resolved', feedback: 'Private reply' } };
+  await f.h.officerModuleAction(f.req('first', data, 'student'));
+  await f.h.officerModuleAction(f.req('first', data, 'student'));
+  assert.equal(f.records.get('complaints/case').thread.length, 2);
+  const { items, summary } = await f.h.officerActivityList(f.req('first', {}, 'student'));
+  assert.equal(summary.total, 2);
+  assert.deepEqual(new Set(items.map(row => row.action)), new Set(['Resolved', 'Responded']));
+  for (const item of items) {
+    assert.equal(item.status, 'Resolved');
+    assert.equal(item.administration, null);
+    assert.doesNotMatch(JSON.stringify(item), /Private reply|Private subject|confidential|Student Level/);
+  }
+  await assert.rejects(f.h.officerActivityList(f.req('second', { recordModule: 'Complaints', recordId: 'case' })), { code: 'permission-denied' });
+  assert.equal((await f.h.officerActivityList(f.req('second', { officer: 'first' }))).items.length, 0);
+  await assert.rejects(f.h.officerModuleAction(f.req('second', data)), { code: 'permission-denied' });
 });
