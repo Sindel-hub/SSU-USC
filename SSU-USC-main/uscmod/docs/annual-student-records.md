@@ -2,13 +2,21 @@
 
 > Hosted deployment update: the website now defaults to its own Vercel management API. Firebase Cloud Functions/Resend instructions below describe the optional original path. See [hosted-management.md](hosted-management.md) for the current Spark-compatible architecture, staging gates and private configuration. No hosted deployment has been performed.
 
-## Administrator workflow
+## Import the School Class List (SCL)
 
-1. Open **Student Records** from User Directory. Download the CSV template, select the academic year, and upload an authorized CSV or Excel workbook. Use the first sheet and store Student IDs as text. Each upload supports up to 500 rows and 2 MB.
-2. Validate and review the preview before confirming. It distinguishes matched accounts, new accounts, and records that will wait for an email. Resolve conflicts and correct invalid rows, then generate a new preview. Previewing never changes student records or Auth accounts.
-3. Apply the confirmed import. Each row saves the academic record and its history before the service attempts account provisioning. New eligible accounts use the saved record and remain disabled until the student activates from the emailed link and chooses a password. A missing address leaves a record without an account. Add the confirmed address on a subsequent import for the same identity.
-4. Retry interrupted provisioning from the import reference. The saved record's permanent ID is reused. Completed rows are idempotent. After the preview expires, rows already saved can resume, and rows never applied require a new preview.
-5. Use User Directory for a linked account's access and student status. For records without an account, set student status in Student Records. An annual file updates enrollment classification and academic information while keeping existing account access unchanged.
+1. Open **Student Records**, download the template, select the academic year, and upload an authorized CSV or Excel workbook.
+2. Validate the file, review **Ready** and **Needs Review**, then select **Apply Ready Records**. The apply endpoint skips blocked rows and saves academic records. It creates no Firebase accounts and sends no email. Review results can be reopened by import reference.
+3. Correct spreadsheet errors in the source and upload the corrected rows. For a name mismatch on an existing account with the same Student ID, compare both names, verify the person against an authorized source, and record the reference using **Verify same person**. That row can then be applied. Ownership and UID conflicts stay blocked for separate review.
+4. Account access and existing account fields are managed in User Directory. The import can link a verified matching account to an SCL record while preserving its UID, credentials, permissions, and history.
+
+## Issue an account at the USC office
+
+1. Use **Register student account** in User Directory. Look up the student's exact Student ID and review the saved information. A missing or ineligible masterlist record cannot be used for issuance.
+2. Verify the student in person and explicitly issue the account. User Directory will show it as pending activation. A duplicate Student ID is blocked, including if it belongs to an older existing account.
+3. Hand the one-time activation link privately to the verified student. The link expires after 24 hours and lets the student choose their password. Institutional email is optional. In-person links do not verify an email address.
+4. If the link was lost, verify the student again before replacing it. The previous link becomes invalid. Existing email activation and the authorized email resend action are available for accounts with an institutional email.
+
+Previews from the earlier import-and-provision workflow must be regenerated. Any incomplete Auth issuance from an earlier release should be checked for ownership before processing.
 
 ## Import contract
 
@@ -24,9 +32,9 @@ Schedule a staging backup of Firestore and Firebase Auth under the existing rest
 
 ## Activation and email
 
-The server uses a random 256-bit token and stores only its SHA-256 hash. The email link places the token in a URL fragment, and the activation page immediately removes it from browser history and uses a no-referrer policy. Tokens cannot select an arbitrary UID/email and successful tokens cannot be reused. Mailbox verification occurs only after possession of the link is established; bulk provisioning does not mark email verified.
+Email and in-person activation use a random 256-bit token and stores only its SHA-256 hash. The email link places the token in a URL fragment, and the activation page immediately removes it from browser history and uses a no-referrer policy. Tokens cannot select an arbitrary UID/email and successful tokens cannot be reused. Mailbox verification occurs only after possession of the link is established; bulk provisioning does not mark email verified.
 
-Activation respects the current academic/account status. A student may establish a password while inactive but remains blocked from the portal. This is mailbox verification against the administrator-supplied address; it is not independent Registrar verification of identity/enrollment. Incorrect authorized lists must be reconciled by the administrator.
+Activation respects the current account status. Email delivery verifies the administrator-supplied mailbox; it is not independent Registrar verification of identity/enrollment. Incorrect authorized lists must be reconciled by the administrator.
 
 New Firebase Functions email configuration, distinct from the existing Supabase email service:
 
@@ -34,7 +42,7 @@ New Firebase Functions email configuration, distinct from the existing Supabase 
 - Environment: `STUDENT_ACTIVATION_FROM` (a verified sender).
 - Environment: `STUDENT_ACTIVATION_ORIGIN` (exact HTTPS frontend origin, without a trailing slash; no caller-selected redirect).
 
-Only `studentAnnualApply` and `studentActivationResend` bind the email secret. Messages contain the activation instructions, not a password. Sender authorization, quotas, bounce handling and App Check/rate controls must be verified in staging before public use. Function concurrency is capped; valid 256-bit tokens and processing leases protect activation, but this is not a comprehensive anti-abuse system. A provider timeout is reported as unconfirmed rather than triggering an automatic resend. Do not send real activation emails during local tests.
+Only `studentActivationResend` binds the optional Functions email secret. Messages contain the activation instructions, not a password. Sender authorization, quotas, bounce handling and App Check/rate controls must be verified in staging before public use. Function concurrency is capped; valid 256-bit tokens and processing leases protect activation, but this is not a comprehensive anti-abuse system. A provider timeout is reported as unconfirmed rather than triggering an automatic resend. Do not send real activation emails during local tests.
 
 ## Monitoring and history access
 

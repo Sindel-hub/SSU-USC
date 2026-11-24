@@ -45,13 +45,19 @@ function studentName(row) {
 }
 function normalizeRows(rows){
  if(!Array.isArray(rows)||!rows.length||rows.length>500)bad('Import 1–500 rows.');
- const ids=new Set(),emails=new Set();
+ const ids=new Map(),emails=new Set();
+ for(const row of rows){
+  if(typeof row?.studentId==='string'){
+   const id=row.studentId.trim();
+   ids.set(id,(ids.get(id)||0)+1);
+  }
+ }
  return rows.map((r,i)=>{
   try{
    if(!r||typeof r!=='object'||Array.isArray(r))bad('Invalid row.');
    if(Object.keys(r).some(k=>!['studentId','fullName','department','program','yearLevel','email','status','enrollmentStatus',...nameFields].includes(k)))bad('Use only the template columns.');
    const studentId=text(r.studentId,64,'Student ID');if(!/^\d{1,64}$/.test(studentId))bad('Student ID must contain digits only; preserve leading zeros.');
-   if(ids.has(studentId))bad('Duplicate Student ID in this file.');ids.add(studentId);
+   if(ids.get(studentId)>1)bad('Duplicate Student ID in this file.');
    const names = nameFields.some(key => Object.hasOwn(r,key)) ? studentName(r) : {};
    const fullName=text(names.fullName || r.fullName,120,'full name');
    const department=canonicalDepartment(text(r.department,160,'department'));

@@ -1,229 +1,86 @@
-import { copyTemporaryPassword } from "../../../shared/pasted-password.js";
-import { SSU_PROGRAMS, formatSsuCollege, isValidSsuProgram } from "./ssu-programs.js";
-import { provisionStudentAccount } from "../../../shared/browser-provisioning.js?v=3-id-replacement-1";
-import { enrollmentStatusForStanding, isActiveStudentStanding, studentStandingLabel } from "../../../shared/student-standing.js";
+import { studentRecordCall as call } from '../../../shared/student-records-client.js';
+import { formatSsuCollege, formatSsuProgram } from './ssu-programs.js';
 
-const form = document.getElementById("studentForm");
-const slipSection = document.getElementById("slipSection");
-const slip = document.getElementById("slip");
-const bridgeStatus = document.getElementById("bridgeStatus");
-const createBtn = document.getElementById("createBtn");
-const collegeSelect = document.getElementById("college");
-const programSelect = document.getElementById("program");
-const yearLevelSelect = document.getElementById("yearLevel");
-const standingSelect = document.getElementById("studentStanding");
-const standingHint = document.getElementById("standingHint");
-const eligibilitySelect = document.getElementById("eligibility");
-const submissionFeedback = document.getElementById("submissionFeedback");
-let slipReturnFocus = null;
+if (await globalThis.USC_AUTH_READY !== true) await new Promise(() => {});
+const $ = id => document.getElementById(id);
+const input = $('studentId'), form = $('studentForm'), button = $('createBtn'), verify = $('verifyStudent');
+const handoff = $('activationHandoff'), link = $('studentActivationLink');
+let lookup = null, busy = false, revision = 0;
 
-function showSubmissionFeedback(message, tone) {
-  if (!submissionFeedback) return;
-  submissionFeedback.textContent = message;
-  submissionFeedback.className = `submission-feedback ${tone}`;
-  submissionFeedback.hidden = !message;
+function message(text) { $('registrationStatus').textContent = text; }
+function clear() {
+  lookup = null;
+  form.hidden = true;
+  handoff.hidden = true;
+  link.value = '';
+  verify.checked = false;
+  button.disabled = true;
 }
-function showFieldFeedback(field) {
-  const error = document.getElementById(`${field.id}Error`);
-  if (!error) return;
-  const invalid = !field.validity.valid;
-  field.setAttribute("aria-invalid", String(invalid));
-  error.textContent = invalid ? field.validationMessage : "";
-  error.hidden = !invalid;
+function canIssue(result) {
+  return result && (result.canReissue || (!result.account && result.record?.studentStanding === 'active' && result.recordRevision));
 }
-form?.addEventListener("invalid", (event) => showFieldFeedback(event.target), true);
-form?.addEventListener("input", (event) => {
-  if (event.target.getAttribute("aria-invalid") === "true") showFieldFeedback(event.target);
-});
-form?.addEventListener("change", (event) => {
-  if (event.target.getAttribute("aria-invalid") === "true") showFieldFeedback(event.target);
-});
-
-let currentCredential = null;
-let currentSlipTitle = "STUDENT ACCOUNT INFORMATION";
-
-function openSlipModal(){
-  if (!slipSection) return;
-  slipReturnFocus = createBtn;
-  slipSection.hidden = false;
-  slipSection.setAttribute("aria-hidden", "false");
-  document.body.classList.add("modal-open");
-  requestAnimationFrame(() => document.getElementById("closeSlipModalBtn")?.focus({ preventScroll: true }));
-  slipSection.querySelector(".slip-modal-body")?.scrollTo({ top: 0, behavior: "instant" in window ? "instant" : "auto" });
-}
-function clearSlipState(){
-  if (slip) slip.innerHTML = "";
-  currentCredential = null;
-}
-function closeSlipModal({ clear = true } = {}){
-  if (!slipSection) return;
-  slipSection.hidden = true;
-  slipSection.setAttribute("aria-hidden", "true");
-  document.body.classList.remove("modal-open");
-  if (clear) clearSlipState();
-  slipReturnFocus?.focus({ preventScroll: true });
-}
-function printSlip(){
-  if (!currentCredential) return alert("Create a student account first.");
-  const html = buildDownloadableSlip(currentCredential, currentSlipTitle);
-  const win = window.open("", "_blank", "width=900,height=900");
-  if (!win) return alert("Allow pop-ups first so the login slip can open for printing.");
-  win.document.open();
-  win.document.write(html);
-  win.document.close();
-  setTimeout(() => { try { win.focus(); win.print(); } catch {} }, 250);
+function render(result) {
+  lookup = result;
+  const student = result.record || result.account;
+  form.hidden = !student;
+  if (!student) { message('No masterlist record found. Verify the Student ID or import the SCL first.'); return; }
+  $('name').value = student.fullName || '';
+  $('college').value = formatSsuCollege(student.college) || '';
+  $('program').value = formatSsuProgram(student.college, student.program) || '';
+  $('yearLevel').value = student.yearLevel || '';
+  $('email').value = student.institutionalEmail || '';
+  $('registrationAccount').value = result.account?.accountState || 'No account';
+  const allowed = canIssue(result);
+  $('verifyStudentLabel').hidden = !allowed;
+  button.hidden = !allowed;
+  button.disabled = !allowed || !verify.checked;
+  button.textContent = result.canReissue ? 'Replace activation link' : 'Create student account';
+  message(result.account ? `Existing account: ${result.account.fullName} · ${result.account.accountState}.` : allowed ? '' : 'Only an eligible masterlist record can be issued an account.');
 }
 
-function esc(v){return String(v??"").replace(/[&<>'"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;","'":"&#39;",'"':"&quot;"}[c]));}
+input.oninput = () => { revision++; clear(); message(''); };
+$('studentLookup').onsubmit = async event => {
+  event.preventDefault();
+  if (busy) return;
+  clear();
+  const request = ++revision;
+  message('Looking up Student ID…');
+  try {
+    const result = await call('studentRegistrationLookup', { studentId: input.value.trim() });
+    if (request === revision) render(result);
+  } catch (error) { if (request === revision) message(error.message); }
+};
 
-function populateColleges(){
-  Object.keys(SSU_PROGRAMS).forEach(college=>{
-    const option=document.createElement("option");
-    option.value=college;
-    option.textContent=formatSsuCollege(college);
-    collegeSelect.appendChild(option);
-  });
-}
-function populatePrograms(){
-  const college=collegeSelect.value;
-  programSelect.innerHTML="";
-  const first=document.createElement("option");
-  first.value="";
-  first.textContent=college?"Select program":"Select college/campus first";
-  programSelect.appendChild(first);
-  const programs=SSU_PROGRAMS[college]||[];
-  programs.forEach(program=>{
-    const option=document.createElement("option");
-    option.value=program;
-    option.textContent=program;
-    programSelect.appendChild(option);
-  });
-  programSelect.disabled=!college;
-}
-
-function showRuntimeReady(){
-  if (!bridgeStatus) return;
-  bridgeStatus.textContent = "Ready to create an account.";
-  bridgeStatus.className = "status-box ok";
-}
-function syncStandingControls(){
-  const standing = standingSelect?.value || "active";
-  const active = isActiveStudentStanding(standing);
-
-  if (standingHint) {
-    standingHint.textContent = active
-      ? "Active students may access the portal."
-      : `${studentStandingLabel(standing)} accounts are inactive: portal access and voting are automatically disabled.`;
+verify.onchange = () => { button.disabled = busy || !canIssue(lookup) || !verify.checked; };
+form.onsubmit = async event => {
+  event.preventDefault();
+  if (busy || !canIssue(lookup) || !verify.checked) return;
+  const studentId = input.value.trim(), { recordRevision, canReissue } = lookup;
+  busy = true;
+  input.disabled = true;
+  button.disabled = true;
+  try {
+    const result = await call('studentRegistrationIssue', {
+      studentId, recordRevision, verifiedInPerson: true, reissue: canReissue
+    });
+    clear();
+    const url = new URL('../../activate/index.html', location.href);
+    url.hash = 'token=' + result.token;
+    link.value = url.href;
+    handoff.hidden = false;
+    message(canReissue ? 'Replacement activation link ready.' : 'Account issued. The student can set their own password.');
+    link.focus();
+    link.select();
+  } catch (error) {
+    message(error.message);
+    button.disabled = false;
+  } finally {
+    busy = false;
+    input.disabled = false;
   }
-}
-function credentialRows(c){
-  return `
-    <span>Student Name</span><span class="credential-value">${esc(c.fullName||"")}</span>
-    <span>Student ID</span><span class="credential-value">${esc(c.studentId||"")}</span>
-    <span>Institutional Email</span><span class="credential-value">${esc(c.institutionalEmail||"Not Linked")}</span>
-    <span>College / Campus</span><span class="credential-value">${esc(formatSsuCollege(c.college||""))}</span>
-    <span>Program</span><span class="credential-value">${esc(c.program||"")}</span>
-    <span>Year Level</span><span class="credential-value">${esc(c.yearLevel||"")}</span>
-    <span>Student Standing</span><span class="credential-value">${esc(c.studentStandingLabel||c.studentStanding||"")}</span>
-    <span>Login Username</span><span class="credential-value">${esc(c.studentId||c.institutionalEmail||"Not Linked")}</span>
-    <span>Temporary Password</span><span class="credential-value temp-password">${esc(c.temporaryPassword||"Existing password unchanged")}</span>`;
-}
-function renderSlip(c,title="STUDENT ACCOUNT INFORMATION"){
-  currentCredential={...c};
-  currentSlipTitle=title;
-  openSlipModal();
-  const active = isActiveStudentStanding(c.studentStanding);
-  const notice = active
-    ? "Keep this information private. The student may change the temporary password after signing in."
-    : `This account is currently inactive because the recorded student standing is ${studentStandingLabel(c.studentStanding)}. Portal access and voting are disabled until an administrator restores Active / Enrolled standing.`;
-  slip.innerHTML=`<article class="login-slip"><div class="header"><h2>SSU UNIVERSITY STUDENT COUNCIL</h2><strong>${esc(title)}</strong></div><div class="credential-grid">${credentialRows(c)}</div><div class="notice"><strong>Important:</strong> ${esc(notice)}</div></article>`;
-  if (c.temporaryPassword) {
-    const copyButton = document.createElement("button");
-    copyButton.type = "button";
-    copyButton.className = "copy-temporary-password no-print";
-    copyButton.textContent = "Copy password";
-    copyButton.setAttribute("aria-live", "polite");
-    copyButton.addEventListener("click", () => copyTemporaryPassword(c.temporaryPassword, copyButton));
-    slip.appendChild(copyButton);
-  }
-}
-function safeFilenamePart(value){
-  return String(value||"").trim().replace(/[^a-z0-9_-]+/gi,"_").replace(/^_+|_+$/g,"").slice(0,60)||"student";
-}
-function buildDownloadableSlip(c,title){
-  const active = isActiveStudentStanding(c.studentStanding);
-  const accessNotice = active ? "Keep this information private. Change the password after signing in." : `This account is inactive because the recorded student standing is ${studentStandingLabel(c.studentStanding)}. Portal access and voting are disabled.`;
-  return `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${esc(title)}</title><style>
-  body{font-family:Arial,sans-serif;background:#f4f6f9;color:#111;margin:0;padding:30px}.slip{max-width:720px;margin:auto;background:#fff;border:2px solid #122a50;padding:30px}.header{text-align:center;border-bottom:2px solid #122a50;padding-bottom:14px;margin-bottom:20px}.header h1{font-size:22px;margin:0 0 6px}.grid{display:grid;grid-template-columns:190px 1fr;gap:10px 14px}.value{font-weight:700;word-break:break-word}.password{font-family:Consolas,monospace;font-size:22px;letter-spacing:1px}.notice{margin-top:22px;padding:12px;border:1px dashed #666}.actions{text-align:center;margin:20px}.actions button{padding:10px 18px;font-weight:700}@media print{body{background:#fff;padding:0}.slip{max-width:none;min-height:88vh}.actions{display:none}}@media(max-width:600px){.grid{grid-template-columns:1fr}}
-  </style></head><body><article class="slip"><div class="header"><h1>SSU UNIVERSITY STUDENT COUNCIL</h1><strong>${esc(title)}</strong></div><div class="grid">
-  <span>Student Name</span><span class="value">${esc(c.fullName||"")}</span><span>Student ID</span><span class="value">${esc(c.studentId||"")}</span><span>Institutional Email</span><span class="value">${esc(c.institutionalEmail||"Not Linked")}</span><span>College / Campus</span><span class="value">${esc(formatSsuCollege(c.college||""))}</span><span>Program</span><span class="value">${esc(c.program||"")}</span><span>Year Level</span><span class="value">${esc(c.yearLevel||"")}</span><span>Student Standing</span><span class="value">${esc(c.studentStandingLabel||c.studentStanding||"")}</span><span>Login Username</span><span class="value">${esc(c.studentId||c.institutionalEmail||"Not Linked")}</span><span>Temporary Password</span><span class="value password">${esc(c.temporaryPassword||"Existing password unchanged")}</span></div><div class="notice"><strong>Important:</strong> ${esc(accessNotice)} If the password is forgotten, ask the System Administrator to issue a new temporary password from the User Directory.</div></article><div class="actions"><button onclick="window.print()">Print This Slip</button></div></body></html>`;
-}
-function downloadSlip(){
-  if(!currentCredential)return alert("Create a student account first.");
-  const html=buildDownloadableSlip(currentCredential,currentSlipTitle);
-  const blob=new Blob([html],{type:"text/html;charset=utf-8"});
-  const url=URL.createObjectURL(blob);
-  const a=document.createElement("a");
-  a.href=url;
-  a.download=`SSU_Login_${safeFilenamePart(currentCredential.studentId)}_${safeFilenamePart(currentCredential.fullName)}.html`;
-  document.body.appendChild(a);
-  a.click();
-  a.remove();
-  setTimeout(()=>URL.revokeObjectURL(url),1000);
-}
-
-form?.addEventListener("submit",async(e)=>{
-  e.preventDefault();
-  const college=collegeSelect.value;
-  const program=programSelect.value;
-  if(!isValidSsuProgram(college,program))return alert("Select a valid Samar State University college/campus and program.");
-  const row={
-    studentId:document.getElementById("studentId").value,
-    fullName:document.getElementById("name").value,
-    institutionalEmail:document.getElementById("email").value,
-    program,
-    college,
-    yearLevel:yearLevelSelect.value,
-    studentStanding:standingSelect.value,
-    enrollmentStatus:enrollmentStatusForStanding(standingSelect.value),
-    eligible:true
-  };
-  showSubmissionFeedback("Creating student account…", "pending");
-  form.setAttribute("aria-busy", "true");
-  createBtn.disabled=true;
-  createBtn.textContent="Creating...";
-  try{
-    const result=await provisionStudentAccount(row);
-    renderSlip(result.credential);
-    showSubmissionFeedback((result.retirementPending ? "Account created and previous portal access blocked. Firebase sign-in cleanup needs an administrator retry." : "Student account created. The login slip is ready."), "success");
-  }catch(err){
-    showSubmissionFeedback(err.message || "Student account creation failed.", "error");
-    console.error("Student account creation failed:", err);
-    alert(err.message || "Student account creation failed.");
-  }
-  finally{form.setAttribute("aria-busy", "false");createBtn.disabled=false;createBtn.textContent="Create Student Account";}
-});
-document.getElementById("printSlipBtn")?.addEventListener("click", printSlip);
-document.getElementById("downloadSlipBtn")?.addEventListener("click",downloadSlip);
-document.getElementById("clearSlipBtn")?.addEventListener("click",()=>closeSlipModal());
-document.getElementById("closeSlipModalBtn")?.addEventListener("click",()=>closeSlipModal());
-slipSection?.addEventListener("click",(event)=>{ if (event.target?.dataset?.closeSlip === "true") closeSlipModal(); });
-document.addEventListener("keydown",(event)=>{
-  if (slipSection?.hidden) return;
-  if (event.key === "Escape") closeSlipModal();
-  if (event.key === "Tab") {
-    const controls = [...slipSection.querySelectorAll('button:not(:disabled), a[href], [tabindex="0"]')].filter(el => el.getClientRects().length);
-    const first = controls[0], last = controls.at(-1);
-    if (event.shiftKey && (document.activeElement === first || !slipSection.contains(document.activeElement))) {
-      event.preventDefault(); last?.focus();
-    } else if (!event.shiftKey && (document.activeElement === last || !slipSection.contains(document.activeElement))) {
-      event.preventDefault(); first?.focus();
-    }
-  }
-});
-collegeSelect?.addEventListener("change",populatePrograms);
-standingSelect?.addEventListener("change", syncStandingControls);
-populateColleges();
-populatePrograms();
-syncStandingControls();
-showRuntimeReady();
+};
+$('copyActivationLink').onclick = async () => {
+  try { await navigator.clipboard.writeText(link.value); message('Activation link copied.'); }
+  catch { link.focus(); link.select(); message('Copy the selected link.'); }
+};
+$('clearActivationLink').onclick = () => { clear(); message(''); input.focus(); };

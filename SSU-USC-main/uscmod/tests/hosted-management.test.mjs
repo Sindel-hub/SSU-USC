@@ -83,7 +83,7 @@ test('HTTP router rejects methods, wrong content types, forged envelopes and unk
   assert.equal((await request(f, 'removeAccount')).statusCode, 400);
   assert.equal((await request(f, '', {}, { body: { action: 'studentRecordsList', data: {}, auth: { uid: 'admin' } } })).statusCode, 400);
   assert.equal((await request(f, '', {}, { body: { action: 'studentRecordsList', data: { text: 'x'.repeat(1024 * 1024) } } })).statusCode, 400);
-  assert.equal(f.verifiedTokens.length, 0); assert.equal(ACTIONS.size, 26);
+  assert.equal(f.verifiedTokens.length, 0); assert.equal(ACTIONS.size, 29);
   for (const action of ["officerCandidateFind", "officerAssignmentManage", "officerAssignments", "officerTracklist", "officerActivityList", "officerRecord", "officerReportSubmit", "officerModuleAction"]) assert.ok(ACTIONS.has(action));
 });
 test('authenticated API calls reject missing, revoked and unauthorized student/officer tokens', async () => {
@@ -122,13 +122,19 @@ test('survey management checks real position/custom permissions instead of accep
   f.records.get('users/officer-test').officerPermissions.push('bulletin.manage');
   await auth.requireOfficerPermission({ auth: { uid: 'officer-test', token: { role: 'officer' } } }, 'bulletin.manage');
 });
-test('hosted HTTP integration provisions, sends through the SMTP adapter, activates and rejects reused links', async () => {
+test('hosted HTTP import is record-only and explicit office issuance supports one-time activation', async () => {
   const f = hostedFixture();
   const p = await request(f, 'studentAnnualPreview', { rows: [student()], academicYear: '2026-2027', authorized: true });
   assert.equal(p.statusCode, 200); assert.equal(p.body.data.hasErrors, false);
-  const a = await request(f, 'studentAnnualApply', { importId: p.body.data.importId, start: 0 });
-  assert.equal(a.statusCode, 200); assert.equal(a.body.data.results[0].emailStatus, 'sent'); assert.equal(f.mail.length, 1);
-  const token = f.mail[0].text.match(/#token=([a-f0-9]{64})/)[1];
+  const a = await request(f, 'studentAnnualApply', { importId: p.body.data.importId, start: 0, confirmed: true });
+  assert.equal(a.statusCode, 200);
+  assert.equal(f.authUsers.size, 0);
+  assert.equal(f.mail.length, 0);
+  const studentId = student().studentId;
+  const lookup = await request(f, 'studentRegistrationLookup', { studentId });
+  const issued = await request(f, 'studentRegistrationIssue', { studentId, recordRevision: lookup.body.data.recordRevision, verifiedInPerson: true });
+  assert.equal(issued.statusCode, 200);
+  const token = issued.body.data.token;
   const activated = await request(f, 'studentActivateAccount', { token, password: 'Synthetic-student-password' }, { headers: { authorization: '' } });
   assert.equal(activated.statusCode, 200); assert.equal(activated.body.data.canAccess, true);
   const uid = a.body.data.results[0].uid; assert.equal(f.records.get('users/' + uid).isActive, true);

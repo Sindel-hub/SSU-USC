@@ -7,7 +7,7 @@ if(!/^[a-f0-9]{64}$/.test(token||'')){$('activationForm').hidden=true;message('T
 $('activationForm').onsubmit=async event=>{
  event.preventDefault();const password=$('activationPassword').value;
  if(password!==$('activationConfirm').value)return message('Passwords do not match.',true);
- $('activationSubmit').disabled=true;message('Verifying your email and activating…');
- try{const r=await studentRecordCall('studentActivateAccount',{token,password});$('activationForm').hidden=true;$('activationPassword').value='';$('activationConfirm').value='';message(r.canAccess?'Your email is verified and your account is activated. You can now sign in.':'Your email is verified and password is set. Your academic/account status currently prevents portal access. Contact USC for assistance.');$('activationDone').hidden=false;}
+ $('activationSubmit').disabled=true;message('Activating your account…');
+ try{const r=await studentRecordCall('studentActivateAccount',{token,password});$('activationForm').hidden=true;$('activationPassword').value='';$('activationConfirm').value='';message(r.canAccess?'Your account is activated. You can now sign in.':'Your password is set. Your academic/account status currently prevents portal access. Contact USC for assistance.');$('activationDone').hidden=false;}
  catch(error){message(error.message,true);}finally{$('activationSubmit').disabled=false;}
 };

@@ -70,14 +70,18 @@
                     <button class="nav-btn logout-btn" type="button" onclick="logoutAdminOnly()"><span><i class="fa-solid fa-arrow-right-from-bracket" aria-hidden="true"></i></span><span>Log Out</span></button>
                 </aside>
 <section class="main na-workspace records-workspace">
-<div class="na-heading"><div><h1>Student Records</h1><p class="na-muted">Annual updates, secure account activation, and student history.</p></div><a class="na-button" href="users.html">User Directory</a></div>
+<div class="na-heading"><div><h1>Student Records</h1><p class="na-muted">SCL imports and academic history.</p></div><div class="na-actions"><a class="na-button" href="users.html">User Directory</a><a class="na-button" href="../student-registration/student-registration.html">Account Registration</a></div></div>
 <p id="recordsMessage" class="na-status" role="status" aria-live="polite"></p>
 <section class="na-panel"><h2>Annual student import</h2><p class="import-alert">Import an authorized SSU-USC list. Continuing students retain their Student ID, account, password, and activity history. Students omitted from a file are never automatically deactivated or deleted.</p>
-<details class="file-guide"><summary>Import requirements</summary><p>Use the template for CSV or the first sheet of an Excel workbook. Store Student IDs as text. Use official department and program names and year levels 1–6.</p><p>Middle Name, Suffix, and Institution Email may be blank. Students without email are saved as records and wait for activation.</p><div id="programGuide"></div></details>
+<details class="file-guide"><summary>Import requirements</summary><p>Use the template for CSV or the first sheet of an Excel workbook. Store Student IDs as text. Use official department and program names and year levels 1–6.</p><p>Middle Name, Suffix, and Institution Email may be blank. SCL imports save academic records only. Use Account Registration to issue an account.</p><div id="programGuide"></div></details>
 <form id="studentImportForm"><div class="na-columns"><div><label for="importYear">Academic year</label><input id="importYear" placeholder="2026-2027" pattern="[0-9]{4}-[0-9]{4}" required></div><div><label for="studentImportFile">Authorized student list</label><input id="studentImportFile" type="file" accept=".csv,.xlsx" required></div></div>
 <label class="na-choice"><input id="importAuthorized" type="checkbox" required>I confirm this list is authorized for SSU-USC account management.</label><div class="na-actions"><button class="primary" type="submit">Validate and preview</button><a class="na-button" href="student-import-template.csv" download>Download CSV template</a></div></form>
 <div class="record-search"><div><label for="resumeImportId">Resume an import</label><input id="resumeImportId" placeholder="Import reference"></div><button id="resumeImportButton" type="button">Load import</button></div>
-<div id="importPreview" hidden><h3>Review changes</h3><p id="importSummary"></p><p id="importReference" class="na-muted"></p><div class="na-table-wrap"><table class="na-table"><thead><tr><th>Row</th><th>Student ID</th><th>Student</th><th>Action</th><th>Status</th><th>Validation / result</th></tr></thead><tbody id="importPreviewRows"></tbody></table></div><label class="na-choice"><input id="confirmImport" type="checkbox">I reviewed the proposed academic and account-status changes.</label><button id="applyStudentImport" class="primary" type="button" disabled>Apply reviewed import</button><p id="importProgress" class="na-status" role="status"></p></div></section>
+<div id="importPreview" hidden><h3>Review changes</h3><p id="importSummary"></p>
+<div class="na-actions" role="group" aria-label="Import preview">
+<button id="readyImportTab" type="button" aria-pressed="true">Ready</button>
+<button id="reviewImportTab" type="button" aria-pressed="false">Needs Review</button>
+</div><p id="importReference" class="na-muted"></p><div class="na-table-wrap"><table class="na-table"><thead><tr><th>Row</th><th>Student ID</th><th>Student</th><th>Action</th><th>Status</th><th>Validation / result</th></tr></thead><tbody id="importPreviewRows"></tbody></table></div><label class="na-choice"><input id="confirmImport" type="checkbox">I reviewed the Ready records.</label><button id="applyStudentImport" class="primary" type="button" disabled>Apply Ready Records</button><p id="importProgress" class="na-status" role="status"></p></div></section>
 <section class="na-panel"><div class="na-heading"><h2>Student records</h2><button id="refreshStudents" type="button">Refresh</button></div><div class="record-search"><div><label for="findStudentId">Find exact Student ID</label><input id="findStudentId" inputmode="numeric" placeholder="Student ID"></div><button id="findStudent" type="button">Find</button><button id="clearStudentSearch" type="button">Show all</button><div><label for="studentStatusFilter">Student status</label><select id="studentStatusFilter"><option value="">All statuses</option><option value="active">Currently enrolled</option><option value="graduated">Graduated</option><option value="inactive">Inactive</option><option value="withdrawn">Discontinued</option><option value="leave">On leave</option><option value="transferred">Transferred</option><option value="eliminated">Eliminated</option></select></div></div><div class="record-search">
 <label>Name<input data-student-filter="fullName"></label>
 <label>Department<input data-student-filter="college" list="studentDepartmentOptions"></label><datalist id="studentDepartmentOptions"></datalist>
@@ -85,7 +89,7 @@
 <label>Year level<input data-student-filter="yearLevel"></label>
 <label>Academic year<input data-student-filter="academicYear" placeholder="YYYY-YYYY"></label>
 <label>Enrollment classification<input data-student-filter="enrollmentStatus"></label>
-<label>Account status<select data-student-filter="accountStatus"><option value="">All statuses</option><option value="active">Active</option><option value="pending activation">Pending activation</option><option value="suspended">Suspended</option><option value="deactivated">Deactivated</option></select></label>
+<label>Account status<select data-student-filter="accountStatus"><option value="">All statuses</option><option value="active">Active</option><option value="pending activation">Pending activation</option><option value="no account">No account</option><option value="suspended">Suspended</option><option value="deactivated">Deactivated</option></select></label>
 </div><p id="studentListSummary"></p><div class="na-table-wrap"><table class="na-table"><thead><tr><th>Student ID</th><th>Name / Department</th><th>Academic year</th><th>Student status</th><th>Account / activation</th><th>Actions</th></tr></thead><tbody id="studentRecordRows"></tbody></table></div><button id="moreStudents" type="button" hidden>Load more</button></section>
 
 </section></main></div></div>
@@ -119,7 +123,7 @@
   </div>
 </footer>
 
-    <script type="module" src="js/student-records.js?v=records-first-1"></script>
+    <script type="module" src="js/student-records.js?v=scl-only-1"></script>
     <script type="module" src="../shared/js/admin-only-auth.js"></script>
 <script type="module" src="../../shared/profile-manager.js?v=admin-settings-1&amp;refinements=1"></script>
 </body>
