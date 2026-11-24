@@ -119,7 +119,7 @@ async function cleanupAndAlert(message) {
 function buttonState(loading) {
   if (!signinSubmitButton) return;
   signinSubmitButton.disabled = loading;
-  signinSubmitButton.textContent = loading ? "SIGNING IN..." : "SIGN IN";
+  signinSubmitButton.textContent = loading ? "LOGGING IN..." : "LOGIN";
 }
 
 async function sha256Hex(value) {
