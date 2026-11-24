@@ -123,3 +123,21 @@ test('persistent Auth cleanup outage reports committed state and a retry complet
   f.adminAuth.updateUser=update;
   await assert.rejects(run(),{code:'already-exists'});assert.equal(f.authUsers.get('first').disabled,true);assert.equal(f.authUsers.get('first').revoked,true);
 });
+for (const kind of ['id', 'email']) test(`legacy ${kind} alias without UID transfers only when Auth identity proves ownership`, async()=>{
+  const {createHash}=await import('node:crypto');const {f,run}=setup();
+  const email=f.authUsers.get('first').email;
+  const path=kind==='id'?'login_aliases/id_990001':'login_aliases/email_'+createHash('sha256').update(email).digest('hex');
+  f.records.set(path,{authEmail:email,kind:kind==='id'?'studentId':'institutionalEmail'});
+  const result=await run({institutionalEmail:email});
+  assert.equal(f.records.get(path).uid,result.credential.uid);
+  assert.equal(f.authUsers.get('first').disabled,true);
+});
+for (const authEmail of ['', 'someone-else@example.invalid']) test(`unproven legacy email alias remains protected (${authEmail || 'missing address'})`,async()=>{
+  const {createHash}=await import('node:crypto');const {f,run}=setup();
+  const email='requested@example.invalid';const path='login_aliases/email_'+createHash('sha256').update(email).digest('hex');
+  f.records.set(path,{authEmail});
+  await assert.rejects(run({institutionalEmail:email}),error=>error.code==='already-exists'&&/Email login/.test(error.message));
+  assert.equal(f.records.get(path).uid,undefined);
+  assert.equal(f.records.get('users/first').accountRemoved,undefined);
+  assert.equal(f.authUsers.size,3);
+});
