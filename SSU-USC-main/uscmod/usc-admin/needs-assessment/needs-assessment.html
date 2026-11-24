@@ -16,6 +16,7 @@
 <link rel="stylesheet" href="../../shared/profile-manager.css" />
 <link rel="stylesheet" href="../../shared/engagement-analytics.css?v=4" />
 <link rel="stylesheet" href="../../shared/needs-assessment.css" />
+<link rel="stylesheet" href="needs-assessment.css?v=1" />
   <script src="../../shared/app-config.js"></script>
   <script type="module" src="../../shared/auth-guard.js?v=rbac7"></script>
 <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet" />
@@ -137,18 +138,43 @@
                 </aside>
 
 <section class="main na-workspace">
-<div class="na-heading"><div><h1>Needs Assessment</h1><p class="na-muted">Listen to students. Plan programs around their needs.</p></div><button id="naNew" data-rbac-permission="bulletin.manage" class="primary" type="button">Create survey</button></div>
-<p class="na-muted">Survey management uses your Bulletin Board permission. Responses are anonymous and departments are self-reported.</p>
+<div class="na-heading"><h1>Needs Assessment</h1><button id="naNew" data-rbac-permission="bulletin.manage" class="mini-btn primary" type="button">Create survey</button></div>
 <p id="naMessage" class="na-status" role="status" aria-live="polite"></p>
-<section id="naEditor" class="na-panel" hidden><h2 id="naEditorTitle">Create survey</h2>
-<form id="naForm" data-rbac-permission="bulletin.manage"><label for="naTitle">Survey title</label><input id="naTitle" maxlength="160" required>
+<section id="naEditor" class="card" hidden><header class="card-head"><h2 id="naEditorTitle">Create survey</h2></header>
+<form class="card-body" id="naForm" data-rbac-permission="bulletin.manage"><label for="naTitle">Survey title</label><input id="naTitle" maxlength="160" required>
 <label for="naDescription">Introduction</label><textarea id="naDescription" maxlength="3000"></textarea>
 <div class="na-columns"><div><label for="naOpens">Opens (your local time)</label><input id="naOpens" type="datetime-local" required></div><div><label for="naCloses">Closes (your local time)</label><input id="naCloses" type="datetime-local" required></div></div>
 <fieldset class="na-question"><legend>Target departments</legend><div id="naDepartments"></div></fieldset>
-<h3>Questions</h3><div id="naQuestions"></div><button id="naAddQuestion" type="button">Add question</button>
-<div class="na-actions"><button class="primary" type="submit">Save draft</button><button id="naCancel" type="button">Cancel</button></div></form></section>
-<section class="na-panel"><div class="na-heading"><h2>Surveys</h2><button id="naRefresh" type="button">Refresh</button></div><div id="naSurveys"><p>Loading surveys…</p></div><button id="naMore" type="button" hidden>Load more surveys</button></section>
-<section id="naResults" class="na-panel" hidden><h2 id="naResultsTitle">Survey results</h2><p id="naReportMeta" class="na-muted"></p><label for="naDepartmentFilter">Department</label><select id="naDepartmentFilter"></select><div id="naAnalytics"></div><div class="na-actions"><button id="naExportSummary" type="button">Export summary CSV</button><button id="naExportResponses" type="button">Export responses CSV</button><button id="naPrint" type="button">Print summary / Save PDF</button></div><h3>Collected responses</h3><div id="naResponses"></div></section>
+<h3>Questions</h3><div id="naQuestions"></div><button id="naAddQuestion" class="mini-btn light" type="button">Add question</button>
+<div class="na-actions"><button class="mini-btn primary" type="submit">Save draft</button><button id="naCancel" class="mini-btn light" type="button">Cancel</button></div></form></section>
+<section class="card" aria-labelledby="naSurveysTitle">
+  <header class="card-head"><h2 id="naSurveysTitle">Surveys</h2><button class="mini-btn light" id="naRefresh" type="button">Refresh</button></header>
+  <div class="card-body"><div id="naSurveys"><p>Loading surveys…</p></div><button id="naMore" class="mini-btn light" type="button" hidden>Load more surveys</button></div>
+</section>
+<dialog id="naResults" class="card na-results" aria-labelledby="naResultsTitle">
+  <header class="card-head">
+    <h2 id="naResultsTitle">Survey results</h2>
+    <form method="dialog"><button class="mini-btn light" id="naResultsClose" type="submit" autofocus>Close results</button></form>
+  </header>
+  <div class="card-body na-results-scroll">
+    <p id="naResultsStatus" role="status" aria-live="polite"></p>
+    <div id="naResultsContent" hidden>
+      <div class="na-results-tools">
+        <label for="naDepartmentFilter">Department<select id="naDepartmentFilter"></select></label>
+        <details class="na-result-exports">
+          <summary class="mini-btn light">Export</summary>
+          <div class="na-actions">
+            <button id="naExportSummary" class="mini-btn light" type="button">Export summary CSV</button>
+            <button id="naExportResponses" class="mini-btn light" type="button">Export responses CSV</button>
+            <button id="naPrint" class="mini-btn light" type="button">Print summary / Save PDF</button>
+          </div>
+        </details>
+      </div>
+      <div id="naAnalytics"></div>
+      <details id="naRawResponses" class="na-analytics-section"><summary>Collected responses</summary><div id="naResponses"></div></details>
+    </div>
+  </div>
+</dialog>
 </section></main></div></div>
 <footer class="officer-shared-footer">
   <div class="officer-footer-main">
@@ -177,7 +203,7 @@
 </footer>
 
     <script src="../shared/js/nav-active.js?v=7"></script>
-    <script type="module" src="needs-assessment.js"></script>
+    <script type="module" src="needs-assessment.js?v=results-dialog-1"></script>
     <script type="module" src="../shared/js/admin-auth.js?v=rbac4"></script>
 <script type="module" src="../../shared/profile-manager.js?v=registered-name-2&amp;refinements=1"></script>
   <script type="module" src="../shared/js/officer-rbac.js?v=6"></script>
