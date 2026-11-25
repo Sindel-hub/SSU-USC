@@ -61,8 +61,8 @@ $('importPreviewRows').onclick=event=>{
 async function list(more=false){
  clearTimeout(directoryTimer);
  const request=++directoryRequest;
- const studentId=$('findStudentId').value.trim();
- const filters={studentStanding:$('studentStatusFilter').value,studentId};
+ const search=$('findStudentId').value.trim();
+ const filters={studentStanding:$('studentStatusFilter').value,search};
  let cursor=more?next:null,found=[];
  if(!more){students=[];next=null;$('studentRecordRows').replaceChildren();}
  directoryLoading=true;$('moreStudents').hidden=true;
