@@ -11,7 +11,6 @@ $('closeStudentDetail').onclick=()=>detailDialog.close();
 detailDialog.addEventListener('close',()=>{document.documentElement.classList.remove('student-record-modal-open');recordOpener?.focus({preventScroll:true});});
 const year=new Date().getFullYear();$('importYear').value=`${year}-${year+1}`;
 $('programGuide').innerHTML=Object.entries(SSU_PROGRAMS).map(([d,p])=>`<details><summary>${e(formatSsuCollege(d))}</summary><ul>${p.map(v=>`<li>${e(v)}</li>`).join('')}</ul></details>`).join('');
-$('studentDepartmentOptions').innerHTML=Object.keys(SSU_PROGRAMS).map(value=>`<option value="${e(formatSsuCollege(value))}"></option>`).join('');
 try{$('resumeImportId').value=sessionStorage.getItem('uscAnnualImportId')||'';}catch{}
 function message(text,error=false){$('recordsMessage').textContent=text;$('recordsMessage').dataset.error=error;}
 function readyCount(){return preview?.entries.filter(row=>!row.error).length||0;}
@@ -55,8 +54,7 @@ $('importPreviewRows').onclick=event=>{
 };
 async function list(more=false){
  const studentId=$('findStudentId').value.trim();
- const filters=Object.fromEntries([...document.querySelectorAll('[data-student-filter]')].map(input=>[input.dataset.studentFilter,input.value]));
- filters.studentStanding=$('studentStatusFilter').value;
+ const filters={studentStanding:$('studentStatusFilter').value};
  let cursor=more?next:null, found=[];
  do {
   const result=await call('studentRecordsList',studentId?{studentId}:{filters,...(cursor?{after:cursor}:{})});
@@ -113,9 +111,9 @@ $('applyStudentImport').onclick=()=>run(async()=>{
 });
 $('resumeImportButton').onclick=()=>run(async()=>{preview=await call('studentAnnualJob',{importId:$('resumeImportId').value.trim()});$('importYear').value=preview.academicYear;$('correctionMode').checked=preview.correction===true;$('correctionReason').value=preview.correctionReason||'';$('restoreImportAccess').checked=preview.restoreAccess===true;syncCorrectionFields();$('confirmImport').checked=false;reviewTab=false;renderPreview();message('Import loaded. Review results before retrying.');});
 $('studentStatusFilter').onchange=()=>run(()=>list());
-document.querySelectorAll('[data-student-filter]').forEach(input=>input.onchange=()=>run(()=>list()));$('importYear').onchange=()=>{renderStudents();if(preview){preview=null;$('importPreview').hidden=true;}};
+$('importYear').onchange=()=>{renderStudents();if(preview){preview=null;$('importPreview').hidden=true;}};
 $('findStudent').onclick=()=>run(()=>list());$('clearStudentSearch').onclick=()=>run(async()=>{
- for(const field of document.querySelectorAll('#findStudentId, #studentStatusFilter, [data-student-filter]'))field.value='';
+ for(const field of document.querySelectorAll('#findStudentId, #studentStatusFilter'))field.value='';
  await list();
 });$('refreshStudents').onclick=()=>run(()=>list());$('moreStudents').onclick=()=>run(()=>list(true));
 $('studentRecordRows').onclick=event=>{const b=event.target.closest('[data-student]');if(b){recordOpener=b;run(()=>detail(b.dataset.student));}};
