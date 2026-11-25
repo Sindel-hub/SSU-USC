@@ -113,3 +113,18 @@ body.admin-officer-management-page .history-app input[type=checkbox] { flex: 0 0
   .admin-officer-management-page .history-candidate-search button { padding: 10px 12px; }
   .admin-officer-management-page .history-form-actions button { width: 100%; }
 }
+
+/* Registered account roster stays separate from assignment history. */
+.admin-officer-management-page .history-officer-count { padding: 4px 10px; border-radius: 20px; background: #edf5fc; color: #355979; font-size: 14px; }
+.admin-officer-management-page #registeredOfficerStatus { margin: 12px 0 0; }
+.admin-officer-management-page #registeredOfficerStatus:empty { display: none; }
+.admin-officer-management-page .history-officer-table-scroll { max-width: 100%; overflow-x: auto; margin-top: 18px; border: 1px solid #e0e9f2; border-radius: 12px; }
+.admin-officer-management-page .history-officer-table { width: 100%; min-width: 760px; border-collapse: collapse; font-size: 14px; }
+.admin-officer-management-page .history-officer-table th { padding: 12px 14px; background: #f0f7fd; color: #355979; text-align: left; font-weight: 600; }
+.admin-officer-management-page .history-officer-table td { padding: 14px; border-top: 1px solid #e4edf5; vertical-align: top; overflow-wrap: anywhere; max-width: 240px; }
+.admin-officer-management-page .history-officer-table td:first-child { font-weight: 600; }
+.admin-officer-management-page .history-officer-table td:nth-child(2) { white-space: nowrap; }
+.admin-officer-management-page .history-officer-dates { display: block; margin-top: 4px; color: #60758b; font-size: 14px; font-weight: 400; }
+.admin-officer-management-page .history-officer-badge { display: inline-block; padding: 3px 9px; border-radius: 20px; background: #eaf5f1; color: #23624b; font-size: 13px; }
+.admin-officer-management-page .history-officer-badge.is-restricted { background: #fff1eb; color: #954522; }
+.admin-officer-management-page #moreRegisteredOfficers { margin-top: 16px; }

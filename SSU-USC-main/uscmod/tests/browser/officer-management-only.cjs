@@ -40,21 +40,47 @@ const server=http.createServer((req,res)=>{const u=new URL(req.url,origin);if(u.
   await p.screenshot({path:path.join(out,'directory-account-desktop.png')});
   await p.locator('#demoteToStudentButton').click();await p.waitForURL('**/officer-management.html?studentId=990001');await p.locator('#candidateSummary').filter({hasText:'990001'}).waitFor();
   assert.equal(await p.locator('#candidateStudentId').inputValue(),'990001');
+  await p.locator('#registeredOfficerRows').getByText('No registered USC officers found.').waitFor();
+  f.seed({uid:'legacy',studentId:'990009',fullName:'Synthetic <img src=x> Legacy Officer',role:'officer',officePosition:'Secretary',college:'College of Engineering',accountStatus:'suspended',isActive:false,studentStanding:'active'});
+  await p.locator('#refreshHistory').click();await p.locator('[data-officer-uid="legacy"]').waitFor();
+  assert.match(await p.locator('[data-officer-uid="legacy"]').innerText(),/No term recorded/);
+  assert.match(await p.locator('[data-officer-uid="legacy"]').innerText(),/Suspended/);
+  assert.equal(await p.locator('#registeredOfficerRows img').count(),0);
+  f.records.get('users/legacy').fullName='Synthetic Legacy Officer';
+
   await p.locator('#assignmentPosition').selectOption('Treasurer');await p.locator('#administrationPeriod').fill('Synthetic 2026–2027');await p.locator('#appointmentAuthorization').fill('Synthetic authorized resolution');
   await p.locator('#termStart').fill(new Date(f.now-60000).toISOString().slice(0,16));await p.locator('#termEnd').fill(new Date(f.now+86400000).toISOString().slice(0,16));await p.locator('#appointmentConfirmed').check();
   const count=f.authUsers.size;await p.getByRole('button',{name:'Create officer assignment'}).click();await p.getByText('Assignment created. Ask the officer to sign out and sign in again.').waitFor();
   assert.equal(f.records.get('users/first').role,'officer');assert.equal(f.authUsers.size,count);
+  await p.locator('[data-officer-uid="first"]').waitFor();
+  assert.match(await p.locator('[data-officer-uid="first"]').innerText(),/Synthetic 2026–2027/);
+  await p.locator('#registeredOfficersPanel').screenshot({path:path.join(out,'registered-officers-table.png')});
+
   for(const width of [1440,768,390]){await p.setViewportSize({width,height:1000});assert.equal(await p.evaluate(()=>document.documentElement.scrollWidth>innerWidth+1),false);
    const fields=await p.locator('#appointmentForm .history-grid input, #appointmentForm .history-grid select').evaluateAll(els=>els.map(el=>{const r=el.getBoundingClientRect(),s=getComputedStyle(el);return {height:r.height,size:parseFloat(s.fontSize),weight:Number(s.fontWeight)};}));
    for(const field of fields){assert.equal(field.height,44);assert.ok(field.size<=16);assert.equal(field.weight,400);}
    const lookup=await p.locator('.history-candidate-search').evaluate(el=>{const a=el.querySelector('input').getBoundingClientRect(),b=el.querySelector('button').getBoundingClientRect();return {input:a.y,button:b.y};});
    assert.equal(lookup.input,lookup.button);
+   if(width===390){await p.locator('.history-officer-table-scroll').evaluate(el=>el.scrollLeft=el.scrollWidth);assert.ok(await p.locator('.history-officer-table-scroll').evaluate(el=>el.scrollLeft>0));await p.locator('.history-officer-table-scroll').evaluate(el=>el.scrollLeft=0);}
    await p.screenshot({path:path.join(out,`officer-management-${width}.png`),fullPage:true});}
   await p.getByRole('button',{name:'Complete term'}).click();await p.getByText('Term completed. Historical records are preserved; the outgoing officer must sign in again.').waitFor();
   assert.equal(f.records.get('users/first').role,'student');assert.deepEqual(f.records.get('users/first').officerPermissions,[]);assert.equal(f.authUsers.size,count);
+  await p.locator('[data-officer-uid="first"]').waitFor({state:'detached'});
+  assert.equal(await p.locator('[data-officer-uid="legacy"]').count(),1);
+  let failRoster=true;
+  await p.route('**/api/management',route=>route.request().postDataJSON().action==='officerDirectory'&&failRoster?route.fulfill({status:503,contentType:'application/json',body:JSON.stringify({error:{message:'Synthetic roster unavailable'}})}):route.continue());
+  await p.locator('#refreshHistory').click();await p.locator('#registeredOfficerStatus').getByText('Synthetic roster unavailable Use Refresh to retry.').waitFor();
+  assert.equal(await p.locator('#registeredOfficerRows tr').count(),0);
+  failRoster=false;await p.locator('#refreshHistory').click();await p.locator('[data-officer-uid="legacy"]').waitFor();
+  for(let n=0;n<51;n++)f.seed({uid:'more'+String(n).padStart(3,'0'),studentId:String(880000+n),fullName:'Synthetic Officer '+n,role:'officer',officePosition:'Secretary',accountStatus:'approved',isActive:true,studentStanding:'active'});
+  await p.locator('#refreshHistory').click();await p.locator('#moreRegisteredOfficers').waitFor({state:'visible'});
+  await p.locator('#moreRegisteredOfficers').click();await p.waitForFunction(()=>document.querySelectorAll('#registeredOfficerRows tr').length===52);
+  assert.equal(await p.locator('#registeredOfficerCount').innerText(),'52 officers');
+  assert.equal(await p.locator('#registeredOfficerRows tr').evaluateAll(rows=>new Set(rows.map(row=>row.dataset.officerUid)).size),52);
+
   await p.goto(origin+'/usc-admin/student-registration/officer-registration.html');await p.waitForURL('**/officer-management.html');await p.locator('#appointmentForm').waitFor();
   await p.goto(origin+'/usc-admin/admin-dashboard/users.html');await p.locator('[data-open-user="first"]').click();assert.equal(await p.evaluate(()=>document.documentElement.scrollWidth>innerWidth+1),false);await p.screenshot({path:path.join(out,'directory-account-mobile.png')});
   assert.deepEqual(errors,[]);
-  console.log('PASS: retired routes redirect; directory retains student registration with read-only officer scope; account updates omit role fields; Student ID handoff; promotion and term completion preserve UID; 1440/768/390 responsive layouts; no browser errors. Synthetic data only.');
+  console.log('PASS: retired routes redirect; directory retains student registration with read-only officer scope; account updates omit role fields; Student ID handoff; promotion and term completion preserve UID; roster handles legacy/restricted accounts, safe text, pagination, refresh, errors and mobile scrolling; 1440/768/390 responsive layouts; no browser errors. Synthetic data only.');
  }finally{await browser.close();await new Promise(r=>server.close(r));}
 })().catch(e=>{console.error(e);server.close();process.exitCode=1;});

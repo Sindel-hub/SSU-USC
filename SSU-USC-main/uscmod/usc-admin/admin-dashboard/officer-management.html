@@ -19,7 +19,7 @@
 <link rel="stylesheet" href="../../shared/scrollbars.css?v=2" />
 <link rel="stylesheet" href="../../dashboard/css/student-pages.css?v=student-layout-2" />
 <link rel="stylesheet" href="../officer-tracklist/officer-tracklist.css" />
-<link rel="stylesheet" href="css/officer-management.css?v=layout-2" />
+<link rel="stylesheet" href="css/officer-management.css?v=registered-officers-1" />
 </head>
 <body class="officer-app-shell admin-officer-management-page">
     <div class="sidebar-backdrop" onclick="document.querySelector('.sidebar').classList.remove('mobile-open');this.classList.remove('active');document.getElementById('usersMenuButton').setAttribute('aria-expanded','false')"></div>
@@ -77,6 +77,14 @@
   <button id="refreshHistory" type="button">Refresh</button>
 </div>
 <p id="historyStatus" role="status" aria-live="polite">Loading authorized records…</p>
+<section id="registeredOfficersPanel" class="history-card" aria-labelledby="registeredOfficersTitle" hidden>
+  <div class="history-heading"><h2 id="registeredOfficersTitle">Registered USC officers</h2><span id="registeredOfficerCount" class="history-officer-count"></span></div>
+  <p id="registeredOfficerStatus" role="status" aria-live="polite">Loading officers…</p>
+  <div class="history-officer-table-scroll" role="region" aria-labelledby="registeredOfficersTitle" tabindex="0">
+    <table class="history-officer-table"><thead><tr><th scope="col">Officer</th><th scope="col">Student ID</th><th scope="col">USC position</th><th scope="col">Department</th><th scope="col">Term</th><th scope="col">Status</th></tr></thead><tbody id="registeredOfficerRows"></tbody></table>
+  </div>
+  <button id="moreRegisteredOfficers" type="button" hidden>Load more officers</button>
+</section>
 <section id="appointmentPanel" class="history-card" aria-labelledby="appointmentTitle" hidden>
   <h2 id="appointmentTitle">Promote an officer</h2>
   <form id="appointmentForm">
@@ -129,7 +137,7 @@
   </div>
 </footer>
 
-    <script type="module" src="../../shared/officer-history.js?v=officer-management-only-1"></script>
+    <script type="module" src="../../shared/officer-history.js?v=registered-officers-1"></script>
     <script type="module" src="../officer-tracklist/officer-tracklist.js"></script>
     <script type="module" src="../shared/js/admin-only-auth.js"></script>
 <script type="module" src="../../shared/profile-manager.js?v=admin-settings-1&amp;refinements=1"></script>

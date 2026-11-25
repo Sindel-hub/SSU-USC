@@ -7,7 +7,7 @@ let profile = {};
 try { profile = JSON.parse(sessionStorage.getItem('studentProfile') || '{}'); } catch {}
 const admin = profile.role === 'admin';
 const $ = id => document.getElementById(id);
-const state = { assignments: [], assignmentNext: null, activities: [], activityNext: null, selected: null, candidate: null, positions: {}, departments: [], record: null };
+const state = { assignments: [], assignmentNext: null, activities: [], activityNext: null, selected: null, candidate: null, positions: {}, departments: [], record: null, officers: [], officerNext: null };
 const date = value => Number.isFinite(value) ? new Date(value).toLocaleString() : 'Not recorded';
 function node(tag, text, className) { const el = document.createElement(tag); if (text !== undefined) el.textContent = text; if (className) el.className = className; return el; }
 function status(message, error = false) { $('historyStatus').textContent = message; $('historyStatus').classList.toggle('history-error', error); }
@@ -57,6 +57,49 @@ function renderAssignments() {
   $('moreAssignments').hidden = !state.assignmentNext;
   $('financialReportPanel').hidden = !state.assignments.some(a => a.officerUid === profile.uid && a.position === 'Treasurer' && a.status === 'active' && a.endsAtMs > Date.now() && a.permissions.includes('reports.generate'));
 }
+function renderOfficerDirectory() {
+  const rows = $('registeredOfficerRows'); rows.replaceChildren();
+  const statusLabels = { approved: 'Approved', suspended: 'Suspended', pending: 'Pending', active: 'Active term', expired: 'Expired term', completed: 'Completed term', scheduled: 'Scheduled term' };
+  for (const officer of state.officers) {
+    const row = node('tr'); row.dataset.officerUid = officer.uid;
+    row.append(node('td', officer.fullName), node('td', officer.studentId || '—'), node('td', officer.position), node('td', officer.department));
+    const termCell = node('td');
+    if (officer.term) {
+      termCell.append(node('strong', officer.term.administration), node('span', `${date(officer.term.startsAtMs)} – ${date(officer.term.endsAtMs)}`, 'history-officer-dates'));
+    } else termCell.textContent = 'No term recorded';
+    const accessCell = node('td');
+    const blocked = officer.accountStatus !== 'approved' || !officer.isActive || officer.studentStanding !== 'active';
+    accessCell.append(node('span', statusLabels[officer.accountStatus] || 'Pending', `history-officer-badge${blocked ? ' is-restricted' : ''}`));
+    if (officer.studentStanding !== 'active') accessCell.append(node('span', officer.studentStanding.charAt(0).toUpperCase() + officer.studentStanding.slice(1), 'history-officer-dates'));
+    else if (!officer.isActive) accessCell.append(node('span', 'Account inactive', 'history-officer-dates'));
+    if (officer.term) accessCell.append(node('span', statusLabels[officer.term.status], 'history-officer-dates'));
+    if (officer.term?.authSyncPending) accessCell.append(node('span', 'Authentication sync pending', 'history-officer-dates history-error'));
+    row.append(termCell, accessCell); rows.append(row);
+  }
+  if (!state.officers.length) {
+    const row = node('tr'), cell = node('td', state.officerNext ? 'No officers in this batch. Load more to continue.' : 'No registered USC officers found.'); cell.colSpan = 6; row.append(cell); rows.append(row);
+  }
+  $('registeredOfficerCount').textContent = `${state.officers.length} officer${state.officers.length === 1 ? '' : 's'}${state.officerNext ? ' loaded' : ''}`;
+  $('moreRegisteredOfficers').hidden = !state.officerNext;
+}
+let officerDirectoryRequest = 0;
+async function loadOfficerDirectory(more = false) {
+  if (!admin || !$('registeredOfficersPanel')) return;
+  const requestId = ++officerDirectoryRequest;
+  const message = $('registeredOfficerStatus'); message.textContent = 'Loading officers…'; message.classList.remove('history-error');
+  try {
+    const response = await call('officerDirectory', more ? { after: state.officerNext } : {});
+    if (requestId !== officerDirectoryRequest) return;
+    state.officers = more ? [...new Map([...state.officers, ...response.items].map(officer => [officer.uid, officer])).values()] : response.items;
+    state.officerNext = response.next; renderOfficerDirectory(); message.textContent = '';
+  } catch (error) {
+    if (requestId !== officerDirectoryRequest) return;
+    if (!more) { state.officers = []; state.officerNext = null; $('registeredOfficerRows').replaceChildren(); $('registeredOfficerCount').textContent = ''; $('moreRegisteredOfficers').hidden = true; }
+    message.textContent = `${error.message || 'Officers could not be loaded.'} Use Refresh to retry.`; message.classList.add('history-error');
+  }
+}
+$('registeredOfficersPanel')?.toggleAttribute('hidden', !admin);
+$('moreRegisteredOfficers')?.addEventListener('click', event => run(event.currentTarget, () => loadOfficerDirectory(true)));
 async function loadAssignments(more = false) {
   const response = await call('officerAssignments', { scope: admin ? 'all' : $('assignmentScope').value, ...(more ? { after: state.assignmentNext } : {}) });
   state.assignments = more ? [...state.assignments, ...response.items] : response.items;
@@ -66,6 +109,7 @@ async function loadAssignments(more = false) {
     renderPermissions();
   }
   renderAssignments();
+  if (!more) await loadOfficerDirectory();
 }
 function formatSnapshot(snapshot) {
   if (snapshot.content) return `${snapshot.title || ''}\n\n${snapshot.content}`;

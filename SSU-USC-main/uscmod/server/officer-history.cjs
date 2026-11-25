@@ -117,6 +117,30 @@ function createOfficerHistory({ db, adminAuth, requireActiveRole, requireRecentA
   return {
     context, append, access,
     handlers: {
+      async officerDirectory(request) {
+        await requireActiveRole(request, ["admin"]);
+        let query = db.collection("users").where("role", "==", "officer").orderBy("__name__").limit(51);
+        if (request.data?.after) query = query.startAfter(id(request.data.after));
+        const docs = (await query.get()).docs;
+        const items = await Promise.all(docs.slice(0, 50).filter(doc => {
+          const p = doc.data();
+          return !p.accountRemoved && !p.accountRemovalPending;
+        }).map(async doc => {
+          const p = doc.data();
+          const assignmentId = typeof p.officerAssignmentId === "string" && /^[a-zA-Z0-9_-]{1,128}$/.test(p.officerAssignmentId) ? p.officerAssignmentId : null;
+          const assignment = assignmentId ? (await assignments.doc(assignmentId).get()).data() : null;
+          const term = assignment?.officerUid === doc.id ? assignment : null;
+          return {
+            uid: doc.id, fullName: p.fullName || p.displayName || "Unnamed officer", studentId: p.studentId || "",
+            position: term?.position || p.officePosition || "Not assigned", department: term?.department || p.college || p.department || "Not recorded",
+            accountStatus: p.accountStatus || "pending", isActive: p.isActive !== false, studentStanding: p.studentStanding || "active",
+            term: term ? { administration: term.administration, startsAtMs: term.startsAtMs, endsAtMs: term.endsAtMs,
+              status: term.status === "completed" ? "completed" : term.startsAtMs > clock() ? "scheduled" : term.endsAtMs <= clock() ? "expired" : "active",
+              authSyncPending: term.authSyncPending === true } : null
+          };
+        }));
+        return { items, next: docs.length > 50 ? docs[49].id : null };
+      },
       async officerCandidateFind(request) {
         await admin(request);
         const studentId = text(request.data?.studentId, "Student ID", 64);
