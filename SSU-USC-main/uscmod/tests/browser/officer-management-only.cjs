@@ -91,13 +91,26 @@ const server=http.createServer((req,res)=>{const u=new URL(req.url,origin);if(u.
   assert.match(await p.locator('[data-officer-uid="first"]').innerText(),/2026–2027/);
   await p.locator('#registeredOfficersPanel').screenshot({path:path.join(out,'registered-officers-table.png')});
 
+  assert.equal(await p.getByRole('heading',{name:'Records by term',exact:true}).count(),0);
+  assert.equal(await p.locator('#responsibilities, a[href="#responsibilities"]').count(),0);
+  assert.equal(await p.locator('#termTracklist').evaluate(el=>el.open),false);
+  await f.h.officerReportSubmit(f.req('first',{operationId:'cleanup-report',title:'Synthetic preserved report',content:'Tracklist remains available after removing the permanent cards.'}));
   for(const width of [1440,768,390]){await p.setViewportSize({width,height:1000});assert.equal(await p.evaluate(()=>document.documentElement.scrollWidth>innerWidth+1),false);
    const fields=await p.locator('#appointmentForm .history-grid input, #appointmentForm .history-grid select').evaluateAll(els=>els.map(el=>{const r=el.getBoundingClientRect(),s=getComputedStyle(el);return {height:r.height,size:parseFloat(s.fontSize),weight:Number(s.fontWeight)};}));
    for(const field of fields){assert.equal(field.height,44);assert.ok(field.size<=16);assert.equal(field.weight,400);}
    const lookup=await p.locator('.history-candidate-search').evaluate(el=>{const a=el.querySelector('input').getBoundingClientRect(),b=el.querySelector('button').getBoundingClientRect();return {input:a.y,button:b.y};});
    assert.equal(lookup.input,lookup.button);
    if(width===390){await p.locator('.history-officer-table-scroll').evaluate(el=>el.scrollLeft=el.scrollWidth);assert.ok(await p.locator('.history-officer-table-scroll').evaluate(el=>el.scrollLeft>0));await p.locator('.history-officer-table-scroll').evaluate(el=>el.scrollLeft=0);}
-   await p.screenshot({path:path.join(out,`officer-management-${width}.png`),fullPage:true});await p.locator('#termStart').scrollIntoViewIfNeeded();await p.screenshot({path:path.join(out,`officer-term-form-${width}.png`),fullPage:true});}
+   await p.screenshot({path:path.join(out,`officer-management-${width}.png`),fullPage:true});await p.locator('#termStart').scrollIntoViewIfNeeded();await p.screenshot({path:path.join(out,`officer-term-form-${width}.png`),fullPage:true});
+   const viewTracklist=p.getByRole('button',{name:'View tracklist',exact:true});await viewTracklist.click();
+   await p.locator('#termTracklist[open]').waitFor();await p.locator('#termTracklist').getByText('Financial report submitted',{exact:true}).waitFor();
+   assert.equal(await p.locator('#termTracklist').evaluate(el=>el.scrollWidth<=el.clientWidth+1),true);
+   await p.getByRole('button',{name:'View preserved record'}).click();await p.locator('#recordContent').getByText(/Tracklist remains available/).waitFor();
+   await p.locator('#termTracklist').screenshot({path:path.join(out,`tracklist-dialog-${width}.png`)});
+   await p.locator('#closeRecord').click();
+   if(width===390)await p.getByRole('button',{name:'Close tracklist'}).click();else await p.keyboard.press('Escape');
+   await p.locator('#termTracklist').waitFor({state:'hidden'});await p.waitForFunction(()=>document.activeElement?.textContent==='View tracklist');assert.equal(await viewTracklist.evaluate(el=>document.activeElement===el),true);
+  }
   await p.getByRole('button',{name:'Complete term'}).click();await p.getByText('Term completed. Historical records are preserved; the outgoing officer must sign in again.').waitFor();
   assert.equal(f.records.get('officer_assignments/'+f.records.get('users/first').officerAssignmentId).actualEndsAtMs,f.now);assert.match(await p.locator('#assignmentList').innerText(),/Deactivation reason: Synthetic approved term completion/);assert.equal(f.records.get('users/first').role,'student');assert.deepEqual(f.records.get('users/first').officerPermissions,[]);assert.equal(f.authUsers.size,count);
   await p.locator('[data-officer-uid="first"]').waitFor({state:'detached'});await p.locator('#assignmentList').scrollIntoViewIfNeeded();await p.screenshot({path:path.join(out,'completed-term-mobile.png')});
@@ -116,6 +129,6 @@ const server=http.createServer((req,res)=>{const u=new URL(req.url,origin);if(u.
   await p.goto(origin+'/usc-admin/student-registration/officer-registration.html');await p.waitForURL('**/officer-management.html');await p.locator('#appointmentForm').waitFor();
   await p.goto(origin+'/usc-admin/admin-dashboard/users.html');await p.locator('[data-open-user="first"]').click();assert.equal(await p.evaluate(()=>document.documentElement.scrollWidth>innerWidth+1),false);await p.screenshot({path:path.join(out,'directory-account-mobile.png')});
   assert.deepEqual(errors,[]);
-  console.log('PASS: inline stale-auth error, no-op detection, failed verification read, idempotent retry, button removal after persisted conversion and reload; March end from academic year despite November start, academic-year changes, Philippine timezone, read-only end, delayed turnover, explicit legacy adoption and actual end/reason; retired routes redirect; directory retains student registration with read-only officer scope; account updates omit role fields; Student ID handoff; promotion and term completion preserve UID; roster handles legacy/restricted accounts, safe text, pagination, refresh, errors and mobile scrolling; 1440/768/390 responsive layouts; no browser errors. Synthetic data only.');
+  console.log('PASS: both unwanted cards and dead guide link removed; on-demand tracklist, preserved report, modal close/Escape and focus return at desktop/tablet/mobile widths; inline stale-auth error, no-op detection, failed verification read, idempotent retry, button removal after persisted conversion and reload; March end from academic year despite November start, academic-year changes, Philippine timezone, read-only end, delayed turnover, explicit legacy adoption and actual end/reason; retired routes redirect; directory retains student registration with read-only officer scope; account updates omit role fields; Student ID handoff; promotion and term completion preserve UID; roster handles legacy/restricted accounts, safe text, pagination, refresh, errors and mobile scrolling; 1440/768/390 responsive layouts; no browser errors. Synthetic data only.');
  }finally{await browser.close();await new Promise(r=>server.close(r));}
 })().catch(e=>{console.error(e);server.close();process.exitCode=1;});

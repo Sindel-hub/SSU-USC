@@ -17,7 +17,7 @@ async function run(button, operation) {
   try { await operation(); } catch (error) { status(error.message || 'The request could not be completed.', true); }
   finally { if (button) button.disabled = false; }
 }
-function button(label, operation) { const el = node('button', label); el.type = 'button'; el.addEventListener('click', () => run(el, operation)); return el; }
+function button(label, operation) { const el = node('button', label); el.type = 'button'; el.addEventListener('click', () => run(el, () => operation(el))); return el; }
 function renderPermissions() {
   const parent = $('assignmentPermissions');
   parent.replaceChildren(node('legend', 'Approved module permissions'));
@@ -96,7 +96,7 @@ function renderAssignments() {
       card.append(output);
     }
     if (a.authSyncPending) card.append(node('p', 'Authentication synchronization pending. Administrator action required.', 'history-error'));
-    card.append(button('View tracklist', () => loadActivities(a)));
+    card.append(button('View tracklist', opener => { state.tracklistOpener = opener; return loadActivities(a, false, true); }));
     if (admin && a.status !== 'completed') card.append(button('Complete term', async () => {
       const reason = prompt('Enter the approved turnover reason or reference. This removes officer editing access and preserves historical records.');
       if (!reason?.trim()) return;
@@ -189,12 +189,14 @@ function renderActivities() {
   }
   $('moreActivities').hidden = !state.activityNext;
 }
-async function loadActivities(assignment = state.selected, more = false) {
+async function loadActivities(assignment = state.selected, more = false, show = false) {
   if (!assignment) return;
   const response = await call('officerTracklist', { assignmentId: assignment.id, ...(more ? { after: state.activityNext } : {}) });
   state.selected = assignment; state.activities = more ? [...state.activities, ...response.items] : response.items; state.activityNext = response.next;
   $('activityHeading').textContent = `${assignment.position} · ${assignment.administration} · ${assignment.officerName}`;
-  renderActivities(); status(`Showing ${state.activities.length} loaded activities for the selected term.`);
+  renderActivities();
+  if (show) { if (!$('termTracklist').open) $('termTracklist').showModal(); $('activityHeading').focus({ preventScroll: true }); }
+  status(`Showing ${state.activities.length} loaded activities for the selected term.`);
 }
 $('appointmentPanel').hidden = !admin; $('officeScopeLabel').hidden = admin || profile.role !== 'officer';
 $('backLink').href = admin ? '/usc-admin/admin-dashboard/admin-dashboard.html' : profile.role === 'officer' ? '/usc-admin/overview/overview.html' : '/dashboard/dashboard.html';
@@ -224,6 +226,8 @@ $('assignmentScope').addEventListener('change', () => run(null, () => loadAssign
 $('refreshHistory').addEventListener('click', event => run(event.currentTarget, async () => { await loadAssignments(); if (state.selected) await loadActivities(); status('Authorized records refreshed.'); }));
 $('moreAssignments').addEventListener('click', event => run(event.currentTarget, () => loadAssignments(true)));
 $('moreActivities').addEventListener('click', event => run(event.currentTarget, () => loadActivities(state.selected, true)));
+$('closeTracklist').addEventListener('click', () => $('termTracklist').close());
+$('termTracklist').addEventListener('close', () => { $('recordPreview').hidden = true; if (state.tracklistOpener?.isConnected) state.tracklistOpener.focus({ preventScroll: true }); });
 $('closeRecord').addEventListener('click', () => { $('recordPreview').hidden = true; });
 $('downloadRecord').addEventListener('click', () => {
   if (!state.record) return;
