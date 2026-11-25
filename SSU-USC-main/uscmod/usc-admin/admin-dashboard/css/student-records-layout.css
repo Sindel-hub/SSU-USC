@@ -101,3 +101,24 @@ body.admin-student-records-page .student-id-search>i{position:absolute;display:g
 body.admin-student-records-page .student-id-search>input#findStudentId{width:100%!important;min-width:0;height:44px!important;min-height:44px!important;box-sizing:border-box;padding:0 12px 0 42px!important;padding-inline-start:42px!important;margin:0!important;border:1px solid #cadceb!important;border-radius:9px!important;color:#23496d!important;font-size:14px!important;background:#fff!important}
 body.admin-student-records-page .records-lookup{padding:16px;background:#f6faff;border:1px solid #dbe7f1;border-radius:12px;box-sizing:border-box}
 body.admin-student-records-page .student-id-search>input#findStudentId:focus-visible{outline:2px solid #00aef0!important;outline-offset:2px}
+
+/* Directory launcher and independently scrolling modal. */
+html.student-directory-modal-open,html.student-directory-modal-open body{overflow:hidden!important}
+body.admin-student-records-page #openStudentDirectory{display:flex!important;align-items:center;gap:12px;justify-content:flex-start;width:100%;padding:16px 20px!important;min-height:58px;background:#fff!important;color:#1953a0!important;border:1px solid #d5e4f0!important;border-radius:12px!important;font-size:16px!important;font-weight:700!important;cursor:pointer;text-align:left!important;box-sizing:border-box}
+#openStudentDirectory>span{flex:1}#openStudentDirectory:hover{box-shadow:0 3px 12px #1953a018}
+body.admin-student-records-page #studentDirectoryDialog{position:fixed;inset:0;margin:auto;width:min(1180px,calc(100vw - 32px));max-width:calc(100vw - 32px);max-height:calc(100dvh - 32px);padding:0;border:1px solid #d7e4ef;border-radius:18px;background:#fff;color:#23496d;box-shadow:0 24px 64px #0f172a33;box-sizing:border-box;overflow:hidden}
+#studentDirectoryDialog:not([open]){display:none!important}
+#studentDirectoryDialog[open]{display:flex;flex-direction:column}
+#studentDirectoryDialog::backdrop{background:rgba(15,23,42,.45)}
+.student-directory-head{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:20px 24px;background:#f7fafc;border-bottom:1px solid #e3ebf3;flex-shrink:0}
+.student-directory-head h2{margin:0;color:#23496d;font-size:20px}
+body.admin-student-records-page #closeStudentDirectory{display:grid;place-items:center;width:40px;height:40px;min-height:40px;padding:0;margin:0;border:1px solid #d7e4ef;border-radius:10px;background:#fff;color:#1953a0;font-size:26px;cursor:pointer}
+.student-directory-body{padding:24px;min-height:0;overflow:auto;overscroll-behavior:contain}
+#studentDirectoryDialog .record-search{display:grid;align-items:end;gap:12px;grid-template-columns:minmax(0,2fr) auto auto minmax(150px,1fr)}
+#studentDirectoryDialog .record-search>*{min-width:0}
+#studentDirectoryDialog .record-search label{display:block;margin:0 0 6px!important;font-size:13px!important}
+#studentDirectoryDialog .record-search :is(button,select){min-height:44px!important;margin:0!important}
+#studentDirectoryDialog .na-table-wrap{overflow:auto;max-width:100%;border:1px solid #e1e9f2;border-radius:12px}
+#studentDirectoryDialog :focus-visible,#openStudentDirectory:focus-visible{outline:2px solid #00aef0;outline-offset:2px}
+@media(max-width:760px){#studentDirectoryDialog .record-search{grid-template-columns:repeat(2,minmax(0,1fr))}#studentDirectoryDialog .record-search>div{grid-column:1/-1}}
+@media(max-width:600px){body.admin-student-records-page #studentDirectoryDialog{width:calc(100vw - 16px);max-width:calc(100vw - 16px);max-height:calc(100dvh - 16px);border-radius:14px}.student-directory-head,.student-directory-body{padding:14px}}
