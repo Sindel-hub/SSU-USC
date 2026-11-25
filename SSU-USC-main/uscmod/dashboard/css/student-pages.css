@@ -415,7 +415,7 @@ body.events-module-shell .events-upcoming-calendar { min-width:0; }
   position:absolute;
   inset:-24px;
   z-index:-3;
-  filter:blur(12px);
+  filter:blur(4px);
   transform:scale(1.04);
   background:url("../assets/HomeLogo.webp") center / cover no-repeat;
   transition:background-image .35s ease;
