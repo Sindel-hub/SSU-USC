@@ -210,19 +210,20 @@ function bindResponsiveSidebar() {
   const { toggle, sidebar, overlay } = getSidebarElements();
   if (!toggle || !sidebar || sidebar.dataset.mobileNavigationBound) return;
   sidebar.dataset.mobileNavigationBound = 'true';
-  document.body.classList.add('officer-mobile-navigation');
   if (!sidebar.id) sidebar.id = 'officerModuleSidebar';
   const style = document.createElement('link');
   style.rel = 'stylesheet';
   style.href = new URL('../css/officer-mobile-navigation.css?v=1', OFFICER_NAV_SCRIPT_URL).href;
-  document.head.append(style);
   const header = document.createElement('header');
   header.className = 'officer-mobile-nav-header';
+  header.style.setProperty('display', 'none', 'important');
   const identity = document.createElement('div');
   identity.className = 'officer-mobile-nav-brand';
   const seal = document.createElement('img');
   seal.src = new URL('../assets/USClogo.webp', OFFICER_NAV_SCRIPT_URL).href;
   seal.alt = '';
+  seal.width = 40;
+  seal.height = 40;
   const title = document.createElement('div');
   title.innerHTML = '<small>SSU UNIVERSITY STUDENT COUNCIL</small><h2 id="officerMobileNavTitle">Officer Portal</h2>';
   identity.append(seal, title);
@@ -234,13 +235,23 @@ function bindResponsiveSidebar() {
   header.append(identity, closeButton);
   sidebar.prepend(header);
   const navigation = sidebar.querySelector('.officer-module-nav, .sidebar-group');
+  let label = null;
   if (navigation) {
     navigation.classList.add('officer-mobile-nav-links');
-    const label = document.createElement('p');
+    label = document.createElement('p');
     label.className = 'officer-mobile-nav-label';
     label.textContent = 'Workspace';
+    label.style.setProperty('display', 'none', 'important');
     navigation.before(label);
   }
+  // Prevent unstyled mobile branding from flashing before the stylesheet loads.
+  style.addEventListener('load', () => {
+    document.body.classList.add('officer-mobile-navigation');
+    header.style.removeProperty('display');
+    label?.style.removeProperty('display');
+    updateSidebarAccessibility();
+  }, { once: true });
+  document.head.append(style);
   toggle.addEventListener('click', event => {
     event.preventDefault(); event.stopPropagation(); toggleSidebar();
   });
