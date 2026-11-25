@@ -8,6 +8,11 @@ let reviewTab=false,preview=null,students=[],next=null,busy=false,selected=null;
 let directoryRequest=0,directoryTimer=null,directoryLoading=false;
 let recordOpener=null;
 const detailDialog=$('studentDetail');
+const directoryDialog=$('studentDirectoryDialog');
+$('openStudentDirectory').onclick=()=>{if(!directoryDialog.open){directoryDialog.showModal();document.documentElement.classList.add('student-directory-modal-open');$('findStudentId').focus();}};
+$('closeStudentDirectory').onclick=()=>directoryDialog.close();
+directoryDialog.addEventListener('close',()=>{document.documentElement.classList.remove('student-directory-modal-open');$('openStudentDirectory').focus({preventScroll:true});});
+
 $('closeStudentDetail').onclick=()=>detailDialog.close();
 detailDialog.addEventListener('close',()=>{document.documentElement.classList.remove('student-record-modal-open');recordOpener?.focus({preventScroll:true});});
 const year=new Date().getFullYear();$('importYear').value=`${year}-${year+1}`;
