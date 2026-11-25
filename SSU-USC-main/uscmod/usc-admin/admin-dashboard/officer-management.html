@@ -17,9 +17,9 @@
 
     <script type="module" src="js/admin-navigation.js?v=1"></script>
 <link rel="stylesheet" href="../../shared/scrollbars.css?v=2" />
-<link rel="stylesheet" href="css/officer-management.css">
 <link rel="stylesheet" href="../../dashboard/css/student-pages.css?v=student-layout-2" />
 <link rel="stylesheet" href="../officer-tracklist/officer-tracklist.css" />
+<link rel="stylesheet" href="css/officer-management.css?v=layout-2" />
 </head>
 <body class="officer-app-shell admin-officer-management-page">
     <div class="sidebar-backdrop" onclick="document.querySelector('.sidebar').classList.remove('mobile-open');this.classList.remove('active');document.getElementById('usersMenuButton').setAttribute('aria-expanded','false')"></div>
@@ -70,12 +70,34 @@
                     </div>
                     <button class="nav-btn logout-btn" type="button" onclick="logoutAdminOnly()"><span><i class="fa-solid fa-arrow-right-from-bracket" aria-hidden="true"></i></span><span>Log Out</span></button>
                 </aside>
-<section class="main officer-management-workspace history-app" aria-label="Officer Management"><nav class="history-links" aria-label="Module navigation"><a id="backLink" href="admin-dashboard.html">Back to dashboard</a><a href="#responsibilities">Administration guide</a></nav>
-<div class="history-heading"><div><p class="history-eyebrow">SSU-USC</p><h1>Officer Management</h1><p>Preserve each officer’s work under their own name, position and term.</p></div><button id="refreshHistory" type="button">Refresh</button></div>
+<section class="main officer-management-workspace history-app" aria-label="Officer Management">
+<h1 class="history-module-title">Officer Management</h1>
+<div class="history-toolbar">
+  <nav class="history-links" aria-label="Module navigation"><a id="backLink" href="admin-dashboard.html">Back to dashboard</a><a href="#responsibilities">Administration guide</a></nav>
+  <button id="refreshHistory" type="button">Refresh</button>
+</div>
 <p id="historyStatus" role="status" aria-live="polite">Loading authorized records…</p>
-<section id="appointmentPanel" class="history-card" hidden><h2>Assign an officer</h2><p>Record a formally authorized appointment. Assignment does not determine student eligibility or university policy.</p>
-<form id="appointmentForm"><div class="history-grid"><label>Exact Student ID<input id="candidateStudentId" required inputmode="numeric" maxlength="64"></label><div class="history-field"><span>Student account</span><button id="findOfficerCandidate" type="button">Find student</button><output id="candidateSummary">Select an existing account first.</output></div><label>USC position<select id="assignmentPosition" required></select></label><label>Represented department<select id="assignmentDepartment" disabled><option>University-wide</option></select></label><label>Administration period<input id="administrationPeriod" maxlength="80" placeholder="2026–2027" required></label><label>Appointment authorization reference<input id="appointmentAuthorization" maxlength="240" placeholder="Approved appointment / resolution reference" required></label><label>Term started (local time)<input id="termStart" type="datetime-local" required></label><label>Term ends (local time)<input id="termEnd" type="datetime-local" required></label></div><fieldset id="assignmentPermissions"><legend>Approved module permissions</legend></fieldset><label class="history-check"><input type="checkbox" id="appointmentConfirmed" required>I confirm this appointment and access scope are authorized.</label><button type="submit">Create officer assignment</button></form></section>
-<section class="history-card"><div class="history-heading"><h2>Assignments and historical terms</h2><label id="officeScopeLabel">View<select id="assignmentScope"><option value="own">My assignments</option><option value="office">My office’s terms</option></select></label></div><p>Historical records remain attributed to the officer and administration that created them. Pages load up to 50 assignments at a time.</p><div id="assignmentList" class="history-assignment-list"></div><button id="moreAssignments" type="button" hidden>Load more assignments</button></section>
+<section id="appointmentPanel" class="history-card" aria-labelledby="appointmentTitle" hidden>
+  <h2 id="appointmentTitle">Promote an officer</h2>
+  <form id="appointmentForm">
+    <div class="history-candidate-field">
+      <label for="candidateStudentId">Student ID</label>
+      <div class="history-candidate-search"><input id="candidateStudentId" required inputmode="numeric" maxlength="64" placeholder="Enter an existing Student ID" aria-describedby="candidateSummary"><button id="findOfficerCandidate" type="button">Find student</button></div>
+      <output id="candidateSummary" aria-live="polite">Select an existing student account.</output>
+    </div>
+    <div class="history-grid">
+      <label>USC position<select id="assignmentPosition" required></select></label>
+      <label>Represented department<select id="assignmentDepartment" disabled><option>University-wide</option></select></label>
+      <label>Administration period<input id="administrationPeriod" maxlength="80" placeholder="2026–2027" required></label>
+      <label>Authorization reference<input id="appointmentAuthorization" maxlength="240" placeholder="Appointment or resolution reference" required></label>
+      <label>Term start (local time)<input id="termStart" type="datetime-local" required></label>
+      <label>Term end (local time)<input id="termEnd" type="datetime-local" required></label>
+    </div>
+    <fieldset id="assignmentPermissions"><legend>Approved module permissions</legend></fieldset>
+    <div class="history-form-actions"><label class="history-check"><input type="checkbox" id="appointmentConfirmed" required>I confirm this appointment and access scope are authorized.</label><button type="submit">Create officer assignment</button></div>
+  </form>
+</section>
+<section class="history-card"><div class="history-heading"><h2>Assignments and historical terms</h2><label id="officeScopeLabel">View<select id="assignmentScope"><option value="own">My assignments</option><option value="office">My office’s terms</option></select></label></div><div id="assignmentList" class="history-assignment-list"></div><button id="moreAssignments" type="button" hidden>Load more assignments</button></section>
 <section class="officer-activity" aria-labelledby="officerActivityTitle"><h2 id="officerActivityTitle">Officer activity history</h2><div data-officer-activity></div></section>
 <section id="financialReportPanel" class="history-card" hidden><h2>Submit financial report</h2><p>Submit an immutable report for your current Treasurer assignment. This records a submission; it is not a financial approval or audit certification. Submit a new report for corrections.</p><form id="financialReportForm"><label>Report title<input id="financialReportTitle" maxlength="160" required></label><label>Report content<textarea id="financialReportContent" rows="8" maxlength="20000" required></textarea></label><label class="history-check"><input id="financialReportConfirmed" type="checkbox" required>I reviewed this report and understand it will be preserved under my name and term.</label><button type="submit">Submit report</button></form></section>
 <section class="history-card"><h2 id="activityHeading">Records by term</h2><p>Choose a term to review its activities. Only completed module actions are recorded; page visits do not count. Results load in pages of 50.</p><div id="activityList"></div><button id="moreActivities" type="button" hidden>Load more activities</button></section>
