@@ -32,7 +32,7 @@ const server=http.createServer((req,res)=>{const u=new URL(req.url,origin);if(u.
   await p.screenshot({path:path.join(out,'directory-desktop.png'),fullPage:true});
   await p.locator('[data-open-user="first"]').click();
   assert.equal(await p.locator('#targetRoleSelect').isDisabled(),true);assert.equal(await p.locator('#officePositionInput').isDisabled(),true);
-  assert.equal(await p.getByText('Register student account',{exact:true}).count(),0);assert.equal(await p.locator('a[href="queue.html"]').count(),0);
+  assert.equal(await p.getByRole('link',{name:'Register student account'}).getAttribute('href'),'../student-registration/student-registration.html');assert.equal(await p.locator('a[href="queue.html"]').count(),0);
   await p.locator('#adminNotesInput').fill('Synthetic directory note');await p.locator('#saveRoleButton').click();
   await p.waitForFunction(()=>directoryWrites.length===1);
   const write=await p.evaluate(()=>directoryWrites[0]);
@@ -50,6 +50,6 @@ const server=http.createServer((req,res)=>{const u=new URL(req.url,origin);if(u.
   await p.goto(origin+'/usc-admin/student-registration/officer-registration.html');await p.waitForURL('**/officer-management.html');await p.locator('#appointmentForm').waitFor();
   await p.goto(origin+'/usc-admin/admin-dashboard/users.html');await p.locator('[data-open-user="first"]').click();assert.equal(await p.evaluate(()=>document.documentElement.scrollWidth>innerWidth+1),false);await p.screenshot({path:path.join(out,'directory-account-mobile.png')});
   assert.deepEqual(errors,[]);
-  console.log('PASS: retired routes redirect; directory has no account creation or editable officer scope; account updates omit role fields; Student ID handoff; promotion and term completion preserve UID; 1440/768/390 responsive layouts; no browser errors. Synthetic data only.');
+  console.log('PASS: retired routes redirect; directory retains student registration with read-only officer scope; account updates omit role fields; Student ID handoff; promotion and term completion preserve UID; 1440/768/390 responsive layouts; no browser errors. Synthetic data only.');
  }finally{await browser.close();await new Promise(r=>server.close(r));}
 })().catch(e=>{console.error(e);server.close();process.exitCode=1;});

@@ -3,7 +3,7 @@
 ## Changes made
 
 - Registration Queue is removed from admin navigation and dashboard shortcuts. Existing `queue.html` bookmarks redirect to User Directory. No profiles or pending accounts are deleted; approval, suspension, verification, recovery and account removal remain in User Directory.
-- User Directory no longer links to student registration or manual officer creation. Its role, position, effective date and permission controls display the current assignment without allowing edits. Bulk role changes, office-wide permission copying, and automatic legacy-permission writes are retired.
+- User Directory retains its Register student account shortcut. Officer creation is replaced by promotion through Officer Management. Its role, position, effective date and permission controls display the current assignment without allowing edits. Bulk role changes, office-wide permission copying, and automatic legacy-permission writes are retired.
 - Officer Management is the sole application path for officer assignment. Find the existing account by exact Student ID, select its supported office and approved permissions, specify its administration, authorization reference and start/end dates, and create the assignment. Directory's **Manage officer term** action carries the Student ID to this lookup.
 - The same Firebase UID, password, linked identity and Student ID are retained. Completing a term restores student role/claims and removes officer permissions while preserving the assignment and activity history. Student standing and suspension restrictions remain authoritative.
 - Manual officer-registration bookmarks redirect to Officer Management. The old provisioning export now fails before creating an Auth identity or writing records. Account replacement cannot create an officer role.
@@ -14,7 +14,7 @@
 | Before | After |
 | --- | --- |
 | Registration Queue promotes accounts directly | Queue redirects to User Directory; promotion uses Officer Management |
-| User Directory provides student/officer creation shortcuts | Directory provides Officer Management access |
+| User Directory provides student/officer creation shortcuts | Directory retains student registration and provides Officer Management access |
 | Directory can change roles, office and permissions | Assignment fields are read-only; account-status actions remain |
 | Manual officer creation issues a separate identity | An approved active student account receives a dated officer assignment |
 | Directory permission defaults may be persisted automatically | Merely viewing the directory does not rewrite officer permissions |
