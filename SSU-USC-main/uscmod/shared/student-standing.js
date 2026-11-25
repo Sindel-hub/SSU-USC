@@ -2,6 +2,7 @@ export const STUDENT_STANDINGS = Object.freeze([
   { value: "active", label: "Active / Enrolled", enrollmentStatus: "Enrolled", canAccess: true },
   { value: "leave", label: "Leave of Absence", enrollmentStatus: "Leave", canAccess: false },
   { value: "inactive", label: "Inactive / Not Enrolled", enrollmentStatus: "Not Enrolled", canAccess: false },
+  { value: "dropped", label: "Dropped", enrollmentStatus: "Not Enrolled", canAccess: false },
   { value: "graduated", label: "Graduated", enrollmentStatus: "Not Enrolled", canAccess: false },
   { value: "transferred", label: "Transferred / Changed School", enrollmentStatus: "Not Enrolled", canAccess: false },
   { value: "withdrawn", label: "Withdrawn", enrollmentStatus: "Not Enrolled", canAccess: false },

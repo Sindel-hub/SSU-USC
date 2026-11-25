@@ -72,6 +72,6 @@ test('student year level and standing are enforced without capstone-mode UI text
   assert.match(authGuard, /isActiveStudentStanding/);
   assert.match(authGuard, /bindProfileAccessWatcher/);
   assert.match(loginJs, /Portal access is disabled because your student standing/);
-  assert.match(rules, /request\.resource\.data\.studentStanding in \["active", "leave", "inactive", "graduated", "transferred", "withdrawn", "eliminated"\]/);
+  assert.match(rules, /request\.resource\.data\.studentStanding in \["active", "leave", "inactive", "graduated", "dropped", "transferred", "withdrawn", "eliminated"\]/);
   assert.match(rules, /request\.resource\.data\.isActive == \(request\.resource\.data\.studentStanding == "active" && request\.resource\.data\.accountStatus != "suspended"\)/);
 });

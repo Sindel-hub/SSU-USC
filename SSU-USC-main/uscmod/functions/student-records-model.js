@@ -1,6 +1,6 @@
 "use strict";
 const {createHash}=require('node:crypto');
-const STATUSES=Object.freeze(['active','leave','inactive','graduated','transferred','withdrawn','eliminated']);
+const STATUSES=Object.freeze(['active','leave','inactive','graduated','dropped','transferred','withdrawn','eliminated']);
 const PROGRAMS = require('./student-programs.json');
 const DEPARTMENTS = Object.freeze(Object.keys(PROGRAMS));
 const abbreviations = {
@@ -73,7 +73,7 @@ function normalizeRows(rows){
    const status=text(r.status||'active',30,'status').toLowerCase();if(!STATUSES.includes(status))bad('Unknown student status.');
    const enrollmentStatus=r.enrollmentStatus === undefined ? enrollment(status) : text(r.enrollmentStatus,60,'enrollment status');
    const studentStatus=typeof r.studentStatus==='string'?r.studentStatus.trim().toLowerCase():r.studentStatus===undefined?'':null;
-   if(!['','undergraduate','active','graduated'].includes(studentStatus))bad('Student Status must be Undergraduate, Active, Graduated, or blank.');
+   if(!['','undergraduate','active','graduated','dropped'].includes(studentStatus))bad('Student Status must be Undergraduate, Active, Graduated, Dropped, or blank.');
    return {studentId,...names,fullName,department,program,yearLevel,email,status,enrollmentStatus,...(Object.hasOwn(r,'studentStatus')?{studentStatus}:{})};
   }catch(e){return{row:i+2,error:e.message,studentId:String(r?.studentId??'').slice(0,64)};}
  });
@@ -83,9 +83,9 @@ function enrollment(status){return status==='active'?'Enrolled':status==='leave'
 function studentUid(studentId){return 'annual_'+createHash('sha256').update(studentId).digest('hex').slice(0,40);}
 function academicSnapshot(p){return Object.fromEntries(['studentId','fullName',...nameFields,'college','program','yearLevel','studentStanding','enrollmentStatus','academicYear'].map(k=>[k,p?.[k]??null]));}
 function yearLabel(value){return ({'1':'1st Year','2':'2nd Year','3':'3rd Year','4':'4th Year','5':'5th Year','6':'6th Year'})[value];}
-function nextAcademicProfile(before,row,year){
+function nextAcademicProfile(before,row,year,{allowOlderYear=false}={}){
  academicYear(year);
- if(before?.academicYear&&before.academicYear>year)bad('This import is older than the student’s current academic year.');
+ if(!allowOlderYear&&before?.academicYear&&before.academicYear>year)bad('This import is older than the student’s current academic year.');
  if(before&&!['student','officer'].includes(before.role))bad('This Student ID belongs to a protected role.');
  const activated=before?.activationStatus!=='pending'&&before?.activationStatus!=='processing';
  const approved=before?.accountStatus==='approved';

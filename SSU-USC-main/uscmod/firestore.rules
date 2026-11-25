@@ -320,7 +320,9 @@ service cloud.firestore {
         || (isAdmin()
           && !request.resource.data.diff(resource.data).affectedKeys().hasAny([
               "officerAssignmentId", "role", "officePosition", "officerPermissions", "officerPermissionSource", "roleEffectiveDate",
-              "yearLevel", "academicYear", "studentRecordId", "academicRevision"
+              "yearLevel", "academicYear", "studentRecordId", "academicRevision",
+              "graduationImportId", "droppedImportId", "importRestrictionId", "standingManagedDisabled",
+              "graduatedAtMs", "droppedAtMs", "accessRestoreImportId"
             ])
           && resource.data.role != "admin"
           && request.resource.data.role in ["student", "officer"]
@@ -329,7 +331,7 @@ service cloud.firestore {
             || (request.resource.data.yearLevel is string
               && request.resource.data.yearLevel.size() <= 40))
           && (!("studentStanding" in request.resource.data)
-            || request.resource.data.studentStanding in ["active", "leave", "inactive", "graduated", "transferred", "withdrawn", "eliminated"])
+            || request.resource.data.studentStanding in ["active", "leave", "inactive", "graduated", "dropped", "transferred", "withdrawn", "eliminated"])
           && (!("studentStanding" in request.resource.data)
             || request.resource.data.isActive == (request.resource.data.studentStanding == "active" && request.resource.data.accountStatus != "suspended"))
           && (!("studentStanding" in request.resource.data)
