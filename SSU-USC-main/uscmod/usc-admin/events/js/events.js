@@ -267,6 +267,40 @@ function updateStats(events) {
   if (eventsFeedReady) engagementAnalytics.update(events, reportRegistrations);
 }
 
+
+let fullDetailDialog = null;
+let fullDetailId = '';
+function openPublishedDetails(card) {
+  const template = card?.querySelector('template.event-full-detail');
+  if (!template) return;
+  if (!fullDetailDialog) {
+    fullDetailDialog = document.createElement('dialog');
+    fullDetailDialog.className = 'event-full-detail-dialog';
+    fullDetailDialog.setAttribute('aria-labelledby', 'publishedDetailsHeading');
+    fullDetailDialog.innerHTML = '<div class="event-full-detail-top"><h2 id="publishedDetailsHeading">Full details</h2><button type="button" class="event-full-detail-close" aria-label="Close details" autofocus>×</button></div><div class="event-full-detail-body"></div>';
+    document.body.append(fullDetailDialog);
+    fullDetailDialog.querySelector('.event-full-detail-close').addEventListener('click', () => fullDetailDialog.close());
+    fullDetailDialog.addEventListener('click', ev => { if (ev.target !== fullDetailDialog) return; const r=fullDetailDialog.getBoundingClientRect(); if(ev.clientX<r.left||ev.clientX>r.right||ev.clientY<r.top||ev.clientY>r.bottom) fullDetailDialog.close(); });
+    fullDetailDialog.addEventListener('close', () => {
+      const button = Array.from(recentEventsList.querySelectorAll('[data-view-details]')).find(el => el.dataset.viewDetails === fullDetailId);
+      button?.focus({preventScroll:true});
+      fullDetailDialog.querySelector('.event-full-detail-body').replaceChildren();
+    });
+  }
+  fullDetailId = card.dataset.recordId;
+  const content = fullDetailDialog.querySelector('.event-full-detail-body');
+  content.replaceChildren(template.content.cloneNode(true));
+  if (!fullDetailDialog.open) fullDetailDialog.showModal();
+  fullDetailDialog.querySelector('.event-full-detail-close').focus();
+  hydrateMediaImages(content).catch(error => console.warn('Unable to load activity details media:',error));
+}
+recentEventsList?.addEventListener('click', event => {
+  const card = event.target.closest('.event-published-card[data-record-id]');
+  if (!card) return;
+  if (event.target.closest('[data-view-details]')) { openPublishedDetails(card); return; }
+  if (!event.target.closest('button, a, input, select, textarea, .event-card-actions')) openPublishedDetails(card);
+});
+
 function renderEvents(events) {
   if (!recentEventsList) return;
   const search = safeText(eventSearch?.value).toLowerCase();
@@ -301,7 +335,20 @@ function renderEvents(events) {
         : "";
 
       return `
-        <article class="list-item event-published-card">
+        <article class="list-item event-published-card" data-record-id="${escapeHtml(eventItem.id)}">
+          <button class="event-summary-button" type="button" data-view-details="${escapeHtml(eventItem.id)}" aria-haspopup="dialog">
+            <span class="item-title event-summary-title">${escapeHtml(safeText(eventItem.title, "Untitled Event"))}</span>
+          <span class="event-core-meta">
+            <span class="event-core-meta-item"><i class="fa-regular fa-calendar"></i><span><small>Date</small><strong>${escapeHtml(formatEventDate(eventItem.eventDate))}</strong></span></span>
+            <span class="event-core-meta-item"><i class="fa-regular fa-clock"></i><span><small>Time</small><strong>${escapeHtml(safeText(eventItem.startTime, "TBA"))}${eventItem.endTime ? ` - ${escapeHtml(eventItem.endTime)}` : ""}</strong></span></span>
+            <span class="event-core-meta-item"><i class="fa-solid fa-location-dot"></i><span><small>Venue</small><strong>${escapeHtml(safeText(eventItem.venue, "TBA"))}</strong></span></span>
+          </span>
+
+            <span class="event-compact-registration"><small>Registration</small><strong>${escapeHtml(registrationModeLabel(mode))}</strong>${mode !== "none" ? `<span>Closes: ${escapeHtml(formatRegistrationDeadline(eventItem))}</span>` : ""}</span>
+            <span class="event-details-hint">View full details <i class="fa-solid fa-chevron-right" aria-hidden="true"></i></span>
+          </button>
+          <template class="event-full-detail">
+
           ${imageMarkup}
           <div class="item-top">
             <div class="event-published-heading">
@@ -330,6 +377,9 @@ function renderEvents(events) {
           </div>
           ${eventItem.participationNotes ? `<div class="event-participation-note"><i class="fa-solid fa-circle-info" aria-hidden="true"></i><div><strong>Participation instructions</strong><span>${escapeHtml(eventItem.participationNotes)}</span></div></div>` : ""}
           ${eventItem.activityAttribution ? `<p class="event-meta-line">${escapeHtml(activityAttributionText(eventItem.activityAttribution))}</p>` : ''}
+
+            ${mode === "external" && isValidExternalUrl(eventItem.externalRegistrationUrl) ? `<a href="${escapeHtml(eventItem.externalRegistrationUrl)}" target="_blank" rel="noopener noreferrer">Open registration link</a>` : ""}
+          </template>
           <div class="event-card-actions">
             ${participantButton}
             <button class="mini-btn danger" type="button" data-delete-event="${escapeHtml(eventItem.id)}" data-rbac-permission="events.manage"><i class="fa-solid fa-trash-can" aria-hidden="true"></i> Archive</button>

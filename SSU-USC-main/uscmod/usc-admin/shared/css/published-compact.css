@@ -1,0 +1,24 @@
+/* Published activity cards: compact summaries and a separate detail dialog. */
+body:is(.event-management-page,.program-management-page) #recentEventsList .event-published-card{gap:12px;cursor:pointer}
+body:is(.event-management-page,.program-management-page) #recentEventsList .event-summary-button{display:block;text-align:left;width:100%;min-width:0;border:0;background:transparent;color:#173f6a;padding:0;font:inherit;cursor:pointer;box-shadow:none}
+body:is(.event-management-page,.program-management-page) #recentEventsList .event-summary-button:focus-visible{outline:2px solid #00aef0;outline-offset:4px;border-radius:5px}
+body:is(.event-management-page,.program-management-page) #recentEventsList .event-summary-title{display:block;margin:0 0 10px;font-size:18px;font-weight:800;line-height:1.35;color:#174b7d;overflow-wrap:anywhere}
+body:is(.event-management-page,.program-management-page) #recentEventsList .event-core-meta{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin:0;padding:12px 0;border-bottom:1px solid #edf1f6}
+body:is(.event-management-page,.program-management-page) #recentEventsList .event-core-meta-item:nth-child(n+3){grid-column:1/-1}
+body:is(.event-management-page,.program-management-page) #recentEventsList .event-compact-registration{display:grid;gap:4px;margin:0;color:#315b7c;font-size:13px;line-height:1.5}
+body:is(.event-management-page,.program-management-page) #recentEventsList .event-compact-registration small{color:#69819a;font-size:12px}
+body:is(.event-management-page,.program-management-page) #recentEventsList .event-details-hint{display:flex;align-items:center;gap:6px;margin-top:12px;font-size:13px;font-weight:700;color:#1769c7}
+body:is(.event-management-page,.program-management-page) #recentEventsList .event-card-actions{padding-top:11px;gap:8px;cursor:default}
+.event-full-detail-dialog{position:fixed;inset:0;margin:auto;width:min(680px,calc(100% - 32px));max-height:85dvh;box-sizing:border-box;border:1px solid #dce5ef;border-radius:18px;padding:0;background:white;color:#173450;overflow:auto;box-shadow:0 20px 65px #10274440}
+.event-full-detail-dialog::backdrop{background:rgba(10,29,50,.55)}
+.event-full-detail-dialog .event-full-detail-top{position:sticky;top:0;z-index:2;display:flex;justify-content:space-between;align-items:center;gap:12px;background:#fff;border-bottom:1px solid #e5edf4;padding:16px 20px}
+.event-full-detail-dialog .event-full-detail-top h2{font-size:18px;margin:0;color:#174b7d}
+.event-full-detail-dialog .event-full-detail-close{border:1px solid #cddfeb;background:white;color:#1754a6;border-radius:9px;min-width:40px;min-height:40px;cursor:pointer;font-size:20px}
+.event-full-detail-dialog .event-full-detail-body{display:grid;gap:16px;padding:20px;min-width:0}
+body:is(.event-management-page,.program-management-page) .event-full-detail-dialog .event-published-thumb{width:100%;height:auto;max-height:340px;object-fit:contain;background:#f5f8fb}
+.event-full-detail-dialog .item-title{overflow-wrap:anywhere}
+.event-full-detail-dialog .event-core-meta{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}
+.event-full-detail-dialog .event-meta-line,.event-full-detail-dialog .event-participation-note{overflow-wrap:anywhere}
+.event-full-detail-dialog .item-text{white-space:pre-wrap;overflow-wrap:anywhere}
+.event-full-detail-dialog a{color:#1769c7;text-decoration:underline}
+@media(max-width:480px){.event-full-detail-dialog .event-full-detail-body{padding:14px}.event-full-detail-dialog .event-full-detail-top{padding:12px 14px}.event-full-detail-dialog .event-core-meta{grid-template-columns:minmax(0,1fr)}}
