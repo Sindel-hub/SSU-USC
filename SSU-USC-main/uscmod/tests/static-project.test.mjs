@@ -23,7 +23,6 @@ const protectedHtml = [
   'complaint/complaint.html',
   'dashboard/bulletin.html',
   'dashboard/dashboard.html',
-  'dashboard/election.html',
   'dashboard/events.html',
   'dashboard/handbook.html',
   'dashboard/organizational-chart.html',
@@ -34,11 +33,9 @@ const protectedHtml = [
   'usc-admin/student-registration/student-registration.html',
   'usc-admin/announcements/announcements.html',
   'usc-admin/complaints/complaints.html',
-  'usc-admin/elections/elections.html',
   'usc-admin/events/events.html',
   'usc-admin/organizational-chart/organizational-chart.html',
-  'usc-admin/overview/overview.html',
-  'voting/voting.html'
+  'usc-admin/overview/overview.html'
 ];
 
 test('protected pages load the shared fail-closed auth guard', () => {
@@ -116,4 +113,15 @@ test('Supabase storage separates public media and private student documents', ()
   assert.match(sql, /usc-public-media/);
   assert.match(sql, /usc-private-documents/);
   assert.match(sql, /public\s*=\s*false/i);
+});
+
+
+test('retired election UI files are absent and legacy redirects remain in place', () => {
+  for (const retired of ['dashboard/election.html','dashboard/js/election.js','dashboard/css/election.css','usc-admin/elections','voting']) assert.equal(fs.existsSync(path.join(root, retired)), false, retired);
+  const redirects = JSON.parse(fs.readFileSync(path.join(root, 'vercel.json'), 'utf8')).redirects;
+  for (const old of ['/dashboard/election.html','/usc-admin/elections/:path*','/voting/:path*']) assert.ok(redirects.some(r => r.source === old), old);
+  const guard = fs.readFileSync(path.join(root,'shared/auth-guard.js'),'utf8');
+  assert.doesNotMatch(guard, /currentElectionEligibility|election_config/);
+  assert.match(guard, /bindProfileAccessWatcher/);
+  assert.match(guard, /schoolProvisioned !== true/);
 });

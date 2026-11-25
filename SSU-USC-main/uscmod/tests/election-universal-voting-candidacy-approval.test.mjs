@@ -2,19 +2,12 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import fs from "node:fs";
 
-const electionJs = fs.readFileSync(new URL("../dashboard/js/election.js", import.meta.url), "utf8");
 const security = fs.readFileSync(new URL("../shared/security-client.js", import.meta.url), "utf8");
 const functions = fs.readFileSync(new URL("../functions/index.js", import.meta.url), "utf8");
 const rules = fs.readFileSync(new URL("../firestore.rules", import.meta.url), "utf8");
 const usersHtml = fs.readFileSync(new URL("../usc-admin/admin-dashboard/users.html", import.meta.url), "utf8");
 const usersJs = fs.readFileSync(new URL("../usc-admin/admin-dashboard/js/admin-users.js", import.meta.url), "utf8");
 
-test("student election separates universal voting from candidacy approval", () => {
-  assert.match(electionJs, /Every active, approved school-provisioned student can vote/);
-  assert.match(electionJs, /student\?\.candidacyApproved === true/);
-  assert.match(electionJs, /Candidacy Approval Required/);
-  assert.match(electionJs, /Approved for candidacy|candidacy registration is approved/i);
-});
 
 test("browser and cloud ballot submission no longer require voter-roster eligibility", () => {
   const browserVote = security.slice(security.indexOf("async function browserSubmitBallot"), security.indexOf("async function browserFinalizeElection"));

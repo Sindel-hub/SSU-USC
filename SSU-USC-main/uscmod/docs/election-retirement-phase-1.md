@@ -1,0 +1,7 @@
+# Election retirement — phase 1 (review only)
+
+The Election and Voting pages were already retired from navigation and redirected by Vercel. This branch deletes 62 dedicated UI, asset, template and retired UI-test files and removes the unused election queries/renderers from the student dashboard, tracklist and auth guard. Existing Vercel redirects remain. No active module's UI layout is redesigned.
+
+Shared legacy backend (Firebase functions, Firestore rules, Supabase candidate registration/email helpers, officer permission definitions and candidate history helpers) is intentionally retained pending a complete dependency audit. Historical election collections and audit data are not changed. Backend-only regression tests remain; assertions for deleted UI are removed or replaced with retirement checks. No backend deploy or production database mutation is authorized.
+
+This is a partial retirement, not a full verified cleanup. Run npm test and npm run build:hosted with isolated staging settings, test sign-in for all roles, verify old routes redirect, and verify Needs Assessment, complaints, events/programs, account management and officer history before merging. The repository-wide scan and integrated tests have not completed in this session; remaining references must be checked. Follow-up phase should remove shared election code only after verifying active dependencies and separately reviewing backend rules.

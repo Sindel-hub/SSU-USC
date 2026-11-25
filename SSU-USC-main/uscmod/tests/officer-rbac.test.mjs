@@ -36,7 +36,7 @@ test("officer modules are universally viewable after authentication while RBAC c
   assert.match(rbac, /permissionForOfficerPath/);
   assert.doesNotMatch(rbac, /renderModuleReadOnlyBanner|officer-module-readonly-banner/);
   assert.match(rbac, /rbac-readonly-link/);
-  for (const page of ["overview", "announcements", "elections", "events", "organizational-chart", "complaints"]) {
+  for (const page of ["overview", "announcements", "events", "programs", "organizational-chart", "complaints"]) {
     const html = read(`usc-admin/${page}/${page}.html`);
     assert.match(html, /officer-rbac\.js/);
   }
@@ -79,12 +79,6 @@ test("complaint and election actions enforce function-level permissions", () => 
   assert.match(complaintHtml, /data-rbac-permission="complaints\.classify"/);
   assert.match(complaintHtml, /data-rbac-permission="complaints\.feedback"/);
 
-  const electionHtml = read("usc-admin/elections/elections.html");
-  assert.match(electionHtml, /data-rbac-permission="elections\.view"/);
-  const electionJs = read("usc-admin/elections/js/elections.js");
-  assert.match(electionJs, /data-rbac-permission="elections\.review" data-preview-decision="approve"/);
-  assert.doesNotMatch(electionHtml, /id="candidateReviewCard" data-rbac-permission="elections\.review"/);
-  assert.match(electionHtml, /data-rbac-permission="elections\.results"/);
 });
 
 
