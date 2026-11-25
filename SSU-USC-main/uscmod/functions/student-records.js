@@ -382,12 +382,13 @@ function createStudentRecordHandlers({db,adminAuth,requireActiveRole,requireRece
     const student=combine(record,profile);
     return{students:student?[publicProfile(student)]:[],next:null};
    }
-   const allowedFilters=['studentId','fullName','college','program','yearLevel','academicYear','studentStanding','accountStatus','enrollmentStatus'];
+   const allowedFilters=['search','studentId','fullName','college','program','yearLevel','academicYear','studentStanding','accountStatus','enrollmentStatus'];
    const filters=Object.entries(data.filters||{});
    if(filters.some(([key,value])=>!allowedFilters.includes(key)||typeof value!=='string'||value.length>160))error('invalid-argument','Invalid student filter.');
    const matches=row=>filters.every(([key,value])=>{
     const term=value.trim().toLowerCase();
     if(!term)return true;
+    if(key==='search')return [row.studentId,row.fullName].some(value=>String(value||'').toLowerCase().includes(term));
     if(key==='college'&&M.canonicalDepartment(term))return M.canonicalDepartment(row.college)===M.canonicalDepartment(term);
     const valueToMatch=key==='program'?M.canonicalProgram(M.canonicalDepartment(row.college),row.program)||row.program:
      key==='accountStatus'?accountState(row):row[key];
