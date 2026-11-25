@@ -34,3 +34,9 @@ test('ordinary directory status edits still reach the existing authentication ch
   await assert.rejects(h.call({accountStatus:'suspended'}),/no matching Firebase Authentication account/);
   assert.equal(h.reads(),1);
 });
+
+test('legacy callable rejects manual year changes before authentication mutation',async()=>{
+ const h=handler({role:'student',yearLevel:'2nd Year'});
+ await assert.rejects(h.call({yearLevel:'3rd Year'}),error=>error.code==='failed-precondition'&&/Student Records/.test(error.message));
+ assert.equal(h.reads(),0);
+});

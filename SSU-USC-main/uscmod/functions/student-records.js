@@ -95,6 +95,11 @@ function createStudentRecordHandlers({db,adminAuth,requireActiveRole,requireRece
    const data={...academic,...names,uid,studentId,role:current?.role||'student',studentStanding:row.studentStatus==='graduated'?'graduated':current?.studentStanding||before?.studentStanding||studentStanding,
     enrollmentStatus:row.enrollmentStatus||M.enrollment(row.status),institutionalEmail:row.email||before?.institutionalEmail||current?.institutionalEmail||'',
     accountUid,provisioning:before?.provisioning||null,lastAnnualImportId:job.ref.id,recordRevision:job.ref.id,updatedAtMs};
+   // The imported record owns academic year/level; mirror them without touching account access or office identity.
+   if(current){
+    tx.update(userRef,{yearLevel:data.yearLevel,academicYear:data.academicYear,studentRecordId:uid,academicRevision:job.ref.id});
+    tx.set(db.doc(`school_accounts/${studentId}`),{uid,studentId,yearLevel:data.yearLevel,academicYear:data.academicYear},{merge:true});
+   }
    const graduation=row.studentStatus==='graduated';
    if(graduation&&current){
     tx.update(userRef,{studentStanding:'graduated',isActive:false,isVerifiedStudent:false,candidacyApproved:false,enrollmentStatus:'Not Enrolled',enrollmentClassification:data.enrollmentStatus,standingManagedDisabled:true,graduationImportId:job.ref.id,graduatedAtMs:clock()});

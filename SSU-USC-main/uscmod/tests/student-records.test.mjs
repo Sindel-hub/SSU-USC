@@ -156,7 +156,7 @@ test('annual imports preserve existing verification flags',async()=>{
  const f=fixture(),uid=f.seed(baseProfile({isVerifiedStudent:true}));await apply(f,(await preview(f,[row({status:'inactive'})])).importId);assert.equal(f.records.get('users/'+uid).isVerifiedStudent,true);
 });
 test('a repeated current-year correction preserves both earlier history entries and stable account identity',async()=>{
- const f=fixture(),uid=f.seed(baseProfile());await apply(f,(await preview(f)).importId);await apply(f,(await preview(f,[row({yearLevel:'3'})])).importId);assert.equal(f.authUsers.size,1);assert.equal(f.records.get('student_records/'+uid).yearLevel,'3rd Year');assert.equal(f.records.get('users/'+uid).yearLevel,'1');assert.equal([...f.records.keys()].filter(k=>k.includes('/academic_history/')).length,2);
+ const f=fixture(),uid=f.seed(baseProfile());await apply(f,(await preview(f)).importId);await apply(f,(await preview(f,[row({yearLevel:'3'})])).importId);assert.equal(f.authUsers.size,1);assert.equal(f.records.get('student_records/'+uid).yearLevel,'3rd Year');assert.equal(f.records.get('users/'+uid).yearLevel,'3rd Year');assert.equal([...f.records.keys()].filter(k=>k.includes('/academic_history/')).length,2);
 });
 
 test('index source supports private monitoring and exempts bulky preview entries',()=>{

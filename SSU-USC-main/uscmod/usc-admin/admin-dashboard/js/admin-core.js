@@ -1,7 +1,7 @@
 import { formatSsuProgram } from '../../student-registration/js/ssu-programs.js';
 
 import { db } from "../../../firebase/firebase-config.js";
-import { callSecure } from "../../../shared/security-client.js?v=officer-management-only-1";
+import { callSecure } from "../../../shared/security-client.js?v=import-year-1";
 import { isActiveStudentStanding, normalizeStudentStanding, studentStandingLabel } from "../../../shared/student-standing.js";
 import { effectiveOfficerPermissions, normalizeOfficerPermissions, permissionsForOfficerPosition } from "../../../shared/officer-permissions.js?v=programs-1";
 import {
@@ -87,6 +87,8 @@ export function normalizeUser(docSnap) {
     isVerifiedStudent: Boolean(data.isVerifiedStudent),
     candidacyApproved: data.candidacyApproved === true,
     yearLevel: String(data.yearLevel || "").trim(),
+    academicYear: String(data.academicYear || "").trim(),
+    academicRevision: String(data.academicRevision || "").trim(),
     studentStanding: normalizeStudentStanding(data.studentStanding, data.enrollmentStatus),
     studentStandingLabel: studentStandingLabel(data.studentStanding || "active"),
     enrollmentStatus: String(data.enrollmentStatus || "").trim(),
@@ -393,7 +395,7 @@ function buildUserUpdatePayload(user, source = {}) {
   const nextRole = protectedAdmin ? "admin" : canonicalRole(user.email, source.role ?? user.role);
   const nextStatus = normalizeStatus(source.accountStatus ?? user.accountStatus, source.isActive ?? user.isActive);
   const nextActive = protectedAdmin ? true : (typeof source.isActive === "boolean" ? source.isActive : user.isActive);
-  const nextYearLevel = protectedAdmin ? (user.yearLevel || "") : String(source.yearLevel ?? user.yearLevel ?? "").trim().slice(0, 40);
+  const nextYearLevel = user.yearLevel || "";
   const nextStanding = protectedAdmin ? "active" : normalizeStudentStanding(source.studentStanding ?? user.studentStanding, user.enrollmentStatus);
   const standingActive = protectedAdmin ? true : isActiveStudentStanding(nextStanding, user.enrollmentStatus);
   const requestedVerified = protectedAdmin ? true : (typeof source.isVerifiedStudent === "boolean" ? source.isVerifiedStudent : user.isVerifiedStudent);
@@ -457,6 +459,9 @@ function requiresReason(changeParts) {
 
 
 export async function updateSingleUser(user, source = {}) {
+  if (source.yearLevel !== undefined && String(source.yearLevel).trim() !== String(user.yearLevel || "").trim()) {
+    throw new Error("Year level is managed by Student Records. Apply an authorized Excel import to change it.");
+  }
   if ((source.role !== undefined && source.role !== user.role)
       || (source.officePosition !== undefined && source.officePosition !== user.officePosition)
       || (source.officerPermissions !== undefined && JSON.stringify(source.officerPermissions) !== JSON.stringify(user.officerPermissions))) {
@@ -472,7 +477,6 @@ export async function updateSingleUser(user, source = {}) {
     accountStatus: payload.nextStatus,
     isVerifiedStudent: payload.nextVerified,
     candidacyApproved: payload.nextCandidacyApproved,
-    yearLevel: payload.nextYearLevel,
     studentStanding: payload.nextStanding,
     adminNotes: payload.nextNotes,
     changeReason: payload.changeReason

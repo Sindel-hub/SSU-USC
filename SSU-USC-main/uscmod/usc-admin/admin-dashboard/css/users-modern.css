@@ -167,3 +167,6 @@ body.officer-app-shell.admin-users-page :is(.role-badge,.status-badge,.verify-ba
  body.officer-app-shell.admin-users-page .directory-search-actions .directory-sort-field { width:100%; }
  body.officer-app-shell.admin-users-page .table-wrap { max-height:55dvh !important; }
 }
+
+/* Imported academic values remain selectable, but cannot be edited here. */
+body.admin-users-page #yearLevelSelect[readonly] { background:#f1f6fb !important; color:#52657a !important; cursor:text; }

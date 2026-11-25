@@ -1,7 +1,8 @@
+import { studentRecordCall } from "../../../shared/student-records-client.js";
 import { bindDirectoryTable } from "./user-directory-table.js?v=2";
 import { callStudentEmailService } from "../../../shared/supabase-email-service.js";
 import { institutionalEmailForDisplay } from "../../../shared/account-email.js";
-import { callSecure, auth } from "../../../shared/security-client.js?v=officer-management-only-1";
+import { callSecure, auth } from "../../../shared/security-client.js?v=import-year-1";
 import { OFFICER_PERMISSION_DEFINITIONS, DEFAULT_OFFICER_PERMISSIONS, normalizeOfficerPermissions } from "../../../shared/officer-permissions.js?v=programs-1";
 
 import {
@@ -27,7 +28,7 @@ import {
   updateSingleUser,
   applyBulkUpdates,
   voteSummaryFor
-} from "./admin-core.js?v=officer-management-only-1";
+} from "./admin-core.js?v=import-year-1";
 
 
 const uscAuthAllowed = await (globalThis.USC_AUTH_READY || Promise.resolve(false));
@@ -332,7 +333,6 @@ function fillEditor(user) {
   dom.selectedUserLastLogin.textContent = formatDateTime(user.lastLoginAtMs);
   dom.selectedUserLastActivity.textContent = formatDateTime(user.lastActivityAtMs);
   dom.selectedUserEffectiveDate.textContent = formatDateOnly(user.roleEffectiveDate);
-  dom.selectedUserYearLevel.textContent = user.yearLevel || '—';
   dom.selectedUserStanding.textContent = user.studentStandingLabel || user.studentStanding || 'Active / Enrolled';
   dom.selectedUserVerified.textContent = user.isVerifiedStudent ? 'Verified' : 'Unverified';
   if (dom.selectedUserCandidacy) dom.selectedUserCandidacy.textContent = user.candidacyApproved ? 'Approved to register' : 'Not approved';
@@ -347,7 +347,6 @@ function fillEditor(user) {
   syncRbacEditorForRole(user.role, user);
   dom.accountStatusSelect.value = user.accountStatus;
   dom.effectiveDateInput.value = user.roleEffectiveDate || '';
-  dom.yearLevelSelect.value = user.yearLevel || '';
   dom.studentStandingSelect.value = user.studentStanding || 'active';
   dom.verifiedToggle.checked = user.isVerifiedStudent;
   if (dom.candidacyToggle) dom.candidacyToggle.checked = user.candidacyApproved === true;
@@ -376,9 +375,34 @@ function fillEditor(user) {
     dom.removeUserButton.disabled = false;
   }
   updateRolePreview(protectedAdmin ? 'student' : user.role);
+  void loadImportedYear(user);
+}
+
+let importedYearKey = '', importedYearRequest = 0;
+async function loadImportedYear(user) {
+  const key = JSON.stringify([user.uid, user.yearLevel, user.academicYear, user.academicRevision]);
+  if (importedYearKey === key) return;
+  importedYearKey = key;
+  const requestId = ++importedYearRequest;
+  const note = document.getElementById('importedYearNote');
+  const display = (value, message) => { dom.yearLevelSelect.value = value; dom.selectedUserYearLevel.textContent = value; note.textContent = message; };
+  if (user.role === 'admin') { display('Not applicable', 'Year level does not apply to administrator accounts.'); return; }
+  if (!/^[0-9]{1,64}$/.test(user.studentId)) { display('Not recorded', 'Import this student through Student Records to set the year level.'); return; }
+  display('Loading…', 'Reading the imported Student Record.');
+  try {
+    const { record, account } = await studentRecordCall('studentRegistrationLookup', { studentId: user.studentId });
+    if (requestId !== importedYearRequest || selectedUserId !== user.uid) return;
+    if (record && record.uid === user.uid && record.studentId === user.studentId && account?.uid === user.uid) {
+      display(record.yearLevel || 'Not recorded', record.academicYear ? `Student Records · ${record.academicYear}` : 'Updated through Student Records imports.');
+    } else display('Not recorded', 'No linked imported Student Record. Import this student to set the year level.');
+  } catch {
+    if (requestId !== importedYearRequest || selectedUserId !== user.uid) return;
+    display('Unavailable', 'Year level could not be loaded. Reopen account details to retry.');
+  }
 }
 
 function openUser(userId) {
+  importedYearKey = '';
   selectedUserId = userId;
   fillEditor(getSelectedUser());
   renderTable();
@@ -500,7 +524,6 @@ async function saveSelectedUser(overrides = null) {
       officerPermissions: user.officerPermissions,
       accountStatus: overrides?.accountStatus ?? dom.accountStatusSelect.value,
       roleEffectiveDate: overrides?.roleEffectiveDate ?? dom.effectiveDateInput.value,
-      yearLevel: overrides?.yearLevel ?? dom.yearLevelSelect.value,
       studentStanding: overrides?.studentStanding ?? dom.studentStandingSelect.value,
       isVerifiedStudent: typeof overrides?.isVerifiedStudent === 'boolean' ? overrides.isVerifiedStudent : dom.verifiedToggle.checked,
       candidacyApproved: typeof overrides?.candidacyApproved === 'boolean' ? overrides.candidacyApproved : Boolean(dom.candidacyToggle?.checked),
@@ -690,10 +713,18 @@ const directoryTable = bindDirectoryTable({
   openAccount: openUser
 });
 subscribeUsers((value, error) => {
+  const previousSelectedUser = getSelectedUser();
   users = value.map(user => ({ ...user, email: institutionalEmailForDisplay(user), institutionalEmail: institutionalEmailForDisplay(user) }));
   dom.listStatusText.textContent = error ? 'Unable to load accounts' : 'Up to date';
   renderTable();
-  if (selectedUserId) fillEditor(getSelectedUser());
+  if (selectedUserId) {
+    const current = getSelectedUser();
+    // An academic-only import must not clear other unsaved editor fields.
+    const academicOnly = previousSelectedUser && current && Object.keys(current).every(key =>
+      ['yearLevel', 'academicYear', 'academicRevision'].includes(key) || JSON.stringify(current[key]) === JSON.stringify(previousSelectedUser[key]));
+    if (academicOnly) void loadImportedYear(current);
+    else fillEditor(current);
+  }
 });
 subscribeComplaints((value) => { complaintSummaryByUid = value; renderTable(); if (selectedUserId) fillEditor(getSelectedUser()); });
 subscribeVotes((value) => { voteSummaryByStudentId = value; if (selectedUserId) fillEditor(getSelectedUser()); });
