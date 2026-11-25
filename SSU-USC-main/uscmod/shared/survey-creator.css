@@ -13,3 +13,7 @@ body.survey-studio .studio-top{height:84px;min-height:84px;display:flex;align-it
 .studio-back:focus-visible{outline:2px solid #00aef0;outline-offset:3px}
 @media(max-width:820px){body.survey-studio .studio-top{height:64px;min-height:64px;padding:0 16px;gap:8px}.studio-brand-logos img{width:32px;height:32px}.studio-brand{font-size:13px;letter-spacing:0}.studio-brand small{font-size:7px;letter-spacing:.2px}.studio-nav{padding:0 16px;height:54px;min-height:54px}}
 @media(max-width:480px){body.survey-studio .studio-top{height:58px;min-height:58px;padding:0 10px}.studio-brand{font-size:11px}.studio-brand small{font-size:6px;letter-spacing:0}.studio-brand-logos{gap:5px}.studio-brand-logos img{width:29px;height:29px}.studio-nav{padding:0 10px}.studio-back{padding:7px 11px;font-size:12px}}
+
+/* Editor hints are placeholders, not saved option or description values. */
+body.survey-studio .studio-row input[data-array]::placeholder{color:#657b8e;opacity:1}
+body.survey-studio .studio-rich:empty:before{pointer-events:none}
