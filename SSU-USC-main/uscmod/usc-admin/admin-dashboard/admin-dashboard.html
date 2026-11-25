@@ -54,7 +54,6 @@
                         <a class="nav-btn" data-admin-nav href="admin-dashboard.html"><span aria-hidden="true"><i class="fa-solid fa-table-columns"></i></span><span>Overview</span></a>
                         <a class="nav-btn" data-admin-nav href="users.html"><span aria-hidden="true"><i class="fa-solid fa-users"></i></span><span>User Directory</span></a>
                         <a class="nav-btn" data-admin-nav href="student-records.html"><span><i class="fa-solid fa-address-book" aria-hidden="true"></i></span><span>Student Records</span></a>
-                        <a class="nav-btn" data-admin-nav href="queue.html"><span aria-hidden="true"><i class="fa-solid fa-inbox"></i></span><span>Registration Queue</span></a>
                         <a class="nav-btn" data-admin-nav href="officer-management.html"><span aria-hidden="true"><i class="fa-solid fa-user-tie"></i></span><span>Officer Management</span></a>
                         <a class="nav-btn" data-admin-nav href="audit.html"><span aria-hidden="true"><i class="fa-solid fa-clock-rotate-left"></i></span><span>Audit & Reports</span></a>
                     </div>
@@ -145,17 +144,17 @@
         <div class="card-head"><h2>Quick actions</h2></div>
         <nav class="quick-links" aria-label="Account management shortcuts">
             <a class="quick-link" href="users.html"><i class="fa-solid fa-users" aria-hidden="true"></i><strong>User Directory</strong></a>
-            <a class="quick-link" href="queue.html"><i class="fa-solid fa-inbox" aria-hidden="true"></i><strong>Registration Queue</strong></a>
+
             <a class="quick-link" href="../student-registration/student-registration.html"><i class="fa-solid fa-user-plus" aria-hidden="true"></i><strong>Create Student</strong></a>
-            <a class="quick-link" href="../student-registration/officer-registration.html"><i class="fa-solid fa-user-tie" aria-hidden="true"></i><strong>Create Officer</strong></a>
+            <a class="quick-link" href="officer-management.html"><i class="fa-solid fa-user-tie" aria-hidden="true"></i><strong>Officer Management</strong></a>
         </nav>
     </article>
 </section>
 
 <section class="card-grid two overview-activity-grid">
     <article class="card">
-        <div class="card-head"><div><h3>Recent registrations</h3></div><a class="btn soft" href="queue.html">Open queue</a></div>
-        <div class="queue-list" id="recentQueueList" role="region" aria-label="Recent registrations" tabindex="0"><div class="empty-state"><strong>Loading queue</strong><span>Connecting to Firestore…</span></div></div>
+        <div class="card-head"><div><h3>Recent registrations</h3></div><a class="btn soft" href="users.html">Open directory</a></div>
+        <div class="queue-list" id="recentQueueList" role="region" aria-label="Recent registrations" tabindex="0"><div class="empty-state"><strong>Loading accounts</strong><span>Connecting to Firestore…</span></div></div>
     </article>
     <article class="card">
         <div class="card-head"><div><h3>Latest access activity</h3></div><a class="btn soft" href="audit.html">Open audit log</a></div>

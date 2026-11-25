@@ -42,26 +42,24 @@ test("officer modules are universally viewable after authentication while RBAC c
   }
 });
 
-test("System Administrator can configure per-officer permissions and copy them by office", () => {
+test("officer permission management is centralized in Officer Management", () => {
   const html = read("usc-admin/admin-dashboard/users.html");
   const js = read("usc-admin/admin-dashboard/js/admin-users.js");
-  const core = read("usc-admin/admin-dashboard/js/admin-core.js");
-  assert.match(html, /Officer role-based access/);
+  const management = read("usc-admin/admin-dashboard/officer-management.html");
   assert.match(html, /officerPermissionGrid/);
-  assert.match(html, /Apply to same office/);
-  assert.match(js, /selectedOfficerPermissions/);
-  assert.match(js, /sameOffice/);
-  assert.match(js, /officerPermissions:/);
-  assert.match(core, /nextOfficerPermissions/);
-  assert.match(core, /officer permissions updated/);
+  assert.doesNotMatch(html, /Apply to same office|Full officer access/);
+  assert.doesNotMatch(js, /function syncLegacyPositionPresets|const sameOffice/);
+  assert.match(js, /input.disabled = true/);
+  assert.match(management, /id="assignmentPermissions"/);
+  assert.match(management, /id="termEnd"/);
 });
 
-test("new officer accounts receive the permission preset for their USC position", () => {
+test("separate officer creation directs administrators to existing-account promotion", () => {
   const provisioning = read("shared/browser-provisioning.js");
-  assert.match(provisioning, /permissionsForOfficerPosition/);
-  assert.match(provisioning, /const positionPermissions = permissionsForOfficerPosition\(officePosition\)/);
-  assert.match(provisioning, /officerPermissions:\s*positionPermissions/);
-  assert.match(provisioning, /officerPermissionSource:\s*["']position-default["']/);
+  assert.match(provisioning, /Use Officer Management to promote an existing approved student account/);
+  const management = read("server/officer-history.cjs");
+  assert.match(management, /officerPermissions/);
+  assert.match(management, /officerPermissionSource: "custom"/);
 });
 
 test("complaint and election actions enforce function-level permissions", () => {

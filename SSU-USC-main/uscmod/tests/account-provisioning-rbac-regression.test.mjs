@@ -15,16 +15,11 @@ function functionBody(source, functionName) {
   return source.slice(start, next === -1 ? source.length : next);
 }
 
-test("officer provisioning imports and applies the USC position permission preset", () => {
-  assert.match(
-    provisioning,
-    /import\s*\{\s*permissionsForOfficerPosition\s*\}\s*from\s*["']\.\/officer-permissions\.js["'];/,
-    "browser-provisioning must import the position preset resolver"
-  );
-  const officerBody = functionBody(provisioning, "provisionOfficerAccount");
-  assert.match(officerBody, /const positionPermissions = permissionsForOfficerPosition\(officePosition\)/);
-  assert.match(officerBody, /officerPermissions:\s*positionPermissions/);
-  assert.match(officerBody, /officerPermissionSource:\s*["']position-default["']/);
+test("manual officer provisioning is retired before authentication or database writes", async () => {
+  const body = functionBody(provisioning, "provisionOfficerAccount").replace('export ', '');
+  const provision = new Function(`${body}; return provisionOfficerAccount;`)();
+  await assert.rejects(provision({studentId:'123'}), /Use Officer Management/);
+  assert.doesNotMatch(body, /createUserWithEmailAndPassword|writeBatch|requireAdmin/);
 });
 
 test("student provisioning remains independent of officer-only RBAC defaults", () => {
@@ -36,6 +31,7 @@ test("student provisioning remains independent of officer-only RBAC defaults", (
 test("registration pages cache-bust the corrected provisioning module", () => {
   assert.match(officerRegistration, /browser-provisioning\.js\?v=3/);
   assert.match(studentRegistration, /studentRecordCall/);
-  assert.match(officerHtml, /officer-registration\.js\?v=\d+/);
+  assert.match(officerHtml, /location\.replace\("\.\.\/admin-dashboard\/officer-management\.html"\)/);
+  assert.doesNotMatch(officerHtml, /<form|officer-registration\.js/);
   assert.match(studentHtml, /student-registration\.js\?v=scl-registration-1/);
 });

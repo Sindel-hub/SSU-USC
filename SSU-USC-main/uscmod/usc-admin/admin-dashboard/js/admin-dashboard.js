@@ -17,7 +17,7 @@ import {
   subscribeVotes,
   voteSummaryFor,
   setActiveAdminNav
-} from "./admin-core.js";
+} from "./admin-core.js?v=officer-management-only-1";
 
 const uscAuthAllowed = await (globalThis.USC_AUTH_READY || Promise.resolve(false));
 if (uscAuthAllowed !== true) await new Promise(() => {});
@@ -69,7 +69,7 @@ function renderWarnings() {
 function renderQueue() {
   const queueUsers = buildQueueUsers(users).slice(0, 6);
   if (!queueUsers.length) {
-    dom.recentQueueList.innerHTML = '<div class="empty-state"><strong>No registered users yet</strong><span>The queue will appear here once accounts are created.</span></div>';
+    dom.recentQueueList.innerHTML = '<div class="empty-state"><strong>No registered users yet</strong><span>Recent accounts will appear here once they are registered.</span></div>';
     return;
   }
   dom.recentQueueList.innerHTML = queueUsers.map((user) => {

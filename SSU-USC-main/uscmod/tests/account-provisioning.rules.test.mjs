@@ -33,7 +33,7 @@ beforeEach(async () => {
   await env.withSecurityRulesDisabled(async context => {
     const db = context.firestore();
     for (const [uid, role, status] of [['admin', 'admin', 'approved'], ['officer', 'officer', 'approved'], ['student', 'student', 'approved'], ['suspended', 'admin', 'suspended']]) {
-      await firestore.setDoc(firestore.doc(db, 'users', uid), { uid, role, accountStatus: status, isActive: status === 'approved' });
+      await firestore.setDoc(firestore.doc(db, 'users', uid), { uid, role, studentId: role === "student" ? "990001" : "990002", accountStatus: status, isActive: status === 'approved' });
     }
     await firestore.setDoc(firestore.doc(db, 'election_config/current'), { electionId: 'current-election' });
   });
@@ -94,24 +94,19 @@ test('malformed name reservations and forged creator IDs are rejected', async ()
   await assertFails(firestore.setDoc(firestore.doc(db, 'student_name_claims', 'invalid-key'), { ...claim, nameKey: 'invalid-key' }));
 });
 
-for (const role of ['officer']) {
-  test(`actual ${role} provisioning commits the complete account batch and blocks duplicates`, async () => {
-    const db = adminDb(), api = provisioner(db);
-    const result = await (role === 'student' ? api.provisionStudentAccount(input) : api.provisionOfficerAccount({ ...input, officePosition: 'Secretary' }));
-    assert.equal(result.ok, true);
-    const user = (await firestore.getDoc(firestore.doc(db, 'users', result.credential.uid))).data();
-    assert.equal(user.role, role);
-    assert.equal(user.studentId, input.studentId);
-    for (const path of [`student_id_claims/${input.studentId}`, `student_name_claims/${nameKey}`, `school_accounts/${input.studentId}`, `student_masterlist/${input.studentId}`, `login_aliases/id_${input.studentId}`, `elections/current-election/voterRoster/${input.studentId}`]) {
-      assert.equal((await firestore.getDoc(firestore.doc(db, path))).exists(), true, path);
-    }
-    assert.equal((await firestore.getDocs(firestore.collection(db, 'audit_logs'))).size, 1);
-    await assert.rejects(api.provisionStudentAccount(input), /Duplicate Student IDs/);
-    await assert.rejects(api.provisionStudentAccount({ ...input, studentId: '654321' }), /Duplicate account names/);
-    assert.equal(api.created.length, 1);
-    assert.deepEqual(api.deleted, []);
-  });
-}
+test('officer provisioning is retired without creating Authentication accounts', async () => {
+  const api=provisioner(adminDb());
+  await assert.rejects(api.provisionOfficerAccount({...input,officePosition:'Secretary'}), /Use Officer Management/);
+  assert.equal(api.created.length,0);
+});
+test('even an administrator cannot create officer profiles or promote directly through browser writes', async () => {
+  const db=adminDb();
+  await assertFails(firestore.setDoc(firestore.doc(db,'users','forged-officer'),{uid:'forged-officer',role:'officer',accountStatus:'approved',isActive:true,schoolProvisioned:true,studentId:'990004',fullName:'Synthetic Officer',email:'synthetic@example.invalid',yearLevel:'2nd Year',studentStanding:'active',isVerifiedStudent:true,officePosition:'Treasurer',officerPermissions:['dashboard.view','reports.generate'],officerPermissionSource:'position-default'}));
+  await assertFails(firestore.updateDoc(firestore.doc(db,'users','student'),{role:'officer',officePosition:'Treasurer'}));
+  await assertFails(firestore.updateDoc(firestore.doc(db,'users','officer'),{role:'student'}));
+  await assertFails(firestore.updateDoc(firestore.doc(db,'users','officer'),{officerPermissions:['dashboard.view','bulletin.manage']}));
+  await assertSucceeds(firestore.updateDoc(firestore.doc(db,'users','student'),{accountStatus:'suspended',isActive:false}));
+});
 
 test('browser student creation cannot bypass the centralized records workflow', async () => {
   const db=adminDb(), api=provisioner(db);
@@ -127,29 +122,6 @@ test('non-admin provisioning is rejected before Authentication creates an accoun
   assert.equal(api.created.length, 0);
 });
 
-for (const role of ['officer']) {
-  test(`manual ${role} provisioning without email preserves all required records and never persists a password`, async () => {
-    const db = adminDb(), api = provisioner(db);
-    const row = { ...input, institutionalEmail: '', officePosition: 'Secretary' };
-    const result = await (role === 'student' ? api.provisionStudentAccount(row) : api.provisionOfficerAccount(row));
-    const uid = result.credential.uid;
-    const profile = (await firestore.getDoc(firestore.doc(db, 'users', uid))).data();
-    assert.equal(profile.institutionalEmail, null);
-    assert.equal(profile.email, '');
-    assert.equal(profile.authEmail, '123456@student.ssu-usc.local');
-    assert.equal(profile.institutionalEmailVerified, false);
-    assert.equal(profile.role, role);
-    assert.equal(api.created[0].email, profile.authEmail);
-    assert.equal((await firestore.getDoc(firestore.doc(db, 'login_aliases/id_123456'))).data().authEmail, profile.authEmail);
-    const aliases = await firestore.getDocs(firestore.collection(db, 'login_aliases'));
-    assert.equal(aliases.size, 1);
-    for (const collection of ['users','school_accounts','student_masterlist','student_id_claims','login_aliases','audit_logs']) {
-      const records = await firestore.getDocs(firestore.collection(db, collection));
-      assert.ok(!JSON.stringify(records.docs.map(doc=>doc.data())).includes(result.credential.temporaryPassword));
-    }
-    await assert.rejects(api.provisionStudentAccount(row), /Duplicate Student IDs/);
-  });
-}
 test('optional email still rejects malformed and reserved internal addresses before creating Auth accounts', async () => {
   const api = provisioner(adminDb());
   for (const institutionalEmail of ['bad', '123456@student.ssu-usc.local']) await assert.rejects(api.provisionStudentAccount({...input, institutionalEmail}), /valid institutional email/);
@@ -179,24 +151,11 @@ test('alias writes remain privileged, existing owners cannot be replaced, and ve
   }
 });
 
-for (const role of ['officer']) for (const studentId of ['123', '00123456789', '12345678901234567890']) {
-  test(`manual ${role} accepts ${studentId} without truncating its aliases or records`, async () => {
-    const db = adminDb(), api = provisioner(db);
-    const row = {...input, studentId, institutionalEmail: '', officePosition: 'Secretary'};
-    const result = await (role === 'student' ? api.provisionStudentAccount(row) : api.provisionOfficerAccount(row));
-    assert.equal(result.credential.studentId, studentId);
-    const profile = (await firestore.getDoc(firestore.doc(db, 'users', result.credential.uid))).data();
-    assert.equal(profile.studentId, studentId);
-    assert.equal(api.created[0].email, `${studentId}@student.ssu-usc.local`);
-    for (const path of [`student_id_claims/${studentId}`, `school_accounts/${studentId}`, `student_masterlist/${studentId}`, `login_aliases/id_${studentId}`, `elections/current-election/voterRoster/${studentId}`]) assert.equal((await firestore.getDoc(firestore.doc(db,path))).exists(), true, path);
-    await assert.rejects(api.provisionStudentAccount(row), /Duplicate Student IDs/);
-  });
-}
 test('manual IDs remain required and cannot contain document-path characters or exceed the Auth local-part limit', async () => {
   const api=provisioner(adminDb());
   for(const studentId of ['', '   ', '../123', '123/456', '123 456', 'ABC123', '123-456', '123_456', '123.456', 'abc@ssu.edu.ph', '1'.repeat(65)]) {
     await assert.rejects(api.provisionStudentAccount({...input,studentId}), /numbers only/);
-    await assert.rejects(api.provisionOfficerAccount({...input,studentId,officePosition:'Secretary'}), /numbers only/);
+    await assert.rejects(api.provisionOfficerAccount({...input,studentId,officePosition:'Secretary'}), /Use Officer Management/);
   }
   assert.equal(api.created.length,0);
 });

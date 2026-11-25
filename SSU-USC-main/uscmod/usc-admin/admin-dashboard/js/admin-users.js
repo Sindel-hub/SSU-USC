@@ -1,7 +1,7 @@
 import { callStudentEmailService } from "../../../shared/supabase-email-service.js";
 import { institutionalEmailForDisplay } from "../../../shared/account-email.js";
-import { callSecure, auth } from "../../../shared/security-client.js?v=password-reset-fallback-1";
-import { OFFICER_PERMISSION_DEFINITIONS, ALL_OFFICER_PERMISSIONS, DEFAULT_OFFICER_PERMISSIONS, hasKnownOfficerPositionPreset, isBaselineOfficerPermissionList, normalizeOfficerPermissions, permissionsForOfficerPosition } from "../../../shared/officer-permissions.js?v=programs-1";
+import { callSecure, auth } from "../../../shared/security-client.js?v=officer-management-only-1";
+import { OFFICER_PERMISSION_DEFINITIONS, DEFAULT_OFFICER_PERMISSIONS, normalizeOfficerPermissions } from "../../../shared/officer-permissions.js?v=programs-1";
 
 import {
   complaintSummaryFor,
@@ -26,7 +26,7 @@ import {
   updateSingleUser,
   applyBulkUpdates,
   voteSummaryFor
-} from "./admin-core.js";
+} from "./admin-core.js?v=officer-management-only-1";
 
 
 const uscAuthAllowed = await (globalThis.USC_AUTH_READY || Promise.resolve(false));
@@ -49,7 +49,6 @@ const dom = {
   exportSelectedButton: document.getElementById("exportSelectedButton"),
   toggleAllUsers: document.getElementById("toggleAllUsers"),
   usersTableBody: document.getElementById("usersTableBody"),
-  bulkRoleSelect: document.getElementById("bulkRoleSelect"),
   bulkStatusSelect: document.getElementById("bulkStatusSelect"),
   bulkVerificationSelect: document.getElementById("bulkVerificationSelect"),
   bulkActiveSelect: document.getElementById("bulkActiveSelect"),
@@ -103,9 +102,6 @@ const dom = {
   officerRbacEditor: document.getElementById("officerRbacEditor"),
   officerPermissionGrid: document.getElementById("officerPermissionGrid"),
   officerPermissionCount: document.getElementById("officerPermissionCount"),
-  rbacDashboardOnlyButton: document.getElementById("rbacDashboardOnlyButton"),
-  rbacFullAccessButton: document.getElementById("rbacFullAccessButton"),
-  rbacApplyOfficeButton: document.getElementById("rbacApplyOfficeButton"),
   adminNotesInput: document.getElementById("adminNotesInput"),
   roleChangeNote: document.getElementById("roleChangeNote"),
   roleRoutePreview: document.getElementById("roleRoutePreview"),
@@ -145,8 +141,6 @@ let voteSummaryByStudentId = new Map();
 let selectedUserId = "";
 const selectedUserIds = new Set();
 let isSaving = false;
-const positionPresetSyncAttempted = new Set();
-let positionPresetSyncRunning = false;
 
 function buildPermissionEditor() {
   if (!dom.officerPermissionGrid) return;
@@ -192,8 +186,7 @@ function syncRbacEditorForRole(role, user = null) {
   const officer = role === 'officer';
   if (dom.officerRbacEditor) dom.officerRbacEditor.hidden = !officer;
   if (!officer) return;
-  const configured = user?.officerPermissionsConfigured === true;
-  setOfficerPermissions(configured ? user.officerPermissions : (user ? ALL_OFFICER_PERMISSIONS : DEFAULT_OFFICER_PERMISSIONS));
+  setOfficerPermissions(user?.officerPermissions || DEFAULT_OFFICER_PERMISSIONS);
 }
 
 function getFilters() {
@@ -362,17 +355,16 @@ function fillEditor(user) {
   dom.reactivateUserButton.title = inactiveStanding ? 'Set Student Standing to Active / Enrolled and save before reactivating access.' : '';
   dom.adminNotesInput.value = user.adminNotes || '';
   dom.roleChangeNote.value = '';
-  const termManaged = Boolean(user.officerAssignmentId);
   const termNotice = document.getElementById('officerTermNotice');
-  if (termNotice) termNotice.hidden = !termManaged;
-  dom.officerPermissionGrid?.querySelectorAll('input').forEach(input => { input.disabled = protectedAdmin || termManaged; });
-  for (const control of [dom.rbacDashboardOnlyButton, dom.rbacFullAccessButton, dom.rbacApplyOfficeButton]) if (control) control.disabled = protectedAdmin || termManaged;
-  dom.targetRoleSelect.disabled = protectedAdmin || termManaged;
-  dom.officePositionInput.disabled = protectedAdmin || termManaged;
+  if (termNotice) termNotice.hidden = false;
+  dom.officerPermissionGrid?.querySelectorAll('input').forEach(input => { input.disabled = true; });
+  dom.targetRoleSelect.disabled = true;
+  dom.effectiveDateInput.disabled = true;
+  dom.officePositionInput.disabled = true;
   dom.approveUserButton.disabled = protectedAdmin;
   dom.suspendUserButton.disabled = protectedAdmin;
   dom.reactivateUserButton.disabled = protectedAdmin || inactiveStanding;
-  dom.demoteToStudentButton.disabled = protectedAdmin || termManaged;
+  dom.demoteToStudentButton.disabled = protectedAdmin;
   if (dom.resetUserPasswordButton) dom.resetUserPasswordButton.disabled = protectedAdmin || !['student', 'officer'].includes(user.role);
   dom.removeUserButton.hidden = protectedAdmin || user.accountStatus !== 'suspended' || user.isActive;
   dom.removeUserButton.textContent = user.accountRemovalPending ? 'Retry removal & unlink Gmail' : 'Remove account & unlink Gmail';
@@ -500,9 +492,9 @@ async function saveSelectedUser(overrides = null) {
   dom.saveRoleButton.textContent = 'Saving...';
   try {
     const result = await updateSingleUser(user, {
-      role: overrides?.role ?? dom.targetRoleSelect.value,
-      officePosition: overrides?.officePosition ?? dom.officePositionInput.value,
-      officerPermissions: overrides?.officerPermissions ?? (dom.targetRoleSelect.value === 'officer' ? selectedOfficerPermissions() : []),
+      role: user.role,
+      officePosition: user.officePosition,
+      officerPermissions: user.officerPermissions,
       accountStatus: overrides?.accountStatus ?? dom.accountStatusSelect.value,
       roleEffectiveDate: overrides?.roleEffectiveDate ?? dom.effectiveDateInput.value,
       yearLevel: overrides?.yearLevel ?? dom.yearLevelSelect.value,
@@ -529,7 +521,7 @@ async function handleBulk(overrides = {}) {
   const targets = users.filter((user) => selectedUserIds.has(user.uid));
   try {
     const result = await applyBulkUpdates(targets, {
-      role: (overrides.role ?? dom.bulkRoleSelect.value) || undefined,
+      role: undefined,
       accountStatus: (overrides.accountStatus ?? dom.bulkStatusSelect.value) || undefined,
       verification: overrides.verification ?? dom.bulkVerificationSelect.value ?? BULK_NO_CHANGE,
       activeState: overrides.activeState ?? dom.bulkActiveSelect.value ?? BULK_NO_CHANGE,
@@ -548,35 +540,6 @@ async function handleBulk(overrides = {}) {
 
 
 
-async function syncLegacyPositionPresets() {
-  if (positionPresetSyncRunning) return;
-  const targets = users.filter((user) => {
-    if (user.role !== 'officer' || user.officerPermissionSource === 'custom') return false;
-    if (!hasKnownOfficerPositionPreset(user.officePosition)) return false;
-    if (positionPresetSyncAttempted.has(user.uid)) return false;
-    return user.officerPermissionsConfigured !== true || isBaselineOfficerPermissionList(user.storedOfficerPermissions);
-  });
-  if (!targets.length) return;
-
-  positionPresetSyncRunning = true;
-  try {
-    for (const officer of targets) {
-      positionPresetSyncAttempted.add(officer.uid);
-      try {
-        await updateSingleUser(officer, {
-          officerPermissions: permissionsForOfficerPosition(officer.officePosition),
-          officerPermissionSource: 'position-default',
-          changeReason: `Applied the default RBAC permissions for ${officer.officePosition}.`
-        });
-      } catch (error) {
-        console.warn(`Unable to synchronize RBAC preset for ${officer.fullName || officer.uid}:`, error);
-      }
-    }
-  } finally {
-    positionPresetSyncRunning = false;
-  }
-}
-
 function bind() {
   [dom.userSearchInput, dom.sortSelect]
     .forEach((element) => {
@@ -589,23 +552,6 @@ function bind() {
     if (dom.toggleAllUsers.checked) visibleUsers.forEach((user) => selectedUserIds.add(user.uid));
     else visibleUsers.forEach((user) => selectedUserIds.delete(user.uid));
     renderTable();
-  });
-
-  dom.targetRoleSelect.addEventListener('change', () => {
-    const nextRole = dom.targetRoleSelect.value === 'officer' ? 'officer' : 'student';
-    if (nextRole === 'student') dom.officePositionInput.value = '';
-    if (nextRole === 'officer' && !dom.officePositionInput.value.trim()) dom.officePositionInput.value = 'USC Officer';
-    syncRbacEditorForRole(nextRole, nextRole === getSelectedUser()?.role ? getSelectedUser() : null);
-    updateRolePreview(nextRole);
-  });
-
-  dom.officePositionInput?.addEventListener('change', () => {
-    if (dom.targetRoleSelect.value !== 'officer') return;
-    const selected = getSelectedUser();
-    const sameSavedOffice = selected?.role === 'officer'
-      && String(selected.officePosition || '').trim().toLowerCase() === String(dom.officePositionInput.value || '').trim().toLowerCase();
-    if (sameSavedOffice && selected?.officerPermissionSource === 'custom') return;
-    setOfficerPermissions(permissionsForOfficerPosition(dom.officePositionInput.value));
   });
 
   dom.accountStatusSelect.addEventListener('change', () => {
@@ -631,30 +577,6 @@ function bind() {
         ? 'This standing disables portal access and election eligibility as soon as you save.'
         : 'Active / Enrolled students may access the portal; election eligibility follows the verified-voter setting.';
     }
-  });
-
-  dom.rbacDashboardOnlyButton?.addEventListener('click', () => setOfficerPermissions(DEFAULT_OFFICER_PERMISSIONS));
-  dom.rbacFullAccessButton?.addEventListener('click', () => setOfficerPermissions(ALL_OFFICER_PERMISSIONS));
-  dom.rbacApplyOfficeButton?.addEventListener('click', async () => {
-    const selected = getSelectedUser();
-    if (!selected || selected.role !== 'officer') return alert('Select a USC officer first.');
-    const savedOffice = String(selected.officePosition || '').trim();
-    const editorOffice = String(dom.officePositionInput.value || '').trim();
-    if (!savedOffice) return alert('Save an Office Position for this officer before applying office-wide RBAC.');
-    if (editorOffice && editorOffice.toLowerCase() !== savedOffice.toLowerCase()) {
-      return alert('The Office Position was changed in the editor. Save the user first, then apply RBAC to that office.');
-    }
-    const sameOffice = users.filter((user) => user.role === 'officer' && String(user.officePosition || '').trim().toLowerCase() === savedOffice.toLowerCase());
-    if (!sameOffice.length) return alert(`No officer accounts are assigned to ${savedOffice}.`);
-    if (!confirm(`Apply this permission set to all ${sameOffice.length} officer account${sameOffice.length === 1 ? '' : 's'} assigned to ${savedOffice}?`)) return;
-    const permissions = selectedOfficerPermissions();
-    const reason = dom.roleChangeNote.value.trim() || `RBAC permissions synchronized for office: ${savedOffice}.`;
-    let updated = 0;
-    for (const officer of sameOffice) {
-      await updateSingleUser(officer, { officerPermissions: permissions, changeReason: reason });
-      updated += 1;
-    }
-    setFeedback(`Applied RBAC permissions to all ${updated} officer account${updated === 1 ? '' : 's'} in ${savedOffice}.`, 'success');
   });
 
   dom.roleEditorForm.addEventListener('submit', async (event) => {
@@ -692,9 +614,7 @@ function bind() {
   dom.demoteToStudentButton.addEventListener('click', async () => {
     const user = getSelectedUser();
     if (!user || isProtectedAdmin(user)) return;
-    if (window.confirm(`Return ${user.fullName || user.email || 'this user'} to student access?`)) {
-      await saveSelectedUser({ role: 'student', officePosition: '', roleEffectiveDate: new Date().toISOString(), changeReason: dom.roleChangeNote.value.trim() || 'Returned to student access by admin.' });
-    }
+    window.location.href = `officer-management.html?studentId=${encodeURIComponent(user.studentId || '')}`;
   });
 
   dom.resetUserPasswordButton?.addEventListener('click', resetSelectedUserPassword);
@@ -764,7 +684,6 @@ subscribeUsers((value, error) => {
   dom.listStatusText.textContent = error ? 'Unable to load accounts' : 'Live from Firestore';
   renderTable();
   if (selectedUserId) fillEditor(getSelectedUser());
-  if (!error) void syncLegacyPositionPresets();
 });
 subscribeComplaints((value) => { complaintSummaryByUid = value; renderTable(); if (selectedUserId) fillEditor(getSelectedUser()); });
 subscribeVotes((value) => { voteSummaryByStudentId = value; if (selectedUserId) fillEditor(getSelectedUser()); });

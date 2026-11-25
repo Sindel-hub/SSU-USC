@@ -52,10 +52,10 @@ test('removed account with a legacy reservation can be replaced',async()=>{
   const {f,run}=setup();f.records.get('users/first').accountRemoved=true;
   const result=await run();assert.equal(result.ok,true);assert.notEqual(result.credential.uid,'first');
 });
-test('officer replacement uses position permissions and never inherits the old custom grants',async()=>{
-  const {f,run}=setup();const result=await run({role:'officer',officePosition:'Treasurer'});
-  const p=f.records.get('users/'+result.credential.uid);assert.equal(p.officerPermissionSource,'position-default');
-  assert.equal(f.authUsers.get(result.credential.uid).customClaims.role,'officer');
+test('replacement cannot provision officer access outside Officer Management',async()=>{
+  const {f,run}=setup();
+  await assert.rejects(run({role:'officer',officePosition:'Treasurer'}), {code:'failed-precondition'});
+  assert.equal(f.authUsers.size,3);
 });
 test('changed directory ownership and duplicate name reservations reject replacement',async()=>{
   const {f,run}=setup();f.records.set('school_accounts/990001',{uid:'other'});
@@ -84,7 +84,7 @@ test('reactivation during provisioning aborts replacement and leaves the origina
   await assert.rejects(run(),{code:'failed-precondition'});
   assert.equal(f.records.get('users/first').isActive,true);assert.equal(f.authUsers.get('first').disabled,false);assert.equal(f.authUsers.size,3);
 });
-test('student and officer registration entry points route suspended IDs to the trusted handler',async()=>{
+test('student registration routes suspended IDs to the trusted handler; officer creation is retired',async()=>{
   const fs = await import('node:fs');
   let source = fs.readFileSync(new URL('../shared/browser-provisioning.js',import.meta.url),'utf8');
   source = source.replace(/^import[\s\S]*?from\s+["'][^"']+["'];\s*/gm,'').replace(/^export /gm,'');
@@ -98,7 +98,11 @@ test('student and officer registration entry points route suspended IDs to the t
       normalizeStudentStanding:()=> 'active',enrollmentStatusForStanding:()=> 'enrolled',isActiveStudentStanding:()=>true,permissionsForOfficerPosition:()=>[]};
     const api=new Function(...Object.keys(bindings),source+';return {provisionStudentAccount,provisionOfficerAccount};')(...Object.values(bindings));
     const input={studentId:'123',fullName:'New Person',college:'College',program:'Program',yearLevel:'1',officePosition:'Secretary'};
-    const result=await api[role==='student'?'provisionStudentAccount':'provisionOfficerAccount'](input);
+    if (role === 'officer') {
+      await assert.rejects(api.provisionOfficerAccount(input), /Use Officer Management/);
+      assert.equal(calls.length,0); continue;
+    }
+    const result=await api.provisionStudentAccount(input);
     assert.equal(result.credential.uid,'new');assert.equal(calls[0].action,'accountReplace');
     assert.equal(calls[0].data.role,role);assert.equal(calls[0].data.previousUid,'old');
   }

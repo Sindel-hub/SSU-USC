@@ -12,7 +12,7 @@ import {
   subscribeRoleLogs,
   subscribeUsers,
   subscribeVotes
-} from "./admin-core.js";
+} from "./admin-core.js?v=officer-management-only-1";
 
 const uscAuthAllowed = await (globalThis.USC_AUTH_READY || Promise.resolve(false));
 if (uscAuthAllowed !== true) await new Promise(() => {});

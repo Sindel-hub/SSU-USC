@@ -125,3 +125,11 @@ $('downloadRecord').addEventListener('click', () => {
   const link = node('a'); link.href = url; link.download = `usc-officer-record-${state.record.id}.json`; link.click(); setTimeout(() => URL.revokeObjectURL(url), 1000);
 });
 await run(null, async () => { await loadAssignments(); status('Authorized assignments loaded. Select a term to review its tracklist.'); });
+
+if (admin) {
+  const studentId = new URLSearchParams(location.search).get('studentId');
+  if (studentId && /^[0-9]{1,64}$/.test(studentId)) {
+    $('candidateStudentId').value = studentId;
+    $('findOfficerCandidate').click();
+  }
+}
