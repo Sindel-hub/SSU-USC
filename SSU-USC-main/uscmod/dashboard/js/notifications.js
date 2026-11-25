@@ -1,3 +1,4 @@
+import { matchesEventAudience } from "../../shared/event-audience.mjs";
 import { createNotificationReadStore } from '../../shared/notification-read-store.mjs';
 import { hostedManagementCall } from '../../shared/hosted-management-client.js';
 import { auth, db } from "../../firebase/firebase-config.js";
@@ -98,7 +99,7 @@ function buildItems() {
   const list=[];
   feeds.announcements.forEach(a=>list.push(item(`announcement:${a.id}`,"announcement","New Announcement",clean(a.title,"A new USC announcement was posted."),a.createdAt||a.createdAtMs,"fa-bullhorn",dashboardHref("bulletin.html"))));
   const now=Date.now();
-  feeds.events.filter(e=>e.reminderEnabled !== false && eventDate(e.eventDate)?.getTime() >= now-86400000).forEach(e=>list.push(item(`event:${e.id}`,"event","Event Reminder",`${clean(e.title,"USC event")} • ${clean(e.venue,"See event details")}${eventRegistrationHint(e)}`,e.registrationDeadline||e.eventDate,"fa-calendar-days",dashboardHref("events.html"))));
+  feeds.events.filter(e=>!e.officerArchived && matchesEventAudience(e,p) && e.reminderEnabled !== false && eventDate(e.eventDate)?.getTime() >= now-86400000).forEach(e=>list.push(item(`event:${e.id}`,"event","Event Reminder",`${clean(e.title,"USC event")} • ${clean(e.venue,"See event details")}${eventRegistrationHint(e)}`,e.registrationDeadline||e.eventDate,"fa-calendar-days",dashboardHref("events.html"))));
   feeds.programs.filter(e=>e.reminderEnabled !== false && eventDate(e.eventDate)?.getTime() >= now-86400000).forEach(e=>list.push(item(`program:${e.id}`,"event","External Program Reminder",`${clean(e.title,"External program")} • ${clean(e.hostOrganization,"Partner organization")} • ${clean(e.venue,"See program details")}${eventRegistrationHint(e)}`,e.registrationDeadline||e.eventDate,"fa-earth-americas",dashboardHref("events.html"))));
   feeds.complaints.forEach(c=>{
     const classification=complaintClassification(c);

@@ -368,7 +368,7 @@ function renderEvents(events) {
           </div>
           <div class="item-text">${escapeHtml(safeText(eventItem.description, "No program description provided."))}</div>
           <div class="event-meta-line">
-            <span><i class="fa-solid fa-users"></i> ${escapeHtml(safeText(eventItem.audience, "All Students"))}</span>
+            <span><i class="fa-solid fa-users"></i> ${escapeHtml(eventItem.audience === "Registered Group Only" ? "Registered Students Only" : safeText(eventItem.audience, "All Students"))}</span>
             <span><i class="fa-solid fa-ticket"></i> ${escapeHtml(registrationModeLabel(mode))}</span>
             ${mode !== "none" ? `<span class="event-deadline"><i class="fa-solid fa-hourglass-end" aria-hidden="true"></i> Registration closes: ${escapeHtml(formatRegistrationDeadline(eventItem))}</span>` : ""}
           </div>
@@ -668,6 +668,7 @@ recentEventsList?.addEventListener("click", async (event) => {
     resetEventForm(); editingEventId = saved.id;
     const fields = { title: eventTitleInput, eventDate: eventDateInput, venue: eventVenueInput, startTime: eventStartTimeInput, endTime: eventEndTimeInput, category: eventCategoryInput, description: eventDescriptionInput, audience: eventAudienceInput, registrationMode: eventRegistrationModeInput, externalRegistrationUrl: eventExternalRegistrationUrlInput, participationNotes: eventParticipationNotesInput, hostOrganization: programHostOrganizationInput };
     for (const [key, input] of Object.entries(fields)) if (input) input.value = saved[key] || '';
+    if(!eventAudienceInput.value)eventAudienceInput.value='All Students';
     const deadline = timestampDate(saved.registrationDeadline);
     if (deadline) { const local = new Date(deadline.getTime() - deadline.getTimezoneOffset() * 60000); eventRegistrationDeadlineInput.value = local.toISOString().slice(0, 16); }
     syncRegistrationFields();
