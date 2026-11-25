@@ -263,3 +263,22 @@ test('term completion does not restore portal access for a graduated officer',as
   assert.equal(profile.role,'student');assert.deepEqual(profile.officerPermissions,[]);
   assert.equal(profile.isActive,false);assert.equal(profile.accountStatus,'suspended');assert.equal(profile.studentStanding,'graduated');
 });
+
+
+test('published events and programs retain expired registration deadlines when updating details', async () => {
+  const f = historyFixture(); await f.assign('first', 'Public Information Officer');
+  for (const module of ['events', 'programs']) {
+    const recordId = 'closed-' + module, deadline = f.now - 86400000;
+    const input = { title: 'Existing activity', description: 'Original', venue: 'SSU', eventDate: '2026-12-01', registrationMode: 'internal', registrationDeadlineMs: deadline };
+    f.records.set(`${module}/${recordId}`, { ...input, registrationDeadline: deadline, createdByUid: 'original', publishedAtMs: f.now - 172800000, registeredParticipants: 3, confirmedAttendance: 2, status: 'Published' });
+    f.records.set(`${module}/${recordId}/registrations/sample`, { studentUid: 'sample' });
+    const update = { module, action: 'update', recordId, operationId: 'edit-' + module, input: { ...input, description: 'Corrected details' } };
+    await f.h.officerModuleAction(f.req('first', update));
+    const record = f.records.get(`${module}/${recordId}`);
+    assert.equal(record.description, 'Corrected details'); assert.equal(record.registrationDeadline, deadline);
+    assert.equal(record.createdByUid, 'original'); assert.equal(record.registeredParticipants, 3); assert.equal(record.confirmedAttendance, 2);
+    assert.ok(f.records.has(`${module}/${recordId}/registrations/sample`));
+    await assert.rejects(f.h.officerModuleAction(f.req('first', { ...update, operationId: 'bad-edit-' + module, input: { ...update.input, registrationDeadlineMs: deadline - 60000 } })), { code: 'invalid-argument' });
+    await assert.rejects(f.h.officerModuleAction(f.req('first', { module, action: 'publish', operationId: 'bad-new-' + module, input })), { code: 'invalid-argument' });
+  }
+});

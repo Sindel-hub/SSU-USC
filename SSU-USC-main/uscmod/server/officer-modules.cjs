@@ -4,7 +4,7 @@ const { id, text, actorAttribution } = require("./officer-history.cjs");
 const fail = message => { throw new ServiceError("invalid-argument", message); };
 function createOfficerModuleHandlers({ db, history, requireActiveRole, Timestamp, clock = Date.now }) {
   const permissions = { announcements: "bulletin.manage", events: "events.manage", programs: "programs.manage", complaints: "complaints.review" };
-  function validate(module, input) {
+  function validate(module, input, previous = null) {
     const title = text(input.title, "title", 160);
     const out = { title };
     const fields = { venue: 240, category: 80, description: 20000, audience: 120, participationNotes: 2000, hostOrganization: 240, imageUrl: 2000, imagePath: 500, externalRegistrationUrl: 2000 };
@@ -24,7 +24,10 @@ function createOfficerModuleHandlers({ db, history, requireActiveRole, Timestamp
     out.registrationMode = input.registrationMode;
     if (!["internal", "external", "none"].includes(out.registrationMode)) fail("Invalid registration mode.");
     const deadline = input.registrationDeadlineMs;
-    if (out.registrationMode !== "none" && (!Number.isSafeInteger(deadline) || deadline <= clock() || deadline > Date.parse(out.eventDate + "T23:59:59+08:00"))) fail("Choose a future registration deadline no later than the event date.");
+    // Existing closed registration deadlines may be preserved during unrelated edits; never accept a newly entered past deadline.
+    const previousDeadline = previous?.registrationDeadline?.toMillis?.() ?? previous?.registrationDeadline;
+    const unchangedDeadline = previous?.registrationMode === out.registrationMode && deadline === previousDeadline;
+    if (out.registrationMode !== "none" && (!Number.isSafeInteger(deadline) || (deadline <= clock() && !unchangedDeadline) || deadline > Date.parse(out.eventDate + "T23:59:59+08:00"))) fail("Choose a future registration deadline no later than the event date.");
     if (out.registrationMode === "external" && !out.externalRegistrationUrl) fail("External registration URL is required.");
     out.registrationDeadline = out.registrationMode === "none" ? null : Timestamp.fromMillis(deadline);
     out.reminderEnabled = input.reminderEnabled === true;
@@ -95,11 +98,12 @@ function createOfficerModuleHandlers({ db, history, requireActiveRole, Timestamp
           if (patch.thread) history.append(tx, a, { module: "Complaints", action: "Responded", status, recordId: documentId });
           result = { ok: true, status, classification: patch.classification || previousClassification || "" };
         } else if (["events", "programs"].includes(module) && ["publish", "update"].includes(action)) {
-          const payload = validate(module, input), ref = db.doc(`${module}/${documentId}`);
+          const ref = db.doc(`${module}/${documentId}`);
           const existing = await tx.get(ref);
           if (action === "publish" && existing.exists) throw new ServiceError("already-exists", "This record already exists.");
           if (action === "update" && (!existing.exists || existing.data().officerArchived)) throw new ServiceError("permission-denied", "Only live records can be updated.");
           const previousData = existing.data();
+          const payload = validate(module, input, action === "update" ? previousData : null);
           if (action === "update" && Object.entries(payload).every(([key, value]) => {
             const previous = previousData[key];
             return value?.isEqual ? Boolean(previous?.isEqual && value.isEqual(previous)) : value === previous;

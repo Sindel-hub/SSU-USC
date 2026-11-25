@@ -69,6 +69,7 @@ let selectedEventImageFile = null;
 let selectedEventImageObjectUrl = "";
 let lastEvents = [];
 let editingEventId = null;
+let savingRecord = false;
 let participantsReturnFocus = null;
 const programSearch = document.getElementById("programSearch");
 const programStatusFilter = document.getElementById("programStatusFilter");
@@ -211,6 +212,9 @@ function syncRegistrationFields() {
 
 function resetEventForm() {
   editingEventId = null;
+  const heading = document.querySelector('#programFormCard summary h2');
+  if (heading) heading.textContent = 'Create program';
+  if (clearEventBtn) clearEventBtn.innerHTML = '<i class="fa-solid fa-eraser" aria-hidden="true"></i> Clear Form';
   eventForm?.reset();
   selectedEventImageFile = null;
   releaseEventImageObjectUrl();
@@ -228,8 +232,10 @@ function resetEventForm() {
 
 function setLoadingState(isLoading) {
   if (!publishEventBtn) return;
+  savingRecord = isLoading;
   publishEventBtn.disabled = isLoading;
-  if (editingEventId) { publishEventBtn.textContent = isLoading ? 'Saving current record…' : 'Save current record'; return; }
+  if (clearEventBtn) clearEventBtn.disabled = isLoading;
+  if (editingEventId) { publishEventBtn.textContent = isLoading ? 'Saving changes…' : 'Save changes'; return; }
   publishEventBtn.innerHTML = isLoading
     ? '<i class="fa-solid fa-spinner fa-spin" aria-hidden="true"></i> Publishing...'
     : '<i class="fa-solid fa-paper-plane" aria-hidden="true"></i> Publish Program';
@@ -496,7 +502,7 @@ eventTitleInput?.addEventListener("input", () => {
 
 eventForm?.addEventListener("submit", async (event) => {
   event.preventDefault();
-
+  if (savingRecord || !hasOfficerPermission("programs.manage")) return;
   const title = safeText(eventTitleInput?.value);
   const eventDate = safeText(eventDateInput?.value);
   const venue = safeText(eventVenueInput?.value);
@@ -535,7 +541,10 @@ eventForm?.addEventListener("submit", async (event) => {
       alert("The registration deadline is invalid.");
       return;
     }
-    if (deadlineDate.getTime() <= Date.now()) {
+    const original = lastEvents.find(row => row.id === editingEventId);
+    const oldDeadline = timestampDate(original?.registrationDeadline);
+    const unchangedDeadline = original?.registrationMode === registrationMode && oldDeadline && Math.floor(oldDeadline.getTime() / 60000) === Math.floor(deadlineDate.getTime() / 60000);
+    if (deadlineDate.getTime() <= Date.now() && !unchangedDeadline) {
       alert("Registration deadline must be in the future.");
       return;
     }
@@ -545,7 +554,7 @@ eventForm?.addEventListener("submit", async (event) => {
       alert("Registration deadline cannot be after the program date.");
       return;
     }
-    registrationDeadline = Timestamp.fromDate(deadlineDate);
+    registrationDeadline = Timestamp.fromDate(unchangedDeadline ? oldDeadline : deadlineDate);
   }
 
   if (registrationMode === "external" && !isValidExternalUrl(externalRegistrationUrl)) {
@@ -557,7 +566,8 @@ eventForm?.addEventListener("submit", async (event) => {
 
   try {
     const existing = lastEvents.find(row => row.id === editingEventId);
-    const { imageUrl, imagePath } = !selectedEventImageFile && existing ? existing : await uploadEventImage(selectedEventImageFile);
+    if (editingEventId && !existing) throw new Error("This record is no longer available. Refresh the page and try again.");
+    const { imageUrl, imagePath } = !selectedEventImageFile && existing ? { imageUrl: safeText(existing.imageUrl || existing.posterUrl), imagePath: safeText(existing.imagePath) } : await uploadEventImage(selectedEventImageFile);
 
     const publicationInput = {
       title,
@@ -611,16 +621,29 @@ recentEventsList?.addEventListener("click", async (event) => {
   const editButton = event.target.closest('[data-edit-event]');
   if (editButton) {
     const saved = lastEvents.find(row => row.id === editButton.dataset.editEvent);
-    if (!saved || saved.officerArchived) return;
+    if (!saved || saved.officerArchived || savingRecord || !hasOfficerPermission('programs.manage')) return;
     resetEventForm(); editingEventId = saved.id;
     const fields = { title: eventTitleInput, eventDate: eventDateInput, venue: eventVenueInput, startTime: eventStartTimeInput, endTime: eventEndTimeInput, category: eventCategoryInput, description: eventDescriptionInput, audience: eventAudienceInput, registrationMode: eventRegistrationModeInput, externalRegistrationUrl: eventExternalRegistrationUrlInput, participationNotes: eventParticipationNotesInput, hostOrganization: programHostOrganizationInput };
     for (const [key, input] of Object.entries(fields)) if (input) input.value = saved[key] || '';
     eventReminderEnabledInput.value = String(saved.reminderEnabled === true);
-    const deadline = saved.registrationDeadline?.toDate?.();
+    const deadline = timestampDate(saved.registrationDeadline);
     if (deadline) { const local = new Date(deadline.getTime() - deadline.getTimezoneOffset() * 60000); eventRegistrationDeadlineInput.value = local.toISOString().slice(0, 16); }
     syncRegistrationFields();
-    publishEventBtn.textContent = 'Save current record';
-    eventForm.scrollIntoView({ behavior: 'smooth' }); eventTitleInput.focus();
+    const composer = document.getElementById('programFormCard');
+    if (composer) composer.open = true;
+    scrollToEventFormBtn?.setAttribute('aria-expanded', 'true');
+    const heading = composer?.querySelector('summary h2');
+    if (heading) heading.textContent = 'Edit program';
+    if (clearEventBtn) clearEventBtn.textContent = 'Cancel edit';
+    setLoadingState(false);
+    const existingImage = safeText(saved.imageUrl || saved.posterUrl);
+    if (existingImage) {
+      setEventImageFileName('Existing image retained');
+      setEventImagePreview(existingImage);
+      if (eventImagePreviewWrap) hydrateMediaImages(eventImagePreviewWrap).catch(console.warn);
+    }
+    eventTitleInput.focus({ preventScroll: true });
+    composer?.scrollIntoView({ behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth', block: 'start' });
     return;
   }
 
@@ -676,6 +699,8 @@ document.getElementById("programFormCard")?.addEventListener("toggle", (event) =
 });
 
 scrollToEventFormBtn?.addEventListener("click", () => {
+  if (savingRecord) return;
+  if (editingEventId) resetEventForm();
   document.getElementById("programFormCard").open = true;
   eventTitleInput.focus({ preventScroll: true });
   document.getElementById("programFormCard")?.scrollIntoView({
