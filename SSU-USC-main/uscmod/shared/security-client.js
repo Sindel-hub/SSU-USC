@@ -190,7 +190,9 @@ async function browserAdminUpdateUser(data = {}) {
     ? String(data.role).toLowerCase() : String(old.role || "student").toLowerCase();
   const accountStatus = ["approved","pending","suspended"].includes(String(data.accountStatus || "").toLowerCase())
     ? String(data.accountStatus).toLowerCase() : String(old.accountStatus || "approved").toLowerCase();
-  const yearLevel = String(data.yearLevel ?? old.yearLevel ?? "").trim().slice(0, 40);
+  if (data.yearLevel !== undefined && String(data.yearLevel).trim() !== String(old.yearLevel || "").trim()) {
+    throw new Error("Year level is managed by Student Records. Apply an authorized Excel import to change it.");
+  }
   const studentStanding = normalizeStudentStanding(data.studentStanding ?? old.studentStanding, old.enrollmentStatus);
   const enrollmentStatus = enrollmentStatusForStanding(studentStanding);
   const standingActive = role === "admin" ? true : isActiveStudentStanding(studentStanding, enrollmentStatus);
@@ -214,7 +216,6 @@ async function browserAdminUpdateUser(data = {}) {
     isVerifiedStudent,
     candidacyApproved,
     isActive,
-    yearLevel,
     studentStanding,
     enrollmentStatus,
     adminNotes,
@@ -242,7 +243,6 @@ async function browserAdminUpdateUser(data = {}) {
       institutionalEmail: old.institutionalEmail || old.email || "",
       program: old.program || "",
       college: old.college || "",
-      yearLevel,
       studentStanding,
       enrollmentStatus,
       eligible: isActive,
@@ -264,7 +264,6 @@ async function browserAdminUpdateUser(data = {}) {
           institutionalEmail: old.institutionalEmail || old.email || "",
           program: old.program || "",
           college: old.college || "",
-          yearLevel,
           studentStanding,
           enrollmentStatus,
           eligible: isActive,
@@ -285,7 +284,6 @@ async function browserAdminUpdateUser(data = {}) {
     targetUid: uid,
     targetStudentId: studentId,
     studentStanding,
-    yearLevel,
     candidacyApproved,
     reason: String(data.changeReason || "").trim().slice(0,500),
     source: "browser-admin-runtime",

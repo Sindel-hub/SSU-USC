@@ -12,7 +12,7 @@ test("user directory page uses the polished dashboard layout", () => {
   assert.match(html, /id="schoolAccountProvisionCard"/);
   assert.match(html, /user-directory-bulk-card/);
   assert.match(html, /user-directory-workspace/);
-  assert.match(html, /users-modern\.css\?v=directory-navigation-2/);
+  assert.match(html, /users-modern\.css\?v=import-year-1/);
 });
 
 test("directory table renders identity avatars and selected row state", () => {

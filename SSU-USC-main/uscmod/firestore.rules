@@ -319,7 +319,8 @@ service cloud.firestore {
         && ((ownUser(userId) && safeOwnProfileUpdate())
         || (isAdmin()
           && !request.resource.data.diff(resource.data).affectedKeys().hasAny([
-              "officerAssignmentId", "role", "officePosition", "officerPermissions", "officerPermissionSource", "roleEffectiveDate"
+              "officerAssignmentId", "role", "officePosition", "officerPermissions", "officerPermissionSource", "roleEffectiveDate",
+              "yearLevel", "academicYear", "studentRecordId", "academicRevision"
             ])
           && resource.data.role != "admin"
           && request.resource.data.role in ["student", "officer"]

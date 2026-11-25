@@ -1177,6 +1177,9 @@ exports.adminUpdateUser = onCall(callableOptions(), async (request) => {
   const beforeSnap = await userRef.get();
   if (!beforeSnap.exists) throw new HttpsError("not-found", "User profile not found.");
   const before = beforeSnap.data();
+  if (request.data?.yearLevel !== undefined && String(request.data.yearLevel).trim() !== String(before.yearLevel || "").trim()) {
+    throw new HttpsError("failed-precondition", "Year level is managed by Student Records. Apply an authorized Excel import to change it.");
+  }
   if (before.accountRemoved || before.accountRemovalPending) throw new HttpsError("failed-precondition", "Removed or pending-removal accounts cannot be edited.");
   const role = cleanText(request.data?.role || before.role, 20).toLowerCase();
   if (!["student", "officer", "admin"].includes(role)) throw new HttpsError("invalid-argument", "Invalid role.");
