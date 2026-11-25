@@ -1096,6 +1096,10 @@ service cloud.firestore {
         && request.resource.data.expiresAtMs <= request.time.toMillis() + 86400000;
     }
     // Everything not explicitly listed is denied.
+    // Participation markers and survey responses are server-only, including for officers.
+    match /needs_assessment_surveys/{surveyId}/participation_private/{markerId} {
+      allow read, write: if false;
+    }
     match /{document=**} {
       allow read, write: if false;
     }
