@@ -103,6 +103,70 @@ let countRefreshTimer = 0;
 let attachmentPreviewUrl = "";
 let attachmentPreviewToken = 0;
 let analyticsComplaints = [];
+let referenceSearch = '', monthFilter = '', yearFilter = '', referenceReady = false, referenceFailed = false, referenceCached = false;
+const referenceInput = document.getElementById('complaintReferenceInput');
+const monthSelect = document.getElementById('complaintMonthFilter');
+const yearSelect = document.getElementById('complaintYearFilter');
+const referenceMessage = document.getElementById('complaintReferenceMessage');
+const referenceClear = document.getElementById('clearComplaintReference');
+const hasComplaintFilters = () => !!(referenceSearch || monthFilter || yearFilter);
+const dateFormatter = new Intl.DateTimeFormat('en-PH', {timeZone:'Asia/Manila',year:'numeric',month:'numeric'});
+function submissionDateParts(value) {
+  if (value == null) return null;
+  try {
+    const d = value?.toDate?.() || (typeof value?.toMillis === 'function' ? new Date(value.toMillis()) : new Date(value));
+    if (!Number.isFinite(d.getTime())) return null;
+    const parts = Object.fromEntries(dateFormatter.formatToParts(d).map(p=>[p.type,p.value]));
+    return {year:parts.year,month:String(Number(parts.month))};
+  } catch { return null; }
+}
+function populateComplaintYears() {
+  if (!yearSelect) return;
+  const selected = yearSelect.value;
+  const years = new Set([submissionDateParts(new Date()).year, ...analyticsComplaints.map(item=>submissionDateParts(item.createdAt)?.year).filter(Boolean)]);
+  if(selected) years.add(selected);
+  yearSelect.replaceChildren(new Option('All years',''), ...[...years].sort((a,b)=>Number(b)-Number(a)).map(y=>new Option(y,y)));
+  yearSelect.value = selected;
+}
+const visibleComplaints = () => !hasComplaintFilters() ? complaintsCache : referenceFailed ? [] : analyticsComplaints.filter(item => {
+  if(referenceSearch && !String(item.complaintRef || '').toUpperCase().includes(referenceSearch)) return false;
+  if(!monthFilter && !yearFilter) return true;
+  const date = submissionDateParts(item.createdAt);
+  return !!date && (!monthFilter || date.month===monthFilter) && (!yearFilter || date.year===yearFilter);
+});
+function updateReferenceUI() {
+  const active = hasComplaintFilters();
+  if(referenceClear) referenceClear.hidden = !active;
+  if(loadOlderComplaintsBtn) loadOlderComplaintsBtn.hidden = active;
+  if(!active) {
+    if(referenceMessage) referenceMessage.textContent = 'Type any part of a reference ID or filter by submission date.';
+    if(complaintInboxScope) complaintInboxScope.textContent = 'Showing '+complaintsCache.length+' loaded complaint(s). Newest records update live.';
+    return;
+  }
+  const count = visibleComplaints().length;
+  const message = referenceFailed ? 'Unable to search all records. Refresh and try again.' : !referenceReady ? 'Loading complaint records…' : count ? count+' matching complaint'+(count===1?'':'s')+'. Select a case to view its details.' : 'No matching complaints. Try another reference or date.';
+  if(referenceMessage) referenceMessage.textContent = message + (referenceCached && !referenceFailed ? ' Results may be incomplete while offline.' : '');
+  if(complaintInboxScope) complaintInboxScope.textContent = referenceFailed ? 'Search unavailable' : !referenceReady ? 'Loading records…' : count+' matching complaint'+(count===1?'':'s');
+}
+function applyReferenceSearch() {
+  referenceSearch = String(referenceInput?.value || '').trim().toUpperCase();
+  monthFilter = monthSelect?.value || ''; yearFilter = yearSelect?.value || '';
+  if(selectedComplaintId && !visibleComplaints().some(item=>item.id===selectedComplaintId)) { selectedComplaintId=null; document.getElementById('complaintCaseDialog')?.close(); }
+  updateReferenceUI(); renderInbox(); renderDetails();
+}
+referenceInput?.addEventListener('input', applyReferenceSearch);
+monthSelect?.addEventListener('change',applyReferenceSearch);
+yearSelect?.addEventListener('change',applyReferenceSearch);
+document.getElementById('complaintReferenceSearch')?.addEventListener('submit', event => {event.preventDefault();applyReferenceSearch();});
+referenceClear?.addEventListener('click',()=>{referenceInput.value='';monthSelect.value='';yearSelect.value='';applyReferenceSearch();referenceInput.focus();});
+function setQuickDate(month) {
+  const now = submissionDateParts(new Date());
+  yearSelect.value = now.year; monthSelect.value = month ? now.month : '';
+  applyReferenceSearch();
+}
+document.getElementById('complaintThisMonth')?.addEventListener('click',()=>setQuickDate(true));
+document.getElementById('complaintThisYear')?.addEventListener('click',()=>setQuickDate(false));
+populateComplaintYears();
 
 function escapeHtml(value = "") {
   return String(value)
@@ -145,7 +209,7 @@ function getAnonymousComplainantLabel() {
 }
 
 function getSelectedComplaint() {
-  return complaintsCache.find((item) => item.id === selectedComplaintId) || null;
+  return visibleComplaints().find((item) => item.id === selectedComplaintId) || null;
 }
 
 function selectComplaint(id) {
@@ -268,14 +332,19 @@ function renderComplaintAnalytics() {
 function bindComplaintAnalytics() {
   onSnapshot(
     collection(db, "complaints"),
+    {includeMetadataChanges:true},
     (snapshot) => {
+      referenceReady = true; referenceFailed = false; referenceCached = snapshot.metadata?.fromCache === true;
       analyticsComplaints = snapshot.docs.map((docSnap) => normalizeComplaintRecord({ id: docSnap.id, ...docSnap.data() }));
+      populateComplaintYears();
       renderComplaintAnalytics();
+      if(hasComplaintFilters()) applyReferenceSearch();
     },
     (error) => {
       console.warn("Complaint analytics listener unavailable:", error);
-      analyticsComplaints = [];
+      analyticsComplaints = []; referenceFailed = true; referenceReady = false;
       renderComplaintAnalytics();
+      if(hasComplaintFilters()) applyReferenceSearch();
     }
   );
 }
@@ -315,7 +384,7 @@ function mergeComplaintPages() {
     const toMs = (value) => value?.toMillis?.() || value?.toDate?.()?.getTime?.() || new Date(value || 0).getTime() || 0;
     return toMs(b.createdAt || b.updatedAt) - toMs(a.createdAt || a.updatedAt);
   });
-  if (complaintInboxScope) {
+  if (complaintInboxScope && !hasComplaintFilters()) {
     complaintInboxScope.textContent = `Showing ${complaintsCache.length} loaded complaint${complaintsCache.length === 1 ? "" : "s"}. Newest records update live.`;
   }
   if (!analyticsComplaints.length) renderComplaintAnalytics();
@@ -323,8 +392,8 @@ function mergeComplaintPages() {
 
 function renderInbox() {
   if (!inboxContainer) return;
-  const records = sortComplaints(complaintsCache, document.getElementById('complaintSort')?.value);
-  inboxContainer.innerHTML = '<div class="complaint-table-scroll"><table class="complaint-inbox-table"><caption class="sr-only">Complaint Inbox</caption><thead><tr><th scope="col">Reference / Subject</th><th scope="col">Department</th><th scope="col">Status</th><th scope="col">Classification</th><th scope="col">Submitted</th></tr></thead><tbody>' + (records.length ? records.map(item => `<tr data-complaint-row="${escapeHtml(item.id)}" class="${item.id === selectedComplaintId ? 'is-selected' : ''}"><td><button class="complaint-case-link" type="button" data-case-id="${escapeHtml(item.id)}">${escapeHtml(safeText(item.complaintRef,item.id))}</button><span class="complaint-table-subject">${escapeHtml(safeText(item.subject,'Untitled complaint'))}</span></td><td>${escapeHtml(departmentName(item))}</td><td><span class="badge ${getBadgeClass(item.status)}">${escapeHtml(safeText(item.status,'Submitted'))}</span></td><td>${escapeHtml(normalizeClassification(item.classification) || 'Pending')}</td><td>${escapeHtml(formatDate(item.createdAt))}</td></tr>`).join('') : '<tr><td colspan="5" class="complaint-empty">No complaints yet</td></tr>') + '</tbody></table></div>';
+  const records = sortComplaints(visibleComplaints(), document.getElementById('complaintSort')?.value);
+  inboxContainer.innerHTML = '<div class="complaint-table-scroll"><table class="complaint-inbox-table"><caption class="sr-only">Complaint Inbox</caption><thead><tr><th scope="col">Reference / Subject</th><th scope="col">Department</th><th scope="col">Status</th><th scope="col">Classification</th><th scope="col">Submitted</th></tr></thead><tbody>' + (records.length ? records.map(item => `<tr data-complaint-row="${escapeHtml(item.id)}" class="${item.id === selectedComplaintId ? 'is-selected' : ''}"><td><button class="complaint-case-link" type="button" data-case-id="${escapeHtml(item.id)}">${escapeHtml(safeText(item.complaintRef,item.id))}</button><span class="complaint-table-subject">${escapeHtml(safeText(item.subject,'Untitled complaint'))}</span></td><td>${escapeHtml(departmentName(item))}</td><td><span class="badge ${getBadgeClass(item.status)}">${escapeHtml(safeText(item.status,'Submitted'))}</span></td><td>${escapeHtml(normalizeClassification(item.classification) || 'Pending')}</td><td>${escapeHtml(formatDate(item.createdAt))}</td></tr>`).join('') : '<tr><td colspan="5" class="complaint-empty">'+(hasComplaintFilters() ? (referenceFailed ? 'Search unavailable' : !referenceReady ? 'Loading records…' : 'No matching complaints') : 'No complaints yet')+'</td></tr>') + '</tbody></table></div>';
 }
 
 function renderThread(selected) {
@@ -519,7 +588,7 @@ onSnapshot(
     }
     mergeComplaintPages();
 
-    if (selectedComplaintId && !complaintsCache.some(item => item.id === selectedComplaintId)) {
+    if (!hasComplaintFilters() && selectedComplaintId && !complaintsCache.some(item => item.id === selectedComplaintId)) {
       selectedComplaintId = null;
       document.getElementById('complaintCaseDialog')?.close();
     }
@@ -534,12 +603,12 @@ onSnapshot(
   },
   (error) => {
     console.error("Complaint listener error:", error);
-    if (inboxContainer) inboxContainer.textContent = "Unable to load complaints. Refresh to try again.";
+    if (!hasComplaintFilters() && inboxContainer) inboxContainer.textContent = "Unable to load complaints. Refresh to try again.";
   }
 );
 
 loadOlderComplaintsBtn?.addEventListener("click", async () => {
-  if (!paginationCursor || !hasMoreOlderComplaints || loadOlderComplaintsBtn.disabled) return;
+  if (hasComplaintFilters() || !paginationCursor || !hasMoreOlderComplaints || loadOlderComplaintsBtn.disabled) return;
   loadOlderComplaintsBtn.disabled = true;
   loadOlderComplaintsBtn.textContent = "Loading…";
   try {
@@ -657,6 +726,7 @@ if (deleteComplaintBtn) {
       selectedComplaintId = null;
       liveComplaints = liveComplaints.filter((item) => item.id !== selected.id);
       olderComplaints = olderComplaints.filter((item) => item.id !== selected.id);
+      analyticsComplaints = analyticsComplaints.filter(item => item.id !== selected.id); updateReferenceUI();
       mergeComplaintPages();
       document.getElementById('complaintCaseDialog')?.close();
       renderInbox();

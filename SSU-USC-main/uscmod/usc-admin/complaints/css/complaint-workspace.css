@@ -131,3 +131,75 @@ body.officer-app-shell .hero-left .complaint-classification-summary { margin: 18
 
 #complaintDetailPanel:not([style*="none"]) { display:grid !important; }
 .case-section-heading { margin: 8px 0 0; padding-top:18px; border-top:1px solid #e1e9f1; font-size:17px; color:#23496d; }
+
+/* Reference and submission-date filters — isolated to the complaints inbox. */
+body.officer-app-shell.complaint-management-page #complaintReferenceSearch {
+  display:grid!important;gap:14px!important;padding:18px!important;margin:0 0 18px!important;
+  border:1px solid #dbe7f1;border-radius:14px;background:#f6faff;box-sizing:border-box;
+}
+body.officer-app-shell #complaintReferenceSearch .complaint-reference-controls {
+  display:grid;grid-template-columns:minmax(210px,2fr) minmax(120px,1fr) minmax(100px,.85fr) auto auto;
+  align-items:end;gap:12px;min-width:0;
+}
+body.officer-app-shell #complaintReferenceSearch .complaint-search-field {
+  display:flex!important;flex-direction:column;gap:7px;min-width:0;margin:0;
+}
+body.officer-app-shell.complaint-management-page #complaintReferenceSearch label {
+  display:block!important;font-size:13px!important;font-weight:700!important;line-height:1.3!important;
+  color:#315575;margin:0!important;padding:0!important;
+}
+#complaintReferenceSearch .complaint-reference-input { position:relative;min-width:0;width:100%; }
+body.officer-app-shell.complaint-management-page #complaintReferenceSearch .complaint-reference-input > i {
+  display:grid!important;place-items:center;position:absolute;left:0;top:0;width:40px;height:44px;
+  margin:0!important;transform:none;pointer-events:none;color:#6483a2;font-size:15px!important;z-index:1;
+}
+body.officer-app-shell.complaint-management-page #complaintReferenceSearch :is(input,select) {
+  display:block!important;width:100%!important;height:44px!important;min-height:44px!important;
+  max-height:44px!important;min-width:0;margin:0!important;padding:0 12px!important;
+  box-sizing:border-box;background:#fff!important;border:1px solid #cadceb!important;border-radius:9px!important;
+  font-size:14px!important;font-weight:500!important;line-height:normal!important;color:#23496d!important;
+  text-align:left!important;text-indent:0!important;
+}
+body.officer-app-shell.complaint-management-page #complaintReferenceSearch .complaint-reference-input > input#complaintReferenceInput {
+  padding:0 12px 0 42px!important;padding-inline-start:42px!important;
+}
+body.officer-app-shell.complaint-management-page #complaintReferenceSearch #complaintReferenceInput::placeholder { color:#71869a;font-size:13px; }
+body.officer-app-shell.complaint-management-page #complaintReferenceSearch .complaint-reference-controls > button {
+  display:inline-flex!important;align-items:center;justify-content:center;gap:7px;height:44px!important;
+  min-height:44px!important;box-sizing:border-box;border-radius:9px!important;margin:0!important;
+  padding:0 16px!important;font-size:13px!important;font-weight:700!important;white-space:nowrap;
+}
+body.officer-app-shell.complaint-management-page #complaintReferenceSearch button[type=submit] {
+  background:#00aef0!important;color:#07354d!important;border:1px solid #00aef0!important;min-width:88px;
+}
+body.officer-app-shell.complaint-management-page #complaintReferenceSearch button[type=submit]:hover {background:#009ad6!important;}
+body.officer-app-shell.complaint-management-page #complaintReferenceSearch .complaint-quick-dates {
+  display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding-top:12px;border-top:1px solid #e0ebf4;
+}
+body.officer-app-shell.complaint-management-page #complaintReferenceSearch .complaint-quick-dates::before {
+  content:"Quick filters";color:#657e96;font-weight:600;font-size:12px;margin-right:4px;
+}
+body.officer-app-shell.complaint-management-page #complaintReferenceSearch .complaint-quick-dates > button {
+  display:inline-flex!important;align-items:center;justify-content:center;min-height:32px!important;height:32px!important;
+  padding:0 12px!important;margin:0!important;background:#fff!important;color:#1754a6!important;
+  border:1px solid #d1e3f1!important;border-radius:7px!important;font-size:12px!important;font-weight:600!important;
+}
+body.officer-app-shell.complaint-management-page #complaintReferenceSearch .complaint-quick-dates > button:hover {background:#e5f4ff!important;}
+body.officer-app-shell.complaint-management-page #complaintReferenceSearch #clearComplaintReference {
+  background:#fff!important;color:#315575!important;border:1px solid #d1e3f1!important;
+}
+body.officer-app-shell.complaint-management-page #complaintReferenceSearch [hidden],body.officer-app-shell #loadOlderComplaints[hidden] {display:none!important;}
+body.officer-app-shell.complaint-management-page #complaintReferenceSearch .complaint-reference-message {
+  margin:0!important;padding:0!important;font-size:12px!important;line-height:1.55!important;color:#59738c!important;
+}
+#complaintReferenceSearch :is(button,input,select):focus-visible {outline:2px solid #00aef0!important;outline-offset:2px;}
+@media(max-width:1150px) {
+  body.officer-app-shell #complaintReferenceSearch .complaint-reference-controls {grid-template-columns:repeat(2,minmax(0,1fr));}
+  body.officer-app-shell #complaintReferenceSearch .complaint-search-wide {grid-column:1/-1;}
+}
+@media(max-width:480px) {
+  body.officer-app-shell.complaint-management-page #complaintReferenceSearch {padding:12px!important;gap:12px!important;}
+  body.officer-app-shell #complaintReferenceSearch .complaint-reference-controls {gap:10px;}
+  body.officer-app-shell #complaintReferenceSearch .complaint-reference-controls > button[type=submit] {grid-column:1/-1;}
+  body.officer-app-shell #complaintReferenceSearch .complaint-reference-controls > #clearComplaintReference {grid-column:1/-1;}
+}

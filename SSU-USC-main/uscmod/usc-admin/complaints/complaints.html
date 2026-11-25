@@ -17,7 +17,7 @@
   <script src="../../shared/app-config.js"></script>
   <script type="module" src="../../shared/auth-guard.js?v=rbac7"></script>
 <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet" />
-<link rel="stylesheet" href="css/complaint-workspace.css?v=4" />
+<link rel="stylesheet" href="css/complaint-workspace.css?v=reference-filters-1" />
 <link rel="stylesheet" href="../../shared/scrollbars.css?v=2" />
 </head>
 
@@ -204,6 +204,16 @@
               </div>
 
               <div class="card-body">
+                <form id="complaintReferenceSearch" class="complaint-reference-search" role="search" aria-label="Filter complaints by reference and submission date">
+  <div class="complaint-reference-controls">
+    <div class="complaint-search-field complaint-search-wide"><label for="complaintReferenceInput">Reference ID</label><div class="complaint-reference-input"><i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i><input id="complaintReferenceInput" type="search" placeholder="Enter any part, e.g. A1B2" autocomplete="off" spellcheck="false" maxlength="80" /></div></div>
+    <div class="complaint-search-field"><label for="complaintMonthFilter">Month</label><select id="complaintMonthFilter"><option value="">All months</option><option value="1">January</option><option value="2">February</option><option value="3">March</option><option value="4">April</option><option value="5">May</option><option value="6">June</option><option value="7">July</option><option value="8">August</option><option value="9">September</option><option value="10">October</option><option value="11">November</option><option value="12">December</option></select></div>
+    <div class="complaint-search-field"><label for="complaintYearFilter">Year</label><select id="complaintYearFilter"><option value="">All years</option></select></div>
+    <button type="submit" class="mini-btn primary">Search</button><button type="button" id="clearComplaintReference" class="mini-btn light" hidden>Clear filters</button>
+  </div>
+  <div class="complaint-quick-dates"><button type="button" class="mini-btn light" id="complaintThisMonth">This month</button><button type="button" class="mini-btn light" id="complaintThisYear">This year</button></div>
+  <p id="complaintReferenceMessage" class="complaint-reference-message" role="status" aria-live="polite">Type any part of a reference ID or filter by submission date.</p>
+</form>
                 <div id="complaintInbox"></div><div class="complaint-inbox-footer"><span id="complaintInboxScope">Showing latest complaints</span><button class="mini-btn light" id="loadOlderComplaints" type="button"><i class="fa-solid fa-clock-rotate-left"></i> Load Older</button></div>
               </div>
             </article>
@@ -243,7 +253,7 @@
 </footer>
 
     <script src="../shared/js/nav-active.js?v=flash-fix-1"></script>
-  <script type="module" src="js/complaints.js?v=complaint-review-compat-3&amp;mobile=1"></script>
+  <script type="module" src="js/complaints.js?v=reference-filters-1&amp;mobile=1"></script>
   <script type="module" src="../shared/js/admin-auth.js?v=rbac4"></script>
 <script type="module" src="../../shared/profile-manager.js?v=registered-name-2&amp;refinements=1"></script>
   <script type="module" src="../shared/js/officer-rbac.js?v=6"></script>
