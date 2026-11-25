@@ -1,3 +1,4 @@
+import { bindDirectoryTable } from "./user-directory-table.js?v=2";
 import { callStudentEmailService } from "../../../shared/supabase-email-service.js";
 import { institutionalEmailForDisplay } from "../../../shared/account-email.js";
 import { callSecure, auth } from "../../../shared/security-client.js?v=officer-management-only-1";
@@ -236,6 +237,7 @@ function renderTable() {
     dom.usersTableBody.innerHTML = '<tr><td colspan="10"><div class="empty-state"><strong>No matching accounts</strong><span>Adjust the current filters and search terms.</span></div></td></tr>';
     dom.toggleAllUsers.checked = false;
     updateSelectionCounters();
+    directoryTable.refresh();
     return;
   }
 
@@ -243,9 +245,9 @@ function renderTable() {
     const selected = selectedUserIds.has(user.uid);
     const complaintSummary = complaintSummaryFor(user, complaintSummaryByUid);
     return `
-      <tr class="directory-row ${selectedUserId === user.uid ? 'is-open' : ''}">
+      <tr class="directory-row ${selectedUserId === user.uid ? 'is-open' : ''}" data-account-row="${escapeHtml(user.uid)}">
         <td><input type="checkbox" class="row-selector" aria-label="Select ${escapeHtml(user.fullName || 'Unnamed user')}" data-user-id="${escapeHtml(user.uid)}" ${selected ? 'checked' : ''} ${isProtectedAdmin(user) ? 'disabled' : ''} /></td>
-        <td><div class="directory-user-cell"><span class="directory-user-avatar" aria-hidden="true">${escapeHtml(getInitials(user.fullName, user.email))}</span><div class="table-name"><strong>${escapeHtml(user.fullName || 'Unnamed user')}</strong><small>${escapeHtml(user.email || 'Not Linked')}</small></div></div></td>
+        <td><div class="directory-user-cell"><span class="directory-user-avatar" aria-hidden="true">${escapeHtml(getInitials(user.fullName, user.email))}</span><div class="table-name"><button type="button" class="directory-name-button" data-account-name="${escapeHtml(user.uid)}" aria-haspopup="dialog" aria-label="View account for ${escapeHtml(user.fullName || 'Unnamed user')}"><strong>${escapeHtml(user.fullName || 'Unnamed user')}</strong></button><small>${escapeHtml(user.email || 'Not Linked')}</small></div></div></td>
         <td class="mono">${escapeHtml(user.studentId || 'N/A')}</td>
         <td><span class="role-badge ${roleClass(user.role)}">${escapeHtml(user.role)}</span></td>
         <td><span class="status-badge ${statusClass(user.accountStatus)}">${escapeHtml(user.accountStatus)}</span></td>
@@ -276,6 +278,7 @@ function renderTable() {
   });
 
   updateSelectionCounters();
+  directoryTable.refresh();
 }
 
 function openUserEditorModal() {
@@ -291,7 +294,7 @@ function closeUserEditorModal() {
   dom.userEditorModal.classList.add('hidden');
   dom.userEditorModal.setAttribute('aria-hidden', 'true');
   document.body.classList.remove('user-editor-modal-open');
-  [...dom.usersTableBody.querySelectorAll('[data-open-user]')].find(button => button.dataset.openUser === selectedUserId)?.focus({ preventScroll: true });
+  [...dom.usersTableBody.querySelectorAll('[data-account-name]')].find(button => button.dataset.accountName === selectedUserId)?.focus({ preventScroll: true });
 }
 
 function toggleEditor(hasSelection) {
@@ -679,9 +682,16 @@ setActiveAdminNav();
 renderAdminIdentity();
 buildPermissionEditor();
 bind();
+const directoryTable = bindDirectoryTable({
+  body: dom.usersTableBody,
+  scroller: document.getElementById('directoryTableScroll'),
+  scrollbar: document.getElementById('directoryTopScroll'),
+  slider: document.getElementById('directoryHorizontalScroll'),
+  openAccount: openUser
+});
 subscribeUsers((value, error) => {
   users = value.map(user => ({ ...user, email: institutionalEmailForDisplay(user), institutionalEmail: institutionalEmailForDisplay(user) }));
-  dom.listStatusText.textContent = error ? 'Unable to load accounts' : 'Live from Firestore';
+  dom.listStatusText.textContent = error ? 'Unable to load accounts' : 'Up to date';
   renderTable();
   if (selectedUserId) fillEditor(getSelectedUser());
 });
