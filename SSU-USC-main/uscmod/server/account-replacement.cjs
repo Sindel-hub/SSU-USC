@@ -11,14 +11,11 @@ function createAccountReplacementHandlers({ db, adminAuth, requireActiveRole, re
     const text = (key, max = 160) => String(input[key] || '').trim().slice(0, max);
     const studentId = text('studentId', 64), oldUid = text('previousUid', 128);
     const role = text('role'), fullName = text('fullName', 120);
+    if (role !== 'student') throw new ServiceError('failed-precondition', 'Use Officer Management to promote an existing student account. Replacement cannot create officer access.');
     const institutionalEmail = text('institutionalEmail', 200).toLowerCase() || null;
     const password = String(input.temporaryPassword || '');
     if (!/^\d{1,64}$/.test(studentId) || !/^[\w:-]{1,128}$/.test(oldUid) || !['student','officer'].includes(role) || fullName.length < 2 || !text('college') || !text('program') || !text('yearLevel', 40) || password.length < 14 || password.length > 128 || (institutionalEmail && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(institutionalEmail))) throw new ServiceError('invalid-argument', 'Invalid replacement account details.');
-    const { permissionsForOfficerPosition } = await import('../shared/officer-permissions.js');
     const { normalizeStudentStanding, enrollmentStatusForStanding, isActiveStudentStanding, studentStandingLabel } = await import('../shared/student-standing.js');
-    const officePosition = text('officePosition', 120);
-    const positions = ['President','Vice President','Secretary','Treasurer','Auditor','Public Relations Officer (PRO)','Business Manager','Sgt. at Arms','Department Representative'];
-    if (role === 'officer' && !positions.includes(officePosition)) throw new ServiceError('invalid-argument', 'Select a valid USC officer position.');
     const standing = normalizeStudentStanding(input.studentStanding, input.enrollmentStatus);
     const enrollmentStatus = enrollmentStatusForStanding(standing);
     const active = isActiveStudentStanding(standing, enrollmentStatus);
@@ -89,7 +86,6 @@ function createAccountReplacementHandlers({ db, adminAuth, requireActiveRole, re
         }
         const now = clock();
         const profile = {uid, studentId, fullName, institutionalEmail, email: institutionalEmail || '', institutionalEmailVerified:false, authEmail, role, college:text('college'), program:text('program'), yearLevel:text('yearLevel',40), studentStanding:standing, enrollmentStatus, accountStatus:'approved', isActive:active, schoolProvisioned:true, isVerifiedStudent:active && input.eligible !== false, candidacyApproved:false, mustChangePassword:false, createdAt:new Date(now), updatedAt:new Date(now), updatedAtMs:now};
-        if (role === 'officer') Object.assign(profile, {officePosition, roleEffectiveDate:text('roleEffectiveDate',40), officerPermissions:permissionsForOfficerPosition(officePosition), officerPermissionSource:'position-default'});
         tx.set(db.doc(`users/${uid}`), profile);
         tx.update(oldRef, {accountRemoved:true, accountRemovalPending:false, idReservationsReleased:true, replacedByUid:uid, accountStatus:'suspended', isActive:false, isVerifiedStudent:false, candidacyApproved:false, activationTokenHash:null, accountRemovedByUid:request.auth.uid, accountRemovedAtMs:now});
         tx.set(claimRef, {uid,studentId,institutionalEmail,authEmail,createdBy:request.auth.uid,updatedAt:new Date(now)});

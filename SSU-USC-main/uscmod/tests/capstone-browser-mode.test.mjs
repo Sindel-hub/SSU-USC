@@ -26,7 +26,7 @@ test('normal runtime has no command-line bridge dependency', () => {
   }
 });
 
-test('student and officer provisioning use a secondary Firebase Web Auth instance', () => {
+test('legacy student provisioning remains isolated from admin Auth', () => {
   const source = read('shared/browser-provisioning.js');
   assert.match(source, /initializeApp\(firebaseConfig, appName\)/);
   assert.match(source, /getAuth\(provisioningApp\)/);
@@ -34,7 +34,7 @@ test('student and officer provisioning use a secondary Firebase Web Auth instanc
   assert.match(source, /writeBatch\(db\)/);
   assert.match(source, /login_aliases/);
   assert.match(source, /provisionOfficerAccount/);
-  assert.match(source, /role: "officer"/);
+  assert.match(source, /Separate officer accounts cannot be created/);
   assert.match(source, /sendEmailVerification/);
 });
 
@@ -42,20 +42,14 @@ test('admin authority remains custom-claim protected in Firestore rules', () => 
   const rules = read('firestore.rules');
   assert.match(rules, /function isAdmin\(\).*role\(\) == "admin"/s);
   assert.doesNotMatch(rules, /request\.auth\.token\.email_verified/);
-  assert.match(rules, /allow create: if isAdmin\(\)[\s\S]{0,500}?role == "officer"/);
+  assert.match(rules, /Profiles are created by the registration service[\s\S]*?allow create: if false/);
 });
 
 
-test('registration queue uses repaired responsive workspace', () => {
+test('retired queue redirects without loading its controller', () => {
   const html = read('usc-admin/admin-dashboard/queue.html');
-  const css = read('usc-admin/admin-dashboard/css/admin-dashboard.css');
-  const js = read('usc-admin/admin-dashboard/js/admin-queue.js');
-  assert.match(html, /class="queue-workspace"/);
-  assert.match(html, /id="queueSearchInput"/);
-  assert.match(html, /id="queueFilterSelect"/);
-  assert.match(css, /\.queue-workspace\{/);
-  assert.match(css, /@media\(max-width:700px\)/);
-  assert.match(js, /filteredQueueUsers/);
+  assert.match(html, /location\.replace\("users\.html"\)/);
+  assert.doesNotMatch(html, /admin-queue\.js|queue-workspace/);
 });
 
 test('student year level and standing are enforced without capstone-mode UI text', () => {
@@ -79,5 +73,5 @@ test('student year level and standing are enforced without capstone-mode UI text
   assert.match(authGuard, /bindProfileAccessWatcher/);
   assert.match(loginJs, /Portal access is disabled because your student standing/);
   assert.match(rules, /request\.resource\.data\.studentStanding in \["active", "leave", "inactive", "graduated", "transferred", "withdrawn", "eliminated"\]/);
-  assert.match(rules, /request\.resource\.data\.isActive == \(request\.resource\.data\.studentStanding == "active"\)/);
+  assert.match(rules, /request\.resource\.data\.isActive == \(request\.resource\.data\.studentStanding == "active" && request\.resource\.data\.accountStatus != "suspended"\)/);
 });

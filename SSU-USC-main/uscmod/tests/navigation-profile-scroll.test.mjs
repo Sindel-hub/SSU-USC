@@ -8,7 +8,7 @@ test("Audit & Reports remains visible across every admin access module", () => {
   for (const page of [
     "usc-admin/admin-dashboard/admin-dashboard.html",
     "usc-admin/admin-dashboard/users.html",
-    "usc-admin/admin-dashboard/queue.html",
+    "usc-admin/admin-dashboard/officer-management.html",
     "usc-admin/admin-dashboard/audit.html"
   ]) {
     assert.match(read(page), /href="audit\.html"[^>]*>[\s\S]*?Audit & Reports/);

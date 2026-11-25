@@ -1,7 +1,7 @@
 import { formatSsuProgram } from '../../student-registration/js/ssu-programs.js';
 
 import { db } from "../../../firebase/firebase-config.js";
-import { callSecure } from "../../../shared/security-client.js";
+import { callSecure } from "../../../shared/security-client.js?v=officer-management-only-1";
 import { isActiveStudentStanding, normalizeStudentStanding, studentStandingLabel } from "../../../shared/student-standing.js";
 import { effectiveOfficerPermissions, normalizeOfficerPermissions, permissionsForOfficerPosition } from "../../../shared/officer-permissions.js?v=programs-1";
 import {
@@ -406,21 +406,10 @@ function buildUserUpdatePayload(user, source = {}) {
     : nextRole === "admin"
       ? "System Administrator"
       : "";
-  const nextEffectiveDate = protectedAdmin
-    ? (user.roleEffectiveDate || normalizeDateInputValue(new Date().toISOString()))
-    : normalizeDateInputValue(source.roleEffectiveDate ?? user.roleEffectiveDate ?? new Date().toISOString());
+  const nextEffectiveDate = user.roleEffectiveDate || "";
   const nextNotes = String(source.adminNotes ?? user.adminNotes ?? "").trim();
-  const requestedOfficerPermissions = source.officerPermissions !== undefined
-    ? source.officerPermissions
-    : (user.officerPermissionsConfigured
-      ? user.officerPermissions
-      : (nextRole === "officer" ? permissionsForOfficerPosition(nextOfficePosition) : []));
-  const nextOfficerPermissions = nextRole === "officer"
-    ? normalizeOfficerPermissions(requestedOfficerPermissions, { legacyFullAccess: false })
-    : [];
-  const nextOfficerPermissionSource = nextRole === "officer"
-    ? String(source.officerPermissionSource || (source.officerPermissions !== undefined ? "custom" : user.officerPermissionSource || "position-default")).trim().toLowerCase()
-    : "";
+  const nextOfficerPermissions = user.officerPermissions || [];
+  const nextOfficerPermissionSource = user.officerPermissionSource || "";
   const changeReason = String(source.changeReason || "").trim();
   const sanitizedStatus = nextStatus === "suspended" ? "suspended" : nextStatus;
   const normalizedActive = sanitizedStatus === "suspended" || !standingActive ? false : nextActive;
@@ -468,29 +457,34 @@ function requiresReason(changeParts) {
 
 
 export async function updateSingleUser(user, source = {}) {
+  if ((source.role !== undefined && source.role !== user.role)
+      || (source.officePosition !== undefined && source.officePosition !== user.officePosition)
+      || (source.officerPermissions !== undefined && JSON.stringify(source.officerPermissions) !== JSON.stringify(user.officerPermissions))) {
+    throw new Error("Use Officer Management for officer promotions, permissions, and term completion.");
+  }
+
   const payload = buildUserUpdatePayload(user, source);
   const changeParts = summarizeChanges(user, payload);
   if (!changeParts.length) return { changed: false, message: "No changes detected." };
   if (requiresReason(changeParts) && !payload.changeReason) throw new Error("Please enter a reason for this role or access change.");
   await callSecure("adminUpdateUser", {
     uid: user.uid,
-    role: payload.nextRole,
-    officePosition: payload.nextOfficePosition,
-    officerPermissions: payload.nextOfficerPermissions,
-    officerPermissionSource: payload.nextOfficerPermissionSource,
     accountStatus: payload.nextStatus,
     isVerifiedStudent: payload.nextVerified,
     candidacyApproved: payload.nextCandidacyApproved,
     yearLevel: payload.nextYearLevel,
     studentStanding: payload.nextStanding,
     adminNotes: payload.nextNotes,
-    roleEffectiveDate: payload.nextEffectiveDate,
     changeReason: payload.changeReason
   });
   return { changed: true, message: `${user.fullName || user.email}: ${changeParts.join(" • ")}` };
 }
 
 export async function applyBulkUpdates(users, options = {}) {
+  if (options.role || options.officePosition || options.officerPermissions || options.officerPermissionSource) {
+    throw new Error("Use Officer Management for officer promotions, permissions, and term completion.");
+  }
+
   const targetUsers = users.filter((user) => !isProtectedAdmin(user));
   if (!targetUsers.length) throw new Error("Select at least one non-admin user first.");
   const prepared = targetUsers.map((user) => ({
@@ -511,13 +505,8 @@ export async function applyBulkUpdates(users, options = {}) {
   for (const { user, payload } of prepared) {
     await callSecure("adminUpdateUser", {
       uid: user.uid,
-      role: payload.nextRole,
-      officePosition: payload.nextOfficePosition,
-      officerPermissions: payload.nextOfficerPermissions,
-      officerPermissionSource: payload.nextOfficerPermissionSource,
       accountStatus: payload.nextStatus,
       adminNotes: payload.nextNotes,
-      roleEffectiveDate: payload.nextEffectiveDate,
       changeReason: sharedReason
     });
     changed += 1;

@@ -1195,6 +1195,13 @@ exports.adminUpdateUser = onCall(callableOptions(), async (request) => {
   const officerPermissionSource = role === "officer"
     ? cleanText(request.data?.officerPermissionSource || before.officerPermissionSource || (Array.isArray(request.data?.officerPermissions) ? "custom" : "position-default"), 40).toLowerCase()
     : "";
+  if (role !== before.role
+      || officePosition !== (before.officePosition || "")
+      || (Array.isArray(request.data?.officerPermissions)
+        && JSON.stringify([...request.data.officerPermissions].sort()) !== JSON.stringify([...(before.officerPermissions || [])].sort()))
+      || (request.data?.officerPermissionSource !== undefined && request.data.officerPermissionSource !== before.officerPermissionSource)) {
+    throw new HttpsError("failed-precondition", "Use Officer Management to promote an existing student account, change its permission scope, or complete an officer term.");
+  }
   const requestedVerifiedStudent = role === "student"
     ? (typeof request.data?.isVerifiedStudent === "boolean" ? request.data.isVerifiedStudent : before.isVerifiedStudent === true)
     : false;
@@ -1218,15 +1225,9 @@ exports.adminUpdateUser = onCall(callableOptions(), async (request) => {
   const changeReason = cleanText(request.data?.changeReason, 500);
   const nowMs = Date.now();
   const patch = {
-    role,
     accountStatus,
     isActive: accountStatus !== "suspended",
-    officePosition,
-    officerPermissions,
-    officerPermissionSource,
     adminNotes,
-    roleEffectiveDate,
-    roleEffectiveAtMs: roleEffectiveDate ? new Date(`${roleEffectiveDate}T00:00:00`).getTime() : 0,
     updatedAt: FieldValue.serverTimestamp(),
     updatedAtMs: nowMs,
     lastRoleUpdatedBy: normalizeEmail(request.auth?.token?.email) || request.auth.uid,

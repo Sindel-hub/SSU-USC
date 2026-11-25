@@ -199,30 +199,17 @@ async function browserAdminUpdateUser(data = {}) {
   const candidacyApproved = role === "student" && standingActive && (typeof data.candidacyApproved === "boolean" ? data.candidacyApproved : old.candidacyApproved === true);
   const isActive = accountStatus !== "suspended" && standingActive;
   const officePosition = String(data.officePosition ?? old.officePosition ?? "").trim().slice(0,120);
-  if (old.officerAssignmentId && (role !== old.role || officePosition !== (old.officePosition || ""))) throw new Error("Use Officer Management to complete the existing term and create a new assignment. Historical officer identity cannot be replaced.");
-  let officerPermissions = role === "officer"
-    ? normalizeOfficerPermissions(
-        Array.isArray(data.officerPermissions)
-          ? data.officerPermissions
-          : (Array.isArray(old.officerPermissions) ? old.officerPermissions : permissionsForOfficerPosition(officePosition)),
-        { legacyFullAccess: false }
-      )
-    : [];
-  let officerPermissionSource = role === "officer"
-    ? String(data.officerPermissionSource || old.officerPermissionSource || (Array.isArray(data.officerPermissions) ? "custom" : "position-default")).trim().toLowerCase()
-    : "";
-  if (old.officerAssignmentId) {
-    if (JSON.stringify([...officerPermissions].sort()) !== JSON.stringify([...(old.officerPermissions || [])].sort())) throw new Error("Use Officer Management for a new approved permission scope. Existing term permissions cannot be replaced in User Directory.");
-    officerPermissions = old.officerPermissions || [];
-    officerPermissionSource = old.officerPermissionSource || "";
+  if (role !== old.role || officePosition !== (old.officePosition || "")) throw new Error("Use Officer Management to complete the existing term and create a new assignment. Historical officer identity cannot be replaced.");
+  if ((Array.isArray(data.officerPermissions)
+      && JSON.stringify([...data.officerPermissions].sort()) !== JSON.stringify([...(old.officerPermissions || [])].sort()))
+      || (data.officerPermissionSource !== undefined && data.officerPermissionSource !== old.officerPermissionSource)) {
+    throw new Error("Use Officer Management for a new approved permission scope.");
   }
   const adminNotes = String(data.adminNotes ?? old.adminNotes ?? "").trim().slice(0,1000);
-  const roleEffectiveDate = String(data.roleEffectiveDate ?? old.roleEffectiveDate ?? "").trim().slice(0,40);
   const now = serverTimestamp();
   const batch = writeBatch(db);
 
   batch.update(ref, {
-    role,
     accountStatus,
     isVerifiedStudent,
     candidacyApproved,
@@ -230,11 +217,7 @@ async function browserAdminUpdateUser(data = {}) {
     yearLevel,
     studentStanding,
     enrollmentStatus,
-    officePosition,
-    officerPermissions,
-    officerPermissionSource,
     adminNotes,
-    roleEffectiveDate,
     lastRoleUpdatedBy: admin.email || admin.uid,
     updatedAt: now,
     updatedAtMs: Date.now()

@@ -310,47 +310,17 @@ service cloud.firestore {
     // Student IDs, account status, and officer privileges are server-controlled.
     match /users/{userId} {
       allow read: if ownUser(userId) || isAdmin();
-      // New student profiles are written by the student records service. Officer browser provisioning is unchanged.
-      allow create: if isAdmin()
-        && !("officerAssignmentId" in request.resource.data)
-        && request.resource.data.uid == userId
-        && request.resource.data.role == "officer"
-        && request.resource.data.accountStatus == "approved"
-        && request.resource.data.schoolProvisioned == true
-        && request.resource.data.yearLevel is string
-        && request.resource.data.yearLevel.size() >= 2
-        && request.resource.data.yearLevel.size() <= 40
-        && request.resource.data.studentStanding in ["active", "leave", "inactive", "graduated", "transferred", "withdrawn", "eliminated"]
-        && request.resource.data.isActive == (request.resource.data.studentStanding == "active")
-        && request.resource.data.isVerifiedStudent is bool
-        && (!("candidacyApproved" in request.resource.data) || request.resource.data.candidacyApproved is bool)
-        && (request.resource.data.studentStanding == "active" || request.resource.data.isVerifiedStudent == false)
-        && request.resource.data.studentId is string
-        && request.resource.data.studentId.matches("^[0-9]{1,64}$")
-        && request.resource.data.fullName is string
-        && request.resource.data.fullName.size() >= 2
-        && request.resource.data.fullName.size() <= 120
-        && request.resource.data.email is string
-        && request.resource.data.email.size() <= 200
-        && (request.resource.data.role == "student"
-          || (request.resource.data.officePosition is string
-            && request.resource.data.officePosition.size() >= 2
-            && request.resource.data.officePosition.size() <= 120
-            && request.resource.data.officerPermissions is list
-            && request.resource.data.officerPermissions.size() <= 16
-            && "dashboard.view" in request.resource.data.officerPermissions
-            && (!("officerPermissionSource" in request.resource.data)
-              || request.resource.data.officerPermissionSource in ["position-default", "custom"])));
+      // Profiles are created by the registration service; officers are promoted by the assignment service.
+      allow create: if false;
       allow update: if resource.data.get("accountRemoved", false) == false
         && resource.data.get("accountRemovalPending", false) == false
         && request.resource.data.get("accountRemoved", false) == false
         && request.resource.data.get("accountRemovalPending", false) == false
         && ((ownUser(userId) && safeOwnProfileUpdate())
         || (isAdmin()
-          && (!("officerAssignmentId" in resource.data)
-            || !request.resource.data.diff(resource.data).affectedKeys().hasAny([
-              "officerAssignmentId", "role", "officePosition", "officerPermissions", "officerPermissionSource"
-            ]))
+          && !request.resource.data.diff(resource.data).affectedKeys().hasAny([
+              "officerAssignmentId", "role", "officePosition", "officerPermissions", "officerPermissionSource", "roleEffectiveDate"
+            ])
           && resource.data.role != "admin"
           && request.resource.data.role in ["student", "officer"]
           && request.resource.data.studentId == resource.data.studentId

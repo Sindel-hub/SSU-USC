@@ -177,9 +177,15 @@ test('the actual User Directory adapter preserves term permissions during status
   const context = vm.createContext({ auth: { currentUser: { uid: 'admin', getIdTokenResult: async () => ({ claims: { role: 'admin' } }) } }, db: {}, doc: (...parts) => parts.at(-1), getDoc: async () => ({ exists: () => true, data: () => old }), normalizeStudentStanding: value => value || 'active', enrollmentStatusForStanding: () => 'enrolled', isActiveStudentStanding: value => value === 'active', normalizeOfficerPermissions, permissionsForOfficerPosition, serverTimestamp: () => 0, collection: () => 'audit', writeBatch: () => ({ update: (ref, data) => updates.push(data), set() {}, commit: async () => {} }), console });
   vm.runInContext(body, context);
   await context.browserAdminUpdateUser({ uid: 'officer', accountStatus: 'suspended', officerPermissions: [...old.officerPermissions].reverse() });
-  assert.equal(updates[0].accountStatus, 'suspended'); assert.deepEqual([...updates[0].officerPermissions], old.officerPermissions); assert.equal(updates[0].officerPermissionSource, 'custom');
+  assert.equal(updates[0].accountStatus, 'suspended'); for (const key of ['role','officePosition','officerPermissions','officerPermissionSource','officerAssignmentId']) assert.equal(Object.hasOwn(updates[0],key),false);
+  assert.deepEqual({...old,...updates[0]}.officerPermissions,old.officerPermissions);
   await assert.rejects(context.browserAdminUpdateUser({ uid: 'officer', role: 'student' }), /Officer Management/);
   await assert.rejects(context.browserAdminUpdateUser({ uid: 'officer', officerPermissions: ['dashboard.view'] }), /Officer Management/);
+  delete old.officerAssignmentId;
+  await assert.rejects(context.browserAdminUpdateUser({ uid: 'officer', role: 'student' }), /Officer Management/);
+  old.role = 'student'; old.officePosition = '';
+  await assert.rejects(context.browserAdminUpdateUser({ uid: 'officer', role: 'officer', officePosition: 'Treasurer' }), /Officer Management/);
+  assert.equal(updates.length,1);
 });
 
 test('activity feed retains authors across turnover, deletion and reuse of a Student ID', async () => {
@@ -228,4 +234,32 @@ test('complaint activity is private, retry-safe and records real changes for leg
   await assert.rejects(f.h.officerActivityList(f.req('second', { recordModule: 'Complaints', recordId: 'case' })), { code: 'permission-denied' });
   assert.equal((await f.h.officerActivityList(f.req('second', { officer: 'first' }))).items.length, 0);
   await assert.rejects(f.h.officerModuleAction(f.req('second', data)), { code: 'permission-denied' });
+});
+
+test('student promotion and term completion preserve the same identity, credentials, standing and history', async () => {
+  const f=historyFixture();
+  f.authUsers.get('first').password='synthetic-existing-password';
+  const before={...f.records.get('users/first')};
+  const authCount=f.authUsers.size;
+  await f.assign();
+  assert.equal(f.authUsers.size,authCount);
+  assert.equal(f.authUsers.get('first').password,'synthetic-existing-password');
+  assert.equal(f.records.get('users/first').studentId,before.studentId);
+  assert.equal(f.records.get('users/first').role,'officer');
+  await f.h.officerAssignmentManage(f.req('admin',{action:'complete',assignmentId:'assignment-first',reason:'Approved term completion'}));
+  const after=f.records.get('users/first');
+  assert.equal(after.role,'student'); assert.deepEqual(after.officerPermissions,[]);
+  assert.equal(after.officePosition,''); assert.equal(after.studentStanding,before.studentStanding);
+  assert.equal(f.authUsers.get('first').customClaims.role,'student');
+  assert.equal(f.authUsers.size,authCount); assert.equal(f.authUsers.get('first').password,'synthetic-existing-password');
+  assert.equal(f.records.get('officer_assignments/assignment-first').status,'completed');
+});
+
+test('term completion does not restore portal access for a graduated officer',async()=>{
+  const f=historyFixture();await f.assign();
+  Object.assign(f.records.get('users/first'),{studentStanding:'graduated',isActive:false,accountStatus:'suspended'});
+  await f.h.officerAssignmentManage(f.req('admin',{action:'complete',assignmentId:'assignment-first',reason:'Graduated officer turnover'}));
+  const profile=f.records.get('users/first');
+  assert.equal(profile.role,'student');assert.deepEqual(profile.officerPermissions,[]);
+  assert.equal(profile.isActive,false);assert.equal(profile.accountStatus,'suspended');assert.equal(profile.studentStanding,'graduated');
 });

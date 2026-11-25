@@ -13,12 +13,10 @@ test("student registration hands off a private single-use activation link", () =
   assert.match(studentJs, /studentRegistrationIssue/);
   assert.match(studentJs, /link\.value = ''/);
 });
-test("officer registration uses floating credential modal", () => {
-  assert.match(officerHtml, /class="slip-section slip-modal-overlay"/);
-  assert.match(officerHtml, /id="closeOfficerSlipModalBtn"/);
-  assert.match(officerJs, /function openSlipModal\(/);
-  assert.match(officerJs, /function printSlip\(/);
-  assert.match(officerJs, /closeSlipModal\(\)/);
+test("old officer registration links redirect to promotion without issuing credentials", () => {
+  assert.match(officerHtml, /location\.replace/);
+  assert.match(officerHtml, /officer-management\.html/);
+  assert.doesNotMatch(officerHtml, /<form|officer-registration\.js|temporaryPassword/);
 });
 
 test("shared registration CSS defines slip modal styles", () => {
