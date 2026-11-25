@@ -17,14 +17,15 @@ test('expected anniversary follows Philippine calendar, including leap day and y
  ]) assert.equal(expectedEnd(ph(start)), ph(end));
  assert.ok(Number.isNaN(expectedEnd(NaN)));
 });
-test('server derives expected end from induction, ignores supplied cutoff and preserves proclamation separately', async () => {
+test('server derives expected end from the sole start date, ignoring stale induction and supplied cutoff', async () => {
  const f = historyFixture();
  await f.assign('first','Treasurer',{ startsAtMs: ph('2026-03-10T10:00:00'), inductionAtMs: ph('2026-03-15T10:00:00'), endsAtMs: 1, expectedEndsAtMs: 1, actualEndsAtMs: 1 });
  const a = assignment(f);
- assert.equal(a.expectedEndsAtMs, ph('2027-03-15T10:00:00'));
+ assert.equal(a.expectedEndsAtMs, ph('2027-03-10T10:00:00'));
  assert.equal(a.endsAtMs, a.expectedEndsAtMs);
  assert.equal(a.actualEndsAtMs, null);
  assert.equal(a.startsAtMs, ph('2026-03-10T10:00:00'));
+ assert.equal(Object.hasOwn(a, 'inductionAtMs'), false);
  assert.equal(a.termPolicy, 'until-turnover');
 });
 test('passing expected end retains authorized access until explicit completion, without freeing the office', async () => {
@@ -80,7 +81,7 @@ test('policy adoption cannot revive completed, displaced, suspended or ineligibl
  }
 });
 test('term changes require recent authorized admin and reject invalid dates or stale client policy', async () => {
- for (const patch of [{termPolicy:undefined},{startsAtMs:NaN},{inductionAtMs:0},{inductionAtMs:Date.now()+100*366*86400000}]) {
+ for (const patch of [{termPolicy:undefined},{startsAtMs:NaN},{startsAtMs:0},{startsAtMs:Date.now()+100*366*86400000}]) {
   const f=historyFixture();await assert.rejects(f.assign('first','Treasurer',patch));assert.equal(f.records.has('officer_assignments/assignment-first'),false);
  }
  const f=historyFixture();await f.assign();

@@ -162,11 +162,10 @@ function createOfficerHistory({ db, adminAuth, requireActiveRole, requireRecentA
           const administration = text(d.administration, "administration period", 80);
           const reason = text(d.authorization, "appointment authorization reference", 240);
           const uid = id(d.officerUid), startsAtMs = Number(d.startsAtMs);
-          const inductionAtMs = Number(d.inductionAtMs ?? d.startsAtMs);
-          const expectedEndsAtMs = expectedEnd(inductionAtMs);
+          const expectedEndsAtMs = expectedEnd(startsAtMs);
           // Legacy clients must refresh; do not reinterpret a submitted hard cutoff.
           if (d.termPolicy !== POLICY) fail("failed-precondition", "Refresh Officer Management before creating an assignment.");
-          if (!Number.isSafeInteger(startsAtMs) || startsAtMs <= 0 || startsAtMs > clock() || !Number.isSafeInteger(inductionAtMs) || inductionAtMs < startsAtMs || inductionAtMs > clock() || !Number.isSafeInteger(expectedEndsAtMs)) fail("invalid-argument", "Choose valid proclamation and induction dates up to today, with induction on or after proclamation.");
+          if (!Number.isSafeInteger(startsAtMs) || startsAtMs <= 0 || startsAtMs > clock() || !Number.isSafeInteger(expectedEndsAtMs)) fail("invalid-argument", "Choose a valid term start date up to today.");
           const permissions = d.permissions || POSITIONS[position];
           if (!Array.isArray(permissions) || !permissions.includes("dashboard.view") || permissions.some(v => !POSITIONS[position].includes(v)) || new Set(permissions).size !== permissions.length) fail("invalid-argument", "Permissions must be a subset of the selected office responsibilities.");
           const assignmentId = id(d.assignmentId || randomUUID());
@@ -186,7 +185,7 @@ function createOfficerHistory({ db, adminAuth, requireActiveRole, requireRecentA
               if (prior?.status !== "completed") fail("failed-precondition", "Complete the outgoing officer's assignment before turnover.");
             }
             const indexes = await roleIndexes(tx, p, uid);
-            a = { officerUid: uid, officerName: text(p.fullName || p.displayName, "officer name"), position, department, administration, startsAtMs, inductionAtMs, expectedEndsAtMs, endsAtMs: expectedEndsAtMs, actualEndsAtMs: null, termPolicy: POLICY, permissions, status: "active", authorization: reason, appointedBy: request.auth.uid, createdAtMs: clock(), authSyncPending: true };
+            a = { officerUid: uid, officerName: text(p.fullName || p.displayName, "officer name"), position, department, administration, startsAtMs, expectedEndsAtMs, endsAtMs: expectedEndsAtMs, actualEndsAtMs: null, termPolicy: POLICY, permissions, status: "active", authorization: reason, appointedBy: request.auth.uid, createdAtMs: clock(), authSyncPending: true };
             tx.create(ref, a);
             updateRoleIndexes(tx, indexes, "officer", position);
             tx.set(lockRef, { assignmentId });
@@ -209,12 +208,11 @@ function createOfficerHistory({ db, adminAuth, requireActiveRole, requireRecentA
             if (!p || p.officerAssignmentId !== assignmentId || p.role !== "officer" || p.accountStatus !== "approved" || p.isActive === false || p.accountRemoved || p.accountRemovalPending || (p.studentStanding && p.studentStanding !== "active")) fail("failed-precondition", "Only the current approved, active officer can adopt this policy.");
             const lock = await tx.get(db.doc(`officer_office_slots/${slot(a.position, a.department)}`));
             if (lock.data()?.assignmentId !== assignmentId) fail("failed-precondition", "Resolve the office assignment before changing its term policy.");
-            const inductionAtMs = Number(d.inductionAtMs ?? a.startsAtMs);
-            if (!Number.isSafeInteger(inductionAtMs) || inductionAtMs < a.startsAtMs || inductionAtMs > clock()) fail("invalid-argument", "Choose a valid induction date on or after proclamation and up to today.");
-            const expectedEndsAtMs = expectedEnd(inductionAtMs);
-            if (!Number.isSafeInteger(expectedEndsAtMs)) fail("invalid-argument", "Invalid induction date.");
+            if (!Number.isSafeInteger(a.startsAtMs) || a.startsAtMs <= 0 || a.startsAtMs > clock()) fail("failed-precondition", "This assignment requires a valid recorded term start.");
+            const expectedEndsAtMs = expectedEnd(a.startsAtMs);
+            if (!Number.isSafeInteger(expectedEndsAtMs)) fail("invalid-argument", "Invalid term start date.");
             const policyReason = text(d.reason, "term policy authorization", 240);
-            tx.update(ref, { termPolicy: POLICY, inductionAtMs, expectedEndsAtMs, actualEndsAtMs: null, policyAdoptedAtMs: clock(), policyAdoptedBy: request.auth.uid, policyReason });
+            tx.update(ref, { termPolicy: POLICY, expectedEndsAtMs, actualEndsAtMs: null, policyAdoptedAtMs: clock(), policyAdoptedBy: request.auth.uid, policyReason });
             return;
           }
           if (a.status === "completed") return;

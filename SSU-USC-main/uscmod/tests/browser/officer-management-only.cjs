@@ -26,7 +26,7 @@ const server=http.createServer((req,res)=>{const u=new URL(req.url,origin);if(u.
    if(u.pathname==='/shared/security-client.js')return route.fulfill({contentType:'text/javascript',body:'export {auth} from "/firebase/firebase-config.js";export const callSecure=async(name,data)=>{if(name==="getElectionContext")return{electionId:"synthetic"};directoryWrites.push({name,data});return{updated:true};};'});
    return route.continue();
   });
-  const p=await context.newPage(),errors=[];p.on('pageerror',e=>errors.push(e.message));p.on('dialog',d=>d.type()==='prompt'?d.accept(d.message().startsWith('Induction in Philippine')?d.defaultValue():'Synthetic approved term completion'):d.accept());
+  const p=await context.newPage(),errors=[];p.on('pageerror',e=>errors.push(e.message));p.on('dialog',d=>d.type()==='prompt'?d.accept('Synthetic approved term completion'):d.accept());
   await p.goto(origin+'/usc-admin/admin-dashboard/queue.html');await p.waitForURL('**/users.html');
   await p.locator('[data-open-user="first"]').waitFor();
   await p.screenshot({path:path.join(out,'directory-desktop.png'),fullPage:true});
@@ -49,7 +49,7 @@ const server=http.createServer((req,res)=>{const u=new URL(req.url,origin);if(u.
   f.records.get('users/legacy').fullName='Synthetic Legacy Officer';
 
   await p.locator('#assignmentPosition').selectOption('Treasurer');await p.locator('#administrationPeriod').fill('Synthetic 2026–2027');await p.locator('#appointmentAuthorization').fill('Synthetic authorized resolution');
-  await p.locator('#termStart').fill('2024-02-28T09:15');await p.locator('#inductionDate').fill('2024-02-29T09:15');assert.equal(await p.locator('#termEnd').inputValue(),'2025-02-28T09:15');assert.equal(await p.locator('#termEnd').getAttribute('readonly'), '');assert.ok(await p.locator('#termEnd').inputValue());await p.locator('#appointmentConfirmed').check();
+  assert.equal(await p.locator('#inductionDate').count(),0);await p.locator('#termStart').fill('2024-02-29T09:15');assert.equal(await p.locator('#termEnd').inputValue(),'2025-02-28T09:15');assert.equal(await p.locator('#termEnd').getAttribute('readonly'), '');assert.ok(await p.locator('#termEnd').inputValue());await p.locator('#appointmentConfirmed').check();
   const count=f.authUsers.size;await p.getByRole('button',{name:'Create officer assignment'}).click();await p.getByText('Assignment created. Ask the officer to sign out and sign in again.').waitFor();
   assert.equal(f.records.get('users/first').role,'officer');assert.equal(f.authUsers.size,count);
   const term=f.records.get('officer_assignments/'+f.records.get('users/first').officerAssignmentId);

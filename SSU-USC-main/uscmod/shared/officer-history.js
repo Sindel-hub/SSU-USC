@@ -8,7 +8,6 @@ try { profile = JSON.parse(sessionStorage.getItem('studentProfile') || '{}'); } 
 const admin = profile.role === 'admin';
 const $ = id => document.getElementById(id);
 const state = { assignments: [], assignmentNext: null, activities: [], activityNext: null, selected: null, candidate: null, positions: {}, departments: [], record: null, officers: [], officerNext: null };
-const philippineInput = value => new Date(value + 8 * 3600000).toISOString().slice(0, 16);
 const philippineMs = value => /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(value || '') ? new Date(value + ':00+08:00').getTime() : NaN;
 const date = value => Number.isFinite(value) ? new Date(value).toLocaleString('en-PH', { timeZone: 'Asia/Manila' }) : 'Not recorded';
 function node(tag, text, className) { const el = document.createElement(tag); if (text !== undefined) el.textContent = text; if (className) el.className = className; return el; }
@@ -51,14 +50,10 @@ function renderAssignments() {
     card.append(node('strong', termStatus(a)), node('p', `Permissions: ${(a.permissions || []).filter(p => !p.startsWith('elections.')).map(p => permissionDefinition(p)?.label || p).join(', ')}`));
     if (a.completionReason) card.append(node('p', `Deactivation reason: ${a.completionReason}`));
     if (admin && a.status === 'active' && a.termPolicy !== 'until-turnover') card.append(button('Adopt expected-end policy', async () => {
-      const induction = prompt('Induction in Philippine time (YYYY-MM-DDTHH:mm):', philippineInput(a.inductionAtMs ?? a.startsAtMs));
-      if (induction === null) return;
-      const inductionAtMs = philippineMs(induction.trim());
-      if (!Number.isSafeInteger(inductionAtMs)) throw new Error('Enter a valid induction date and time.');
       const reason = prompt('Enter the approved policy authorization/reference.');
       if (!reason?.trim()) return;
       if (!confirm(`Allow ${a.officerName} to serve until explicit turnover? This can restore access for an expired fixed term.`)) return;
-      await call('officerAssignmentManage', { action: 'adopt-policy', assignmentId: a.id, inductionAtMs, reason });
+      await call('officerAssignmentManage', { action: 'adopt-policy', assignmentId: a.id, reason });
       await loadAssignments(); status('Expected-end policy adopted. Access continues until the term is completed.');
     }));
     if (a.authSyncPending) card.append(node('p', 'Authentication synchronization pending. Administrator action required.', 'history-error'));
@@ -171,17 +166,16 @@ $('findOfficerCandidate').addEventListener('click', event => run(event.currentTa
   $('candidateSummary').textContent = `${state.candidate.fullName} · ${state.candidate.studentId}`; status('Student account found. Review the appointment and permissions.');
 }));
 function updateExpectedEnd() {
-  const value = $('inductionDate').value;
+  const value = $('termStart').value;
   if (!value) { $('termEnd').value = ''; return; }
   const [day, time] = value.split('T'), [year, month, date] = day.split('-').map(Number);
   const last = new Date(Date.UTC(year + 1, month, 0)).getUTCDate();
   $('termEnd').value = `${year + 1}-${String(month).padStart(2, '0')}-${String(Math.min(date, last)).padStart(2, '0')}T${time}`;
 }
-$('termStart').addEventListener('input', () => { if (!$('inductionDate').dataset.edited) { $('inductionDate').value = $('termStart').value; updateExpectedEnd(); } });
-$('inductionDate').addEventListener('input', () => { $('inductionDate').dataset.edited = 'true'; updateExpectedEnd(); });
+$('termStart').addEventListener('input', updateExpectedEnd);
 $('appointmentForm').addEventListener('submit', event => { event.preventDefault(); run(event.submitter, async () => {
   if (!state.candidate) throw new Error('Find and review the student account first.');
-  const data = { action: 'assign', assignmentId: crypto.randomUUID(), officerUid: state.candidate.uid, position: $('assignmentPosition').value, department: $('assignmentDepartment').value.trim(), administration: $('administrationPeriod').value.trim(), authorization: $('appointmentAuthorization').value.trim(), startsAtMs: philippineMs($('termStart').value), inductionAtMs: philippineMs($('inductionDate').value), termPolicy: 'until-turnover', permissions: [...$('assignmentPermissions').querySelectorAll('input:checked')].map(input => input.value) };
+  const data = { action: 'assign', assignmentId: crypto.randomUUID(), officerUid: state.candidate.uid, position: $('assignmentPosition').value, department: $('assignmentDepartment').value.trim(), administration: $('administrationPeriod').value.trim(), authorization: $('appointmentAuthorization').value.trim(), startsAtMs: philippineMs($('termStart').value), termPolicy: 'until-turnover', permissions: [...$('assignmentPermissions').querySelectorAll('input:checked')].map(input => input.value) };
   const r = await call('officerAssignmentManage', data); $('appointmentConfirmed').checked = false;
   await loadAssignments(); status(r.authSyncPending ? 'Assignment saved. Authentication synchronization is pending; retry before officer sign-in.' : 'Assignment created. Ask the officer to sign out and sign in again.');
 }); });
