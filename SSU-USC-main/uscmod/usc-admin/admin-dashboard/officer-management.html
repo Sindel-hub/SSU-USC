@@ -98,10 +98,9 @@
       <label>Represented department<select id="assignmentDepartment" disabled><option>University-wide</option></select></label>
       <label>Academic year<input id="administrationPeriod" maxlength="80" placeholder="2026–2027" required></label>
       <label>Authorization reference<input id="appointmentAuthorization" maxlength="240" placeholder="Appointment or resolution reference" required></label>
-      <label>Term start / proclamation (Philippine time)<input id="termStart" type="datetime-local" required></label>
-      <label>Induction (Philippine time)<input id="inductionDate" type="datetime-local" required></label>
-      <label>Expected end of term<input id="termEnd" type="datetime-local" readonly aria-describedby="termPolicyNote"></label>
-      <p id="termPolicyNote">Expected end is one year after induction. Officer access continues until an administrator completes the term.</p>
+      <label>Term start (Philippine time)<input id="termStart" type="datetime-local" required></label>
+      <label>Expected end of term<input id="termEnd" type="text" readonly aria-describedby="termPolicyNote"></label>
+      <p id="termPolicyNote">Expected end is March of the academic year’s ending year. Officer access continues until an administrator completes the term.</p>
     </div>
     <fieldset id="assignmentPermissions"><legend>Approved module permissions</legend></fieldset>
     <div class="history-form-actions"><label class="history-check"><input type="checkbox" id="appointmentConfirmed" required>I confirm this appointment and access scope are authorized.</label><button type="submit">Create officer assignment</button></div>
@@ -139,7 +138,7 @@
   </div>
 </footer>
 
-    <script type="module" src="../../shared/officer-history.js?v=officer-term-policy-1"></script>
+    <script type="module" src="../../shared/officer-history.js?v=officer-march-end-1"></script>
     <script type="module" src="../officer-tracklist/officer-tracklist.js"></script>
     <script type="module" src="../shared/js/admin-only-auth.js"></script>
 <script type="module" src="../../shared/profile-manager.js?v=admin-settings-1&amp;refinements=1"></script>

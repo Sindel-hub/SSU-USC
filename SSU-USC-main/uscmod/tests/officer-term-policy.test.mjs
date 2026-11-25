@@ -3,41 +3,42 @@ import assert from 'node:assert/strict';
 import { createRequire } from 'node:module';
 const require = createRequire(import.meta.url);
 const { historyFixture } = require('./helpers/officer-history-fixture.cjs');
-const { expectedEnd, active } = require('../server/officer-term.cjs');
+const { expectedEnd, active, awaitingTurnover } = require('../server/officer-term.cjs');
 const ph = value => Date.parse(value + '+08:00');
 const assignment = f => f.records.get('officer_assignments/assignment-first');
 const manage = (f, data) => f.h.officerAssignmentManage(f.req('admin', { assignmentId: 'assignment-first', ...data }));
 const report = (f, key) => f.h.officerReportSubmit(f.req('first', { operationId: key, title: 'Synthetic report', content: 'Synthetic only' }));
 
-test('expected anniversary follows Philippine calendar, including leap day and year boundaries', () => {
- for (const [start, end] of [
-  ['2026-03-15T09:30:00','2027-03-15T09:30:00'],
-  ['2024-02-29T00:15:00','2025-02-28T00:15:00'],
-  ['2026-01-01T00:15:00','2027-01-01T00:15:00']
- ]) assert.equal(expectedEnd(ph(start)), ph(end));
- assert.ok(Number.isNaN(expectedEnd(NaN)));
+test('expected end follows March of the academic year ending year, with no invented day', () => {
+ for (const year of ['2026-2027', '2026–2027', '2026 — 2027']) assert.equal(expectedEnd(year), '2027-03');
+ assert.equal(expectedEnd('2027-2028'), '2028-03');
+ for (const value of ['2026-2028', 'Synthetic 2026-2027', '2026', '', null]) assert.equal(expectedEnd(value), null);
+ assert.equal(awaitingTurnover({expectedEndMonth:'2027-03'}, ph('2027-03-31T23:59:59')), false);
+ assert.equal(awaitingTurnover({expectedEndMonth:'2027-03'}, ph('2027-04-01T00:00:00')), true);
 });
-test('server derives expected end from induction, ignores supplied cutoff and preserves proclamation separately', async () => {
+test('server derives March from academic year, ignoring creation/start anniversary and supplied end dates', async () => {
  const f = historyFixture();
  await f.assign('first','Treasurer',{ startsAtMs: ph('2026-03-10T10:00:00'), inductionAtMs: ph('2026-03-15T10:00:00'), endsAtMs: 1, expectedEndsAtMs: 1, actualEndsAtMs: 1 });
  const a = assignment(f);
- assert.equal(a.expectedEndsAtMs, ph('2027-03-15T10:00:00'));
- assert.equal(a.endsAtMs, a.expectedEndsAtMs);
+ assert.equal(a.expectedEndMonth, '2027-03');
+ assert.equal(a.expectedEndsAtMs, null);
+ assert.equal(a.endsAtMs, null);
  assert.equal(a.actualEndsAtMs, null);
  assert.equal(a.startsAtMs, ph('2026-03-10T10:00:00'));
+ assert.equal(Object.hasOwn(a, 'inductionAtMs'), false);
  assert.equal(a.termPolicy, 'until-turnover');
 });
-test('passing expected end retains authorized access until explicit completion, without freeing the office', async () => {
+test('passing expected March retains authorized access until explicit completion, without freeing the office', async () => {
  const f = historyFixture(); await f.assign();
- const expected = assignment(f).expectedEndsAtMs;
- f.advance(expected - f.now + 1);
+ const expected = assignment(f).expectedEndMonth;
+ f.advance(ph('2027-04-01T00:00:00') - f.now);
  await report(f,'after-anniversary');
  assert.equal((await f.h.officerDirectory(f.req('admin',{}))).items[0].term.status,'awaiting-turnover');
  await assert.rejects(f.assign('second'), {code:'failed-precondition'});
  const before = {...f.authUsers.get('first')};
  await manage(f,{action:'complete',reason:'Successors proclaimed; approved turnover'});
  const a = assignment(f);
- assert.equal(a.actualEndsAtMs,f.now); assert.equal(a.expectedEndsAtMs,expected);
+ assert.equal(a.actualEndsAtMs,f.now); assert.equal(a.expectedEndMonth,expected);
  assert.equal(a.completionReason,'Successors proclaimed; approved turnover');
  assert.equal(f.records.get('users/first').role,'student');
  assert.equal(f.authUsers.get('first').password,before.password);
@@ -80,11 +81,33 @@ test('policy adoption cannot revive completed, displaced, suspended or ineligibl
  }
 });
 test('term changes require recent authorized admin and reject invalid dates or stale client policy', async () => {
- for (const patch of [{termPolicy:undefined},{startsAtMs:NaN},{inductionAtMs:0},{inductionAtMs:Date.now()+100*366*86400000}]) {
+ for (const patch of [{termPolicy:undefined},{startsAtMs:NaN},{startsAtMs:0},{startsAtMs:Date.now()+100*366*86400000}]) {
   const f=historyFixture();await assert.rejects(f.assign('first','Treasurer',patch));assert.equal(f.records.has('officer_assignments/assignment-first'),false);
  }
  const f=historyFixture();await f.assign();
  await assert.rejects(f.h.officerAssignmentManage(f.req('first',{action:'adopt-policy',assignmentId:'assignment-first',reason:'Unauthorized'})),{code:'permission-denied'});
  const req=f.req('admin',{action:'adopt-policy',assignmentId:'assignment-first',reason:'Stale'});req.auth.token.auth_time-=1801;
  await assert.rejects(f.h.officerAssignmentManage(req),{code:'failed-precondition'});
+});
+
+test('late account creation and different term starts in the same academic year keep the same March end', async () => {
+ for (const startsAtMs of [ph('2026-03-15T08:00:00'), ph('2026-11-20T08:00:00')]) {
+  const f=historyFixture();await f.assign('first','Treasurer',{startsAtMs});assert.equal(assignment(f).expectedEndMonth,'2027-03');
+ }
+ const f=historyFixture();await assert.rejects(f.assign('first','Treasurer',{administration:'2026-2028'}),{code:'invalid-argument'});
+ assert.equal(f.records.has('officer_assignments/assignment-first'),false);
+});
+
+test('existing active estimates display March without rewriting stored history or completed terms', async () => {
+ const f=historyFixture();await f.assign();const a=assignment(f);
+ delete a.expectedEndMonth;a.expectedEndsAtMs=ph('2027-11-25T09:00:00');
+ const before=JSON.stringify(a);
+ const current=await f.h.officerAssignments(f.req('admin',{}));
+ assert.equal(current.items[0].expectedEndMonth,'2027-03');
+ assert.equal(JSON.stringify(assignment(f)),before);
+ assert.equal((await f.h.officerDirectory(f.req('admin',{}))).items[0].term.expectedEndMonth,'2027-03');
+ await manage(f,{action:'complete',reason:'Synthetic turnover'});
+ const completed=await f.h.officerAssignments(f.req('admin',{}));
+ assert.equal(completed.items[0].expectedEndMonth,null);
+ assert.equal(completed.items[0].expectedEndsAtMs,ph('2027-11-25T09:00:00'));
 });
