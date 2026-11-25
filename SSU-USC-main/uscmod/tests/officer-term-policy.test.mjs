@@ -111,3 +111,19 @@ test('existing active estimates display March without rewriting stored history o
  assert.equal(completed.items[0].expectedEndMonth,null);
  assert.equal(completed.items[0].expectedEndsAtMs,ph('2027-11-25T09:00:00'));
 });
+
+test('policy adoption acknowledges saved state and retries preserve the original audit reference', async () => {
+ const f=historyFixture();await f.assign();const a=assignment(f);delete a.termPolicy;delete a.expectedEndMonth;
+ const first=await manage(f,{action:'adopt-policy',reason:'First authorized conversion'});
+ assert.equal(first.termPolicy,'until-turnover');assert.equal(first.expectedEndMonth,'2027-03');
+ const before={...assignment(f)};f.advance(60000);
+ const retry=await manage(f,{action:'adopt-policy',reason:'Retry after a lost response'});
+ assert.equal(retry.termPolicy,'until-turnover');assert.equal(assignment(f).policyAdoptedAtMs,before.policyAdoptedAtMs);
+ assert.equal(assignment(f).policyReason,'First authorized conversion');
+});
+test('stale administrator conversion fails with officer-specific recovery instructions and makes no writes', async () => {
+ const f=historyFixture();await f.assign();delete assignment(f).termPolicy;
+ const before=JSON.stringify(assignment(f));const req=f.req('admin',{action:'adopt-policy',assignmentId:'assignment-first',reason:'Synthetic approved'});req.auth.token.auth_time-=1801;
+ await assert.rejects(f.h.officerAssignmentManage(req),error=>error.code==='failed-precondition'&&/Sign out and sign in again before changing officer assignments/.test(error.message));
+ assert.equal(JSON.stringify(assignment(f)),before);
+});

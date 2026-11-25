@@ -7,7 +7,7 @@ let profile = {};
 try { profile = JSON.parse(sessionStorage.getItem('studentProfile') || '{}'); } catch {}
 const admin = profile.role === 'admin';
 const $ = id => document.getElementById(id);
-const state = { assignments: [], assignmentNext: null, activities: [], activityNext: null, selected: null, candidate: null, positions: {}, departments: [], record: null, officers: [], officerNext: null };
+const state = { assignments: [], assignmentNext: null, activities: [], activityNext: null, selected: null, candidate: null, positions: {}, departments: [], record: null, officers: [], officerNext: null, policyFeedback: new Map() };
 const philippineMs = value => /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(value || '') ? new Date(value + ':00+08:00').getTime() : NaN;
 const date = value => Number.isFinite(value) ? new Date(value).toLocaleString('en-PH', { timeZone: 'Asia/Manila' }) : 'Not recorded';
 function node(tag, text, className) { const el = document.createElement(tag); if (text !== undefined) el.textContent = text; if (className) el.className = className; return el; }
@@ -47,21 +47,54 @@ function termStatus(a) {
 function termDates(a) {
   return `Start: ${date(a.startsAtMs)} · Expected end: ${expectedLabel(a)} · Actual end: ${a.actualEndsAtMs != null || a.completedAtMs != null ? date(a.actualEndsAtMs ?? a.completedAtMs) : 'Pending'}`;
 }
+function policyFeedback(assignmentId, message, error = false) {
+  state.policyFeedback.set(assignmentId, { message, error });
+  const card = [...$('assignmentList').children].find(el => el.dataset.assignmentId === assignmentId);
+  const output = card?.querySelector('[data-policy-status]');
+  if (output) {
+    output.textContent = message; output.hidden = !message;
+    output.classList.toggle('history-error', error);
+    if (error) { output.focus({ preventScroll: true }); output.scrollIntoView({ block: 'nearest' }); }
+  }
+}
 function renderAssignments() {
   const list = $('assignmentList'); list.replaceChildren();
   if (!state.assignments.length) list.append(node('p', 'No authorized officer assignments found. Existing legacy officers must be assigned a position and term before tracked activity begins.'));
   for (const a of state.assignments) {
-    const card = node('article', undefined, 'history-term');
+    const card = node('article', undefined, 'history-term'); card.dataset.assignmentId = a.id;
     card.append(node('h3', `${a.position} · ${a.administration}`), node('p', `${a.officerName} · ${a.department}`), node('p', termDates(a)));
     card.append(node('strong', termStatus(a)), node('p', `Permissions: ${(a.permissions || []).filter(p => !p.startsWith('elections.')).map(p => permissionDefinition(p)?.label || p).join(', ')}`));
     if (a.completionReason) card.append(node('p', `Deactivation reason: ${a.completionReason}`));
     if (admin && a.status === 'active' && a.termPolicy !== 'until-turnover') card.append(button('Adopt expected-end policy', async () => {
       const reason = prompt('Enter the approved policy authorization/reference.');
-      if (!reason?.trim()) return;
-      if (!confirm(`Allow ${a.officerName} to serve until explicit turnover? This can restore access for an expired fixed term.`)) return;
-      await call('officerAssignmentManage', { action: 'adopt-policy', assignmentId: a.id, reason });
-      await loadAssignments(); status('Expected-end policy adopted. Access continues until the term is completed.');
+      if (!reason?.trim()) { policyFeedback(a.id, 'No changes made. Enter a reason to update this assignment.'); return; }
+      if (!confirm(`Allow ${a.officerName} to serve until explicit turnover? This can restore access for an expired fixed term.`)) { policyFeedback(a.id, 'Cancelled. This assignment still uses its fixed cutoff.'); return; }
+      policyFeedback(a.id, 'Saving the term schedule…');
+      let saved = false;
+      try {
+        await call('officerAssignmentManage', { action: 'adopt-policy', assignmentId: a.id, reason });
+        saved = true;
+        // Verify this exact assignment, including one loaded on a later page.
+        // A successful HTTP response alone does not prove that the policy changed.
+        const response = await call('officerAssignments', { assignmentId: a.id });
+        const updated = response.items?.find(item => item.id === a.id);
+        if (!updated || updated.termPolicy !== 'until-turnover' || !/^\d{4}-03$/.test(updated.expectedEndMonth || '')) throw new Error('The service did not confirm the term schedule change. Refresh this assignment before retrying.');
+        state.assignments = state.assignments.map(item => item.id === a.id ? updated : item);
+        state.policyFeedback.set(a.id, { message: `Term schedule saved. Expected end: ${expectedLabel(updated)}. Access continues until the term is completed.`, error: false });
+        renderAssignments();
+        await loadOfficerDirectory();
+        status('Expected-end policy adopted. Access continues until the term is completed.');
+      } catch (error) {
+        policyFeedback(a.id, saved ? `The service responded, but the saved change could not be verified. ${error.message || 'Refresh before retrying.'}` : error.message || 'The term schedule could not be saved. Please retry.', true);
+        throw error;
+      }
     }));
+    if (admin) {
+      const feedback = state.policyFeedback.get(a.id);
+      const output = node('p', feedback?.message || '', feedback?.error ? 'history-error' : '');
+      output.dataset.policyStatus = ''; output.setAttribute('role', 'status'); output.setAttribute('aria-live', 'polite'); output.tabIndex = -1; output.hidden = !feedback?.message;
+      card.append(output);
+    }
     if (a.authSyncPending) card.append(node('p', 'Authentication synchronization pending. Administrator action required.', 'history-error'));
     card.append(button('View tracklist', () => loadActivities(a)));
     if (admin && a.status !== 'completed') card.append(button('Complete term', async () => {

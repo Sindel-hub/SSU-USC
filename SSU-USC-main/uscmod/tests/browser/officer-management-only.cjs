@@ -5,8 +5,8 @@ const {historyFixture}=require('../helpers/officer-history-fixture.cjs');
 const {createManagementHTTPHandler}=require('../../server/http.cjs');
 const root=path.resolve(__dirname,'../..'),out=process.env.USC_REVIEW_OUTPUT||'/tmp/officer-management-only';
 fs.mkdirSync(out,{recursive:true});
-const f=historyFixture();let origin;
-const api=createManagementHTTPHandler({hosted:false,log(){},getRuntime:()=>({settings:{allowedOrigins:new Set([origin])},handlers:f.h,verifyIdToken:async()=>({uid:'admin',role:'admin',email_verified:true,auth_time:f.now/1000})})});
+const f=historyFixture();let origin, forceStaleAuth=false;
+const api=createManagementHTTPHandler({hosted:false,log(){},getRuntime:()=>({settings:{allowedOrigins:new Set([origin])},handlers:f.h,verifyIdToken:async()=>({uid:'admin',role:'admin',email_verified:true,auth_time:f.now/1000-(forceStaleAuth?1801:0)})})});
 const server=http.createServer((req,res)=>{const u=new URL(req.url,origin);if(u.pathname==='/api/management')return api(req,res);const file=path.resolve(root,'.'+u.pathname);if(!file.startsWith(root+path.sep)||!fs.existsSync(file)||!fs.statSync(file).isFile()){res.writeHead(404);return res.end();}res.setHeader('Content-Type',({'.html':'text/html','.js':'text/javascript','.css':'text/css','.webp':'image/webp'})[path.extname(file)]||'application/octet-stream');res.end(fs.readFileSync(file));});
 (async()=>{
  await new Promise(r=>server.listen(0,'127.0.0.1',r));origin='http://127.0.0.1:'+server.address().port;
@@ -56,9 +56,36 @@ const server=http.createServer((req,res)=>{const u=new URL(req.url,origin);if(u.
   assert.equal(term.termPolicy,'until-turnover');assert.equal(term.expectedEndMonth,'2027-03');assert.equal(term.expectedEndsAtMs,null);assert.equal(term.actualEndsAtMs,null);
   await p.locator('#assignmentList').getByText('Active',{exact:true}).waitFor();
   // Explicit administrator adoption is required for old hard-cutoff records.
-  delete term.termPolicy;term.endsAtMs=f.now-1;
-  await p.locator('#refreshHistory').click();await p.getByRole('button',{name:'Adopt expected-end policy'}).click();
-  await p.getByText('Expected-end policy adopted. Access continues until the term is completed.').waitFor();
+  delete term.termPolicy;delete term.expectedEndMonth;term.endsAtMs=f.now+30*86400000;term.expectedEndsAtMs=term.endsAtMs;
+  await p.locator('#refreshHistory').click();
+  const policyButton=p.getByRole('button',{name:'Adopt expected-end policy'}),policyOutput=p.locator('[data-policy-status]');
+  forceStaleAuth=true;
+  await policyButton.click();await policyOutput.getByText('Sign out and sign in again before changing officer assignments, then retry.',{exact:true}).waitFor();
+  const failedBox=await policyOutput.boundingBox();assert.ok(failedBox&&failedBox.y>=0&&failedBox.y<1000);
+  assert.equal(f.records.get('officer_assignments/'+f.records.get('users/first').officerAssignmentId).termPolicy,undefined);
+  assert.equal(await policyButton.isVisible(),true);await p.screenshot({path:path.join(out,'policy-error-beside-button.png')});
+  forceStaleAuth=false;
+  let policyMode='no-op';
+  await p.route('**/api/management',route=>{
+   const request=route.request().postDataJSON();
+   if(policyMode==='no-op'&&request.action==='officerAssignmentManage'&&request.data.action==='adopt-policy')return route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({data:{id:request.data.assignmentId}})});
+   if(policyMode==='read-fail'&&request.action==='officerAssignments'&&request.data.assignmentId)return route.fulfill({status:503,contentType:'application/json',body:JSON.stringify({error:{code:'unavailable',message:'Synthetic verification read unavailable.'}})});
+   return route.continue();
+  });
+  await policyButton.click();await policyOutput.getByText(/The service did not confirm the term schedule change/).waitFor();
+  assert.equal(await policyButton.isVisible(),true);assert.equal(f.records.get('officer_assignments/'+f.records.get('users/first').officerAssignmentId).termPolicy,undefined);
+  policyMode='read-fail';
+  await policyButton.click();await policyOutput.getByText(/saved change could not be verified/).waitFor();
+  const savedPolicy={...f.records.get('officer_assignments/'+f.records.get('users/first').officerAssignmentId)};
+  assert.equal(savedPolicy.termPolicy,'until-turnover');assert.equal(await policyButton.isVisible(),true);
+  policyMode='none';f.advance(60000);
+  await policyButton.click();await p.getByText('Expected-end policy adopted. Access continues until the term is completed.').waitFor();
+  assert.equal(await policyButton.count(),0);assert.match(await policyOutput.innerText(),/Term schedule saved. Expected end: March 2027/);
+  assert.equal(f.records.get('officer_assignments/'+f.records.get('users/first').officerAssignmentId).policyAdoptedAtMs,savedPolicy.policyAdoptedAtMs);
+  assert.equal(f.records.get('officer_assignments/'+f.records.get('users/first').officerAssignmentId).policyReason,savedPolicy.policyReason);
+  await p.locator('#assignmentList').scrollIntoViewIfNeeded();await p.screenshot({path:path.join(out,'policy-confirmed-button-removed.png')});
+  await p.reload();await p.getByText('Authorized assignments loaded. Select a term to review its tracklist.').waitFor();
+  assert.equal(await policyButton.count(),0);assert.match(await p.locator('#assignmentList').innerText(),/Expected end: March 2027/);
   assert.equal(f.records.get('officer_assignments/'+f.records.get('users/first').officerAssignmentId).termPolicy,'until-turnover');assert.equal(f.records.get('officer_assignments/'+f.records.get('users/first').officerAssignmentId).policyAdoptedBy,'admin');
   await p.locator('[data-officer-uid="first"]').waitFor();
   assert.match(await p.locator('[data-officer-uid="first"]').innerText(),/2026–2027/);
@@ -89,6 +116,6 @@ const server=http.createServer((req,res)=>{const u=new URL(req.url,origin);if(u.
   await p.goto(origin+'/usc-admin/student-registration/officer-registration.html');await p.waitForURL('**/officer-management.html');await p.locator('#appointmentForm').waitFor();
   await p.goto(origin+'/usc-admin/admin-dashboard/users.html');await p.locator('[data-open-user="first"]').click();assert.equal(await p.evaluate(()=>document.documentElement.scrollWidth>innerWidth+1),false);await p.screenshot({path:path.join(out,'directory-account-mobile.png')});
   assert.deepEqual(errors,[]);
-  console.log('PASS: March end from academic year despite November start, academic-year changes, Philippine timezone, read-only end, delayed turnover, explicit legacy adoption and actual end/reason; retired routes redirect; directory retains student registration with read-only officer scope; account updates omit role fields; Student ID handoff; promotion and term completion preserve UID; roster handles legacy/restricted accounts, safe text, pagination, refresh, errors and mobile scrolling; 1440/768/390 responsive layouts; no browser errors. Synthetic data only.');
+  console.log('PASS: inline stale-auth error, no-op detection, failed verification read, idempotent retry, button removal after persisted conversion and reload; March end from academic year despite November start, academic-year changes, Philippine timezone, read-only end, delayed turnover, explicit legacy adoption and actual end/reason; retired routes redirect; directory retains student registration with read-only officer scope; account updates omit role fields; Student ID handoff; promotion and term completion preserve UID; roster handles legacy/restricted accounts, safe text, pagination, refresh, errors and mobile scrolling; 1440/768/390 responsive layouts; no browser errors. Synthetic data only.');
  }finally{await browser.close();await new Promise(r=>server.close(r));}
 })().catch(e=>{console.error(e);server.close();process.exitCode=1;});

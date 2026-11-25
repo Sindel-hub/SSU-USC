@@ -25,10 +25,10 @@ function createAuthorization({ db, clock = Date.now }) {
     }
     return profile;
   }
-  function requireRecentAuth(request) {
+  function requireRecentAuth(request, message = "Sign in again before changing student records.") {
     const authTime = Number(request.auth?.token?.auth_time);
     const now = Math.floor(clock() / 1000);
-    if (!Number.isFinite(authTime) || authTime <= 0 || authTime > now + 60 || now - authTime > 1800) throw new ServiceError("failed-precondition", "Sign in again before changing student records.");
+    if (!Number.isFinite(authTime) || authTime <= 0 || authTime > now + 60 || now - authTime > 1800) throw new ServiceError("failed-precondition", message);
   }
   async function requireOfficerPermission(request, permission) {
     const profile = await requireActiveRole(request, ["officer", "admin"]);

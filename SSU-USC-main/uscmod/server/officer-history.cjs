@@ -36,7 +36,7 @@ function id(value) { const v = text(value, "record ID", 128); if (!/^[a-zA-Z0-9_
 const slot = (position, department) => createHash("sha256").update(`${position}:${department}`).digest("hex");
 function createOfficerHistory({ db, adminAuth, requireActiveRole, requireRecentAuth, clock = Date.now }) {
   const assignments = db.collection("officer_assignments"), records = db.collection("officer_records");
-  async function admin(request) { await requireActiveRole(request, ["admin"]); requireRecentAuth(request); }
+  async function admin(request) { await requireActiveRole(request, ["admin"]); requireRecentAuth(request, "Sign out and sign in again before changing officer assignments, then retry."); }
   // Read the profile AND assignment inside the mutation transaction. A completed
   // or expired assignment cannot race a cached browser/profile authorization.
   async function context(tx, request, permission, { includeLegacy = false } = {}) {
@@ -212,8 +212,13 @@ function createOfficerHistory({ db, adminAuth, requireActiveRole, requireRecentA
             if (!Number.isSafeInteger(a.startsAtMs) || a.startsAtMs <= 0 || a.startsAtMs > clock()) fail("failed-precondition", "This assignment requires a valid recorded term start.");
             const expectedEndMonth = expectedEnd(a.administration);
             if (!expectedEndMonth) fail("failed-precondition", "This assignment requires a recorded academic year in YYYY-YYYY format.");
+            // Retry after an uncertain network/read response must not overwrite
+            // the original authorization reason or policy adoption timestamp.
+            if (a.termPolicy === POLICY && a.expectedEndMonth === expectedEndMonth) return;
             const policyReason = text(d.reason, "term policy authorization", 240);
-            tx.update(ref, { termPolicy: POLICY, expectedEndMonth, actualEndsAtMs: null, policyAdoptedAtMs: clock(), policyAdoptedBy: request.auth.uid, policyReason });
+            const patch = { termPolicy: POLICY, expectedEndMonth, actualEndsAtMs: null, policyAdoptedAtMs: clock(), policyAdoptedBy: request.auth.uid, policyReason };
+            tx.update(ref, patch);
+            a = { ...a, ...patch };
             return;
           }
           if (a.status === "completed") return;
@@ -222,7 +227,7 @@ function createOfficerHistory({ db, adminAuth, requireActiveRole, requireRecentA
           tx.update(ref, { status: "completed", actualEndsAtMs: clock(), completedAtMs: clock(), completedBy: request.auth.uid, completionReason, authSyncPending: true });
           if (person.data()?.officerAssignmentId === assignmentId) { updateRoleIndexes(tx, indexes, "student", ""); tx.update(userRef, { role: "student", officePosition: "", officerPermissions: [], officerPermissionSource: "", updatedAt: new Date(clock()) }); }
         });
-        return { id: assignmentId, authSyncPending: d.action === "adopt-policy" ? a.authSyncPending === true : await sync(a, assignmentId) };
+        return { id: assignmentId, ...(d.action === "adopt-policy" ? { termPolicy: a.termPolicy, expectedEndMonth: a.expectedEndMonth } : {}), authSyncPending: d.action === "adopt-policy" ? a.authSyncPending === true : await sync(a, assignmentId) };
       },
       async officerAssignments(request) {
         const p = await requireActiveRole(request, ["student", "officer", "admin"]);
