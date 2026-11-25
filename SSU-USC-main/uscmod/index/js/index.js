@@ -64,7 +64,10 @@ function buildSession(profile, claims) {
 function redirectByRole(role) {
   if (role === "admin") location.href = "../usc-admin/admin-dashboard/admin-dashboard.html";
   else if (role === "officer") location.href = "../usc-admin/overview/overview.html";
-  else location.href = "../dashboard/dashboard.html";
+  else {
+    const surveyId = new URLSearchParams(location.search).get('survey');
+    location.href = /^[a-zA-Z0-9]{20}$/.test(surveyId || '') ? '../survey/index.html?id='+encodeURIComponent(surveyId) : '../dashboard/dashboard.html';
+  }
 }
 
 async function recordStudentSignIn(profile, user) {

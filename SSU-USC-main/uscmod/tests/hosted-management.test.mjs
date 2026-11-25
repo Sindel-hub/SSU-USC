@@ -142,16 +142,22 @@ test('hosted HTTP import is record-only and explicit office issuance supports on
   assert.equal(reused.statusCode, 412); assert.equal(f.authUsers.get(uid).password, 'Synthetic-student-password');
   assert.equal(JSON.stringify(a.body).includes(token), false);
 });
-test('anonymous survey HTTP calls expose no author/response data and enforce public throttling', async () => {
-  const f = hostedFixture(), q = { title: 'Synthetic priorities', description: '', departments: [DEPARTMENTS[3]], opensAt: f.now - 1000, closesAt: f.now + 60000, questions: [{ label: 'Priority?', type: 'single', options: ['Study', 'Wellbeing'] }] };
-  const created = await request(f, 'needsAssessmentManage', { action: 'save', input: q });
-  const id = created.body.data.id; await request(f, 'needsAssessmentManage', { action: 'publish', surveyId: id });
-  const result = await request(f, 'needsAssessmentPublic', { surveyId: id }, { headers: { authorization: '' } });
-  assert.equal(result.statusCode, 200); assert.equal(result.body.data.createdBy, undefined); assert.equal(result.body.data.responseCount, undefined);
-  const submitted = await request(f, 'needsAssessmentSubmit', { surveyId: id, submissionId: '11111111-1111-1111-1111-111111111111', department: DEPARTMENTS[3], answers: { q1: 'Study' } }, { headers: { authorization: '' } });
-  assert.equal(submitted.statusCode, 200); assert.equal(f.records.get('needs_assessment_surveys/' + id).responseCount, 1);
-  for (let n = 0; n < 120; n++) await request(f, 'needsAssessmentPublic', { surveyId: id }, { headers: { authorization: '' } });
-  assert.equal((await request(f, 'needsAssessmentPublic', { surveyId: id }, { headers: { authorization: '' } })).statusCode, 429);
+test('survey HTTP calls require an active student and never disclose identity to officers', async () => {
+ const f=hostedFixture(), q={title:'Synthetic priorities',description:'',departments:[DEPARTMENTS[3]],opensAt:f.now-1000,closesAt:f.now+60000,questions:[{label:'Priority?',type:'single',options:['Study','Wellbeing']}]};
+ f.records.set('users/student-test',{role:'student',accountStatus:'approved',isActive:true,studentId:'990000001',college:DEPARTMENTS[3]});
+ const created=await request(f,'needsAssessmentManage',{action:'save',input:q});const id=created.body.data.id;await request(f,'needsAssessmentManage',{action:'publish',surveyId:id});
+ const anonymous={headers:{authorization:''}},student={headers:{authorization:'Bearer fixture-student'}};
+ assert.equal((await request(f,'needsAssessmentPublic',{surveyId:id},anonymous)).statusCode,401);
+ assert.equal((await request(f,'needsAssessmentSubmit',{surveyId:id},anonymous)).statusCode,401);
+ const result=await request(f,'needsAssessmentPublic',{surveyId:id},student);assert.equal(result.statusCode,200);assert.equal(result.body.data.alreadySubmitted,false);assert.equal(result.body.data.createdBy,undefined);
+ const data={surveyId:id,department:DEPARTMENTS[3],answers:{q1:'Study'}};
+ const submitted=await request(f,'needsAssessmentSubmit',data,student);assert.equal(submitted.statusCode,200);assert.equal(submitted.body.data.submitted,true);
+ const duplicate=await request(f,'needsAssessmentSubmit',data,student);assert.equal(duplicate.body.data.alreadySubmitted,true);
+ const status=await request(f,'needsAssessmentPublic',{surveyId:id},student);assert.equal(status.body.data.alreadySubmitted,true);
+ assert.equal(f.records.get('needs_assessment_surveys/'+id).responseCount,1);
+ const responses=await request(f,'needsAssessmentResponses',{surveyId:id});assert.equal(responses.statusCode,200);assert.equal(responses.body.data.responses.length,1);
+ assert.deepEqual(Object.keys(responses.body.data.responses[0]).sort(),['answers','department','submittedAt']);
+ assert.ok(!JSON.stringify(responses.body).includes('990000001'));
 });
 test('public rate limit uses a keyed opaque network identifier and resets the window', async () => {
   const f = hostedFixture(), limit = createPublicLimiter({ db: f.db, key: 'synthetic-secret', clock: () => f.now });

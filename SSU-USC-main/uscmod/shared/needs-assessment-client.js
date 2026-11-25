@@ -5,7 +5,7 @@ export async function surveyCall(action, data = {}) {
     if (/not-found|unavailable|internal|unknown/.test(error.code || '') && !error.message?.includes('Survey')) {
       throw new Error('The survey service is unavailable. Please try again later.');
     }
-    throw new Error(error.message || 'Unable to complete the survey request.');
+    throw Object.assign(new Error(error.message || 'Unable to complete the survey request.'), {code:error.code});
   }
 }
 export const escapeHtml = value => String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));

@@ -1,5 +1,5 @@
 import { auth, appCheck, functions } from '../firebase/firebase-config.js';
-const PUBLIC_ACTIONS = new Set(['needsAssessmentPublic', 'needsAssessmentSubmit', 'studentActivateAccount']);
+const PUBLIC_ACTIONS = new Set(['studentActivateAccount']);
 export async function hostedManagementCall(action, data = {}) {
   // Explicit opt-in retains the existing emulator/Cloud Functions workflow.
   if (globalThis.USC_MANAGEMENT_TRANSPORT === 'firebase') {
