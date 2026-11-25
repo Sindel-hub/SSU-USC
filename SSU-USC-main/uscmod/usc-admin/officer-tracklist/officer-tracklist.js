@@ -57,7 +57,14 @@ function initialize(host) {
     }
     $('.activity-modules').replaceChildren(...Array.from(modules, ([name, count]) => {
       const row = element('div');
-      row.append(element('dt', name), element('dd', count));
+      const term = element('dt');
+      const icon = element('i');
+      const icons = { 'Events & Programs': 'fa-calendar-days', 'Bulletin Board Center': 'fa-note-sticky', 'Needs Assessment': 'fa-clipboard-list', 'Complaint Management': 'fa-message', 'Organizational Chart': 'fa-sitemap' };
+      icon.className = 'fa-solid ' + (icons[name] || 'fa-layer-group');
+      icon.setAttribute('aria-hidden', 'true');
+      const badge = element('span'); badge.className = 'activity-module-icon'; badge.append(icon);
+      term.append(badge, element('span', name));
+      row.append(term, element('dd', count));
       return row;
     }));
     setOptions('officer', officers.map(({ value, label }) => [value, label]));
