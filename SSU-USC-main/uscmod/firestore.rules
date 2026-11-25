@@ -89,6 +89,16 @@ service cloud.firestore {
         && ownProfile().accountStatus == "approved"
         && ownProfile().schoolProvisioned == true;
     }
+    function eventAudienceEligible(event) {
+      return event.get('audience', '') != 'Selected Group'
+        || event.get('audienceScope', '') == ''
+        || (event.get('audienceCollege', '') != ''
+          && ownProfile().get('college', '') == event.get('audienceCollege', '')
+          && (event.get('audienceScope', '') == 'college'
+            || (event.get('audienceScope', '') == 'program'
+              && event.get('audienceProgram', '') != ''
+              && ownProfile().get('program', '') == event.get('audienceProgram', ''))));
+    }
     function verifiedStudent() {
       return schoolStudent() && ownProfile().isVerifiedStudent == true;
     }
@@ -250,6 +260,7 @@ service cloud.firestore {
         allow create: if schoolStudent()
           && ownUser(userId)
           && get(/databases/$(database)/documents/events/$(eventId)).data.status == "Published"
+          && eventAudienceEligible(get(/databases/$(database)/documents/events/$(eventId)).data)
           && get(/databases/$(database)/documents/events/$(eventId)).data.registrationMode == "internal"
           && get(/databases/$(database)/documents/events/$(eventId)).data.registrationDeadline is timestamp
           && request.time < get(/databases/$(database)/documents/events/$(eventId)).data.registrationDeadline

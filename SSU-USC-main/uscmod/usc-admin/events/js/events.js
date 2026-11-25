@@ -1,3 +1,4 @@
+import {SSU_PROGRAMS,formatSsuCollege,isValidSsuProgram} from '../../student-registration/js/ssu-programs.js';
 import { trackedOfficerAction, activityAttributionText, activityHistoryHref } from '../../../shared/officer-activity-client.js';
 import { classifyEngagement } from "../../../shared/engagement-report-model.mjs";
 import { mountEngagementAnalytics } from "../../../shared/engagement-analytics.js?v=3";
@@ -36,6 +37,34 @@ const eventEndTimeInput = document.getElementById("eventEndTime");
 const eventCategoryInput = document.getElementById("eventCategory");
 const eventDescriptionInput = document.getElementById("eventDescription");
 const eventAudienceInput = document.getElementById("eventAudience");
+const audienceTarget = document.getElementById("eventAudienceTarget");
+const audienceScope = document.getElementById("eventAudienceScope");
+const audienceCollege = document.getElementById("eventAudienceCollege");
+const audienceProgram = document.getElementById("eventAudienceProgram");
+const audienceProgramField = document.getElementById("eventAudienceProgramField");
+for (const college of Object.keys(SSU_PROGRAMS)) audienceCollege.add(new Option(formatSsuCollege(college),college));
+function syncAudienceTarget(savedProgram = audienceProgram.value) {
+  const enabled = eventAudienceInput.value === "Selected Group";
+  const specific = enabled && audienceScope.value === "program";
+  audienceTarget.hidden = !enabled;
+  audienceScope.disabled = !enabled;
+  audienceCollege.disabled = !enabled; audienceCollege.required = enabled;
+  audienceProgramField.hidden = !specific;
+  audienceProgram.disabled = !specific; audienceProgram.required = specific;
+  const programs = Object.hasOwn(SSU_PROGRAMS,audienceCollege.value) ? SSU_PROGRAMS[audienceCollege.value] : [];
+  audienceProgram.replaceChildren(new Option("Choose a program",""),...programs.map(program=>new Option(program,program)));
+  audienceProgram.value = specific && programs.includes(savedProgram) ? savedProgram : "";
+}
+eventAudienceInput.addEventListener("change",()=>syncAudienceTarget());
+audienceScope.addEventListener("change",()=>syncAudienceTarget());
+audienceCollege.addEventListener("change",()=>syncAudienceTarget(""));
+syncAudienceTarget();
+function audienceLabel(item) {
+  if(item.audience === "Registered Group Only")return "Registered Students Only";
+  if(item.audience !== "Selected Group")return safeText(item.audience,"All Students");
+  return item.audienceScope === "program" && item.audienceProgram ? item.audienceProgram+" · "+formatSsuCollege(item.audienceCollege) : item.audienceCollege ? formatSsuCollege(item.audienceCollege) : "Selected Group";
+}
+
 const eventRegistrationModeInput = document.getElementById("eventRegistrationMode");
 const eventRegistrationDeadlineInput = document.getElementById("eventRegistrationDeadline");
 const eventRegistrationDeadlineField = document.getElementById("eventRegistrationDeadlineField");
@@ -219,6 +248,7 @@ function resetEventForm() {
   setEventImagePreview();
 
   if (eventAudienceInput) eventAudienceInput.value = "All Students";
+  audienceScope.value="college"; audienceCollege.value=""; syncAudienceTarget("");
   if (eventRegistrationModeInput) eventRegistrationModeInput.value = "internal";
   if (eventCategoryInput) eventCategoryInput.value = "Assembly";
   syncRegistrationFields();
@@ -365,7 +395,7 @@ function renderEvents(events) {
           </div>
           <div class="item-text">${escapeHtml(safeText(eventItem.description, "No event description provided."))}</div>
           <div class="event-meta-line">
-            <span><i class="fa-solid fa-users"></i> ${escapeHtml(safeText(eventItem.audience, "All Students"))}</span>
+            <span><i class="fa-solid fa-users"></i> ${escapeHtml(audienceLabel(eventItem))}</span>
             <span><i class="fa-solid fa-ticket"></i> ${escapeHtml(registrationModeLabel(mode))}</span>
             ${mode !== "none" ? `<span class="event-deadline"><i class="fa-solid fa-hourglass-end" aria-hidden="true"></i> Registration closes: ${escapeHtml(formatRegistrationDeadline(eventItem))}</span>` : ""}
           </div>
@@ -552,6 +582,11 @@ eventForm?.addEventListener("submit", async (event) => {
   const category = safeText(eventCategoryInput?.value, "Assembly");
   const description = safeText(eventDescriptionInput?.value);
   const audience = safeText(eventAudienceInput?.value, "All Students");
+  const selectedGroup=audience==="Selected Group";
+  const targetScope=selectedGroup?audienceScope.value:"";
+  const targetCollege=selectedGroup?audienceCollege.value:"";
+  const targetProgram=selectedGroup&&targetScope==="program"?audienceProgram.value:"";
+  if(selectedGroup&&(!Object.hasOwn(SSU_PROGRAMS,targetCollege)||!["college","program"].includes(targetScope)||(targetScope==="program"&&!isValidSsuProgram(targetCollege,targetProgram)))){alert("Please select a valid department and program, if applicable.");return;}
   const registrationMode = safeText(eventRegistrationModeInput?.value, "internal").toLowerCase();
   const deadlineRaw = safeText(eventRegistrationDeadlineInput?.value);
   const externalRegistrationUrl = safeText(eventExternalRegistrationUrlInput?.value);
@@ -617,6 +652,9 @@ eventForm?.addEventListener("submit", async (event) => {
       category,
       description,
       audience,
+      audienceScope: targetScope,
+      audienceCollege: targetCollege,
+      audienceProgram: targetProgram,
       reminderEnabled: true,
       registrationMode,
       registrationDeadline,
@@ -661,6 +699,9 @@ recentEventsList?.addEventListener("click", async (event) => {
     resetEventForm(); editingEventId = saved.id;
     const fields = { title: eventTitleInput, eventDate: eventDateInput, venue: eventVenueInput, startTime: eventStartTimeInput, endTime: eventEndTimeInput, category: eventCategoryInput, description: eventDescriptionInput, audience: eventAudienceInput, registrationMode: eventRegistrationModeInput, externalRegistrationUrl: eventExternalRegistrationUrlInput, participationNotes: eventParticipationNotesInput };
     for (const [key, input] of Object.entries(fields)) if (input) input.value = saved[key] || '';
+    audienceScope.value=saved.audienceScope==="program"?"program":"college";
+    audienceCollege.value=saved.audienceCollege||"";
+    syncAudienceTarget(saved.audienceProgram||"");
     const deadline = timestampDate(saved.registrationDeadline);
     if (deadline) { const local = new Date(deadline.getTime() - deadline.getTimezoneOffset() * 60000); eventRegistrationDeadlineInput.value = local.toISOString().slice(0, 16); }
     syncRegistrationFields();
