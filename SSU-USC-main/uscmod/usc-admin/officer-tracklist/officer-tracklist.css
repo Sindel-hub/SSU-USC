@@ -6,9 +6,47 @@
 .officer-activity .activity-modules { margin: 0; }
 .officer-activity .activity-modules > div { display: flex; justify-content: space-between; gap: 12px; }
 .officer-activity .activity-modules dd { margin: 0; font-weight: 700; }
-.officer-activity .activity-filters { display: flex; flex-wrap: wrap; align-items: end; gap: 12px; }
-.officer-activity .activity-filters label { display: grid; flex: 1 1 130px; min-width: 0; gap: 4px; font-size: 14px; }
-.officer-activity .activity-filters :is(input, select) { width: 100%; min-width: 0; min-height: 40px; box-sizing: border-box; }
+/* Align controls independently of the shared officer label/input defaults. */
+body.officer-tracklist-page .officer-activity .activity-filters {
+  display: flex; flex-wrap: wrap; align-items: flex-end; gap: 12px;
+  margin: 0; min-width: 0;
+}
+body.officer-tracklist-page .officer-activity .activity-filters > label {
+  display: flex !important; flex-direction: column; justify-content: flex-end;
+  flex: 1 1 142px; min-width: 0; gap: 6px; margin: 0 !important;
+  font-size: 13px !important; line-height: 1.25 !important;
+}
+body.officer-tracklist-page .officer-activity .activity-filters > label > :is(input, select) {
+  display: block; width: 100%; min-width: 0; height: 44px !important;
+  min-height: 44px !important; max-height: 44px; margin: 0 !important;
+  padding: 0 10px !important; box-sizing: border-box;
+  font-size: 14px !important; line-height: normal !important; font-weight: 600;
+}
+body.officer-tracklist-page .officer-activity .activity-filters input[type="date"] {
+  padding-inline: 8px !important;
+}
+body.officer-tracklist-page .officer-activity .activity-filters > button[type="submit"] {
+  display: inline-flex; align-items: center; justify-content: center;
+  flex: 0 0 auto; align-self: flex-end; box-sizing: border-box;
+  min-height: 44px !important; height: 44px; margin: 0 !important;
+  padding: 0 14px !important; border: 1px solid #9fd3e9 !important;
+  border-radius: 9px !important; background: #fff !important;
+  color: #1754a6 !important; font-size: 14px !important;
+  font-weight: 700; white-space: nowrap; cursor: pointer;
+}
+body.officer-tracklist-page .officer-activity .activity-filters > button[type="submit"]:hover {
+  background: #edf8fc !important; border-color: #55b7df !important;
+}
+body.officer-tracklist-page .officer-activity .activity-filters > button[type="submit"]:focus-visible {
+  outline: 2px solid #00aef0; outline-offset: 3px;
+}
+@media (max-width: 600px) {
+  body.officer-tracklist-page .officer-activity .activity-filters > label { flex-basis: calc(50% - 6px); }
+  body.officer-tracklist-page .officer-activity .activity-filters > button[type="submit"] { flex: 1 1 100%; }
+}
+@media (max-width: 380px) {
+  body.officer-tracklist-page .officer-activity .activity-filters > label { flex-basis: 100%; }
+}
 .officer-activity .activity-filters [hidden], .officer-activity [data-more][hidden] { display: none !important; }
 .officer-activity .activity-status:empty, .officer-activity .activity-list:empty { display: none; }
 .officer-activity .activity-list { list-style: none; padding: 0; margin: 16px 0; }
@@ -29,3 +67,34 @@ body.officer-tracklist-page aside.sidebar .nav-btn[href$="overview.html"]:not(.a
   backdrop-filter: none !important;
   font-weight: 500 !important;
 }
+
+body.officer-tracklist-page .officer-activity .activity-filters > label[hidden] { display: none !important; }
+/* Activity summary tiles; scoped exclusively to My O-Tracklists. */
+body.officer-tracklist-page .officer-activity .activity-modules {
+  display: grid; grid-template-columns: repeat(auto-fit,minmax(min(100%,230px),1fr));
+  gap: 12px; padding: 16px 20px 20px; margin: 0; background: transparent;
+}
+body.officer-tracklist-page .officer-activity .activity-modules > div {
+  display: grid; grid-template-columns: minmax(0,1fr) auto; align-items: center;
+  gap: 14px; width: 100%; max-width: none; min-width: 0; min-height: 78px;
+  margin: 0; padding: 14px; border: 1px solid #d5e5ef; border-radius: 13px;
+  background: #f5faff; box-sizing: border-box;
+}
+body.officer-tracklist-page .officer-activity .activity-modules > div + div { margin: 0; }
+body.officer-tracklist-page .officer-activity .activity-modules dt {
+  display: flex; align-items: center; gap: 11px; min-width: 0; margin: 0;
+  color: #25496c; font-size: 14px; font-weight: 600; line-height: 1.4;
+}
+body.officer-tracklist-page .officer-activity .activity-modules dt > span:last-child { min-width: 0; overflow-wrap: anywhere; }
+body.officer-tracklist-page .officer-activity .activity-module-icon {
+  display: grid; place-items: center; flex: 0 0 36px; width: 36px; height: 36px;
+  background: #e1f1fc; border-radius: 10px; color: #1769c7; font-size: 15px;
+}
+body.officer-tracklist-page .officer-activity .activity-modules dd {
+  display: grid; place-items: center; min-width: 36px; min-height: 36px; padding: 5px 9px;
+  border-radius: 9px; background: #fff; border: 1px solid #d9e8f3;
+  color: #1754a6; font-size: 18px; line-height: 1.1; font-weight: 800;
+  text-align: center; font-variant-numeric: tabular-nums; margin: 0; box-sizing: border-box;
+}
+@media(max-width:600px){body.officer-tracklist-page .officer-activity .activity-modules{padding:12px;gap:10px}}
+body.officer-tracklist-page .officer-activity .activity-modules:empty { display:none; }
