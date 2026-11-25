@@ -337,6 +337,7 @@ function renderEvents(events) {
       return `
         <article class="list-item event-published-card" data-record-id="${escapeHtml(eventItem.id)}">
           <button class="event-summary-button" type="button" data-view-details="${escapeHtml(eventItem.id)}" aria-haspopup="dialog">
+            ${imageMarkup}
             <span class="item-title event-summary-title">${escapeHtml(safeText(eventItem.title, "Untitled Event"))}</span>
           <span class="event-core-meta">
             <span class="event-core-meta-item"><i class="fa-regular fa-calendar"></i><span><small>Date</small><strong>${escapeHtml(formatEventDate(eventItem.eventDate))}</strong></span></span>
