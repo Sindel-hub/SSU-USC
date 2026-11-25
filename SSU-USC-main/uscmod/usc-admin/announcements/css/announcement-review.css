@@ -8,3 +8,48 @@ body.officer-app-shell aside.sidebar .nav-btn[href$="overview.html"]:not(.active
 #announcementReviewDialog>.card-head{display:grid!important;grid-template-columns:minmax(0,1fr) auto 40px;gap:12px}#closeAnnouncementReview{width:40px;height:40px;min-height:40px!important;padding:0!important;border-radius:10px!important;font-size:24px}#announcementReviewRefresh{white-space:nowrap}#selectedImagesLivePreview{width:100%;height:100%}#selectedImagesLivePreview.announcement-gallery{margin:0;aspect-ratio:1.5;min-height:280px}#announcementPreviewImageWrap:has(#selectedImagesLivePreview){aspect-ratio:auto!important;min-height:0!important;height:auto!important;background:transparent!important}#announcementPreviewImageWrap:has(#selectedImagesLivePreview)>img{display:none!important}
 @media(max-width:600px){#announcementReviewDialog>.card-head{grid-template-columns:minmax(0,1fr) 40px}#announcementReviewTitle{grid-column:1;grid-row:1}#closeAnnouncementReview{grid-column:2;grid-row:1}#announcementReviewRefresh{grid-column:1 / -1;justify-self:start}#selectedImagesLivePreview.announcement-gallery{min-height:220px}}
 #editingAnnouncementDraft:empty{display:none}.announcement-review-item>.review-content{margin:14px 0}
+
+/* Scoped announcement review polish. Existing workflow and shared shell untouched. */
+body.officer-app-shell #announcementReviewDialog{width:min(900px,calc(100vw - 32px));border-radius:20px;background:#f4f8fc}
+body.officer-app-shell #announcementReviewDialog>.card-head{align-items:center;padding:18px 24px;background:#fff!important;box-shadow:0 2px 8px #17345007}
+#announcementReviewDialog #announcementReviewTitle{font-size:20px!important;font-weight:800;color:#174b82!important;line-height:1.3}
+#announcementReviewDialog #announcementReviewTitle::before{content:"";display:inline-block;width:5px;height:20px;border-radius:4px;background:#00aef0;margin-right:11px;vertical-align:-3px}
+body.officer-app-shell #announcementReviewDialog>.card-body{background:#f4f8fc!important;padding:20px 24px 24px;overflow-y:auto}
+#announcementReviewList{display:grid;gap:14px}
+body.officer-app-shell #announcementReviewDialog .announcement-review-item{display:grid;gap:12px;margin:0;padding:18px 20px;border:1px solid #dbe7f0;border-radius:14px;background:#fff;box-shadow:0 2px 8px #17345006;min-width:0}
+#announcementReviewDialog .announcement-review-heading{display:flex;align-items:flex-start;gap:12px;flex-wrap:nowrap}
+#announcementReviewDialog .review-title-group{display:flex;align-items:center;gap:12px;min-width:0;flex:1}
+#announcementReviewDialog .review-draft-icon{display:grid;place-items:center;width:40px;height:40px;flex:0 0 40px;background:#e7f4fd;border-radius:11px;color:#1769c7;font-size:17px}
+#announcementReviewDialog .announcement-review-heading h4{font-size:16px!important;line-height:1.4;margin:0!important;color:#174b82;overflow-wrap:anywhere;font-weight:700}
+#announcementReviewDialog .review-status{flex:none;display:inline-flex;align-items:center;gap:6px;padding:6px 10px;border:1px solid #d2e5f5;background:#edf6fd;color:#1754a6;font-size:11px;font-weight:700;border-radius:20px;white-space:nowrap}
+#announcementReviewDialog .review-status::before{content:"";width:6px;height:6px;background:currentColor;border-radius:50%}
+#announcementReviewDialog [data-status="ready"] .review-status{color:#1c7550;background:#e7f6ee;border-color:#cce8d7}
+#announcementReviewDialog [data-status="needs-revision"] .review-status{color:#9b5a19;background:#fff4e3;border-color:#f0dfbb}
+#announcementReviewDialog [data-status="draft"] .review-status{color:#596d82;background:#f0f4f8;border-color:#dce5ef}
+#announcementReviewDialog .review-meta{display:flex;gap:7px;flex-wrap:wrap}
+#announcementReviewDialog .review-meta-chip{font-size:11px;line-height:1.4;color:#416483;background:#f0f5fa;border:1px solid #e3ebf3;border-radius:6px;padding:4px 8px}
+#announcementReviewDialog :is(.review-muted,.review-content,.review-note,.review-channel){margin:0!important;font-size:13px!important;line-height:1.6!important}
+#announcementReviewDialog .review-attribution{color:#60768b}
+#announcementReviewDialog .review-excerpt{padding:11px 13px;background:#f7fafc;border-radius:9px;color:#345575;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;white-space:normal}
+#announcementReviewDialog .announcement-review-item:has(.review-disclosure[open]) .review-excerpt{display:none}
+#announcementReviewDialog .review-timestamp{font-size:12px!important;color:#61768a}
+#announcementReviewDialog .review-disclosure{border:1px solid #dce8f1;border-radius:10px;overflow:hidden;background:#fff}
+#announcementReviewDialog .review-disclosure summary{display:flex;align-items:center;justify-content:space-between;gap:8px;list-style:none;padding:11px 13px;font-size:13px;font-weight:700;color:#1754a6;background:#f4f9fe;cursor:pointer}
+#announcementReviewDialog .review-disclosure summary::-webkit-details-marker{display:none}
+#announcementReviewDialog .review-disclosure summary::after{content:"";width:8px;height:8px;border-right:2px solid currentColor;border-bottom:2px solid currentColor;transform:rotate(45deg);margin-right:3px}
+#announcementReviewDialog .review-disclosure[open] summary::after{transform:rotate(225deg)}
+#announcementReviewDialog .review-full-body{display:grid;gap:12px;padding:14px;border-top:1px solid #dce8f1}
+#announcementReviewDialog .review-full-body .review-content{white-space:pre-wrap;overflow-wrap:anywhere}
+#announcementReviewDialog .review-full-body .announcement-gallery{max-width:480px;margin:0}
+#announcementReviewDialog .review-channel{color:#1754a6;background:#edf6fd;padding:8px 10px;border-radius:8px}
+#announcementReviewDialog .review-note{background:#fff7e9;color:#85521d;border:1px solid #f0dfbb}
+#announcementReviewDialog .review-note-field label{margin:0!important;font-size:12px!important}
+#announcementReviewDialog .review-note-field textarea{margin-top:6px;min-height:76px!important;font-size:13px!important}
+#announcementReviewDialog .review-actions{margin:0;padding-top:12px;border-top:1px solid #e8eef4;justify-content:flex-end;gap:8px}
+body.officer-app-shell #announcementReviewDialog :is(.review-actions button,#announcementReviewRefresh){min-height:38px!important;border-radius:8px!important;padding:8px 14px!important;font-size:13px!important;font-weight:700!important;line-height:1.25!important}
+body.officer-app-shell #announcementReviewDialog .review-actions button:is([data-review-action="ready"],[data-review-action="publish"]){background:#1754a6!important;border:1px solid #1754a6!important;color:#fff!important}
+body.officer-app-shell #announcementReviewDialog .review-actions button[data-review-action="revise"]{color:#98511c!important;border-color:#e4c9a6!important}
+#announcementReviewDialog .review-actions button:disabled{opacity:.55;cursor:wait}
+#announcementReviewDialog :is(button,summary):focus-visible{outline:2px solid #00aef0!important;outline-offset:2px}
+#announcementReviewDialog #announcementReviewMessage:not(:empty){padding:10px 12px;border:1px solid #cddfeb;background:#eaf5fd;color:#23496d;border-radius:9px;margin:0 0 14px;font-size:13px}
+@media(max-width:600px){body.officer-app-shell #announcementReviewDialog{width:calc(100vw - 16px)}body.officer-app-shell #announcementReviewDialog>.card-head,body.officer-app-shell #announcementReviewDialog>.card-body{padding:12px}body.officer-app-shell #announcementReviewDialog .announcement-review-item{padding:14px;gap:10px}#announcementReviewDialog .review-title-group{gap:8px}#announcementReviewDialog .review-draft-icon{width:32px;height:32px;flex-basis:32px}#announcementReviewDialog .announcement-review-heading h4{font-size:14px!important}#announcementReviewDialog .review-actions button{flex:1 1 auto}#announcementReviewDialog .review-status{font-size:10px;padding:5px 7px}}
