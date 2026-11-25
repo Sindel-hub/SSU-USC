@@ -1208,9 +1208,6 @@ exports.adminUpdateUser = onCall(callableOptions(), async (request) => {
   const requestedVerifiedStudent = role === "student"
     ? (typeof request.data?.isVerifiedStudent === "boolean" ? request.data.isVerifiedStudent : before.isVerifiedStudent === true)
     : false;
-  const candidacyApproved = role === "student"
-    ? (typeof request.data?.candidacyApproved === "boolean" ? request.data.candidacyApproved : before.candidacyApproved === true)
-    : false;
   let targetAuth;
   try {
     targetAuth = await adminAuth.getUser(uid);
@@ -1222,7 +1219,6 @@ exports.adminUpdateUser = onCall(callableOptions(), async (request) => {
     throw new HttpsError("internal", "The authentication record could not be loaded. Check Cloud Functions logs for details.");
   }
   const existingClaims = targetAuth.customClaims || {};
-  const canvasser = typeof request.data?.canvasser === "boolean" ? (role === "officer" && request.data.canvasser) : (role === "officer" && existingClaims.canvasser === true);
   const roleEffectiveDate = cleanText(request.data?.roleEffectiveDate || before.roleEffectiveDate, 20);
   const adminNotes = cleanText(request.data?.adminNotes ?? before.adminNotes, 1000);
   const changeReason = cleanText(request.data?.changeReason, 500);
@@ -1236,7 +1232,6 @@ exports.adminUpdateUser = onCall(callableOptions(), async (request) => {
     lastRoleUpdatedBy: normalizeEmail(request.auth?.token?.email) || request.auth.uid,
     lastRoleUpdateNote: changeReason,
     isVerifiedStudent: requestedVerifiedStudent,
-    candidacyApproved,
     verificationState: requestedVerifiedStudent ? "manual_admin_verified" : (role === "student" ? "unverified" : before.verificationState || "not_applicable"),
     verifiedByUid: requestedVerifiedStudent ? request.auth.uid : FieldValue.delete(),
     verifiedAt: requestedVerifiedStudent ? FieldValue.serverTimestamp() : FieldValue.delete()
@@ -1251,7 +1246,6 @@ exports.adminUpdateUser = onCall(callableOptions(), async (request) => {
   const nextClaims = {
     ...existingClaims,
     role,
-    canvasser,
     verifiedStudent: requestedVerifiedStudent,
     mfaEnrolled: false
   };
@@ -1267,8 +1261,8 @@ exports.adminUpdateUser = onCall(callableOptions(), async (request) => {
 
   try {
     await audit(request, "USER_ACCESS_UPDATE", userRef.path,
-    { role: before.role, accountStatus: before.accountStatus, officePosition: before.officePosition, officerPermissions: before.officerPermissions || null, officerPermissionSource: before.officerPermissionSource || "", adminNotes: before.adminNotes || "", isVerifiedStudent: before.isVerifiedStudent === true, candidacyApproved: before.candidacyApproved === true },
-    { role, accountStatus, officePosition, officerPermissions, officerPermissionSource, canvasser, adminNotes, roleEffectiveDate, isVerifiedStudent: requestedVerifiedStudent, candidacyApproved },
+    { role: before.role, accountStatus: before.accountStatus, officePosition: before.officePosition, officerPermissions: before.officerPermissions || null, officerPermissionSource: before.officerPermissionSource || "", adminNotes: before.adminNotes || "", isVerifiedStudent: before.isVerifiedStudent === true },
+    { role, accountStatus, officePosition, officerPermissions, officerPermissionSource, adminNotes, roleEffectiveDate, isVerifiedStudent: requestedVerifiedStudent },
     { reason: changeReason });
     if ((before.isVerifiedStudent === true) !== requestedVerifiedStudent) {
       await audit(request, "STUDENT_VERIFICATION_CHANGE", userRef.path,
@@ -1287,13 +1281,11 @@ exports.adminUpdateUser = onCall(callableOptions(), async (request) => {
       accountStatus,
       officePosition,
       officerPermissions,
-      canvasser,
       isVerifiedStudent: requestedVerifiedStudent,
-      candidacyApproved,
       warning: "Verification succeeded, but the audit entry could not be recorded. Check Functions logs."
     };
   }
-  return { updated: true, role, accountStatus, officePosition, officerPermissions, officerPermissionSource, canvasser, isVerifiedStudent: requestedVerifiedStudent, candidacyApproved };
+  return { updated: true, role, accountStatus, officePosition, officerPermissions, officerPermissionSource, isVerifiedStudent: requestedVerifiedStudent };
 });
 
 

@@ -60,18 +60,51 @@ function createStudentRecordHandlers({db,adminAuth,requireActiveRole,requireRece
   if(record&&current&&record.uid!==current.uid)error('failed-precondition','Student ID is linked to a different permanent account.');
  }
  const revision=record=>record?.recordRevision||record?.lastAnnualImportId||null;
- async function finishGraduation(itemRef,result,request){
-  const userRef=db.doc(`users/${result.uid}`);
-  const assertGraduated=profile=>{if(!profile||profile.studentId!==result.studentId||!['student','officer'].includes(profile.role)||profile.accountRemoved||profile.accountRemovalPending||profile.studentStanding!=='graduated'||profile.isActive!==false)error('failed-precondition','Graduation access state changed. Review the account before retrying.');};
-  assertGraduated((await userRef.get()).data());
+ const correctionOptions=job=>({allowOlderYear:job.data.correction===true&&typeof job.data.correctionReason==='string'&&job.data.correctionReason.length>=4&&job.data.correctionReason.length<=500});
+ async function restoreSource(profile,row){
+  if(!profile||!['graduated','dropped'].includes(profile.studentStanding)||!['active','undergraduate'].includes(row.studentStatus)||row.status!=='active')return null;
+  if(profile.accountStatus!=='approved'||profile.isActive!==false||profile.accountRemoved||profile.accountRemovalPending||!profile.standingManagedDisabled||['pending','processing'].includes(profile.activationStatus))error('failed-precondition','This restricted account is not eligible for import access restoration. Review it in User Directory.');
+  const sourceId=profile.importRestrictionId||profile.droppedImportId||profile.graduationImportId;
+  const source=await getJob(sourceId);
+  const index=source.data.entries.findIndex(e=>e.row?.studentId===row.studentId&&e.row.studentStatus===profile.studentStanding);
+  const result=index>=0?(await source.ref.collection('results').doc(String(index)).get()).data():null;
+  if(!result||result.uid!==profile.uid||result.state!=='complete')error('failed-precondition','The disabling import must have completed for this same account before access restoration.');
+  return sourceId;
+ }
+ async function finishImportRestriction(itemRef,result,request){
+  const userRef=db.doc(`users/${result.uid}`),standing=result.dropped?'dropped':'graduated';
+  const assertRestricted=profile=>{if(!profile||profile.studentId!==result.studentId||!['student','officer'].includes(profile.role)||profile.accountRemoved||profile.accountRemovalPending||profile.accessRestoreImportId||profile.studentStanding!==standing||profile.isActive!==false)error('failed-precondition','Import access state changed. Review the account before retrying.');};
+  assertRestricted((await userRef.get()).data());
   await adminAuth.updateUser(result.uid,{disabled:true});
   await adminAuth.revokeRefreshTokens(result.uid);
-  return db.runTransaction(async tx=>{const [user,item]=await Promise.all([tx.get(userRef),tx.get(itemRef)]);if(item.data()?.state==='complete')return item.data();assertGraduated(user.data());const complete={...result,state:'complete',message:'Graduated — portal access revoked.',accessRevokedAt:clock()};tx.set(itemRef,complete);audit(tx,request,'SCL_GRADUATION_ACCESS_REVOKED',result.studentId,{importId:result.importId,uid:result.uid});return complete;});
+  return db.runTransaction(async tx=>{const [user,item]=await Promise.all([tx.get(userRef),tx.get(itemRef)]);if(item.data()?.state==='complete')return item.data();assertRestricted(user.data());const complete={...result,state:'complete',message:`${standing==='dropped'?'Dropped':'Graduated'} — portal access revoked.`,accessRevokedAt:clock()};tx.set(itemRef,complete);audit(tx,request,result.dropped?'SCL_DROPPED_ACCESS_REVOKED':'SCL_GRADUATION_ACCESS_REVOKED',result.studentId,{importId:result.importId,uid:result.uid});return complete;});
+ }
+ async function finishAccessRestore(itemRef,result,request){
+  const userRef=db.doc(`users/${result.uid}`);
+  const assertPending=profile=>{if(!profile||M.fingerprint({...profile,uid:result.uid})!==result.restoreFingerprint||profile.accessRestoreImportId!==result.importId||profile.accountStatus!=='approved'||profile.isActive!==false||profile.accountRemoved||profile.accountRemovalPending)error('failed-precondition','Account changed during restoration. Review it before retrying.');};
+  try{
+   const [item,user]=await Promise.all([itemRef.get(),userRef.get()]);if(item.data()?.state==='complete')return item.data();assertPending(user.data());
+   await adminAuth.updateUser(result.uid,{disabled:false});
+   await adminAuth.revokeRefreshTokens(result.uid);
+   return await db.runTransaction(async tx=>{
+    const [saved,current]=await Promise.all([tx.get(itemRef),tx.get(userRef)]);if(saved.data()?.state==='complete')return saved.data();assertPending(current.data());
+    tx.update(userRef,{studentStanding:'active',isActive:true,enrollmentStatus:'Enrolled',standingManagedDisabled:false,accessRestoreImportId:null});
+    tx.set(db.doc(`school_accounts/${result.studentId}`),{studentStanding:'active',isActive:true,active:true},{merge:true});
+    tx.set(db.doc(`student_masterlist/${result.studentId}`),{studentStanding:'active',eligible:true},{merge:true});
+    const complete={...result,state:'complete',message:'Academic correction applied; approved import-disabled account access restored. School identity verification was not automatically restored.',accessRestoredAt:clock()};
+    tx.set(itemRef,complete);audit(tx,request,'SCL_IMPORT_ACCESS_RESTORED',result.studentId,{importId:result.importId,sourceImportId:result.restoreFromImportId});return complete;
+   });
+  }catch(e){
+   const latest=(await itemRef.get()).data();if(latest?.state==='complete')return latest;
+   // Auth may have been enabled before a final profile-write failure; keep retries fail-closed.
+   await adminAuth.updateUser(result.uid,{disabled:true});throw e;
+  }
  }
  async function applyRow(job,entry,index,request){
   const itemRef=job.ref.collection('results').doc(String(index)), prior=(await itemRef.get()).data();
   if(prior?.state==='complete')return prior;
-  if(prior?.state==='access-pending')return finishGraduation(itemRef,prior,request);
+  if(prior?.state==='access-pending')return finishImportRestriction(itemRef,prior,request);
+  if(prior?.state==='restore-pending')return finishAccessRestore(itemRef,prior,request);
   const {row}=entry,{studentId}=row;
   const account=await resolve(studentId), saved=await getRecord(studentId);
   if(!entry.reconciled)verifyIdentity(account,saved,row);
@@ -84,15 +117,16 @@ function createStudentRecordHandlers({db,adminAuth,requireActiveRole,requireRece
     tx.get(userRef),tx.get(recordRef),tx.get(indexRef),tx.get(db.doc(`student_id_claims/${studentId}`)),
     tx.get(db.doc(`school_accounts/${studentId}`)),tx.get(db.doc(`login_aliases/id_${studentId}`)),tx.get(itemRef)
    ]);
-   if(['complete','access-pending'].includes(item.data()?.state))return item.data();
+   if(['complete','access-pending','restore-pending'].includes(item.data()?.state))return item.data();
    if([identity,claim,school,alias].some(s=>s.data()?.uid&&s.data().uid!==uid))error('failed-precondition','Student ID ownership changed.');
    const current=user.exists?{...user.data(),uid}:null,before=record.data();
    if(M.fingerprint(current)!==entry.fingerprint||revision(before)!==(entry.recordRevision||null))error('failed-precondition','Student record changed since preview. Create a new preview.');
+   if(current?.accessRestoreImportId)error('failed-precondition','Resume the pending access restoration before importing this student again.');
    if(before?.provisioning==='issuing')error('failed-precondition','Account issuance is in progress. Retry this record after issuance.');
-   const {isActive,studentStanding,...academic}=M.nextAcademicProfile(before||current,row,job.data.academicYear);
+   const {isActive,studentStanding,...academic}=M.nextAcademicProfile(before||current,row,job.data.academicYear,correctionOptions(job));
    const names=Object.fromEntries(['firstName','lastName','middleName','suffix'].filter(key=>Object.hasOwn(row,key)).map(key=>[key,row[key]]));
    const updatedAtMs=clock(),accountUid=current?.uid||null;
-   const data={...academic,...names,uid,studentId,role:current?.role||'student',studentStanding:row.studentStatus==='graduated'?'graduated':current?.studentStanding||before?.studentStanding||studentStanding,
+   const data={...academic,...names,uid,studentId,role:current?.role||'student',studentStanding:['graduated','dropped'].includes(row.studentStatus)?row.studentStatus:entry.restoreFromImportId?'active':current?.studentStanding||before?.studentStanding||studentStanding,
     enrollmentStatus:row.enrollmentStatus||M.enrollment(row.status),institutionalEmail:row.email||before?.institutionalEmail||current?.institutionalEmail||'',
     accountUid,provisioning:before?.provisioning||null,lastAnnualImportId:job.ref.id,recordRevision:job.ref.id,updatedAtMs};
    // The imported record owns academic year/level; mirror them without touching account access or office identity.
@@ -100,24 +134,29 @@ function createStudentRecordHandlers({db,adminAuth,requireActiveRole,requireRece
     tx.update(userRef,{yearLevel:data.yearLevel,academicYear:data.academicYear,studentRecordId:uid,academicRevision:job.ref.id});
     tx.set(db.doc(`school_accounts/${studentId}`),{uid,studentId,yearLevel:data.yearLevel,academicYear:data.academicYear},{merge:true});
    }
-   const graduation=row.studentStatus==='graduated';
-   if(graduation&&current){
-    tx.update(userRef,{studentStanding:'graduated',isActive:false,isVerifiedStudent:false,candidacyApproved:false,enrollmentStatus:'Not Enrolled',enrollmentClassification:data.enrollmentStatus,standingManagedDisabled:true,graduationImportId:job.ref.id,graduatedAtMs:clock()});
-    tx.set(db.doc(`school_accounts/${studentId}`),{uid,studentId,studentStanding:'graduated',active:false,isActive:false},{merge:true});
+   const graduation=row.studentStatus==='graduated',dropped=row.studentStatus==='dropped',restrict=graduation||dropped;
+   if(entry.restoreFromImportId){
+    if(!current||job.data.correction!==true||job.data.restoreAccess!==true||current.accountStatus!=='approved'||current.isActive!==false||!current.standingManagedDisabled||(current.importRestrictionId||current.droppedImportId||current.graduationImportId)!==entry.restoreFromImportId)error('failed-precondition','Import-disabled access changed. Generate a new correction preview.');
+    tx.update(userRef,{accessRestoreImportId:job.ref.id});
+   }
+   if(restrict&&current){
+    tx.update(userRef,{studentStanding:row.studentStatus,isActive:false,isVerifiedStudent:false,candidacyApproved:false,enrollmentStatus:'Not Enrolled',enrollmentClassification:data.enrollmentStatus,standingManagedDisabled:true,importRestrictionId:job.ref.id,...(dropped?{droppedImportId:job.ref.id,droppedAtMs:clock()}:{graduationImportId:job.ref.id,graduatedAtMs:clock()})});
+    tx.set(db.doc(`school_accounts/${studentId}`),{uid,studentId,studentStanding:row.studentStatus,active:false,isActive:false},{merge:true});
    }
    tx.set(indexRef,{uid});
    tx.set(recordRef,data,{merge:true});
-   tx.set(masterRef,{studentId,...academic,...names,enrollmentClassification:data.enrollmentStatus,...(graduation?{studentStanding:'graduated',eligible:false}:{}),studentRecordId:uid,updatedAt:new Date(updatedAtMs)},{merge:true});
+   tx.set(masterRef,{studentId,...academic,...names,enrollmentClassification:data.enrollmentStatus,...(restrict?{studentStanding:row.studentStatus,eligible:false}:{}),studentRecordId:uid,updatedAt:new Date(updatedAtMs)},{merge:true});
    const previous=before||current,after=M.academicSnapshot(data);
    if(!previous||JSON.stringify(M.academicSnapshot(previous))!==JSON.stringify(after))tx.set(userRef.collection('academic_history').doc(job.ref.id),{
-    academicYear:job.data.academicYear,before:previous?M.academicSnapshot(previous):null,after,importId:job.ref.id,actorUid:request.auth.uid,recordedAt:updatedAtMs
+    academicYear:job.data.academicYear,...(job.data.correction?{correction:true,correctionReason:job.data.correctionReason}:{}),before:previous?M.academicSnapshot(previous):null,after,importId:job.ref.id,actorUid:request.auth.uid,recordedAt:updatedAtMs
    });
-   const result={studentId,uid,action:before?'updated':'record-saved',state:graduation&&current?'access-pending':'complete',...(graduation?{graduation:true,importId:job.ref.id,message:current?'Academic record saved; access revocation pending.':'Graduated — no account access can be issued.'}:{}),appliedAt:updatedAtMs};
+   const restoreProfile=entry.restoreFromImportId?{...current,yearLevel:data.yearLevel,academicYear:data.academicYear,studentRecordId:uid,academicRevision:job.ref.id,accessRestoreImportId:job.ref.id}:null;
+   const result={studentId,uid,action:job.data.correction?'academic-corrected':before?'updated':'record-saved',state:restrict&&current?'access-pending':restoreProfile?'restore-pending':'complete',...(restrict?{...(dropped?{dropped:true}:{graduation:true}),importId:job.ref.id,message:current?'Academic record saved; access revocation pending.':`${dropped?'Dropped':'Graduated'} — no account access can be issued.`}:{}),...(restoreProfile?{importId:job.ref.id,restoreFromImportId:entry.restoreFromImportId,restoreFingerprint:M.fingerprint(restoreProfile)}:{}),appliedAt:updatedAtMs};
    tx.set(itemRef,result);
-   audit(tx,request,graduation?'SCL_GRADUATION_RECORDED':'SCL_RECORD_APPLIED',studentId,{academicYear:job.data.academicYear,importId:job.ref.id});
+   audit(tx,request,dropped?'SCL_DROPPED_RECORDED':graduation?'SCL_GRADUATION_RECORDED':job.data.correction?'SCL_CORRECTION_APPLIED':'SCL_RECORD_APPLIED',studentId,{academicYear:job.data.academicYear,importId:job.ref.id,...(job.data.correction?{reason:job.data.correctionReason,restoreAccess:Boolean(entry.restoreFromImportId)}:{})});
    return result;
   });
-  return applied.state==='access-pending'?finishGraduation(itemRef,applied,request):applied;
+  return applied.state==='access-pending'?finishImportRestriction(itemRef,applied,request):applied.state==='restore-pending'?finishAccessRestore(itemRef,applied,request):applied;
  }
 
  function inPersonTicket(tx,profile,request){
@@ -218,14 +257,22 @@ function createStudentRecordHandlers({db,adminAuth,requireActiveRole,requireRece
    await admin(request,true);let rows,year;
    try{year=M.academicYear(request.data?.academicYear);rows=M.normalizeRows(request.data?.rows);}catch(e){error('invalid-argument',e.message);}
    if(request.data?.authorized!==true)error('failed-precondition','Confirm this is an authorized SSU-USC student list.');
+   const correction=request.data?.correction===true,restoreAccess=request.data?.restoreAccess===true;
+   const correctionReason=typeof request.data?.correctionReason==='string'?request.data.correctionReason.trim():'';
+   if(correction&&(correctionReason.length<4||correctionReason.length>500))error('invalid-argument','Enter the reason for this academic-year correction (4–500 characters).');
+   if(restoreAccess&&!correction)error('failed-precondition','Access restoration requires an explicit correction preview.');
    const entries=[];
    for(let i=0;i<rows.length;i++){
     const row=rows[i];if(row.error){entries.push({line:i+2,error:row.error,studentId:row.studentId});continue;}
     try{
      const current=await resolve(row.studentId);
      const record=await getRecord(row.studentId);
-     M.nextAcademicProfile(record||current,row,year);
-     const entry={line:i+2,row,uid:current?.uid||null,fingerprint:M.fingerprint(current),recordRevision:revision(record),action:row.studentStatus==='graduated'?(current?'graduate-disable-access':'mark-graduated'):record?'update':'record-only',...(row.studentStatus==='graduated'?{warning:current?'Applying this row revokes the linked account’s portal access.':'Graduated record; account registration will be blocked.'}:{})};
+     if(current?.accessRestoreImportId)error('failed-precondition','Resume the pending access restoration before importing this student again.');
+     M.nextAcademicProfile(record||current,row,year,{allowOlderYear:correction});
+     const restriction=['graduated','dropped'].includes(row.studentStatus),restoreFromImportId=restoreAccess?await restoreSource(current,row):null;
+     const entry={line:i+2,row,uid:current?.uid||null,fingerprint:M.fingerprint(current),recordRevision:revision(record),
+      action:restriction?(row.studentStatus==='dropped'?(current?'drop-disable-access':'mark-dropped'):(current?'graduate-disable-access':'mark-graduated')):restoreFromImportId?'correct-and-restore-access':correction?'correct-academic-record':record?'update':'record-only',
+      ...(restoreFromImportId?{restoreFromImportId,warning:'Will restore this approved import-disabled account. School identity verification is not automatically restored.'}:restriction?{warning:current?'Applying this row revokes the linked account’s portal access.':`${row.studentStatus} record; account registration will be blocked.`}:{})};
      try{verifyIdentity(current,record,row);}catch(e){
       entries.push({...entry,error:e.message,...(current&&(!record||record.uid===current.uid)?{reviewName:record?.fullName||current.fullName}: {})});
       continue;
@@ -234,8 +281,8 @@ function createStudentRecordHandlers({db,adminAuth,requireActiveRole,requireRece
     }catch(e){entries.push({line:i+2,studentId:row.studentId,error:e.message});}
    }
    const ref=jobs.doc(),hasErrors=entries.some(e=>e.error);
-   await ref.set({academicYear:year,entries,createdBy:request.auth.uid,createdAt:clock(),expiresAt:clock()+86400000,status:'records-preview',count:entries.length});
-   return{importId:ref.id,academicYear:year,status:'records-preview',entries:entries.map(({fingerprint,recordRevision,...e})=>e),hasErrors};
+   await ref.set({academicYear:year,entries,createdBy:request.auth.uid,createdAt:clock(),expiresAt:clock()+86400000,status:'records-preview',count:entries.length,correction,correctionReason,restoreAccess});
+   return{importId:ref.id,academicYear:year,status:'records-preview',correction,correctionReason,restoreAccess,entries:entries.map(({fingerprint,recordRevision,...e})=>e),hasErrors};
   },
   async studentAnnualApply(request){
    await admin(request,true);const job=await getJob(request.data?.importId);
@@ -258,7 +305,7 @@ function createStudentRecordHandlers({db,adminAuth,requireActiveRole,requireRece
   },
   async studentAnnualJob(request){
    await admin(request);const job=await getJob(request.data?.importId),results=await job.ref.collection('results').get();
-   return{importId:job.ref.id,academicYear:job.data.academicYear,count:job.data.count,status:job.data.status,entries:job.data.entries.map(({fingerprint,recordRevision,...e})=>e),results:results.docs.map(d=>({index:Number(d.id),...d.data()}))};
+   return{importId:job.ref.id,academicYear:job.data.academicYear,count:job.data.count,status:job.data.status,correction:job.data.correction===true,correctionReason:job.data.correctionReason||'',restoreAccess:job.data.restoreAccess===true,entries:job.data.entries.map(({fingerprint,recordRevision,...e})=>e),results:results.docs.map(d=>({index:Number(d.id),...d.data()}))};
   },
   async studentAnnualResolve(request){
    await admin(request,true);
@@ -368,7 +415,7 @@ function createStudentRecordHandlers({db,adminAuth,requireActiveRole,requireRece
   async studentRecordSetStanding(request){
    await admin(request,true);
    const studentId=validId(request.data?.studentId),standing=request.data?.standing;
-   if(!['active','graduated','inactive','withdrawn'].includes(standing))error('invalid-argument','Choose a valid student status.');
+   if(!['active','graduated','dropped','inactive','withdrawn'].includes(standing))error('invalid-argument','Choose a valid student status.');
    const record=await getRecord(studentId);
    if(!record)error('not-found','Student record not found.');
    const ref=db.doc(`student_records/${record.uid}`);

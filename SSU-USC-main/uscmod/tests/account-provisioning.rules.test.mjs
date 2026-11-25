@@ -105,6 +105,8 @@ test('even an administrator cannot create officer profiles or promote directly t
   await assertFails(firestore.updateDoc(firestore.doc(db,'users','student'),{role:'officer',officePosition:'Treasurer'}));
   await assertFails(firestore.updateDoc(firestore.doc(db,'users','student'),{yearLevel:'3rd Year'}));
   await assertFails(firestore.updateDoc(firestore.doc(db,'users','student'),{academicYear:'2026-2027'}));
+  for(const patch of [{graduationImportId:'forged'},{droppedImportId:'forged'},{accessRestoreImportId:'forged'},{standingManagedDisabled:true}]) await assertFails(firestore.updateDoc(firestore.doc(db,'users','student'),patch));
+  await assertSucceeds(firestore.updateDoc(firestore.doc(db,'users','student'),{studentStanding:'dropped',isActive:false,isVerifiedStudent:false}));
   await assertFails(firestore.updateDoc(firestore.doc(db,'users','officer'),{role:'student'}));
   await assertFails(firestore.updateDoc(firestore.doc(db,'users','officer'),{officerPermissions:['dashboard.view','bulletin.manage']}));
   await assertSucceeds(firestore.updateDoc(firestore.doc(db,'users','student'),{accountStatus:'suspended',isActive:false}));

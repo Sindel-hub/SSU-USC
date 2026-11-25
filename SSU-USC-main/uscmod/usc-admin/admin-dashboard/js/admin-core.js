@@ -1,7 +1,7 @@
 import { formatSsuProgram } from '../../student-registration/js/ssu-programs.js';
 
 import { db } from "../../../firebase/firebase-config.js";
-import { callSecure } from "../../../shared/security-client.js?v=import-year-1";
+import { callSecure } from "../../../shared/security-client.js?v=admin-account-only-1";
 import { isActiveStudentStanding, normalizeStudentStanding, studentStandingLabel } from "../../../shared/student-standing.js";
 import { effectiveOfficerPermissions, normalizeOfficerPermissions, permissionsForOfficerPosition } from "../../../shared/officer-permissions.js?v=programs-1";
 import {
@@ -19,7 +19,6 @@ import {
   writeBatch
 } from "https://www.gstatic.com/firebasejs/12.12.0/firebase-firestore.js";
 
-const BULK_NO_CHANGE = "__no_change__";
 
 export function normalizeEmail(email) {
   return String(email || "").trim().toLowerCase();
@@ -85,7 +84,6 @@ export function normalizeUser(docSnap) {
     isActive: data.isActive !== false,
     accountStatus: status,
     isVerifiedStudent: Boolean(data.isVerifiedStudent),
-    candidacyApproved: data.candidacyApproved === true,
     yearLevel: String(data.yearLevel || "").trim(),
     academicYear: String(data.academicYear || "").trim(),
     academicRevision: String(data.academicRevision || "").trim(),
@@ -217,29 +215,13 @@ export function buildComplaintSummary(snapshot) {
   return summary;
 }
 
-export function buildVoteSummary(snapshot) {
-  const summary = new Map();
-  snapshot.docs.forEach((docSnap) => {
-    const data = docSnap.data() || {};
-    const studentId = String(data.studentId || "").trim();
-    if (!studentId || data.hasVoted !== true) return;
-    const votedAtMs = data.votedAt?.toMillis?.() || Number(data.votedAtMs || 0);
-    summary.set(studentId, {
-      submittedAtMs: votedAtMs,
-      receiptReference: String(data.receiptReference || "Recorded").trim(),
-      college: String(data.college || "").trim()
-    });
-  });
-  return summary;
-}
+
 
 export function complaintSummaryFor(user, complaintSummaryByUid) {
   return complaintSummaryByUid.get(user.uid) || { total: 0, statuses: new Map(), latestMs: 0 };
 }
 
-export function voteSummaryFor(user, voteSummaryByStudentId) {
-  return voteSummaryByStudentId.get(user.studentId) || null;
-}
+
 
 export function computeUserStats(users) {
   return users.reduce((accumulator, user) => {
@@ -400,8 +382,6 @@ function buildUserUpdatePayload(user, source = {}) {
   const standingActive = protectedAdmin ? true : isActiveStudentStanding(nextStanding, user.enrollmentStatus);
   const requestedVerified = protectedAdmin ? true : (typeof source.isVerifiedStudent === "boolean" ? source.isVerifiedStudent : user.isVerifiedStudent);
   const nextVerified = standingActive ? requestedVerified : false;
-  const requestedCandidacyApproved = protectedAdmin ? false : (typeof source.candidacyApproved === "boolean" ? source.candidacyApproved : user.candidacyApproved === true);
-  const nextCandidacyApproved = nextRole === "student" && standingActive ? requestedCandidacyApproved : false;
   const nextOfficeRaw = String(source.officePosition ?? user.officePosition ?? "").trim();
   const nextOfficePosition = nextRole === "officer"
     ? (nextOfficeRaw || "USC Officer")
@@ -421,7 +401,6 @@ function buildUserUpdatePayload(user, source = {}) {
     nextStatus: sanitizedStatus,
     nextActive: normalizedActive,
     nextVerified,
-    nextCandidacyApproved,
     nextYearLevel,
     nextStanding,
     standingActive,
@@ -439,7 +418,6 @@ function summarizeChanges(user, payload) {
   if (user.role !== payload.nextRole) parts.push(`role ${user.role} → ${payload.nextRole}`);
   if (user.accountStatus !== payload.nextStatus) parts.push(`status ${user.accountStatus} → ${payload.nextStatus}`);
   if (user.isVerifiedStudent !== payload.nextVerified) parts.push(`school verification ${user.isVerifiedStudent ? "verified" : "unverified"} → ${payload.nextVerified ? "verified" : "unverified"}`);
-  if ((user.candidacyApproved === true) !== payload.nextCandidacyApproved) parts.push(`candidacy ${payload.nextCandidacyApproved ? "approved" : "not approved"}`);
   if (user.isActive !== payload.nextActive) parts.push(`active ${user.isActive ? "yes" : "no"} → ${payload.nextActive ? "yes" : "no"}`);
   if ((user.yearLevel || "") !== payload.nextYearLevel) parts.push(`year level → ${payload.nextYearLevel || "not set"}`);
   if (normalizeStudentStanding(user.studentStanding, user.enrollmentStatus) !== payload.nextStanding) parts.push(`standing → ${studentStandingLabel(payload.nextStanding)}`);
@@ -454,7 +432,7 @@ function summarizeChanges(user, payload) {
 }
 
 function requiresReason(changeParts) {
-  return changeParts.some((part) => part.startsWith("role") || part.startsWith("status") || part.startsWith("active") || part.startsWith("standing") || part.startsWith("candidacy") || part.startsWith("officer permissions"));
+  return changeParts.some((part) => part.startsWith("role") || part.startsWith("status") || part.startsWith("active") || part.startsWith("standing") || part.startsWith("officer permissions"));
 }
 
 
@@ -476,7 +454,6 @@ export async function updateSingleUser(user, source = {}) {
     uid: user.uid,
     accountStatus: payload.nextStatus,
     isVerifiedStudent: payload.nextVerified,
-    candidacyApproved: payload.nextCandidacyApproved,
     studentStanding: payload.nextStanding,
     adminNotes: payload.nextNotes,
     changeReason: payload.changeReason
@@ -484,45 +461,13 @@ export async function updateSingleUser(user, source = {}) {
   return { changed: true, message: `${user.fullName || user.email}: ${changeParts.join(" • ")}` };
 }
 
-export async function applyBulkUpdates(users, options = {}) {
-  if (options.role || options.officePosition || options.officerPermissions || options.officerPermissionSource) {
-    throw new Error("Use Officer Management for officer promotions, permissions, and term completion.");
-  }
 
-  const targetUsers = users.filter((user) => !isProtectedAdmin(user));
-  if (!targetUsers.length) throw new Error("Select at least one non-admin user first.");
-  const prepared = targetUsers.map((user) => ({
-    user,
-    payload: buildUserUpdatePayload(user, {
-      role: options.role,
-      officePosition: options.officePosition,
-      accountStatus: options.accountStatus,
-      roleEffectiveDate: options.roleEffectiveDate,
-      adminNotes: options.adminNotes,
-      changeReason: options.changeReason
-    })
-  })).map((entry) => ({ ...entry, changeParts: summarizeChanges(entry.user, entry.payload) })).filter((entry) => entry.changeParts.length);
-  if (!prepared.length) return { changed: 0, message: "No bulk changes detected." };
-  const sharedReason = String(options.changeReason || "").trim();
-  if (prepared.some((entry) => requiresReason(entry.changeParts)) && !sharedReason) throw new Error("Please enter a reason for this bulk update.");
-  let changed = 0;
-  for (const { user, payload } of prepared) {
-    await callSecure("adminUpdateUser", {
-      uid: user.uid,
-      accountStatus: payload.nextStatus,
-      adminNotes: payload.nextNotes,
-      changeReason: sharedReason
-    });
-    changed += 1;
-  }
-  return { changed, message: `Bulk update applied to ${changed} users through trusted server authorization.` };
-}
 
-export function exportUsersCsv(users, complaintSummaryByUid, voteSummaryByStudentId, filename) {
+export function exportUsersCsv(users, complaintSummaryByUid, filename) {
   if (!users.length) {
     throw new Error("No users available for export.");
   }
-  // Audit metadata only. The audit event never contains ballot selections.
+  // Record only account-export metadata in the audit event.
   callSecure("recordAdminAuditAction", { action: "ADMIN_EXPORT", target: filename, details: { exportedUsers: users.length } })
     .catch((error) => console.warn("Unable to record export audit event:", error));
   const headers = [
@@ -541,14 +486,12 @@ export function exportUsersCsv(users, complaintSummaryByUid, voteSummaryByStuden
     "Last Login",
     "Last Activity",
     "Complaint Count",
-    "Vote Submitted",
     "Role Effective Date",
     "Admin Notes"
   ];
   const toCsvValue = (value) => `"${String(value ?? "").replaceAll('"', '""')}"`;
   const rows = users.map((user) => {
     const complaintSummary = complaintSummaryFor(user, complaintSummaryByUid);
-    const voteSummary = voteSummaryFor(user, voteSummaryByStudentId);
     return [
       user.fullName || "",
       user.email || "",
@@ -560,12 +503,11 @@ export function exportUsersCsv(users, complaintSummaryByUid, voteSummaryByStuden
       user.isActive ? "Yes" : "No",
       user.isVerifiedStudent ? "Yes" : "No",
       user.officePosition || "",
-      user.role === "officer" ? normalizeOfficerPermissions(user.officerPermissions, { legacyFullAccess: user.officerPermissionsConfigured !== true }).join(" | ") : "",
+      user.role === "officer" ? normalizeOfficerPermissions(user.officerPermissions, { legacyFullAccess: user.officerPermissionsConfigured !== true }).filter(permission => !permission.startsWith("elections.")).join(" | ") : "",
       formatDateTime(user.createdAtMs),
       formatDateTime(user.lastLoginAtMs),
       formatDateTime(user.lastActivityAtMs),
       String(complaintSummary.total),
-      voteSummary ? "Yes" : "No",
       formatDateOnly(user.roleEffectiveDate),
       user.adminNotes || ""
     ];
@@ -683,19 +625,16 @@ export function subscribeComplaints(callback) {
   return onSnapshot(collection(db, "complaints"), (snapshot) => callback(buildComplaintSummary(snapshot)), (error) => callback(new Map(), error));
 }
 
-export function subscribeVotes(callback) {
-  let unsubscribe = () => {};
-  let active = true;
-  callSecure("getElectionContext").then((context) => {
-    if (!active) return;
-    unsubscribe = onSnapshot(collection(db, "elections", context.electionId, "voterStatus"), (snapshot) => callback(buildVoteSummary(snapshot)), (error) => callback(new Map(), error));
-  }).catch((error) => callback(new Map(), error));
-  return () => { active = false; unsubscribe(); };
-}
+
 
 export function subscribeRoleLogs(callback, maxItems = 30) {
   return onSnapshot(query(collection(db, "audit_logs"), orderBy("createdAt", "desc"), limit(maxItems)), (snapshot) => {
-    const logs = snapshot.docs.map((docSnap) => {
+    const logs = snapshot.docs.filter(docSnap => {
+      const entry = docSnap.data() || {};
+      return !/(?:ELECTION|CANDIDATE|CANDIDACY|CANVASS|VOTER|VOTE)/i.test(String(entry.action || ''))
+        && !/election/i.test(String(entry.source || ''))
+        && !/^(?:elections|election_config|votes|voterRoster)\//i.test(String(entry.target || ''));
+    }).map((docSnap) => {
       const data = docSnap.data() || {};
       const before = data.before || {};
       const after = data.after || {};
@@ -719,8 +658,4 @@ export function subscribeRoleLogs(callback, maxItems = 30) {
     });
     callback(logs);
   }, (error) => callback([], error));
-}
-
-export function getBulkNoChangeValue() {
-  return BULK_NO_CHANGE;
 }

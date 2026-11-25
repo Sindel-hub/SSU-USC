@@ -38,7 +38,7 @@ function renderAssignments() {
     const card = node('article', undefined, 'history-term');
     card.append(node('h3', `${a.position} · ${a.administration}`), node('p', `${a.officerName} · ${a.department}`), node('p', `${date(a.startsAtMs)} – ${date(a.endsAtMs)}`));
     const termStatus = a.status === 'completed' ? 'Completed' : a.endsAtMs <= Date.now() ? 'Expired — turnover required' : 'Active';
-    card.append(node('strong', termStatus), node('p', `Permissions: ${(a.permissions || []).map(p => permissionDefinition(p)?.label || p).join(', ')}`));
+    card.append(node('strong', termStatus), node('p', `Permissions: ${(a.permissions || []).filter(p => !p.startsWith('elections.')).map(p => permissionDefinition(p)?.label || p).join(', ')}`));
     if (a.authSyncPending) card.append(node('p', 'Authentication synchronization pending. Administrator action required.', 'history-error'));
     card.append(button('View tracklist', () => loadActivities(a)));
     if (admin && a.status !== 'completed') card.append(button('Complete term', async () => {

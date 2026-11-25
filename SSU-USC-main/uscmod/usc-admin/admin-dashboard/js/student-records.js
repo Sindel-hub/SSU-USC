@@ -16,22 +16,23 @@ try{$('resumeImportId').value=sessionStorage.getItem('uscAnnualImportId')||'';}c
 function message(text,error=false){$('recordsMessage').textContent=text;$('recordsMessage').dataset.error=error;}
 function readyCount(){return preview?.entries.filter(row=>!row.error).length||0;}
 function refreshApply(){ $('applyStudentImport').disabled=busy||preview?.status!=='records-preview'||!readyCount()||!$('confirmImport').checked; }
-async function run(fn){if(busy)return;busy=true;document.querySelectorAll('.records-workspace button:not([data-record-close]),.records-workspace input').forEach(el=>el.disabled=true);try{await fn();}catch(error){message(error.message,true);}finally{busy=false;document.querySelectorAll('.records-workspace button:not([data-record-close]),.records-workspace input').forEach(el=>el.disabled=false);refreshApply();if(!detailDialog.open&&document.activeElement===document.body)recordOpener?.focus({preventScroll:true});}}
+async function run(fn){if(busy)return;busy=true;document.querySelectorAll('.records-workspace button:not([data-record-close]),.records-workspace input,.records-workspace textarea,.records-workspace select').forEach(el=>el.disabled=true);try{await fn();}catch(error){message(error.message,true);}finally{busy=false;document.querySelectorAll('.records-workspace button:not([data-record-close]),.records-workspace input,.records-workspace textarea,.records-workspace select').forEach(el=>el.disabled=false);refreshApply();if(!detailDialog.open&&document.activeElement===document.body)recordOpener?.focus({preventScroll:true});}}
 function renderPreview(){
  $('importPreview').hidden=false;
  const entries=preview.entries,ready=readyCount(),blocked=entries.length-ready;
  $('importSummary').textContent=`${ready} ready · ${blocked} need review`;
- $('importReference').textContent=`Academic year ${preview.academicYear} · Import reference: ${preview.importId}${entries.some(entry=>entry.row?.studentStatus==='graduated')?' · Graduated rows will revoke linked account access.':''}`;
+ $('importReference').textContent=`Academic year ${preview.academicYear} · Import reference: ${preview.importId}${preview.correction?' · CORRECTION: '+preview.correctionReason:''}${preview.restoreAccess?' · Review all access-restoration actions.':''}${entries.some(entry=>['graduated','dropped'].includes(entry.row?.studentStatus))?' · Graduated / Dropped rows revoke linked account access.':''}`;
  for(const [id,label,count,pressed] of [['readyImportTab','Ready',ready,!reviewTab],['reviewImportTab','Needs Review',blocked,reviewTab]]){
   $(id).textContent=`${label} (${count})`;
   $(id).setAttribute('aria-pressed',pressed);
  }
  const results=new Map((preview.results||[]).map(result=>[result.index,result]));
+ const actionLabels={'drop-disable-access':'Mark dropped · disable access','mark-dropped':'Mark dropped','correct-and-restore-access':'Correct record & restore access','correct-academic-record':'Correct academic record'};
  $('importPreviewRows').innerHTML=entries.map((row,index)=>{
   if(Boolean(row.error)!==reviewTab)return '';
   const done=results.get(index);
   const review=row.reviewName?`<div>On file: ${e(row.reviewName)}</div><button type="button" data-verify-row="${index}">Verify same person</button>`:'';
-  return `<tr><td>${row.line||index+2}</td><td>${e(row.row?.studentId||row.studentId)}</td><td>${e(row.row?.fullName||'—')}${review}</td><td>${e(row.error?'Blocked':row.action)}</td><td>${e(row.row?.enrollmentStatus||'—')}</td><td>${e(row.error||done?.message||done?.state||row.warning||'Ready')}</td></tr>`;
+  return `<tr><td>${row.line||index+2}</td><td>${e(row.row?.studentId||row.studentId)}</td><td>${e(row.row?.fullName||'—')}${review}</td><td>${e(row.error?'Blocked':actionLabels[row.action]||row.action)}</td><td>${e(row.row?.enrollmentStatus||'—')}</td><td>${e(row.error||done?.message||done?.state||row.warning||'Ready')}</td></tr>`;
  }).join('')||'<tr><td colspan="6">No rows in this tab.</td></tr>';
  refreshApply();
 }
@@ -69,7 +70,7 @@ function renderStudents(){
  $('studentRecordRows').innerHTML=rows.length?rows.map(s=>`<tr><td>${e(s.studentId)}</td><td>${e(s.fullName)}<br><small>${e(formatSsuCollege(s.college))}</small></td><td>${e(s.academicYear||'Not recorded')}</td><td>${e(standingLabel(s.studentStanding))}</td><td>${e(s.accountState)}<br>${e(s.activationStatus||'Existing account')}${s.activationDelivery?` · ${e(s.activationDelivery)}`:''}</td><td><button type="button" data-student="${e(s.studentId)}">View record</button></td></tr>`).join(''):'<tr><td colspan="6">No matching student records.</td></tr>';
  $('moreStudents').hidden=!next;
 }
-const standingLabel=value=>({active:'Currently enrolled',graduated:'Graduated',inactive:'Inactive',withdrawn:'Discontinued',leave:'On leave',transferred:'Transferred',eliminated:'Eliminated'})[value]||'Not recorded';
+const standingLabel=value=>({active:'Currently enrolled',graduated:'Graduated',dropped:'Dropped',inactive:'Inactive',withdrawn:'Discontinued',leave:'On leave',transferred:'Transferred',eliminated:'Eliminated'})[value]||'Not recorded';
 const date=value=>value?new Date(value).toLocaleString():'Not recorded';
 function snapshot(p){if(!p)return 'No earlier academic record';return`${e(p?.academicYear||'Legacy record')} · ${e(formatSsuCollege(p?.college)||'—')} · ${e(formatSsuProgram(p?.college,p?.program)||'—')} · Year ${e(p?.yearLevel||'—')} · ${e(p?.studentStanding||'—')}`;}
 async function detail(studentId){
@@ -92,19 +93,25 @@ $('studentImportForm').onsubmit=event=>{event.preventDefault();run(async()=>{
  const file=$('studentImportFile').files[0];if(!file||file.size>2*1024*1024)throw Error('Choose a CSV or .xlsx file up to 2 MB.');
  message('Validating the authorized list and checking existing accounts…');
  let rows;if(/\.csv$/i.test(file.name))rows=parseStudentCsv(await file.text());else if(/\.xlsx$/i.test(file.name))rows=await readStudentWorkbook(await file.arrayBuffer(),globalThis.ExcelJS);else throw Error('Use CSV or Excel .xlsx format.');
- preview=await call('studentAnnualPreview',{academicYear:$('importYear').value,rows,authorized:$('importAuthorized').checked});preview.results=[];reviewTab=false;$('confirmImport').checked=false;
+ preview=await call('studentAnnualPreview',{academicYear:$('importYear').value,rows,authorized:$('importAuthorized').checked,correction:$('correctionMode').checked,correctionReason:$('correctionReason').value,restoreAccess:$('restoreImportAccess').checked});preview.results=[];$('importProgress').textContent='';reviewTab=false;$('confirmImport').checked=false;
  try{sessionStorage.setItem('uscAnnualImportId',preview.importId);}catch{}$('resumeImportId').value=preview.importId;renderPreview();message(preview.hasErrors?'Apply the Ready rows separately. Correct spreadsheet errors and upload the corrected rows for a new preview.':'Preview ready. Review the records before applying.');
  });};
 $('confirmImport').onchange=refreshApply;
-$('studentImportFile').onchange=()=>{preview=null;$('importPreview').hidden=true;refreshApply();};
+function invalidatePreview(){preview=null;$('importProgress').textContent='';$('importPreview').hidden=true;$('confirmImport').checked=false;refreshApply();}
+function syncCorrectionFields(){const enabled=$('correctionMode').checked;$('correctionFields').hidden=!enabled;$('correctionReason').required=enabled;if(!enabled)$('restoreImportAccess').checked=false;}
+$('correctionMode').onchange=()=>{syncCorrectionFields();invalidatePreview();};
+$('correctionReason').oninput=invalidatePreview;
+$('restoreImportAccess').onchange=invalidatePreview;
+$('importYear').oninput=invalidatePreview;
+$('studentImportFile').onchange=invalidatePreview;
 $('applyStudentImport').onclick=()=>run(async()=>{
  if(!preview||!readyCount()||!$('confirmImport').checked)return;
- if(!confirm(`Apply ${readyCount()} Ready records for ${preview.academicYear}?`))return;
+ if(!confirm(`Apply ${readyCount()} Ready records for ${preview.academicYear}?${preview.correction?' This corrects academic records; review the target year.':''}${preview.restoreAccess?' Explicitly marked approved import-disabled accounts will regain portal access.':''}`))return;
  let start=0;message('Applying reviewed import…');
  do{const r=await call('studentAnnualApply',{importId:preview.importId,start,confirmed:true});preview.results=preview.results||[];for(const result of r.results){const i=preview.results.findIndex(x=>x.index===result.index);if(i>=0)preview.results[i]=result;else preview.results.push(result);}start=r.next;$('importProgress').textContent=`${preview.results.filter(x=>x.state==='complete').length} completed · ${preview.results.filter(x=>x.state==='failed').length} failed. `;renderPreview();}while(start!==null);
  const failed=preview.results.filter(r=>r.state!=='complete').length;message(failed?'Import finished with failures. Review the row results and retry recoverable items.':'Ready records applied.');await list();
 });
-$('resumeImportButton').onclick=()=>run(async()=>{preview=await call('studentAnnualJob',{importId:$('resumeImportId').value.trim()});$('importYear').value=preview.academicYear;$('confirmImport').checked=false;reviewTab=false;renderPreview();message('Import loaded. Review results before retrying.');});
+$('resumeImportButton').onclick=()=>run(async()=>{preview=await call('studentAnnualJob',{importId:$('resumeImportId').value.trim()});$('importYear').value=preview.academicYear;$('correctionMode').checked=preview.correction===true;$('correctionReason').value=preview.correctionReason||'';$('restoreImportAccess').checked=preview.restoreAccess===true;syncCorrectionFields();$('confirmImport').checked=false;reviewTab=false;renderPreview();message('Import loaded. Review results before retrying.');});
 $('studentStatusFilter').onchange=()=>run(()=>list());
 document.querySelectorAll('[data-student-filter]').forEach(input=>input.onchange=()=>run(()=>list()));$('importYear').onchange=()=>{renderStudents();if(preview){preview=null;$('importPreview').hidden=true;}};
 $('findStudent').onclick=()=>run(()=>list());$('clearStudentSearch').onclick=()=>run(async()=>{

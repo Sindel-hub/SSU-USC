@@ -81,7 +81,7 @@ function renderSlip(c){
   openSlipModal();
   const active=isActiveStudentStanding(c.studentStanding);
   const emailNotice=!active
-    ? `This officer account is inactive because the recorded student standing is ${studentStandingLabel(c.studentStanding)}. Portal access and voting are disabled.`
+    ? `This officer account is inactive because the recorded student standing is ${studentStandingLabel(c.studentStanding)}. Portal access is disabled.`
     : c.verificationEmailSent
       ? "A verification link was also sent to the institutional email for account recovery/contact verification. Officer dashboard access is controlled by the school-issued account status and assigned officer role."
       : "Officer dashboard access is controlled by the school-issued account status and assigned officer role. Email verification is optional and does not block login.";
