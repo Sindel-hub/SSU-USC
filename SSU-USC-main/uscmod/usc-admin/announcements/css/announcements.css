@@ -670,3 +670,53 @@ body.announcement-management-page .recent-list .mini-btn{gap:6px}
 body.announcement-management-page .modal-close{display:grid;place-items:center}
 @media(max-width:900px){body.announcement-management-page .module-workflow-strip{grid-template-columns:1fr}}
 @media(max-width:620px){body.announcement-management-page .module-hero-heading{grid-template-columns:42px minmax(0,1fr)}body.announcement-management-page .module-hero-icon{width:42px;height:42px;border-radius:13px;font-size:16px}body.announcement-management-page .module-workflow-step{grid-template-columns:22px 34px minmax(0,1fr);padding:10px}}
+
+/* Live Preview only: align copy and give every element consistent breathing room. */
+body.announcement-management-page #announcementPreviewCard {
+  display:grid; grid-template-columns:minmax(0,1fr); gap:0; min-width:0;
+  padding:0!important; overflow:hidden; border:1px solid #dce7f0;
+  border-radius:14px; background:#fff; box-sizing:border-box;
+}
+body.announcement-management-page #announcementPreviewCard #announcementPreviewImageWrap {
+  width:100%; min-width:0; margin:0!important; border:0; border-radius:13px 13px 0 0;
+  min-height:0; box-sizing:border-box;
+}
+body.announcement-management-page #announcementPreviewCard #announcementPreviewImageWrap.empty {
+  min-height:160px; height:160px; background:#eef5fc; border-bottom:1px dashed #cedfed;
+}
+body.announcement-management-page #announcementPreviewCard #announcementPreviewPlaceholder {
+  font-size:13px; line-height:1.5; color:#607b96; text-align:center; padding:16px;
+}
+body.announcement-management-page #announcementPreviewCard .preview-copy {
+  display:grid; grid-template-columns:minmax(0,1fr); gap:12px; padding:20px!important;
+  min-width:0; box-sizing:border-box; text-align:left;
+}
+body.announcement-management-page #announcementPreviewCard .preview-meta-row {
+  display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap;
+  gap:8px 12px; margin:0!important; min-width:0;
+}
+body.announcement-management-page #announcementPreviewCard #previewCategoryBadge {
+  padding:5px 10px; font-size:12px!important; line-height:1.4;
+  border-radius:999px; max-width:100%; white-space:normal;
+}
+body.announcement-management-page #announcementPreviewCard #previewDateText {
+  font-size:12px!important; line-height:1.5; font-weight:500; color:#677e93;
+}
+body.announcement-management-page #announcementPreviewCard #previewTitle {
+  font-size:22px!important; line-height:1.3!important; margin:0!important;
+  padding:0!important; text-align:left!important; color:#174b7d; overflow-wrap:anywhere;
+}
+body.announcement-management-page #announcementPreviewCard #previewAudience {
+  margin:0!important; padding:0!important; font-size:13px!important; line-height:1.5;
+  color:#60768c; text-align:left!important; overflow-wrap:anywhere;
+}
+body.announcement-management-page #announcementPreviewCard #previewContent {
+  margin:0!important; padding:14px 0 0!important; border-top:1px solid #e6edf4;
+  font-size:14px!important; line-height:1.7!important; color:#345575;
+  text-align:left!important; text-indent:0!important; white-space:pre-wrap!important;
+  overflow-wrap:anywhere; word-break:normal; min-width:0;
+}
+@media(max-width:600px){
+  body.announcement-management-page #announcementPreviewCard .preview-copy{padding:16px!important;gap:10px}
+  body.announcement-management-page #announcementPreviewCard #previewTitle{font-size:19px!important}
+}
