@@ -2,16 +2,14 @@ import { studentRecordCall } from "../../../shared/student-records-client.js";
 import { bindDirectoryTable } from "./user-directory-table.js?v=2";
 import { callStudentEmailService } from "../../../shared/supabase-email-service.js";
 import { institutionalEmailForDisplay } from "../../../shared/account-email.js";
-import { callSecure, auth } from "../../../shared/security-client.js?v=import-year-1";
+import { callSecure, auth } from "../../../shared/security-client.js?v=admin-account-only-1";
 import { OFFICER_PERMISSION_DEFINITIONS, DEFAULT_OFFICER_PERMISSIONS, normalizeOfficerPermissions } from "../../../shared/officer-permissions.js?v=programs-1";
 
 import {
   complaintSummaryFor,
   escapeHtml,
-  exportUsersCsv,
   formatDateOnly,
   formatDateTime,
-  getBulkNoChangeValue,
   getCurrentAdminProfile,
   getFilteredUsers,
   getInitials,
@@ -23,19 +21,15 @@ import {
   statusClass,
   subscribeComplaints,
   subscribeUsers,
-  subscribeVotes,
   summarizeComplaintStates,
   updateSingleUser,
-  applyBulkUpdates,
-  voteSummaryFor
-} from "./admin-core.js?v=import-year-1";
+} from "./admin-core.js?v=admin-account-only-1";
 
 
 const uscAuthAllowed = await (globalThis.USC_AUTH_READY || Promise.resolve(false));
 if (uscAuthAllowed !== true) await new Promise(() => {});
 
 
-const BULK_NO_CHANGE = getBulkNoChangeValue();
 const dom = {
   userSearchInput: document.getElementById("userSearchInput"),
   roleFilterSelect: document.getElementById("roleFilterSelect"),
@@ -45,22 +39,8 @@ const dom = {
   recentFilterSelect: document.getElementById("recentFilterSelect"),
   sortSelect: document.getElementById("sortSelect"),
   directoryCountBadge: document.getElementById("directoryCountBadge"),
-  selectedCountBadge: document.getElementById("selectedCountBadge"),
   listStatusText: document.getElementById("listStatusText"),
-  exportFilteredButton: document.getElementById("exportFilteredButton"),
-  exportSelectedButton: document.getElementById("exportSelectedButton"),
-  toggleAllUsers: document.getElementById("toggleAllUsers"),
   usersTableBody: document.getElementById("usersTableBody"),
-  bulkStatusSelect: document.getElementById("bulkStatusSelect"),
-  bulkVerificationSelect: document.getElementById("bulkVerificationSelect"),
-  bulkActiveSelect: document.getElementById("bulkActiveSelect"),
-  bulkOfficePositionInput: document.getElementById("bulkOfficePositionInput"),
-  bulkEffectiveDateInput: document.getElementById("bulkEffectiveDateInput"),
-  bulkReasonInput: document.getElementById("bulkReasonInput"),
-  applyBulkButton: document.getElementById("applyBulkButton"),
-  approveSelectedButton: document.getElementById("approveSelectedButton"),
-  suspendSelectedButton: document.getElementById("suspendSelectedButton"),
-  clearSelectionButton: document.getElementById("clearSelectionButton"),
   userEditorModal: document.getElementById("userEditorModal"),
   userEditorModalBackdrop: document.getElementById("userEditorModalBackdrop"),
   userEditorModalClose: document.getElementById("userEditorModalClose"),
@@ -84,11 +64,9 @@ const dom = {
   selectedUserYearLevel: document.getElementById("selectedUserYearLevel"),
   selectedUserStanding: document.getElementById("selectedUserStanding"),
   selectedUserVerified: document.getElementById("selectedUserVerified"),
-  selectedUserCandidacy: document.getElementById("selectedUserCandidacy"),
   selectedUserActive: document.getElementById("selectedUserActive"),
   selectedUserComplaintCount: document.getElementById("selectedUserComplaintCount"),
   selectedUserComplaintStatus: document.getElementById("selectedUserComplaintStatus"),
-  selectedUserVoteStatus: document.getElementById("selectedUserVoteStatus"),
   selectedUserLastUpdate: document.getElementById("selectedUserLastUpdate"),
   roleEditorForm: document.getElementById("roleEditorForm"),
   targetRoleSelect: document.getElementById("targetRoleSelect"),
@@ -99,7 +77,6 @@ const dom = {
   studentStandingSelect: document.getElementById("studentStandingSelect"),
   standingAccessNote: document.getElementById("standingAccessNote"),
   verifiedToggle: document.getElementById("verifiedToggle"),
-  candidacyToggle: document.getElementById("candidacyToggle"),
   activeToggle: document.getElementById("activeToggle"),
   officerRbacEditor: document.getElementById("officerRbacEditor"),
   officerPermissionGrid: document.getElementById("officerPermissionGrid"),
@@ -139,15 +116,13 @@ const dom = {
 
 let users = [];
 let complaintSummaryByUid = new Map();
-let voteSummaryByStudentId = new Map();
 let selectedUserId = "";
-const selectedUserIds = new Set();
 let isSaving = false;
 
 function buildPermissionEditor() {
   if (!dom.officerPermissionGrid) return;
   const groups = new Map();
-  OFFICER_PERMISSION_DEFINITIONS.forEach((definition) => {
+  OFFICER_PERMISSION_DEFINITIONS.filter(definition => !definition.key.startsWith("elections.")).forEach((definition) => {
     if (!groups.has(definition.group)) groups.set(definition.group, []);
     groups.get(definition.group).push(definition);
   });
@@ -210,15 +185,13 @@ function getFilteredDirectory() {
 function setFeedback(message, tone = "neutral") {
   dom.lastActionSummary.textContent = message;
   dom.saveFeedbackText.textContent = tone === "success"
-    ? "Saved to Firestore."
+    ? "Account updated."
     : tone === "error"
       ? "Update failed."
       : "Ready for admin updates.";
 }
 
-function updateSelectionCounters() {
-  dom.selectedCountBadge.textContent = `${selectedUserIds.size} selected`;
-}
+
 
 function updateRolePreview(role) {
   const normalized = role === "officer" ? "officer" : "student";
@@ -235,19 +208,15 @@ function renderTable() {
   const visibleUsers = getFilteredDirectory();
   dom.directoryCountBadge.textContent = `${visibleUsers.length} account${visibleUsers.length === 1 ? '' : 's'}`;
   if (!visibleUsers.length) {
-    dom.usersTableBody.innerHTML = '<tr><td colspan="10"><div class="empty-state"><strong>No matching accounts</strong><span>Adjust the current filters and search terms.</span></div></td></tr>';
-    dom.toggleAllUsers.checked = false;
-    updateSelectionCounters();
+    dom.usersTableBody.innerHTML = '<tr><td colspan="9"><div class="empty-state"><strong>No matching accounts</strong><span>Adjust the current filters and search terms.</span></div></td></tr>';
     directoryTable.refresh();
     return;
   }
 
   dom.usersTableBody.innerHTML = visibleUsers.map((user) => {
-    const selected = selectedUserIds.has(user.uid);
     const complaintSummary = complaintSummaryFor(user, complaintSummaryByUid);
     return `
       <tr class="directory-row ${selectedUserId === user.uid ? 'is-open' : ''}" data-account-row="${escapeHtml(user.uid)}">
-        <td><input type="checkbox" class="row-selector" aria-label="Select ${escapeHtml(user.fullName || 'Unnamed user')}" data-user-id="${escapeHtml(user.uid)}" ${selected ? 'checked' : ''} ${isProtectedAdmin(user) ? 'disabled' : ''} /></td>
         <td><div class="directory-user-cell"><span class="directory-user-avatar" aria-hidden="true">${escapeHtml(getInitials(user.fullName, user.email))}</span><div class="table-name"><button type="button" class="directory-name-button" data-account-name="${escapeHtml(user.uid)}" aria-haspopup="dialog" aria-label="View account for ${escapeHtml(user.fullName || 'Unnamed user')}"><strong>${escapeHtml(user.fullName || 'Unnamed user')}</strong></button><small>${escapeHtml(user.email || 'Not Linked')}</small></div></div></td>
         <td class="mono">${escapeHtml(user.studentId || 'N/A')}</td>
         <td><span class="role-badge ${roleClass(user.role)}">${escapeHtml(user.role)}</span></td>
@@ -261,24 +230,10 @@ function renderTable() {
     `;
   }).join("");
 
-  const visibleSelectable = visibleUsers.filter((user) => !isProtectedAdmin(user));
-  dom.toggleAllUsers.checked = Boolean(visibleSelectable.length) && visibleSelectable.every((user) => selectedUserIds.has(user.uid));
-
-  dom.usersTableBody.querySelectorAll('.row-selector').forEach((checkbox) => {
-    checkbox.addEventListener('change', () => {
-      const userId = checkbox.getAttribute('data-user-id') || '';
-      if (!userId) return;
-      if (checkbox.checked) selectedUserIds.add(userId);
-      else selectedUserIds.delete(userId);
-      updateSelectionCounters();
-    });
-  });
-
   dom.usersTableBody.querySelectorAll('[data-open-user]').forEach((button) => {
     button.addEventListener('click', () => openUser(button.getAttribute('data-open-user') || ''));
   });
 
-  updateSelectionCounters();
   directoryTable.refresh();
 }
 
@@ -312,7 +267,6 @@ function fillEditor(user) {
   }
   toggleEditor(true);
   const complaintSummary = complaintSummaryFor(user, complaintSummaryByUid);
-  const voteSummary = voteSummaryFor(user, voteSummaryByStudentId);
   const protectedAdmin = isProtectedAdmin(user);
   dom.selectedUserRestrictionBanner.classList.toggle('hidden', !protectedAdmin);
   dom.selectedUserInitials.textContent = getInitials(user.fullName, user.email);
@@ -326,7 +280,7 @@ function fillEditor(user) {
   dom.selectedUserRoute.textContent = routeLabel(user.role);
   dom.selectedUserOfficePosition.textContent = user.officePosition || '—';
   if (dom.selectedUserPermissionSummary) {
-    const count = user.role === 'officer' ? normalizeOfficerPermissions(user.officerPermissions, { legacyFullAccess: user.officerPermissionsConfigured !== true }).length : 0;
+    const count = user.role === 'officer' ? normalizeOfficerPermissions(user.officerPermissions, { legacyFullAccess: user.officerPermissionsConfigured !== true }).filter(permission => !permission.startsWith('elections.')).length : 0;
     dom.selectedUserPermissionSummary.textContent = user.role === 'officer' ? `${count} granted permission${count === 1 ? '' : 's'}` : 'Not applicable';
   }
   dom.selectedUserRegisteredAt.textContent = formatDateTime(user.createdAtMs);
@@ -335,11 +289,9 @@ function fillEditor(user) {
   dom.selectedUserEffectiveDate.textContent = formatDateOnly(user.roleEffectiveDate);
   dom.selectedUserStanding.textContent = user.studentStandingLabel || user.studentStanding || 'Active / Enrolled';
   dom.selectedUserVerified.textContent = user.isVerifiedStudent ? 'Verified' : 'Unverified';
-  if (dom.selectedUserCandidacy) dom.selectedUserCandidacy.textContent = user.candidacyApproved ? 'Approved to register' : 'Not approved';
   dom.selectedUserActive.textContent = user.isActive ? 'Active' : 'Inactive';
   dom.selectedUserComplaintCount.textContent = `${complaintSummary.total} total`;
   dom.selectedUserComplaintStatus.textContent = summarizeComplaintStates(complaintSummary);
-  dom.selectedUserVoteStatus.textContent = voteSummary ? `Submitted (${formatDateTime(voteSummary.submittedAtMs)})` : 'Not submitted';
   dom.selectedUserLastUpdate.textContent = user.updatedAtMs ? `${formatDateTime(user.updatedAtMs)}${user.lastRoleUpdatedBy ? ` • by ${user.lastRoleUpdatedBy}` : ''}` : '—';
   dom.roleEditorForm.querySelectorAll('button, input, select, textarea').forEach(control => { control.disabled = false; });
   dom.targetRoleSelect.value = protectedAdmin ? 'student' : user.role;
@@ -349,11 +301,9 @@ function fillEditor(user) {
   dom.effectiveDateInput.value = user.roleEffectiveDate || '';
   dom.studentStandingSelect.value = user.studentStanding || 'active';
   dom.verifiedToggle.checked = user.isVerifiedStudent;
-  if (dom.candidacyToggle) dom.candidacyToggle.checked = user.candidacyApproved === true;
   dom.activeToggle.checked = user.isActive;
   const inactiveStanding = (user.studentStanding || 'active') !== 'active';
   dom.activeToggle.disabled = protectedAdmin || inactiveStanding;
-  if (dom.candidacyToggle) dom.candidacyToggle.disabled = protectedAdmin || inactiveStanding || user.role !== 'student';
   dom.reactivateUserButton.title = inactiveStanding ? 'Set Student Standing to Active / Enrolled and save before reactivating access.' : '';
   dom.adminNotesInput.value = user.adminNotes || '';
   dom.roleChangeNote.value = '';
@@ -526,7 +476,6 @@ async function saveSelectedUser(overrides = null) {
       roleEffectiveDate: overrides?.roleEffectiveDate ?? dom.effectiveDateInput.value,
       studentStanding: overrides?.studentStanding ?? dom.studentStandingSelect.value,
       isVerifiedStudent: typeof overrides?.isVerifiedStudent === 'boolean' ? overrides.isVerifiedStudent : dom.verifiedToggle.checked,
-      candidacyApproved: typeof overrides?.candidacyApproved === 'boolean' ? overrides.candidacyApproved : Boolean(dom.candidacyToggle?.checked),
       isActive: typeof overrides?.isActive === 'boolean' ? overrides.isActive : dom.activeToggle.checked,
       adminNotes: overrides?.adminNotes ?? dom.adminNotesInput.value,
       changeReason: overrides?.changeReason ?? dom.roleChangeNote.value
@@ -543,26 +492,7 @@ async function saveSelectedUser(overrides = null) {
   }
 }
 
-async function handleBulk(overrides = {}) {
-  const targets = users.filter((user) => selectedUserIds.has(user.uid));
-  try {
-    const result = await applyBulkUpdates(targets, {
-      role: undefined,
-      accountStatus: (overrides.accountStatus ?? dom.bulkStatusSelect.value) || undefined,
-      verification: overrides.verification ?? dom.bulkVerificationSelect.value ?? BULK_NO_CHANGE,
-      activeState: overrides.activeState ?? dom.bulkActiveSelect.value ?? BULK_NO_CHANGE,
-      officePosition: overrides.officePosition ?? dom.bulkOfficePositionInput.value,
-      roleEffectiveDate: overrides.roleEffectiveDate ?? dom.bulkEffectiveDateInput.value,
-      adminNotes: overrides.adminNotes,
-      changeReason: overrides.changeReason ?? dom.bulkReasonInput.value
-    });
-    setFeedback(result.message, 'success');
-  } catch (error) {
-    console.error(error);
-    alert(error.message || 'Failed to apply bulk changes.');
-    setFeedback('Bulk update failed.', 'error');
-  }
-}
+
 
 
 
@@ -573,13 +503,6 @@ function bind() {
       element?.addEventListener('change', renderTable);
     });
 
-  dom.toggleAllUsers.addEventListener('change', () => {
-    const visibleUsers = getFilteredDirectory().filter((user) => !isProtectedAdmin(user));
-    if (dom.toggleAllUsers.checked) visibleUsers.forEach((user) => selectedUserIds.add(user.uid));
-    else visibleUsers.forEach((user) => selectedUserIds.delete(user.uid));
-    renderTable();
-  });
-
   dom.accountStatusSelect.addEventListener('change', () => {
     if (dom.accountStatusSelect.value === 'suspended') dom.activeToggle.checked = false;
   });
@@ -587,12 +510,10 @@ function bind() {
   dom.studentStandingSelect?.addEventListener('change', () => {
     const inactive = dom.studentStandingSelect.value !== 'active';
     dom.activeToggle.disabled = inactive;
-    if (dom.candidacyToggle) dom.candidacyToggle.disabled = inactive || dom.targetRoleSelect.value !== 'student';
     dom.reactivateUserButton.disabled = inactive;
     if (inactive) {
       dom.activeToggle.checked = false;
       dom.verifiedToggle.checked = false;
-      if (dom.candidacyToggle) dom.candidacyToggle.checked = false;
       dom.reactivateUserButton.title = 'Set Student Standing to Active / Enrolled and save before reactivating access.';
     } else if (dom.accountStatusSelect.value !== 'suspended') {
       dom.activeToggle.checked = true;
@@ -600,8 +521,8 @@ function bind() {
     }
     if (dom.standingAccessNote) {
       dom.standingAccessNote.textContent = inactive
-        ? 'This standing disables portal access and election eligibility as soon as you save.'
-        : 'Active / Enrolled students may access the portal; election eligibility follows the verified-voter setting.';
+        ? 'This standing disables portal access as soon as you save.'
+        : 'Active / Enrolled students may access the portal when their account is approved and active.';
     }
   });
 
@@ -614,12 +535,11 @@ function bind() {
   dom.removeUserButton.addEventListener('click', async () => {
     const user = getSelectedUser();
     if (isSaving || !user || isProtectedAdmin(user) || user.accountStatus !== 'suspended' || user.isActive) return;
-    if (!window.confirm(`Remove ${user.fullName || user.studentId || 'this account'} from the directory and unlink its personal Gmail? Sign-in will be disabled. Historical complaints, votes, and audit records will be retained.`)) return;
+    if (!window.confirm(`Remove ${user.fullName || user.studentId || 'this account'} from the directory and unlink its personal Gmail? Sign-in will be disabled. Historical complaints and audit records will be retained.`)) return;
     isSaving = true;
     dom.removeUserButton.disabled = true;
     try {
       await callStudentEmailService('admin_remove_suspended_account', {uid:user.uid});
-      selectedUserIds.delete(user.uid);
       closeUserEditorModal();
       setFeedback('Account removed and personal Gmail unlinked. Historical records were retained.', 'success');
     } catch (error) {
@@ -645,36 +565,7 @@ function bind() {
 
   dom.resetUserPasswordButton?.addEventListener('click', resetSelectedUserPassword);
 
-  dom.applyBulkButton.addEventListener('click', async () => handleBulk());
-  dom.approveSelectedButton.addEventListener('click', async () => handleBulk({ accountStatus: 'approved', activeState: 'active', changeReason: dom.bulkReasonInput.value.trim() || 'Approved in bulk by admin.' }));
-  dom.suspendSelectedButton.addEventListener('click', async () => {
-    if (!selectedUserIds.size) {
-      alert('Select users first.');
-      return;
-    }
-    if (window.confirm(`Suspend ${selectedUserIds.size} selected user${selectedUserIds.size === 1 ? '' : 's'}?`)) {
-      await handleBulk({ accountStatus: 'suspended', activeState: 'inactive', changeReason: dom.bulkReasonInput.value.trim() || 'Suspended in bulk by admin.' });
-    }
-  });
-  dom.clearSelectionButton.addEventListener('click', () => {
-    selectedUserIds.clear();
-    renderTable();
-  });
 
-  dom.exportFilteredButton.addEventListener('click', () => {
-    try {
-      exportUsersCsv(getFilteredDirectory(), complaintSummaryByUid, voteSummaryByStudentId, 'usc-users-filtered.csv');
-    } catch (error) {
-      alert(error.message || 'Nothing to export.');
-    }
-  });
-  dom.exportSelectedButton.addEventListener('click', () => {
-    try {
-      exportUsersCsv(users.filter((user) => selectedUserIds.has(user.uid)), complaintSummaryByUid, voteSummaryByStudentId, 'usc-users-selected.csv');
-    } catch (error) {
-      alert(error.message || 'Nothing to export.');
-    }
-  });
 }
 
 
@@ -727,4 +618,3 @@ subscribeUsers((value, error) => {
   }
 });
 subscribeComplaints((value) => { complaintSummaryByUid = value; renderTable(); if (selectedUserId) fillEditor(getSelectedUser()); });
-subscribeVotes((value) => { voteSummaryByStudentId = value; if (selectedUserId) fillEditor(getSelectedUser()); });

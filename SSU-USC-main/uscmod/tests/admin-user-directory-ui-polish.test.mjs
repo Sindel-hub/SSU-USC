@@ -10,9 +10,9 @@ test("user directory page uses the polished dashboard layout", () => {
   assert.match(html, /class="directory-page-heading"/);
   assert.match(html, /class="directory-search-field"/);
   assert.match(html, /id="schoolAccountProvisionCard"/);
-  assert.match(html, /user-directory-bulk-card/);
+  assert.doesNotMatch(html, /user-directory-bulk-card/);
   assert.match(html, /user-directory-workspace/);
-  assert.match(html, /users-modern\.css\?v=import-year-1/);
+  assert.match(html, /users-modern\.css\?v=admin-account-only-1/);
 });
 
 test("directory table renders identity avatars and selected row state", () => {
@@ -25,7 +25,7 @@ test("user directory polish keeps responsive and sticky table behavior", () => {
   assert.match(css, /\.user-directory-table-card thead th \{[^}]*position:sticky/);
   assert.match(css, /\.table-wrap \{[^}]*overflow:auto/);
   assert.match(css, /@media\(max-width:600px\)/);
-  assert.match(html, /aria-label="Select all eligible accounts in results"/);
+  assert.doesNotMatch(html, /id="toggleAllUsers"/);
   assert.match(html, /<th scope="col">Name<\/th>/);
   assert.match(html, /aria-label="User accounts — scroll for all columns" tabindex="0"/);
 });

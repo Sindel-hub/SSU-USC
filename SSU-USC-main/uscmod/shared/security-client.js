@@ -198,7 +198,6 @@ async function browserAdminUpdateUser(data = {}) {
   const standingActive = role === "admin" ? true : isActiveStudentStanding(studentStanding, enrollmentStatus);
   const requestedVerified = typeof data.isVerifiedStudent === "boolean" ? data.isVerifiedStudent : old.isVerifiedStudent === true;
   const isVerifiedStudent = standingActive ? requestedVerified : false;
-  const candidacyApproved = role === "student" && standingActive && (typeof data.candidacyApproved === "boolean" ? data.candidacyApproved : old.candidacyApproved === true);
   const isActive = accountStatus !== "suspended" && standingActive;
   const officePosition = String(data.officePosition ?? old.officePosition ?? "").trim().slice(0,120);
   if (role !== old.role || officePosition !== (old.officePosition || "")) throw new Error("Use Officer Management to complete the existing term and create a new assignment. Historical officer identity cannot be replaced.");
@@ -214,7 +213,6 @@ async function browserAdminUpdateUser(data = {}) {
   batch.update(ref, {
     accountStatus,
     isVerifiedStudent,
-    candidacyApproved,
     isActive,
     studentStanding,
     enrollmentStatus,
@@ -254,27 +252,7 @@ async function browserAdminUpdateUser(data = {}) {
       updatedAt: now
     }, { merge: true });
 
-    try {
-      const pointer = await getDoc(doc(db, "election_config", "current"));
-      const electionId = pointer.exists() ? String(pointer.data()?.electionId || "").trim() : "";
-      if (electionId) {
-        batch.set(doc(db, "elections", electionId, "voterRoster", studentId), {
-          studentId,
-          fullName: old.fullName || "",
-          institutionalEmail: old.institutionalEmail || old.email || "",
-          program: old.program || "",
-          college: old.college || "",
-          studentStanding,
-          enrollmentStatus,
-          eligible: isActive,
-          verificationMethod: "school_admin_browser",
-          verifiedBy: admin.uid,
-          verifiedAt: now
-        }, { merge: true });
-      }
-    } catch (error) {
-      console.warn("Current election roster could not be synchronized:", error);
-    }
+
   }
 
   batch.set(doc(collection(db, "audit_logs")), {
@@ -284,7 +262,6 @@ async function browserAdminUpdateUser(data = {}) {
     targetUid: uid,
     targetStudentId: studentId,
     studentStanding,
-    candidacyApproved,
     reason: String(data.changeReason || "").trim().slice(0,500),
     source: "browser-admin-runtime",
     createdAt: now

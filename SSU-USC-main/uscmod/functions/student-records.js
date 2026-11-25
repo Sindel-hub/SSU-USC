@@ -91,7 +91,7 @@ function createStudentRecordHandlers({db,adminAuth,requireActiveRole,requireRece
     tx.update(userRef,{studentStanding:'active',isActive:true,enrollmentStatus:'Enrolled',standingManagedDisabled:false,accessRestoreImportId:null});
     tx.set(db.doc(`school_accounts/${result.studentId}`),{studentStanding:'active',isActive:true,active:true},{merge:true});
     tx.set(db.doc(`student_masterlist/${result.studentId}`),{studentStanding:'active',eligible:true},{merge:true});
-    const complete={...result,state:'complete',message:'Academic correction applied; approved import-disabled account access restored. Verification and candidacy were not granted.',accessRestoredAt:clock()};
+    const complete={...result,state:'complete',message:'Academic correction applied; approved import-disabled account access restored. School identity verification was not automatically restored.',accessRestoredAt:clock()};
     tx.set(itemRef,complete);audit(tx,request,'SCL_IMPORT_ACCESS_RESTORED',result.studentId,{importId:result.importId,sourceImportId:result.restoreFromImportId});return complete;
    });
   }catch(e){
@@ -272,7 +272,7 @@ function createStudentRecordHandlers({db,adminAuth,requireActiveRole,requireRece
      const restriction=['graduated','dropped'].includes(row.studentStatus),restoreFromImportId=restoreAccess?await restoreSource(current,row):null;
      const entry={line:i+2,row,uid:current?.uid||null,fingerprint:M.fingerprint(current),recordRevision:revision(record),
       action:restriction?(row.studentStatus==='dropped'?(current?'drop-disable-access':'mark-dropped'):(current?'graduate-disable-access':'mark-graduated')):restoreFromImportId?'correct-and-restore-access':correction?'correct-academic-record':record?'update':'record-only',
-      ...(restoreFromImportId?{restoreFromImportId,warning:'Will restore this approved import-disabled account. Voting verification and candidacy are not granted.'}:restriction?{warning:current?'Applying this row revokes the linked account’s portal access.':`${row.studentStatus} record; account registration will be blocked.`}:{})};
+      ...(restoreFromImportId?{restoreFromImportId,warning:'Will restore this approved import-disabled account. School identity verification is not automatically restored.'}:restriction?{warning:current?'Applying this row revokes the linked account’s portal access.':`${row.studentStatus} record; account registration will be blocked.`}:{})};
      try{verifyIdentity(current,record,row);}catch(e){
       entries.push({...entry,error:e.message,...(current&&(!record||record.uid===current.uid)?{reviewName:record?.fullName||current.fullName}: {})});
       continue;

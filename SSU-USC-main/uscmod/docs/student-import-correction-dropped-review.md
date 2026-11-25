@@ -4,7 +4,7 @@
 
 An ordinary older-year upload remains blocked. A separate, explicit **academic-year correction** option now accepts an authorized corrected file for an earlier year, requires a reason and a new reviewed preview, and appends correction history instead of deleting the newer import. Identity, names, duplicate IDs, programme validation, ownership, recent administrator sign-in and stale-preview checks remain enforced.
 
-**Dropped** is accepted in the existing optional **Student Status** column in CSV and XLSX. Applying an explicit Dropped row blocks the linked profile, disables Firebase Authentication, revokes sessions, and clears voting verification/candidacy, using the same retryable journal as Graduated. Student ID, UID, password, officer role, office and unrelated history are retained. An unlinked Dropped record cannot be issued an account. Omitted students are unchanged.
+**Dropped** is accepted in the existing optional **Student Status** column in CSV and XLSX. Applying an explicit Dropped row blocks the linked profile, disables Firebase Authentication, revokes sessions, and clears access-related eligibility flags, using the same retryable journal as Graduated. Student ID, UID, password, officer role, office and unrelated history are retained. An unlinked Dropped record cannot be issued an account. Omitted students are unchanged.
 
 Restoring portal access is a separate checkbox in correction mode. Each eligible Ready row explicitly says **Correct record & restore access**. Restoration requires:
 
@@ -13,7 +13,7 @@ Restoring portal access is a separate checkbox in correction mode. Each eligible
 - An explicit Student Status **Active** or **Undergraduate** in the correction file. Blank never restores access.
 - A reviewed correction reason and administrator confirmation. Suspended, removed, pending-activation and unproven accounts are not restored.
 
-Restoration keeps the same password, role and office. It does **not** infer the student's previous voting-verification or candidacy flags; those stay cleared for manual review. Older academic snapshots did not preserve enough information to reconstruct those flags safely. This is a reviewed correction, not deletion of the original test import or an exact rewind of every account field.
+Restoration keeps the same password, role and office. It does **not** infer the student's previous school-identity verification; that stays cleared for manual review. Retired-module flags are not administered here. Older academic snapshots did not preserve enough information to reconstruct prior verification safely. This is a reviewed correction, not deletion of the original test import or an exact rewind of every account field.
 
 Auth synchronization is journaled and retryable. A failed enable/revocation/final profile write keeps the account blocked. A changed account, including a new suspension during synchronization, prevents restoration. Pending restoration must be resumed before another import can modify that account. Repeated/concurrent application creates one correction history entry and one restoration audit entry.
 
@@ -24,7 +24,7 @@ Auth synchronization is journaled and retryable. A failed enable/revocation/fina
 3. Expand **Correct an earlier year / recover a test import**, select the correction checkbox, and enter the reason (for example, recovery from the 2027-2028 graduation test).
 4. If portal access also needs restoration, separately select **Also restore approved accounts disabled by a completed import**. Put **Active** or **Undergraduate** in Student Status only for students authorized to regain access. If the original disabling import failed, resume it to completion first.
 5. Validate and preview. Review Ready and Needs Review, including the target year and each access-restoration action. Apply only after confirming those rows.
-6. Ask restored users to sign in again. Review voting verification and candidacy separately. Unlinked academic records have no Auth account to restore; their standing can be corrected through the existing record-only status control.
+6. Ask restored users to sign in again. Review school identity verification separately. Unlinked academic records have no Auth account to restore; their standing can be corrected through the existing record-only status control.
 
 Do not expect an ordinary earlier-year upload, blank status or normal Undergraduate import to re-enable accounts. No live correction or account reactivation has been performed during development.
 
@@ -52,7 +52,7 @@ Before, 2026-2027 was blocked after a 2027-2028 import, with no reviewed earlier
 ## Actual validation
 
 - **107 focused automated tests passed** across correction, legacy import recovery, same-account year synchronization, graduation/drop revocation, retry/idempotency, manual-suspension races, recent-auth/admin restrictions, activation, history, roster, hosted routing and project integrity.
-- New browser flow passed: Dropped disables the existing President account; normal older-year preview is blocked; correction plus explicit restoration returns it to 2026-2027; password/role/office/history remain; voting flags are not granted; editing the target year invalidates the preview; desktop/tablet/mobile have no viewport overflow or page errors.
+- New browser flow passed: Dropped disables the existing President account; normal older-year preview is blocked; correction plus explicit restoration returns it to 2026-2027; password/role/office/history remain; identity verification is not automatically restored; editing the target year invalidates the preview; desktop/tablet/mobile have no viewport overflow or page errors.
 - Existing student import/registration/activation browser regression passed.
 - JavaScript syntax and Git whitespace checks passed.
 - Updated Firestore rules tests were attempted but the emulator download returned **HTTP 403: Domain forbidden**. Those tests cannot be claimed as passing. Run `npm run test:provisioning-rules` where the emulator download is available before deploying production rules.

@@ -14,10 +14,8 @@ import {
   statusClass,
   subscribeComplaints,
   subscribeUsers,
-  subscribeVotes,
-  voteSummaryFor,
   setActiveAdminNav
-} from "./admin-core.js?v=officer-management-only-1";
+} from "./admin-core.js?v=admin-account-only-1";
 
 const uscAuthAllowed = await (globalThis.USC_AUTH_READY || Promise.resolve(false));
 if (uscAuthAllowed !== true) await new Promise(() => {});
@@ -38,7 +36,6 @@ const dom = {
 
 let users = [];
 let complaintSummaryByUid = new Map();
-let voteSummaryByStudentId = new Map();
 
 function renderStats() {
   const stats = computeUserStats(users);
@@ -74,7 +71,6 @@ function renderQueue() {
   }
   dom.recentQueueList.innerHTML = queueUsers.map((user) => {
     const complaintSummary = complaintSummaryFor(user, complaintSummaryByUid);
-    const voteSummary = voteSummaryFor(user, voteSummaryByStudentId);
     const protectedBadge = isProtectedAdmin(user) ? '<span class="quick-badge role-admin">Protected admin</span>' : '';
     return `
       <div class="queue-item compact">
@@ -94,8 +90,6 @@ function renderQueue() {
             <span>${escapeHtml(formatDateTime(user.createdAtMs))}</span>
             <span>•</span>
             <span>${complaintSummary.total} complaints</span>
-            <span>•</span>
-            <span>${voteSummary ? 'Vote submitted' : 'No vote yet'}</span>
           </div>
         </div>
       </div>
@@ -113,4 +107,3 @@ setActiveAdminNav();
 renderAdminIdentity();
 subscribeUsers((value) => { users = value; refresh(); });
 subscribeComplaints((value) => { complaintSummaryByUid = value; refresh(); });
-subscribeVotes((value) => { voteSummaryByStudentId = value; refresh(); });

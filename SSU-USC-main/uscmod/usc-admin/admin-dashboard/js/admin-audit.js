@@ -10,9 +10,8 @@ import {
   setActiveAdminNav,
   subscribeComplaints,
   subscribeRoleLogs,
-  subscribeUsers,
-  subscribeVotes
-} from "./admin-core.js?v=officer-management-only-1";
+  subscribeUsers
+} from "./admin-core.js?v=admin-account-only-1";
 
 const uscAuthAllowed = await (globalThis.USC_AUTH_READY || Promise.resolve(false));
 if (uscAuthAllowed !== true) await new Promise(() => {});
@@ -42,7 +41,6 @@ const dom = {
 
 let users = [];
 let complaintSummaryByUid = new Map();
-let voteSummaryByStudentId = new Map();
 let logs = [];
 
 function renderMetrics() {
@@ -111,7 +109,7 @@ function renderLogs() {
 
 function exportGroup(name, predicate) {
   try {
-    exportUsersCsv(users.filter(predicate), complaintSummaryByUid, voteSummaryByStudentId, name);
+    exportUsersCsv(users.filter(predicate), complaintSummaryByUid, name);
   } catch (error) {
     alert(error.message || 'Nothing to export.');
   }
@@ -121,7 +119,6 @@ setActiveAdminNav();
 renderAdminIdentity();
 subscribeUsers((value) => { users = value; renderWarnings(); });
 subscribeComplaints((value) => { complaintSummaryByUid = value; renderWarnings(); });
-subscribeVotes((value) => { voteSummaryByStudentId = value; });
 subscribeRoleLogs((value, error) => {
   logs = value;
   dom.auditStatusBadge.textContent = error ? 'Unable to load logs' : 'Live from Firestore';

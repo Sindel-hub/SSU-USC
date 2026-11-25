@@ -13,7 +13,7 @@
     "test:static": "node --test tests/general-ui-account.test.mjs tests/mobile-navigation.test.mjs tests/static-project.test.mjs tests/announcement-excerpt.test.mjs tests/announcement-carousel.test.mjs tests/landing-reader-scroll.test.mjs tests/officer-bulletin-media.test.mjs tests/landing-calendar-stability.test.mjs tests/activity-calendar.test.mjs tests/announcement-formatting.test.mjs tests/bulletin-read-more-ui.test.mjs tests/bulletin-summary-ui.test.mjs tests/organization-chart-image.test.mjs tests/student-organizational-chart-officer-match.test.mjs",
     "test:syntax": "node --test tests/js-syntax.test.mjs",
     "test:admin-auth": "node --test tests/mfa-enrollment.test.mjs",
-    "test:verify": "node --test tests/admin-verification.test.mjs",
+    "test:verify": "node --test tests/admin-verification.test.mjs tests/admin-election-retirement.test.mjs",
     "test:school-login": "node --test tests/school-login.test.mjs tests/pasted-password.test.mjs tests/account-replacement.test.mjs",
     "test:complaints": "node --test tests/complaint-stress.test.mjs tests/complaint-categories.test.mjs",
     "test:capstone": "node --test tests/capstone-browser-mode.test.mjs",

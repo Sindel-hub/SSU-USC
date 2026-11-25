@@ -14,32 +14,32 @@ const server=http.createServer((req,res)=>{const u=new URL(req.url,origin);if(u.
  try{
   for(let n=0;n<70;n++)f.seed({uid:'sample'+String(n).padStart(3,'0'),studentId:String(770000+n),fullName:'Sample Student '+String(n+1).padStart(2,'0'),role:'student',accountStatus:'approved',isActive:true,studentStanding:'active'});
   const context=await browser.newContext({viewport:{width:1440,height:1000},hasTouch:true});
-  await context.addInitScript(()=>{globalThis.USC_AUTH_READY=Promise.resolve(true);sessionStorage.setItem('studentProfile',JSON.stringify({uid:'admin',role:'admin',fullName:'Synthetic Administrator'}));globalThis.directoryWrites=[];});
+  await context.addInitScript(()=>{globalThis.USC_AUTH_READY=Promise.resolve(true);sessionStorage.setItem('studentProfile',JSON.stringify({uid:'admin',role:'admin',fullName:'Synthetic Administrator'}));globalThis.directoryWrites=[];globalThis.directoryCalls=[];globalThis.directoryReads=[];});
   await context.route('**/*',route=>{
    const u=new URL(route.request().url());
    if(u.hostname==='www.gstatic.com'&&u.pathname.endsWith('firebase-firestore.js')){
     const users=[...f.records].filter(([p])=>p.startsWith('users/')).map(([p,data])=>({id:p.split('/')[1],data}));
-    return route.fulfill({contentType:'text/javascript',body:`const users=${JSON.stringify(users)};export const collection=(_, ...p)=>p.join('/');export const doc=(_, ...p)=>p.join('/');export const onSnapshot=(ref,cb)=>{cb({docs:ref==='users'?users.map(r=>({id:r.id,data:()=>r.data})):[]});return()=>{};};export const getDocs=async()=>({docs:[]});export const getDoc=async()=>({exists:()=>false});export const addDoc=async()=>{};export const updateDoc=async()=>{};export const writeBatch=()=>({update(){},set(){},commit:async()=>{}});export const serverTimestamp=()=>0;export const Timestamp={fromMillis:n=>n};export const query=(r)=>r;export const limit=()=>0;export const orderBy=()=>0;`});
+    return route.fulfill({contentType:'text/javascript',body:`const users=${JSON.stringify(users)};export const collection=(_, ...p)=>p.join('/');export const doc=(_, ...p)=>p.join('/');export const onSnapshot=(ref,cb)=>{directoryReads.push(ref);cb({docs:ref==='users'?users.map(r=>({id:r.id,data:()=>r.data})):[]});return()=>{};};export const getDocs=async()=>({docs:[]});export const getDoc=async()=>({exists:()=>false});export const addDoc=async()=>{};export const updateDoc=async()=>{};export const writeBatch=()=>({update(){},set(){},commit:async()=>{}});export const serverTimestamp=()=>0;export const Timestamp={fromMillis:n=>n};export const query=(r)=>r;export const limit=()=>0;export const orderBy=()=>0;`});
    }
    if(u.origin!==origin)return route.abort();
    if(/auth-guard\.js|admin-only-auth\.js|profile-manager\.js/.test(u.pathname))return route.fulfill({contentType:'text/javascript',body:''});
    if(u.pathname==='/firebase/firebase-config.js')return route.fulfill({contentType:'text/javascript',body:'export const auth={currentUser:{uid:"admin",getIdToken:async()=>"fixture-admin"}};export const db={};export const appCheck=null;export const functions={};'});
-   if(u.pathname==='/shared/security-client.js')return route.fulfill({contentType:'text/javascript',body:'export {auth} from "/firebase/firebase-config.js";export const callSecure=async(name,data)=>{if(name==="getElectionContext")return{electionId:"synthetic"};directoryWrites.push({name,data});return{updated:true};};'});
+   if(u.pathname==='/shared/security-client.js')return route.fulfill({contentType:'text/javascript',body:'export {auth} from "/firebase/firebase-config.js";export const callSecure=async(name,data)=>{directoryCalls.push(name);if(name==="getElectionContext")return{electionId:"synthetic"};directoryWrites.push({name,data});return{updated:true};};'});
    return route.continue();
   });
   const p=await context.newPage(),errors=[];p.on('pageerror',e=>errors.push(e.message));
   await p.goto(origin+'/usc-admin/admin-dashboard/users.html');await p.locator('[data-account-name="first"]').waitFor();
   const modal=p.locator('#userEditorModal');
   const closed=async()=>assert.equal(await modal.getAttribute('aria-hidden'),'true');
-  const opened=async()=>{await p.locator('#selectedUserName').filter({hasText:'Synthetic first'}).waitFor();assert.equal(await modal.getAttribute('aria-hidden'),'false');};
+  const opened=async()=>{await p.locator('#selectedUserName').filter({hasText:'Synthetic first'}).waitFor();assert.equal(await modal.getAttribute('aria-hidden'),'false');assert.equal(await p.locator('#officerPermissionGrid [data-officer-permission^="elections."]').count(),0);assert.equal(await p.locator('.user-editor-modal .toggle-row').evaluate(el=>getComputedStyle(el).gridTemplateColumns.split(' ').length),p.viewportSize().width<=600?1:2);};
   const positions=()=>p.evaluate(()=>({main:document.querySelector('.main').scrollTop,table:document.querySelector('#directoryTableScroll').scrollTop,left:document.querySelector('#directoryTableScroll').scrollLeft}));
-  await p.locator('[data-account-row="first"] td').nth(2).scrollIntoViewIfNeeded();
+  await p.locator('[data-account-row="first"] td').nth(1).scrollIntoViewIfNeeded();
   const before=await positions();
-  await p.locator('[data-account-row="first"] td').nth(2).dblclick();await opened();await p.keyboard.press('Escape');await closed();assert.deepEqual(await positions(),before);
+  await p.locator('[data-account-row="first"] td').nth(1).dblclick();await opened();await p.keyboard.press('Escape');await closed();assert.deepEqual(await positions(),before);
   assert.equal(await p.locator('[data-account-name="first"]').evaluate(e=>e===document.activeElement),true);
   await p.locator('[data-account-name="first"]').press('Enter');await opened();await p.locator('#userEditorModalClose').click();await closed();
-  await p.locator('[data-user-id="first"]').check();await closed();assert.equal(await p.locator('[data-user-id="first"]').isChecked(),true);
-  await p.locator('[data-user-id="first"]').dblclick();await closed();
+  for(const id of ['toggleAllUsers','exportFilteredButton','exportSelectedButton','candidacyToggle','selectedUserVoteStatus','applyBulkButton'])assert.equal(await p.locator('#'+id).count(),0);
+  assert.equal(await p.locator('#usersTableBody input[type="checkbox"]').count(),0);
   const nameX=await p.locator('[data-account-name="first"]').evaluate(e=>e.getBoundingClientRect().x);
   await p.locator('#directoryHorizontalScroll').focus();await p.keyboard.press('End');
   await p.waitForFunction(()=>document.querySelector('#directoryTableScroll').scrollLeft>0);
@@ -54,9 +54,6 @@ const server=http.createServer((req,res)=>{const u=new URL(req.url,origin);if(u.
   await p.locator('#directoryTableScroll').evaluate(e=>e.scrollTop=0);
   await p.locator('#userSearchInput').fill('990001');await p.waitForFunction(()=>document.querySelectorAll('#usersTableBody tr').length===1);
   assert.equal(await p.locator('[data-account-row="first"]').count(),1);
-  const downloadEvent=p.waitForEvent('download');await p.locator('#exportFilteredButton').click();const download=await downloadEvent;
-  const exportPath=path.join(out,'synthetic-filtered-accounts.csv');await download.saveAs(exportPath);
-  assert.match(fs.readFileSync(exportPath,'utf8'),/990001/);assert.doesNotMatch(fs.readFileSync(exportPath,'utf8'),/770000/);
   await p.locator('#userSearchInput').fill('');await p.waitForFunction(()=>document.querySelectorAll('#usersTableBody tr').length===74);
   await p.locator('#sortSelect').selectOption('role');
   for(const width of [1440,768,390]){
@@ -67,8 +64,10 @@ const server=http.createServer((req,res)=>{const u=new URL(req.url,origin);if(u.
   await p.locator('[data-account-row="first"]').scrollIntoViewIfNeeded();
   // Disable compatibility dblclick to verify that real touch events use the double-tap path.
   await p.evaluate(()=>{window.blockDoubleClick=e=>e.stopImmediatePropagation();document.addEventListener('dblclick',window.blockDoubleClick,true);});
-  const cell=await p.locator('[data-account-row="first"] td').nth(1).boundingBox();
-  const point={x:cell.x+12,y:cell.y+cell.height-6};
+  await p.locator('#directoryTableScroll').evaluate(el=>{el.scrollLeft=0;const row=el.querySelector('[data-account-row="first"]');el.scrollTop+=row.getBoundingClientRect().top-el.getBoundingClientRect().top-100;});
+  await p.locator('#directoryTableScroll').scrollIntoViewIfNeeded();await p.evaluate(()=>new Promise(requestAnimationFrame));
+  const cell=await p.locator('[data-account-row="first"] td').nth(0).boundingBox();
+  const point={x:cell.x+8,y:cell.y+cell.height/2};
   await p.touchscreen.tap(point.x,point.y);await closed();await p.touchscreen.tap(point.x,point.y);await opened();
   await p.keyboard.press('Escape');await closed();
   await p.evaluate(()=>document.removeEventListener('dblclick',window.blockDoubleClick,true));
@@ -83,7 +82,15 @@ const server=http.createServer((req,res)=>{const u=new URL(req.url,origin);if(u.
   await p.waitForFunction(before=>document.querySelector('#directoryTableScroll').scrollTop>before,scrollBeforeTouch);
   await p.locator('#directoryTableScroll').evaluate(e=>{e.scrollLeft=0;e.scrollTop=0;});
   await p.locator('[data-account-name="first"]').click();await opened();await p.locator('#suspendUserButton').waitFor();await p.keyboard.press('Escape');
+  for(const route of ['admin-dashboard','audit']){
+    await p.goto(origin+`/usc-admin/admin-dashboard/${route}.html`);await p.locator('.main').waitFor();
+    assert.doesNotMatch(await p.locator('.main').innerText(),/Vote submitted|No vote yet|Vote status|Candidacy approval/);
+    const access=await p.evaluate(()=>({calls:directoryCalls,reads:directoryReads}));
+    assert.equal(access.calls.some(name=>/election|vote|candidate|canvass/i.test(name)),false);
+    assert.equal(access.reads.some(name=>/election|voter/i.test(name)),false);
+    await p.screenshot({path:path.join(out,`${route}-without-election.png`),fullPage:true});
+  }
   assert.deepEqual(errors,[]);
-  console.log('PASS: 74-account directory; mouse double-click, native touch double-tap, name/keyboard access, checkbox isolation, touch scrolling, modal focus/scroll restoration, synchronized top handle, pinned names/sticky headers, search/sort and 1440/768/390 layouts. Synthetic data only.');
+  console.log('PASS: 74-account directory; mouse double-click, native touch double-tap, name/keyboard access, retired controls absent, touch scrolling, modal focus/scroll restoration, synchronized top handle, pinned names/sticky headers, search/sort; overview/audit without election subscriptions; 1440/768/390 layouts. Synthetic data only.');
  }finally{await browser.close();await new Promise(r=>server.close(r));}
 })().catch(e=>{console.error(e);server.close();process.exitCode=1;});
