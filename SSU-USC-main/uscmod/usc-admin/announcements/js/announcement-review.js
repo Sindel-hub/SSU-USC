@@ -44,33 +44,33 @@ function render() {
   if (!items.length && !next) list.append(el('p', 'No drafts in the review queue.', 'review-muted'));
   for(const row of items){
     const card=el('article',undefined,'announcement-review-item'),head=el('div',undefined,'announcement-review-heading');
-    card.dataset.draftId=row.id;
-    head.append(el('h4',row.content.title),el('span',labels[row.status]||row.status,'review-status'));
-    card.append(head,el('p',`${row.content.category} · ${row.content.audience}`,'review-muted'));
+    card.dataset.draftId=row.id; card.dataset.status=row.status;
+    const heading=el('div',undefined,'review-title-group'); const icon=el('span',undefined,'review-draft-icon'); icon.setAttribute('aria-hidden','true'); icon.innerHTML='<i class="fa-regular fa-file-lines"></i>'; heading.append(icon,el('h4',row.content.title)); head.append(heading,el('span',labels[row.status]||row.status,'review-status'));
+    const meta=el('div',undefined,'review-meta'); meta.append(el('span',row.content.category,'review-meta-chip'),el('span',row.content.audience,'review-meta-chip')); card.append(head,meta);
     const attribution = activityAttributionText(row.activityAttribution);
-    card.append(el('p', attribution || `Author: ${row.authorUid}`, 'review-muted'));
-    const preview=el('details'),summary=el('summary','Read full draft');
+    card.append(el('p', attribution || `Author: ${row.authorUid}`, 'review-muted review-attribution'));
+    const preview=el('details',undefined,'review-disclosure'),summary=el('summary'); const summaryText=el('span','Read full draft'); summary.append(summaryText); preview.addEventListener('toggle',()=>summaryText.textContent=preview.open?'Hide full draft':'Read full draft');
     preview.open=expanded.has(row.id);
-    const body = el('p', row.content.content, 'review-content');
-    preview.append(summary, body);
-    card.append(el('p',row.content.content.length>180?row.content.content.slice(0,180)+'…':row.content.content,'review-content'));
-    const gallery=el('div');card.append(gallery);
+    const body = el('p', row.content.content, 'review-content'); const full=el('div',undefined,'review-full-body');
+    full.append(body); preview.append(summary, full);
+    card.append(el('p',row.content.content.length>180?row.content.content.slice(0,180)+'…':row.content.content,'review-content review-excerpt'));
+    const gallery=el('div');full.append(gallery);
     if(row.content.imageIds?.length) Promise.all(row.content.imageIds.map(id=>loadReviewImage(row.id,id))).then(imageUrls=>mountAnnouncementGallery(gallery,{...row.content,imageUrls})).catch(error=>{$('announcementReviewMessage').textContent=error.message;});
     else mountAnnouncementGallery(gallery,row.content);
     linkAnnouncementText(body);
-    card.append(el('p', `Submitted: ${new Date(row.submittedAtMs || row.createdAtMs).toLocaleString()}`, 'review-muted'));
+    card.append(el('p', `Submitted: ${new Date(row.submittedAtMs || row.createdAtMs).toLocaleString()}`, 'review-muted review-timestamp'));
     attachSurveyButton(body, row.content);
-    if (row.content.facebookRequested) preview.append(el('p', 'Also publish to Facebook', 'review-muted'));
+    if (row.content.facebookRequested) full.append(el('p', 'Also publish to Facebook', 'review-channel'));
     card.append(preview);
     if(row.reviewNote)card.append(el('p','Reviewer note: '+row.reviewNote,'review-note'));
     const note=el('textarea');note.placeholder='Review notes (required when requesting revision)';note.maxLength=2000;note.setAttribute('aria-label',`Review note for ${row.content.title}`);
     const actions=el('div',undefined,'review-actions');
-    function add(label,action){const b=el('button',label,'mini-btn light');b.type='button';b.onclick=()=>act(row,action,note,b);actions.append(b);}
+    function add(label,action){const b=el('button',label,'mini-btn light');b.type='button';b.dataset.reviewAction=action;b.onclick=()=>act(row,action,note,b);actions.append(b);}
     if(caps.draft&&row.authorUid===auth.currentUser?.uid&&['draft','needs-revision','ready'].includes(row.status))add('Edit draft','edit');
     if(caps.draft&&row.authorUid===auth.currentUser?.uid&&['draft','needs-revision'].includes(row.status))add('Send for review','submit');
     const ownDraft = row.authorUid === auth.currentUser?.uid;
     if (caps.review && (!ownDraft || caps.approveOwn) && row.status === 'in-review') {
-      if (!ownDraft) { card.append(note); add('Needs revision', 'revise'); }
+      if (!ownDraft) { const noteBox=el('div',undefined,'review-note-field');const label=el('label','Reviewer feedback');label.append(note);noteBox.append(label);card.append(noteBox); add('Needs revision', 'revise'); }
       add(ownDraft ? 'Approve for publication' : 'Ready to publish', 'ready');
       actions.querySelectorAll('button').forEach(b=>{const handler=b.onclick;b.onclick=()=>{if(!preview.open){preview.open=true;$('announcementReviewMessage').textContent='Read the complete draft and attachments before recording your review.';return;}handler();};});
     }

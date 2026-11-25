@@ -1,5 +1,5 @@
 import { registerAnnouncementMedia, announcementImages, mountAnnouncementGallery } from '../../../shared/announcement-media.mjs';
-import { initializeAnnouncementReview, saveReviewDraft, clearReviewDraft, draftImage, uploadReviewImage, loadReviewImage } from './announcement-review.js';
+import { initializeAnnouncementReview, saveReviewDraft, clearReviewDraft, draftImage, uploadReviewImage, loadReviewImage } from './announcement-review.js?v=review-polish-1';
 import { activityAttributionText, activityHistoryHref, trackedOfficerAction } from '../../../shared/officer-activity-client.js';
 import { attachSurveyButton } from '../../../shared/survey-links.mjs';
 import { initializeFacebookPublishing, hydrateFacebookDeliveries, facebookRequest } from './facebook-publishing.js';
