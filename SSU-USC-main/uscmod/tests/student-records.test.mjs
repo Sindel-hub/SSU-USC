@@ -212,3 +212,34 @@ test('program aliases and college abbreviations resolve to the supplied official
  assert.equal(f.records.get('users/'+result.results[0].uid).program,'Bachelor of Science in Information Technology');
  assert.equal((await preview(f,[{...record,department:'COEd'}])).hasErrors,true);
 });
+
+test('Student Status is an optional last column in both CSV and Excel',async()=>{
+ const old=IMPORT_HEADERS.slice(0,-1),values=['000123','Student','Synthetic','','',M.DEPARTMENTS[3],'Bachelor of Science in Civil Engineering','4','Regular',''];
+ assert.equal(parseStudentCsv(old.join(',')+'\n'+values.join(','))[0].studentStatus,undefined);
+ assert.equal(parseStudentCsv(IMPORT_HEADERS.join(',')+'\n'+[...values,'Graduated'].join(','))[0].studentStatus,'Graduated');
+ const book=new ExcelJS.Workbook(),sheet=book.addWorksheet('Students');sheet.addRow(IMPORT_HEADERS);sheet.addRow([...values,'Undergraduate']);assert.equal((await readStudentWorkbook(await book.xlsx.writeBuffer(),ExcelJS))[0].studentStatus,'Undergraduate');
+ assert.ok(M.normalizeRows([row({studentStatus:'unknown'})])[0].error);
+});
+test('explicit Graduated revokes matched account access and tokens while preserving identity and history',async()=>{
+ const f=fixture(),uid=f.seed(baseProfile({isVerifiedStudent:true,candidacyApproved:true})),omitted=f.seed(baseProfile({studentId:'999999',email:'other@example.invalid',institutionalEmail:'other@example.invalid'}));const password=f.authUsers.get(uid).password;
+ const p=await preview(f,[row({studentStatus:'Graduated',enrollmentStatus:'Regular'})]);assert.equal(p.entries[0].action,'graduate-disable-access');assert.equal(f.authUsers.get(uid).disabled,false);
+ const result=await apply(f,p.importId);assert.equal(result.results[0].state,'complete');const profile=f.records.get('users/'+uid);assert.equal(profile.studentStanding,'graduated');assert.equal(profile.isActive,false);assert.equal(profile.isVerifiedStudent,false);assert.equal(f.authUsers.get(uid).disabled,true);assert.equal(f.authUsers.get(uid).revoked,true);assert.equal(f.authUsers.get(uid).password,password);assert.equal(f.records.get('users/'+omitted).isActive,true);assert.equal(f.records.get('student_records/'+uid).studentStanding,'graduated');
+ assert.equal([...f.records.keys()].filter(k=>k.startsWith('users/'+uid+'/academic_history/')).length,1);await apply(f,p.importId);assert.equal([...f.records.keys()].filter(k=>k.startsWith('users/'+uid+'/academic_history/')).length,1);
+});
+test('Undergraduate, blank and older files never re-enable restricted accounts',async()=>{
+ for(const status of ['Undergraduate','',undefined]){const f=fixture(),uid=f.seed(baseProfile({studentStanding:'graduated',isActive:false,accountStatus:'suspended'}),{disabled:true});const r=row();if(status!==undefined)r.studentStatus=status;const p=await preview(f,[r]);await apply(f,p.importId);assert.equal(f.records.get('users/'+uid).studentStanding,'graduated');assert.equal(f.records.get('users/'+uid).accountStatus,'suspended');assert.equal(f.authUsers.get(uid).disabled,true);}
+});
+test('a new graduated record cannot be issued an account',async()=>{
+ const f=fixture(),p=await preview(f,[row({studentStatus:'Graduated'})]);await apply(f,p.importId);assert.equal(f.authUsers.size,0);await assert.rejects(issue(f),{code:'failed-precondition'});
+});
+test('Auth failure leaves portal blocked and a resumable access journal without duplicate academic changes',async()=>{
+ const f=fixture(),uid=f.seed(baseProfile()),p=await preview(f,[row({studentStatus:'Graduated'})]);f.failNextAuth();const first=await apply(f,p.importId);assert.equal(first.results[0].state,'failed');assert.equal(f.records.get('users/'+uid).isActive,false);assert.equal(f.records.get('annual_student_imports/'+p.importId+'/results/0').state,'access-pending');f.advance(86400001);const second=await apply(f,p.importId);assert.equal(second.results[0].state,'complete');assert.equal(f.authUsers.get(uid).disabled,true);assert.equal(f.authUsers.get(uid).revoked,true);
+});
+test('revocation failure is retryable, but manual status changes cannot be overwritten on resume',async()=>{
+ const f=fixture(),uid=f.seed(baseProfile()),p=await preview(f,[row({studentStatus:'Graduated'})]);const revoke=f.adminAuth.revokeRefreshTokens;f.adminAuth.revokeRefreshTokens=async()=>{throw Error('Revocation unavailable');};assert.equal((await apply(f,p.importId)).results[0].state,'failed');assert.equal(f.authUsers.get(uid).disabled,true);f.adminAuth.revokeRefreshTokens=revoke;assert.equal((await apply(f,p.importId)).results[0].state,'complete');
+ const g=fixture(),id=g.seed(baseProfile()),q=await preview(g,[row({studentStatus:'Graduated'})]);g.failNextAuth();await apply(g,q.importId);Object.assign(g.records.get('users/'+id),{studentStanding:'active',isActive:true});assert.match((await apply(g,q.importId)).results[0].message,/state changed/);assert.equal(g.authUsers.get(id).disabled,false);
+});
+
+test('concurrent graduation application completes one history entry and one revocation audit',async()=>{
+ const f=fixture(),uid=f.seed(baseProfile()),p=await preview(f,[row({studentStatus:'Graduated'})]);const results=await Promise.all([apply(f,p.importId),apply(f,p.importId)]);assert.ok(results.every(r=>r.results[0].state==='complete'));assert.equal([...f.records.keys()].filter(k=>k.startsWith('users/'+uid+'/academic_history/')).length,1);assert.equal([...f.records.values()].filter(r=>r.action==='SCL_GRADUATION_ACCESS_REVOKED').length,1);
+});

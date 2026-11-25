@@ -55,7 +55,7 @@ function normalizeRows(rows){
  return rows.map((r,i)=>{
   try{
    if(!r||typeof r!=='object'||Array.isArray(r))bad('Invalid row.');
-   if(Object.keys(r).some(k=>!['studentId','fullName','department','program','yearLevel','email','status','enrollmentStatus',...nameFields].includes(k)))bad('Use only the template columns.');
+   if(Object.keys(r).some(k=>!['studentId','fullName','department','program','yearLevel','email','status','enrollmentStatus','studentStatus',...nameFields].includes(k)))bad('Use only the template columns.');
    const studentId=text(r.studentId,64,'Student ID');if(!/^\d{1,64}$/.test(studentId))bad('Student ID must contain digits only; preserve leading zeros.');
    if(ids.get(studentId)>1)bad('Duplicate Student ID in this file.');
    const names = nameFields.some(key => Object.hasOwn(r,key)) ? studentName(r) : {};
@@ -72,7 +72,9 @@ function normalizeRows(rows){
    if(email&&emails.has(email))bad('Duplicate email in this file.');if(email)emails.add(email);
    const status=text(r.status||'active',30,'status').toLowerCase();if(!STATUSES.includes(status))bad('Unknown student status.');
    const enrollmentStatus=r.enrollmentStatus === undefined ? enrollment(status) : text(r.enrollmentStatus,60,'enrollment status');
-   return {studentId,...names,fullName,department,program,yearLevel,email,status,enrollmentStatus};
+   const studentStatus=typeof r.studentStatus==='string'?r.studentStatus.trim().toLowerCase():r.studentStatus===undefined?'':null;
+   if(!['','undergraduate','active','graduated'].includes(studentStatus))bad('Student Status must be Undergraduate, Active, Graduated, or blank.');
+   return {studentId,...names,fullName,department,program,yearLevel,email,status,enrollmentStatus,...(Object.hasOwn(r,'studentStatus')?{studentStatus}:{})};
   }catch(e){return{row:i+2,error:e.message,studentId:String(r?.studentId??'').slice(0,64)};}
  });
 }

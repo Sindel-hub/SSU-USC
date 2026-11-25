@@ -1,5 +1,5 @@
-export const IMPORT_HEADERS = ['Student ID','Last Name','First Name','Middle Name','Suffix','College Department','Course / Program','Year Level','Enrollment Status','Institution Email (Optional)'];
-const fields = ['studentId','lastName','firstName','middleName','suffix','department','program','yearLevel','enrollmentStatus','email'];
+export const IMPORT_HEADERS = ['Student ID','Last Name','First Name','Middle Name','Suffix','College Department','Course / Program','Year Level','Enrollment Status','Institution Email (Optional)','Student Status'];
+const fields = ['studentId','lastName','firstName','middleName','suffix','department','program','yearLevel','enrollmentStatus','email','studentStatus'];
 const aliases = Object.fromEntries(IMPORT_HEADERS.map((header, index) => [headerKey(header), fields[index]]));
 function headerKey(value) {
   return String(value ?? '').replace(/^\uFEFF/,'').trim().toLowerCase();
@@ -8,7 +8,7 @@ export function rowsFromTable(table) {
   if (!Array.isArray(table) || table.length < 2) throw Error('The file needs a header and at least one student.');
   const headers=table[0].map(v=>aliases[headerKey(v)]);
   if (headers.some(h=>!h)||new Set(headers).size!==headers.length) throw Error('Use the template columns; duplicate or unknown headers are not allowed.');
-  if (headers.length !== fields.length || headers.some((header,index) => header !== fields[index])) throw Error('Use all template columns in the listed order.');
+  if (![fields.length-1,fields.length].includes(headers.length) || headers.some((header,index) => header !== fields[index])) throw Error('Use all template columns in the listed order.');
   const rows=table.slice(1).filter(row=>row.some(v=>String(v??'').trim())).map((values,i)=>{
     if(values.length>headers.length&&values.slice(headers.length).some(v=>String(v??'').trim()))throw Error(`Row ${i+2} has extra columns.`);
     return Object.fromEntries(headers.map((h,j)=>[h,String(values[j]??'').trim()]));

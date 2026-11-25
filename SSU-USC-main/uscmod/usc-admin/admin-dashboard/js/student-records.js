@@ -21,7 +21,7 @@ function renderPreview(){
  $('importPreview').hidden=false;
  const entries=preview.entries,ready=readyCount(),blocked=entries.length-ready;
  $('importSummary').textContent=`${ready} ready · ${blocked} need review`;
- $('importReference').textContent=`Academic year ${preview.academicYear} · Import reference: ${preview.importId}`;
+ $('importReference').textContent=`Academic year ${preview.academicYear} · Import reference: ${preview.importId}${entries.some(entry=>entry.row?.studentStatus==='graduated')?' · Graduated rows will revoke linked account access.':''}`;
  for(const [id,label,count,pressed] of [['readyImportTab','Ready',ready,!reviewTab],['reviewImportTab','Needs Review',blocked,reviewTab]]){
   $(id).textContent=`${label} (${count})`;
   $(id).setAttribute('aria-pressed',pressed);
@@ -31,7 +31,7 @@ function renderPreview(){
   if(Boolean(row.error)!==reviewTab)return '';
   const done=results.get(index);
   const review=row.reviewName?`<div>On file: ${e(row.reviewName)}</div><button type="button" data-verify-row="${index}">Verify same person</button>`:'';
-  return `<tr><td>${row.line||index+2}</td><td>${e(row.row?.studentId||row.studentId)}</td><td>${e(row.row?.fullName||'—')}${review}</td><td>${e(row.error?'Blocked':row.action)}</td><td>${e(row.row?.enrollmentStatus||'—')}</td><td>${e(row.error||done?.message||done?.state||'Ready')}</td></tr>`;
+  return `<tr><td>${row.line||index+2}</td><td>${e(row.row?.studentId||row.studentId)}</td><td>${e(row.row?.fullName||'—')}${review}</td><td>${e(row.error?'Blocked':row.action)}</td><td>${e(row.row?.enrollmentStatus||'—')}</td><td>${e(row.error||done?.message||done?.state||row.warning||'Ready')}</td></tr>`;
  }).join('')||'<tr><td colspan="6">No rows in this tab.</td></tr>';
  refreshApply();
 }
