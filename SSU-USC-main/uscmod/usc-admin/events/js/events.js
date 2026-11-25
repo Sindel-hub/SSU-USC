@@ -60,7 +60,7 @@ audienceScope.addEventListener("change",()=>syncAudienceTarget());
 audienceCollege.addEventListener("change",()=>syncAudienceTarget(""));
 syncAudienceTarget();
 function audienceLabel(item) {
-  if(item.audience === "Registered Group Only")return "Registered Students Only";
+  if(item.audience === "Registered Group Only")return "All Students";
   if(item.audience !== "Selected Group")return safeText(item.audience,"All Students");
   return item.audienceScope === "program" && item.audienceProgram ? item.audienceProgram+" · "+formatSsuCollege(item.audienceCollege) : item.audienceCollege ? formatSsuCollege(item.audienceCollege) : "Selected Group";
 }
@@ -699,6 +699,7 @@ recentEventsList?.addEventListener("click", async (event) => {
     resetEventForm(); editingEventId = saved.id;
     const fields = { title: eventTitleInput, eventDate: eventDateInput, venue: eventVenueInput, startTime: eventStartTimeInput, endTime: eventEndTimeInput, category: eventCategoryInput, description: eventDescriptionInput, audience: eventAudienceInput, registrationMode: eventRegistrationModeInput, externalRegistrationUrl: eventExternalRegistrationUrlInput, participationNotes: eventParticipationNotesInput };
     for (const [key, input] of Object.entries(fields)) if (input) input.value = saved[key] || '';
+    if(!eventAudienceInput.value)eventAudienceInput.value="All Students";
     audienceScope.value=saved.audienceScope==="program"?"program":"college";
     audienceCollege.value=saved.audienceCollege||"";
     syncAudienceTarget(saved.audienceProgram||"");

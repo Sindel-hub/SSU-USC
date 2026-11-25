@@ -368,7 +368,7 @@ function renderEvents(events) {
           </div>
           <div class="item-text">${escapeHtml(safeText(eventItem.description, "No program description provided."))}</div>
           <div class="event-meta-line">
-            <span><i class="fa-solid fa-users"></i> ${escapeHtml(eventItem.audience === "Registered Group Only" ? "Registered Students Only" : safeText(eventItem.audience, "All Students"))}</span>
+            <span><i class="fa-solid fa-users"></i> ${escapeHtml("All Students")}</span>
             <span><i class="fa-solid fa-ticket"></i> ${escapeHtml(registrationModeLabel(mode))}</span>
             ${mode !== "none" ? `<span class="event-deadline"><i class="fa-solid fa-hourglass-end" aria-hidden="true"></i> Registration closes: ${escapeHtml(formatRegistrationDeadline(eventItem))}</span>` : ""}
           </div>
