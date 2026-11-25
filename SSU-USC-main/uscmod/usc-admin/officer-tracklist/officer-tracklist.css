@@ -98,3 +98,15 @@ body.officer-tracklist-page .officer-activity .activity-modules dd {
 }
 @media(max-width:600px){body.officer-tracklist-page .officer-activity .activity-modules{padding:12px;gap:10px}}
 body.officer-tracklist-page .officer-activity .activity-modules:empty { display:none; }
+
+/* Instant activity search; keep existing filters and card styling. */
+body.officer-tracklist-page .officer-activity .activity-filters {padding:16px!important;gap:12px!important;background:#f6faff;border:1px solid #dbe7f1;border-radius:12px;box-sizing:border-box}
+body.officer-tracklist-page .officer-activity .activity-filters>.activity-search-wide {flex:2 1 240px;min-width:0;}
+body.officer-tracklist-page .activity-search-input{position:relative;width:100%;min-width:0;display:block}
+body.officer-tracklist-page .activity-search-input>i{position:absolute;display:grid!important;place-items:center;width:40px;height:44px;left:0;top:0;margin:0!important;color:#6483a2;font-size:15px!important;pointer-events:none;z-index:1}
+body.officer-tracklist-page .officer-activity .activity-filters .activity-search-input>input[name=search]{display:block!important;width:100%!important;min-width:0;height:44px!important;min-height:44px!important;max-height:44px!important;box-sizing:border-box;padding:0 12px 0 42px!important;padding-inline-start:42px!important;margin:0!important;background:#fff!important;border:1px solid #cadceb!important;border-radius:9px!important;color:#23496d!important;font-size:14px!important;text-indent:0!important}
+body.officer-tracklist-page .activity-search-input input::placeholder{font-size:13px;color:#71869a}
+body.officer-tracklist-page .officer-activity .activity-filters>.activity-clear{display:inline-flex;align-items:center;justify-content:center;height:44px;min-height:44px!important;padding:0 14px!important;margin:0!important;box-sizing:border-box;border-radius:9px!important;background:#fff!important;color:#315575!important;border:1px solid #d1e3f1!important;font-size:13px!important;white-space:nowrap}
+body.officer-tracklist-page .officer-activity .activity-filters>[hidden]{display:none!important}
+body.officer-tracklist-page .activity-search-input input:focus-visible{outline:2px solid #00aef0!important;outline-offset:2px}
+@media(max-width:600px){body.officer-tracklist-page .officer-activity .activity-filters>.activity-search-wide{flex:1 1 100%}body.officer-tracklist-page .officer-activity .activity-filters>.activity-clear{flex:1 1 100%}}

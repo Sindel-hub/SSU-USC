@@ -94,3 +94,10 @@ body.admin-student-records-page .main.records-workspace button.primary:hover:not
   .admin-student-records-page .records-directory-actions { width: 100%; }
   .admin-student-records-page .records-directory-actions > * { flex: 1; }
 }
+
+/* Live student directory search, matching the complaint and activity filters. */
+body.admin-student-records-page .student-id-search{position:relative;width:100%;min-width:0}
+body.admin-student-records-page .student-id-search>i{position:absolute;display:grid!important;place-items:center;left:0;top:0;width:40px;height:44px;pointer-events:none;color:#6483a2;z-index:1}
+body.admin-student-records-page .student-id-search>input#findStudentId{width:100%!important;min-width:0;height:44px!important;min-height:44px!important;box-sizing:border-box;padding:0 12px 0 42px!important;padding-inline-start:42px!important;margin:0!important;border:1px solid #cadceb!important;border-radius:9px!important;color:#23496d!important;font-size:14px!important;background:#fff!important}
+body.admin-student-records-page .records-lookup{padding:16px;background:#f6faff;border:1px solid #dbe7f1;border-radius:12px;box-sizing:border-box}
+body.admin-student-records-page .student-id-search>input#findStudentId:focus-visible{outline:2px solid #00aef0!important;outline-offset:2px}
