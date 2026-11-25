@@ -382,7 +382,7 @@ function createStudentRecordHandlers({db,adminAuth,requireActiveRole,requireRece
     const student=combine(record,profile);
     return{students:student?[publicProfile(student)]:[],next:null};
    }
-   const allowedFilters=['fullName','college','program','yearLevel','academicYear','studentStanding','accountStatus','enrollmentStatus'];
+   const allowedFilters=['studentId','fullName','college','program','yearLevel','academicYear','studentStanding','accountStatus','enrollmentStatus'];
    const filters=Object.entries(data.filters||{});
    if(filters.some(([key,value])=>!allowedFilters.includes(key)||typeof value!=='string'||value.length>160))error('invalid-argument','Invalid student filter.');
    const matches=row=>filters.every(([key,value])=>{
@@ -393,7 +393,7 @@ function createStudentRecordHandlers({db,adminAuth,requireActiveRole,requireRece
      key==='accountStatus'?accountState(row):row[key];
     const actual=String(valueToMatch||'').toLowerCase();
     if(key==='yearLevel'&&/^[1-6]$/.test(term))return actual.startsWith(term);
-    return ['fullName','college','program','enrollmentStatus'].includes(key)?actual.includes(term):actual===term;
+    return ['studentId','fullName','college','program','enrollmentStatus'].includes(key)?actual.includes(term):actual===term;
    });
    let phase='records',after='';
    if(data.after){

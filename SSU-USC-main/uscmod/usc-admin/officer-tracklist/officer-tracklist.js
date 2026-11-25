@@ -18,13 +18,14 @@ function initialize(host) {
         <header class="track-card-head"><div class="track-card-heading"><span class="track-card-icon blue" aria-hidden="true"><i class="fa-solid fa-clock-rotate-left"></i></span><h2>Recent activities</h2></div></header>
         <div class="track-card-content">
           <form class="activity-filters">
-            <label>Search<input name="search" type="search" maxlength="160"></label>
+            <label class="activity-search-wide">Search activities<span class="activity-search-input"><i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i><input name="search" type="search" maxlength="160" autocomplete="off" placeholder="Title, record ID, officer or action"></span></label>
             <label hidden>Officer<select name="officer"><option value="">All officers</option></select></label>
             <label>Module<select name="module"><option value="">All modules</option></select></label>
             <label>Academic year or term<select name="year"><option value="">All terms</option></select></label>
             <label>From<input type="date" name="from"></label>
             <label>To<input type="date" name="to"></label>
             <button class="track-card-link" type="submit">Apply filters</button>
+            <button class="track-card-link activity-clear" type="button" data-clear-filters hidden>Clear filters</button>
           </form>
           <p class="activity-status" role="status"></p>
           <ol class="activity-list"></ol>
@@ -39,7 +40,8 @@ function initialize(host) {
   const record = query.get('record');
   const recordScope = record ? { recordId: record, recordModule: query.get('module') } : {};
   const date = new Intl.DateTimeFormat('en-PH', { dateStyle: 'medium', timeStyle: 'short', timeZone: 'Asia/Manila' });
-  let activeFilters = {}, cursor = null, requestNumber = 0;
+  let activeFilters = {}, cursor = null, requestNumber = 0, filterTimer = null;
+  const clear = $('[data-clear-filters]');
 
   function setOptions(name, options) {
     const select = form.elements.namedItem(name), selected = select.value;
@@ -75,7 +77,8 @@ function initialize(host) {
 
   async function load(append = false) {
     const number = ++requestNumber;
-    if (!append) list.replaceChildren();
+    if (!append) { list.replaceChildren(); cursor = null; }
+    more.disabled = true;
     more.hidden = true;
     status.textContent = 'Loading activities…';
     try {
@@ -95,20 +98,33 @@ function initialize(host) {
       }
       cursor = result.next;
       more.hidden = !cursor;
-      status.textContent = list.children.length ? '' : 'No activities found.';
+      status.textContent = list.children.length ? (Object.values(activeFilters).some(Boolean) ? 'Showing '+list.children.length+' matching activit'+(list.children.length===1?'y':'ies')+(cursor?' · more available':'') : '') : 'No matching activities found.';
     } catch (error) {
       if (number !== requestNumber) return;
       more.hidden = !append;
       status.textContent = error.message;
-    }
+    } finally { if(number === requestNumber) more.disabled = false; }
   }
 
-  form.addEventListener('submit', event => {
-    event.preventDefault();
+  function applyFilters(delay = 0) {
+    clearTimeout(filterTimer);
     activeFilters = Object.fromEntries(new FormData(form));
-    void load();
-  });
-  more.addEventListener('click', () => void load(true));
+    activeFilters.search = String(activeFilters.search || '').trim();
+    if(form.elements.officer.parentElement.hidden) activeFilters.officer = '';
+    clear.hidden = !Object.values(activeFilters).some(Boolean);
+    ++requestNumber; cursor = null; more.hidden = true; more.disabled = true;
+    list.replaceChildren();
+    if(activeFilters.from && activeFilters.to && activeFilters.from > activeFilters.to) {
+      status.textContent = 'Choose a valid date range. The From date must be before or equal to To.';
+      return;
+    }
+    status.textContent = 'Searching activities…';
+    if(delay) filterTimer = setTimeout(()=>void load(),delay); else void load();
+  }
+  form.addEventListener('submit', event => {event.preventDefault(); applyFilters();});
+  form.elements.search.addEventListener('input',()=>applyFilters(250));
+  clear.addEventListener('click',()=>{form.reset();applyFilters();form.elements.search.focus();});
+  more.addEventListener('click', () => {if(cursor&&!more.disabled)void load(true);});
   void load();
 }
 

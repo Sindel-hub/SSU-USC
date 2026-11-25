@@ -5,6 +5,7 @@ import { SSU_PROGRAMS, formatSsuCollege, formatSsuProgram } from '../../student-
 const allowed=await(globalThis.USC_AUTH_READY||Promise.resolve(false));if(allowed!==true)await new Promise(()=>{});
 const $=id=>document.getElementById(id);
 let reviewTab=false,preview=null,students=[],next=null,busy=false,selected=null;
+let directoryRequest=0,directoryTimer=null,directoryLoading=false;
 let recordOpener=null;
 const detailDialog=$('studentDetail');
 $('closeStudentDetail').onclick=()=>detailDialog.close();
@@ -53,18 +54,33 @@ $('importPreviewRows').onclick=event=>{
  });
 };
 async function list(more=false){
+ clearTimeout(directoryTimer);
+ const request=++directoryRequest;
  const studentId=$('findStudentId').value.trim();
- const filters={studentStanding:$('studentStatusFilter').value};
- let cursor=more?next:null, found=[];
- do {
-  const result=await call('studentRecordsList',studentId?{studentId}:{filters,...(cursor?{after:cursor}:{})});
-  found=result.students;cursor=result.next;
- } while(!found.length&&cursor);
- students=more?[...students,...found]:found;next=cursor;renderStudents();
+ const filters={studentStanding:$('studentStatusFilter').value,studentId};
+ let cursor=more?next:null,found=[];
+ if(!more){students=[];next=null;$('studentRecordRows').replaceChildren();}
+ directoryLoading=true;$('moreStudents').hidden=true;
+ $('studentListSummary').textContent='Searching student records…';
+ try{
+  do{
+   const result=await call('studentRecordsList',{filters,...(cursor?{after:cursor}:{})});
+   if(request!==directoryRequest)return;
+   found=result.students;cursor=result.next;
+  }while(!found.length&&cursor);
+  students=more?[...students,...found]:found;next=cursor;renderStudents();
+ }catch(error){if(request===directoryRequest){$('studentListSummary').textContent=error.message||'Unable to search records. Please try again.';$('moreStudents').hidden=!next;}}
+ finally{if(request===directoryRequest)directoryLoading=false;}
+}
+function scheduleDirectorySearch(delay=0){
+ clearTimeout(directoryTimer);++directoryRequest;directoryLoading=true;
+ students=[];next=null;$('studentRecordRows').replaceChildren();$('moreStudents').hidden=true;
+ $('studentListSummary').textContent='Searching student records…';
+ if(delay)directoryTimer=setTimeout(()=>void list(),delay);else void list();
 }
 function renderStudents(){
  const rows=students;
- $('studentListSummary').textContent=`${rows.length} shown from ${students.length} loaded records.`;
+ $('studentListSummary').textContent=`${rows.length} matching record${rows.length===1?'':'s'} shown${next?' · more records may be available':''}.`;
  $('studentRecordRows').innerHTML=rows.length?rows.map(s=>`<tr><td>${e(s.studentId)}</td><td>${e(s.fullName)}<br><small>${e(formatSsuCollege(s.college))}</small></td><td>${e(s.academicYear||'Not recorded')}</td><td>${e(standingLabel(s.studentStanding))}</td><td>${e(s.accountState)}<br>${e(s.activationStatus||'Existing account')}${s.activationDelivery?` · ${e(s.activationDelivery)}`:''}</td><td><button type="button" data-student="${e(s.studentId)}">View record</button></td></tr>`).join(''):'<tr><td colspan="6">No matching student records.</td></tr>';
  $('moreStudents').hidden=!next;
 }
@@ -110,12 +126,14 @@ $('applyStudentImport').onclick=()=>run(async()=>{
  const failed=preview.results.filter(r=>r.state!=='complete').length;message(failed?'Import finished with failures. Review the row results and retry recoverable items.':'Ready records applied.');await list();
 });
 $('resumeImportButton').onclick=()=>run(async()=>{preview=await call('studentAnnualJob',{importId:$('resumeImportId').value.trim()});$('importYear').value=preview.academicYear;$('correctionMode').checked=preview.correction===true;$('correctionReason').value=preview.correctionReason||'';$('restoreImportAccess').checked=preview.restoreAccess===true;syncCorrectionFields();$('confirmImport').checked=false;reviewTab=false;renderPreview();message('Import loaded. Review results before retrying.');});
-$('studentStatusFilter').onchange=()=>run(()=>list());
+$('studentStatusFilter').onchange=()=>scheduleDirectorySearch();
+$('findStudentId').addEventListener('input',()=>scheduleDirectorySearch(250));
+$('findStudentId').addEventListener('keydown',event=>{if(event.key==='Enter'){event.preventDefault();scheduleDirectorySearch();}});
 $('importYear').onchange=()=>{renderStudents();if(preview){preview=null;$('importPreview').hidden=true;}};
-$('findStudent').onclick=()=>run(()=>list());$('clearStudentSearch').onclick=()=>run(async()=>{
+$('findStudent').onclick=()=>scheduleDirectorySearch();$('clearStudentSearch').onclick=()=>{
  for(const field of document.querySelectorAll('#findStudentId, #studentStatusFilter'))field.value='';
- await list();
-});$('refreshStudents').onclick=()=>run(()=>list());$('moreStudents').onclick=()=>run(()=>list(true));
+ scheduleDirectorySearch();$('findStudentId').focus();
+};$('refreshStudents').onclick=()=>scheduleDirectorySearch();$('moreStudents').onclick=()=>{if(!directoryLoading&&next)void list(true);};
 $('studentRecordRows').onclick=event=>{const b=event.target.closest('[data-student]');if(b){recordOpener=b;run(()=>detail(b.dataset.student));}};
 $('resendStudentActivation').onclick=()=>run(async()=>{if(!selected||!confirm(`Send new activation instructions to ${selected.institutionalEmail}? Previous activation links will be invalidated.`))return;await call('studentActivationResend',{studentId:selected.studentId});message('Activation instructions sent.');await detail(selected.studentId);$('studentDetailStatus').textContent='Activation instructions sent.';});
 $('recordStandingForm').onsubmit=event=>{event.preventDefault();run(async()=>{
