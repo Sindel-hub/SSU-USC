@@ -19,7 +19,7 @@
 <link rel="stylesheet" href="../../shared/scrollbars.css?v=2" />
 <link rel="stylesheet" href="../../dashboard/css/student-pages.css?v=student-layout-2" />
 <link rel="stylesheet" href="../officer-tracklist/officer-tracklist.css" />
-<link rel="stylesheet" href="css/officer-management.css?v=registered-officers-1" />
+<link rel="stylesheet" href="css/officer-management.css?v=officer-cleanup-1" />
 </head>
 <body class="officer-app-shell admin-officer-management-page">
     <div class="sidebar-backdrop" onclick="document.querySelector('.sidebar').classList.remove('mobile-open');this.classList.remove('active');document.getElementById('usersMenuButton').setAttribute('aria-expanded','false')"></div>
@@ -73,7 +73,7 @@
 <section class="main officer-management-workspace history-app" aria-label="Officer Management">
 <h1 class="history-module-title">Officer Management</h1>
 <div class="history-toolbar">
-  <nav class="history-links" aria-label="Module navigation"><a id="backLink" href="admin-dashboard.html">Back to dashboard</a><a href="#responsibilities">Administration guide</a></nav>
+  <nav class="history-links" aria-label="Module navigation"><a id="backLink" href="admin-dashboard.html">Back to dashboard</a></nav>
   <button id="refreshHistory" type="button">Refresh</button>
 </div>
 <p id="historyStatus" role="status" aria-live="polite">Loading authorized records…</p>
@@ -109,9 +109,8 @@
 <section class="history-card"><div class="history-heading"><h2>Assignments and historical terms</h2><label id="officeScopeLabel">View<select id="assignmentScope"><option value="own">My assignments</option><option value="office">My office’s terms</option></select></label></div><div id="assignmentList" class="history-assignment-list"></div><button id="moreAssignments" type="button" hidden>Load more assignments</button></section>
 <section class="officer-activity" aria-labelledby="officerActivityTitle"><h2 id="officerActivityTitle">Officer activity history</h2><div data-officer-activity></div></section>
 <section id="financialReportPanel" class="history-card" hidden><h2>Submit financial report</h2><p>Submit an immutable report for your current Treasurer assignment. This records a submission; it is not a financial approval or audit certification. Submit a new report for corrections.</p><form id="financialReportForm"><label>Report title<input id="financialReportTitle" maxlength="160" required></label><label>Report content<textarea id="financialReportContent" rows="8" maxlength="20000" required></textarea></label><label class="history-check"><input id="financialReportConfirmed" type="checkbox" required>I reviewed this report and understand it will be preserved under my name and term.</label><button type="submit">Submit report</button></form></section>
-<section class="history-card"><h2 id="activityHeading">Records by term</h2><p>Choose a term to review its activities. Only completed module actions are recorded; page visits do not count. Results load in pages of 50.</p><div id="activityList"></div><button id="moreActivities" type="button" hidden>Load more activities</button></section>
-<section id="recordPreview" class="history-card" hidden><div class="history-heading"><h2>Preserved record</h2><button id="closeRecord" type="button">Close</button></div><p id="recordAttribution"></p><pre id="recordContent" tabindex="0"></pre><button id="downloadRecord" type="button">Download preserved record</button></section>
-<section id="responsibilities" class="history-card"><h2>System Administrator: responsibilities and limits</h2><p><strong>Appointment: Pending USC and appropriate university office approval.</strong> The displayed account role does not appoint an individual or office.</p><p>The designated administrator manages authorized accounts, role assignments, access, records, configurations, monitoring, documented maintenance, troubleshooting and reviewed updates. Technical maintenance belongs to the designated university IT support or formally authorized maintainer, whose appointment is also pending.</p><p>The administrator does not independently determine USC policy, certify student eligibility, approve financial reports or change official academic records. Use authorized USC lists and approval references. University offices remain responsible for official verification.</p><ol><li>Verify written authorization before provisioning an account or assigning access. Use User Directory and the validated student import process.</li><li>Assign the approved office, administration period, term dates and minimum required module permissions.</li><li>Review activity records and access periodically. Resolve synchronization failures before advising an officer to sign in again.</li><li>At turnover, complete the outgoing assignment, check access revocation, then assign the successor. Never share passwords or rename an old account to a new officer.</li><li>For incidents, record the time, affected module and non-sensitive error reference; restrict affected access, notify the authorized university contact and preserve evidence.</li><li>Test maintenance in staging, document changes and recovery, and obtain explicit approval before pushing or deploying. Keep credentials private.</li></ol><p>Historical records and activity logs cannot be edited or deleted here. Retention and exceptional corrections require an approved university procedure; do not invent or backdate missing historical accomplishments.</p></section></section></main></div></div>
+<dialog id="termTracklist" class="history-tracklist-dialog" aria-labelledby="activityHeading"><div class="history-heading"><h2 id="activityHeading" tabindex="-1">Term tracklist</h2><button id="closeTracklist" type="button">Close tracklist</button></div><div id="activityList"></div><button id="moreActivities" type="button" hidden>Load more activities</button><section id="recordPreview" class="history-card" hidden><div class="history-heading"><h2>Preserved record</h2><button id="closeRecord" type="button">Close</button></div><p id="recordAttribution"></p><pre id="recordContent" tabindex="0"></pre><button id="downloadRecord" type="button">Download preserved record</button></section></dialog>
+</section></main></div></div>
 <footer class="officer-shared-footer">
   <div class="officer-footer-main">
     <div class="officer-footer-col">
@@ -138,7 +137,7 @@
   </div>
 </footer>
 
-    <script type="module" src="../../shared/officer-history.js?v=officer-policy-feedback-1"></script>
+    <script type="module" src="../../shared/officer-history.js?v=officer-cleanup-1"></script>
     <script type="module" src="../officer-tracklist/officer-tracklist.js"></script>
     <script type="module" src="../shared/js/admin-only-auth.js"></script>
 <script type="module" src="../../shared/profile-manager.js?v=admin-settings-1&amp;refinements=1"></script>
