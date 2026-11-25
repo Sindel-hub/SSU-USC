@@ -67,7 +67,7 @@ function createNeedsAssessmentHandlers({ db, requireActiveRole, requireOfficerPe
       if (s.status === 'draft' || s.status === 'archived') throw new HttpsError('not-found','Survey unavailable.');
       // Never return counts, author identifiers, or individual responses publicly.
       const { title, description, departments, questions, opensAt, closesAt } = s;
-      return { id: s.id, title, description, departments, questions, opensAt, closesAt, lifecycle: surveyStatus(s, clock()) };
+      return { id: s.id, title, description, departments, questions, opensAt, closesAt, ...(s.sections ? { sections:s.sections, titleRich:s.titleRich || '', descriptionRich:s.descriptionRich || '' } : {}), lifecycle: surveyStatus(s, clock()) };
     },
     async needsAssessmentSubmit(request) {
       const { surveyId, submissionId } = request.data || {};

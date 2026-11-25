@@ -34,13 +34,10 @@ function renumber() {
   });
 }
 function edit(s = null) {
-  editing = s?.id || ''; $('naEditorTitle').textContent = s ? 'Edit draft' : 'Create survey';
-  $('naTitle').value = s?.title || ''; $('naDescription').value=s?.description || '';
-  const local = ms => { const d=new Date(ms); return new Date(ms-d.getTimezoneOffset()*60000).toISOString().slice(0,16); };
-  $('naOpens').value=local(s?.opensAt || Date.now()); $('naCloses').value=local(s?.closesAt || Date.now()+7*86400000);
-  $('naDepartments').innerHTML=departments.map(d=>`<label class="na-choice"><input type="checkbox" value="${e(d)}" ${!s || s.departments.includes(d)?'checked':''}>${e(d)}</label>`).join('');
-  $('naQuestions').replaceChildren(); (s?.questions || [{label:'',type:'single',options:[],required:true}]).forEach(addQuestion);
-  $('naEditor').open = true; $('naTitle').focus();
+  const url = new URL('create-survey.html', location.href);
+  if (s?.id) url.searchParams.set('id', s.id);
+  else if (s?.sourceId) url.searchParams.set('copy', s.sourceId);
+  location.assign(url.href);
 }
 const surveyDate = new Intl.DateTimeFormat(undefined, { dateStyle: 'medium', timeStyle: 'short' });
 const surveyStatuses = [
@@ -77,7 +74,7 @@ $('naStatusFilters').addEventListener('click', event => {
 function renderSurveys() {
   const manage = hasOfficerPermission('bulletin.manage');
   $('naNew').hidden = !manage;
-  $('naEditor').hidden = !manage;
+  $('naEditor').hidden = true;
   const visible = statusFilter ? surveys.filter(survey => survey.lifecycle === statusFilter) : surveys;
   $('naSurveys').innerHTML = visible.length ? visible.map(survey => {
     const id = e(survey.id);
@@ -121,14 +118,14 @@ function updateReport() {
     ${!filter ? `<section class="na-analytics-section"><h3>Responses by department</h3>${pieChart(report.departments.map(({ name, count }) => ({ option: name, count })), report.total)}</section>` : ''}
     ${report.questions.map((question, index) => `<section class="na-analytics-section">
       <h3>${index + 1}. ${e(question.label)}</h3>
-      <p class="na-answer-count">${question.answered} answered${question.average === null ? '' : ` · ${question.average.toFixed(2)} / 5 average`}</p>
-      ${question.answered ? question.type === 'multiple'
+      <p class="na-answer-count">${question.answered} answered${question.average === null ? '' : ` · ${question.average.toFixed(2)} average`}</p>
+      ${question.answered ? ['multiple','checkgrid','grid'].includes(question.type)
         ? question.counts.map(answer => bar(answer.option, answer.count, question.answered)).join('')
         : question.counts.length ? pieChart(question.counts, question.answered) : '' : '<p>No answers yet.</p>'}
       ${question.texts.length ? `<details><summary>Written responses (${question.texts.length})</summary>${question.texts.map(text => `<p class="na-text-response">${e(text)}</p>`).join('')}</details>` : ''}
     </section>`).join('')}`;
   const rows=filter?responses.filter(r=>r.department===filter):responses;
-  $('naResponses').innerHTML=`${rows.length > 100 ? '<p>First 100 responses. Export the CSV for the complete list.</p>' : ''}<div class="na-table-wrap"><table class="na-table"><thead><tr><th>Department</th><th>Submitted</th><th>Answers</th></tr></thead><tbody>${rows.slice(0,100).map(r=>`<tr><td>${e(r.department)}</td><td>${e(new Date(r.submittedAt).toLocaleString())}</td><td>${reportSurvey.questions.map(q=>`${e(q.label)}: ${e(Array.isArray(r.answers[q.id])?r.answers[q.id].join('; '):r.answers[q.id]??'Skipped')}`).join('<br>')}</td></tr>`).join('')}</tbody></table></div>`;
+  $('naResponses').innerHTML=`${rows.length > 100 ? '<p>First 100 responses. Export the CSV for the complete list.</p>' : ''}<div class="na-table-wrap"><table class="na-table"><thead><tr><th>Department</th><th>Submitted</th><th>Answers</th></tr></thead><tbody>${rows.slice(0,100).map(r=>`<tr><td>${e(r.department)}</td><td>${e(new Date(r.submittedAt).toLocaleString())}</td><td>${reportSurvey.questions.map(q=>`${e(q.label)}: ${e(Array.isArray(r.answers[q.id])?r.answers[q.id].join('; '):(typeof r.answers[q.id] === 'object' ? JSON.stringify(r.answers[q.id]) : r.answers[q.id]??'Skipped'))}`).join('<br>')}</td></tr>`).join('')}</tbody></table></div>`;
 }
 const chartColors = ['#2563a8', '#bb421e', '#9e590c', '#217747', '#8b43a4', '#007582', '#ae3866', '#5262a0', '#765237', '#366f70', '#75404f', '#61711d', '#285e86', '#6b51a4', '#8a4d72'];
 const shareFormat = new Intl.NumberFormat(undefined, { style: 'percent', maximumFractionDigits: 1 });
@@ -221,7 +218,7 @@ $('naSurveys').onclick=event=>{const b = event.target.closest('button[data-actio
   if (action === 'results') { void loadResults(s); return; }
   run(async()=>{
   if(action==='edit')return edit(s);
-  if(action==='duplicate'){edit({...s,id:'',title:`${s.title} (copy)`,opensAt:Date.now(),closesAt:Date.now()+7*86400000});return;}
+  if(action==='duplicate'){edit({sourceId:s.id});return;}
   if(action==='link'){try{await navigator.clipboard.writeText(surveyLink(s.id));message('Survey link copied.');}catch{message(`Survey link: ${surveyLink(s.id)}`);}return;}
   if(!confirm(`${action[0].toUpperCase()+action.slice(1)} “${s.title}”?${action==='publish'?' Questions and target departments will be locked.':''}`))return;
   await surveyCall('Manage',{action,surveyId:s.id});await refresh();message('Survey updated.');
@@ -229,5 +226,5 @@ $('naSurveys').onclick=event=>{const b = event.target.closest('button[data-actio
 $('naRefresh').onclick=()=>run(()=>refresh());$('naMore').onclick=()=>run(()=>refresh(true));
 $('naDepartmentFilter').onchange=updateReport;$('naPrint').onclick=()=>window.print();
 $('naExportSummary').onclick=()=>download(summaryRows(report),'needs-assessment-summary.csv');
-$('naExportResponses').onclick=()=>{const d=$('naDepartmentFilter').value;download([['Department','Submitted',...reportSurvey.questions.map(q=>q.label)],...responses.filter(r=>!d||r.department===d).map(r=>[r.department,new Date(r.submittedAt).toISOString(),...reportSurvey.questions.map(q=>Array.isArray(r.answers[q.id])?r.answers[q.id].join('; '):r.answers[q.id]??'')])],'needs-assessment-responses.csv');};
+$('naExportResponses').onclick=()=>{const d=$('naDepartmentFilter').value;download([['Department','Submitted',...reportSurvey.questions.map(q=>q.label)],...responses.filter(r=>!d||r.department===d).map(r=>[r.department,new Date(r.submittedAt).toISOString(),...reportSurvey.questions.map(q=>Array.isArray(r.answers[q.id])?r.answers[q.id].join('; '):(typeof r.answers[q.id] === 'object' ? JSON.stringify(r.answers[q.id]) : r.answers[q.id]??''))])],'needs-assessment-responses.csv');};
 await run(()=>refresh());
