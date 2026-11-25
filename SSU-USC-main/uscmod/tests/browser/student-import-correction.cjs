@@ -20,6 +20,11 @@ const server=http.createServer(async(req,res)=>{const url=new URL(req.url,'http:
  if(u.pathname==='/shared/student-records-client.js')return route.fulfill({contentType:'text/javascript',body:`export async function studentRecordCall(name,data={}){const r=await fetch('/fixture-call',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name,data})});const result=await r.json();if(!r.ok)throw Error(result.error);return result;}`});return route.continue();});
  const admin=await context.newPage();admin.on('pageerror',e=>errors.push(e.message));admin.on('dialog',d=>d.accept());
  await admin.goto(base+'/usc-admin/admin-dashboard/student-records.html');await admin.locator('[data-student="000123"]').waitFor();
+ assert.equal(await admin.locator('.records-filters, [data-student-filter], #studentDepartmentOptions').count(),0);
+ await admin.locator('#findStudentId').fill('000123');await admin.locator('#findStudent').click();await admin.waitForFunction(()=>document.querySelectorAll('#studentRecordRows [data-student]').length===1);
+ await admin.locator('#clearStudentSearch').click();await admin.locator('[data-student="000125"]').waitFor();
+ await admin.locator('.records-list-panel').screenshot({path:path.join(out,'student-directory-desktop.png')});
+
  const csvHeader=header.trim()+',Student Status\n';
  const csv=status=>csvHeader+'000123,Student,Synthetic Continuing,,,College of Engineering,Bachelor of Science in Civil Engineering,3,Regular,continuing@example.invalid,'+status+'\n';
  const upload=status=>admin.locator('#studentImportFile').setInputFiles({name:'synthetic-students.csv',mimeType:'text/csv',buffer:Buffer.from(csv(status))});
@@ -45,6 +50,6 @@ const server=http.createServer(async(req,res)=>{const url=new URL(req.url,'http:
  await admin.locator('#studentStatusFilter').selectOption('');await admin.locator('[data-student="000123"]').click();await admin.locator('#studentAcademicHistory').getByText('2027-2028',{exact:false}).first().waitFor();
  assert.match(await admin.locator('#studentAcademicHistory').innerText(),/2026-2027/);await admin.locator('#closeStudentDetail').click();
  await admin.locator('#importYear').fill('2028-2029');assert.equal(await admin.locator('#importPreview').isVisible(),false);assert.equal(await admin.locator('#applyStudentImport').isDisabled(),true);
- for(const width of [768,390]){await admin.setViewportSize({width,height:1000});assert.equal(await admin.evaluate(()=>document.documentElement.scrollWidth>innerWidth+1),false);await admin.screenshot({path:path.join(out,`correction-controls-${width}.png`),fullPage:true});}
+ for(const width of [768,390]){await admin.setViewportSize({width,height:1000});assert.equal(await admin.evaluate(()=>document.documentElement.scrollWidth>innerWidth+1),false);await admin.screenshot({path:path.join(out,`correction-controls-${width}.png`),fullPage:true});await admin.locator('.records-list-panel').screenshot({path:path.join(out,`student-directory-${width}.png`)});}
  assert.deepEqual(errors,[]);console.log('PASS: actual Student Records page accepts Dropped, blocks normal older imports, previews explicit correction/restoration, preserves President identity/password/history and omitted accounts, does not restore voting flags, invalidates changed previews, and fits desktop/tablet/mobile. Synthetic data only.');
  }finally{await browser.close();server.close();}})().catch(e=>{console.error(e);server.close();process.exitCode=1;});

@@ -28,9 +28,6 @@ body.admin-student-records-page .main.records-workspace {
 .admin-student-records-page .main.records-workspace .record-search > * { min-width: 0; }
 .admin-student-records-page .records-resume { grid-template-columns: minmax(0, 1fr) auto; margin-top: 24px; padding-top: 20px; border-top: 1px solid #e4ebf3; }
 .admin-student-records-page .records-lookup { grid-template-columns: minmax(160px, 1fr) auto auto minmax(160px, 1fr); margin-top: 24px; }
-.admin-student-records-page .main.records-workspace .records-filters { grid-template-columns: repeat(3, minmax(0, 1fr)); margin-top: 20px; padding: 20px; background: #f8fafc; border: 1px solid #e4ebf3; border-radius: 12px; align-items: start; }
-.admin-student-records-page .records-filters label { display: flex; flex-direction: column; }
-.admin-student-records-page .records-filters datalist { display: none; }
 .admin-student-records-page #studentListSummary { margin: 20px 0 12px; font-size: 13px; color: #60758d; }
 .admin-student-records-page .main.records-workspace .na-table-wrap { min-width: 0; max-width: 100%; border: 1px solid #e1e9f2; border-radius: 12px; overflow: auto; }
 .admin-student-records-page .records-workspace .na-table { min-width: 760px; }
@@ -43,13 +40,11 @@ body.admin-student-records-page .main.records-workspace {
 .admin-student-records-page #importPreview { margin-top: 24px; padding-top: 20px; border-top: 1px solid #e4ebf3; }
 .admin-student-records-page #moreStudents { margin-top: 16px; }
 @media (max-width: 1100px) {
-  .admin-student-records-page .main.records-workspace .records-filters { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .admin-student-records-page .records-lookup { grid-template-columns: minmax(0, 1fr) auto auto; }
   .admin-student-records-page .records-lookup > div:last-child { grid-column: 1 / -1; }
 }
 @media (max-width: 600px) {
   body.admin-student-records-page .main.records-workspace { padding: 12px; gap: 18px; }
-  .admin-student-records-page .main.records-workspace .records-filters { grid-template-columns: minmax(0, 1fr); padding: 16px; }
   .admin-student-records-page .records-lookup { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .admin-student-records-page .records-lookup > div { grid-column: 1 / -1; }
   .admin-student-records-page .records-resume { grid-template-columns: minmax(0, 1fr); }
