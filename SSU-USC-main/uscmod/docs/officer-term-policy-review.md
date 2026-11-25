@@ -1,67 +1,68 @@
-# Expected and actual officer term dates
+# Officer term dates — March expectation and actual turnover
 
-## Changes and basis
+## Current behavior
 
-Implements the user's requested expected-versus-actual end distinction, with their latest simplification: enter just the authorized term start when the officer takes office. There is no separate induction field or date prompt. Expected end is calculated one year from that start; the actual end remains an administrator-recorded turnover. This is the user's requested operational workflow, rather than a claim that election victory, proclamation and induction are legally the same event.
+This version follows the user's latest instructions: one editable term start and an expected end in March of the academic year's ending year. It supersedes the earlier anniversary-based calculation and separate induction input.
 
-- Academic year remains the existing administration value.
-- Term start is the sole editable date, entered in Philippine time. The separate induction field and event handler are removed.
-- Expected end is read-only and automatically calculated one Philippine calendar year after term start, on both the form and trusted backend. February 29 becomes February 28 in the following non-leap year.
-- New assignments explicitly use `termPolicy: until-turnover`. Passing the expected anniversary displays **Active — awaiting turnover** and does not revoke officer access.
-- **Complete term** requires an administrator, recent authentication, reason and confirmation. It records the server's actual completion time in `actualEndsAtMs`, keeps the expected date, retains the reason, removes officer permissions and restores student role using the existing authentication synchronization/retry workflow.
-- Account identity, password, Student ID, historical assignments and activity remain intact. Graduation, Dropped standing, suspension, removal and permission restrictions still apply.
-- Completed terms display actual end and deactivation reason in historical assignments. Completed officers leave the current officer roster, as before.
+| Academic year | Expected end, regardless of account creation date |
+| --- | --- |
+| 2026–2027 | March 2027 |
+| 2027–2028 | March 2028 |
 
-## Existing assignments
+For example, a November 2026 appointment in 2026–2027 displays **March 2027**, not November 2027. Changing term start alone does not move the expected end. Changing academic year recalculates it in the form and trusted backend.
 
-No records are automatically migrated, and expired accounts are not automatically re-enabled. Existing assignments without the new policy retain their previous fixed cutoff. Already saved dates, including historical induction values and expected ends, are preserved; viewing the form does not rewrite them. New assignments ignore stale clients' separate induction values and calculate exclusively from term start.
+- Academic year accepts consecutive four-digit years separated by a hyphen, en dash or em dash. Invalid years are blocked before any assignment/account writes.
+- Term start remains the sole editable date, entered in Philippine time. No induction field or induction prompt is required.
+- Expected end is read-only month/year text. New records store `expectedEndMonth`, e.g. `2027-03`; no arbitrary day/time is recorded as an expected deadline.
+- New assignments remain active until explicit completion. After March has passed, status shows **Active — awaiting turnover**. The end of the month is only a display-status boundary, never an access cutoff.
+- Administrator **Complete term** records actual end and reason, returns the officer to student role, removes officer permissions and uses the existing Auth synchronization/retry path. School standing and account restrictions remain authoritative.
+- Account UID, credentials, Student ID, historical assignments and activity remain intact.
 
-An administrator can use **Adopt expected-end policy** on a current legacy assignment, provide an authorization reference using the existing recorded term start, then confirm. The confirmation explicitly explains that this can restore officer access after the old fixed cutoff. The server verifies current identity/assignment, account eligibility, office-slot ownership and recent administrator authentication. Completed, displaced, inactive, removed and ineligible accounts cannot be restored this way. The authorized reason, administrator and time are stored privately on the assignment. The original legacy cutoff is retained as historical data.
+The user supplied CBL excerpts about March induction, an induction anniversary and succession by proclamation. The March month/year is the user's requested operational estimate; the system does not claim a universal CBL deadline on a particular March day. Actual turnover remains an authorized administrative action and requires no election module.
+
+## Existing records
+
+- Existing active assignments already using `until-turnover` display a March estimate from their recorded academic year, including those saved under the prior anniversary calculation. The read response derives that display without rewriting database records or historical timestamps. Completed assignments retain their original expected-date history.
+- Existing fixed-cutoff assignments retain the old access cutoff. Administrator **Adopt expected-end policy** still requires recent authentication, an authorization reason and confirmation explaining that this can restore access after the old fixed cutoff. March is calculated from the recorded academic year without another date prompt. Invalid legacy year formats require reconciliation rather than guessing a year.
+- Completed, displaced, suspended, removed, graduated and Dropped accounts cannot be restored by policy adoption. Permission scopes and office-slot uniqueness remain enforced.
 
 ## Before and after
 
 ```js
-// Before: one date was both the displayed end and an enforced cutoff.
-a.status === 'active' && a.startsAtMs <= now && a.endsAtMs > now
+// Previous local revision:
+expectedEnd(termStart); // November 2026 -> November 2027
 
-// After: explicitly adopted assignments stay active until completion.
-a.status === 'active' && a.startsAtMs <= now && a.actualEndsAtMs == null
-  && (a.termPolicy === 'until-turnover' || a.endsAtMs > now)
+// Current trusted calculation:
+expectedEnd('2026–2027'); // '2027-03'
 ```
 
-The backend and Firestore rules enforce this same distinction. Assignment data remains server-owned and private. Older assignment-creation clients are rejected with a refresh instruction, rather than silently reinterpreting their fixed end dates.
+The current form has one start-date input and a read-only **March YYYY** result. Actual end and deactivation reason remain in historical terms.
 
-## Modified files
+## Modified files in the latest revision
 
-- `server/officer-term.cjs`: shared backend active-term check and Philippine-calendar anniversary.
-- `server/authorization.cjs`, `server/officer-history.cjs`: access checks, authoritative single-start dates, audited legacy adoption, completion and roster fields.
-- `firestore.rules`: expected-end policy with explicit actual-end/status checks; legacy cutoff retained.
-- `shared/officer-history.js`, `usc-admin/admin-dashboard/officer-management.html`: form, read-only estimate, legacy confirmation, term/status/reason display; existing page shell and styles retained.
-- `package.json`: includes term-policy regression tests in the officer suite.
-- `tests/officer-term-policy.test.mjs`, `tests/officer-history.test.mjs`, `tests/officer-directory.test.mjs`, `tests/helpers/officer-history-fixture.cjs`: date, access, migration and lifecycle checks.
-- `tests/officer-history.rules.test.mjs`: legacy expiry, adopted-policy access, server-only updates and completed-term revocation.
-- `tests/browser/officer-management-only.cjs`, `tests/browser/officer-history.cjs`: form automation updated for read-only dates; management browser additionally checks leap day, delayed turnover, explicit adoption and actual completion/reason.
-- `docs/officer-management-workflow.md`, `docs/officer-administration.md`, this review document: current behavior and deployment notes.
+- `server/officer-term.cjs`: validated academic-year-to-March calculation, current-estimate projection and overdue display status; existing access predicate unchanged.
+- `server/officer-history.cjs`: authoritative month storage, safe projections for existing active assignments, roster and legacy adoption.
+- `shared/officer-history.js`: academic-year-driven read-only display and month-aware status labels.
+- `usc-admin/admin-dashboard/officer-management.html`: read-only text result, March instruction, cache version.
+- `tests/officer-term-policy.test.mjs`: academic-year parsing, November creation, same-year consistency, month boundary, trusted calculation, legacy access and completed-history preservation.
+- `tests/browser/officer-management-only.cjs`, `tests/browser/officer-history.cjs`: month expectations; current management browser checks the actual form and hosted handlers.
+- `docs/officer-administration.md`, `docs/officer-management-workflow.md`, this document: revised behavior and release requirements.
+
+The preceding reviewed commits also contain the single-date simplification, actual-end fields, assignment policy, authorization/rules integration and related tests. No further rules changes were needed for the March revision.
 
 ## Actual validation
 
-- `npm run test:officer-history`: **41 passed, 0 failed**, including seven new date/policy/lifecycle tests.
+- `npm run test:officer-history`: **43 passed, 0 failed**.
 - Hosted management, officer RBAC, announcement review, Needs Assessment and account-provisioning regression group: **36 passed, 0 failed**.
-- `npm run test:syntax` passed; modified backend `.cjs` files passed `node --check`.
-- `tests/browser/officer-management-only.cjs` passed against actual pages/controllers and management HTTP handlers with synthetic Auth/Firestore records. Covered automatic anniversary from the single start, absence of an induction input, leap day, Philippine timezone, read-only estimate, overdue active assignment, legacy policy adoption, completion date/reason, same-UID promotion/return, existing directory operations and layouts at 1440, 768 and 390 pixels. No browser errors. Screenshots are local review artifacts, not a hosted Preview.
-- Firestore emulator integration was attempted but **blocked**: emulator JAR download returned HTTP 403, `Domain forbidden`. Rules tests are prepared, but live rules behavior and emulator syntax validation cannot be claimed as passed.
-- No live records, accounts, messages, production settings or backend services were changed. The older standalone officer-history browser script was updated for the read-only field but was not run; the current management browser supplied the validation above.
+- JavaScript syntax check passed; modified backend CJS syntax checked separately.
+- Current management browser passed at 1440, 768 and 390 pixels with actual controllers/HTTP handlers and synthetic Firebase/Auth data. Checks include November start → March of the academic-year ending year, academic-year edits, absent induction field, read-only result, legacy adoption, actual completion date/reason, preserved identity and existing directory/roster behavior. No browser errors. Screenshots are local artifacts, not a hosted Preview.
+- Firestore emulator testing for the preceding policy change remains blocked by JAR download HTTP 403. The March revision does not change rules. Deployed rules, real Firebase authentication and isolated staging services remain unverified. The older standalone history browser was updated but not run.
+- No live student/officer records, passwords, production settings or services were modified. The approved single-date revision was not pushed: the user paused that push before publication.
 
 ## Release coordination
 
-Local changes require fresh user approval before pushing. The user retains the final merge action. Deploy and verify against isolated staging first, including Auth refresh, held-over officer access, turnover and rules integration. This change uses the existing hosted management service; no new Firebase or Supabase function is introduced.
+The latest changes require fresh approval before pushing. The user performs the final merge. Prepare and verify an isolated staging Preview and validate the rules integration before claiming the whole policy is active.
 
-The hosted backend/frontend and Firestore rules must be coordinated: old rules still enforce fixed cutoffs even when the new backend permits holdover, while old backend code ignores the adopted policy. Deploying production rules requires separate explicit authorization. A Git merge alone does not update Firestore rules. Do not describe the feature as fully active until both are verified.
+Coordinate hosted frontend/backend and the preceding reviewed Firestore rules. Old rules still enforce fixed cutoffs, and old backend versions ignore the new policy/month fields. Merging application code does not deploy Firestore rules; production rules deployment requires separate explicit authorization.
 
-For rollback, coordinate application and rules versions and review assignments already using the new policy. Returning to old fixed-cutoff rules can deny access to officers serving past their expected anniversary. Reverting code does not undo completed terms or restore an account's former permissions; reconcile authorized assignments explicitly and preserve history.
-
-## Single-date revision
-
-Before: two required date inputs (proclamation/start and induction); expected end used induction. After: one required term start; expected end is read-only and derived from start. Legacy adoption also uses the recorded start without another date prompt. No access rules, permission scopes or completion actions changed in this revision.
-
-Modified for this revision: the Officer Management template/controller, backend assignment handler and anniversary helper, service/browser regression tests, and the three officer workflow/review documents. Firestore rules are unchanged from the preceding reviewed commit.
+Rollback application and rules versions together after reviewing assignments using the policy. Old fixed-cutoff checks can deny access again to officers serving beyond the expected month. A code rollback does not undo actual turnover or restore former permissions; reconcile authorized assignments while preserving history.

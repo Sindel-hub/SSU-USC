@@ -48,20 +48,20 @@ const server=http.createServer((req,res)=>{const u=new URL(req.url,origin);if(u.
   assert.equal(await p.locator('#registeredOfficerRows img').count(),0);
   f.records.get('users/legacy').fullName='Synthetic Legacy Officer';
 
-  await p.locator('#assignmentPosition').selectOption('Treasurer');await p.locator('#administrationPeriod').fill('Synthetic 2026–2027');await p.locator('#appointmentAuthorization').fill('Synthetic authorized resolution');
-  assert.equal(await p.locator('#inductionDate').count(),0);await p.locator('#termStart').fill('2024-02-29T09:15');assert.equal(await p.locator('#termEnd').inputValue(),'2025-02-28T09:15');assert.equal(await p.locator('#termEnd').getAttribute('readonly'), '');assert.ok(await p.locator('#termEnd').inputValue());await p.locator('#appointmentConfirmed').check();
+  await p.locator('#assignmentPosition').selectOption('Treasurer');await p.locator('#administrationPeriod').fill('2026–2027');await p.locator('#appointmentAuthorization').fill('Synthetic authorized resolution');
+  assert.equal(await p.locator('#inductionDate').count(),0);await p.locator('#termStart').fill('2026-11-20T09:15');assert.equal(await p.locator('#termEnd').inputValue(),'March 2027');await p.locator('#administrationPeriod').fill('2027-2028');assert.equal(await p.locator('#termEnd').inputValue(),'March 2028');await p.locator('#administrationPeriod').fill('2026–2027');assert.equal(await p.locator('#termEnd').inputValue(),'March 2027');assert.equal(await p.locator('#termEnd').getAttribute('readonly'), '');assert.ok(await p.locator('#termEnd').inputValue());await p.locator('#appointmentConfirmed').check();
   const count=f.authUsers.size;await p.getByRole('button',{name:'Create officer assignment'}).click();await p.getByText('Assignment created. Ask the officer to sign out and sign in again.').waitFor();
   assert.equal(f.records.get('users/first').role,'officer');assert.equal(f.authUsers.size,count);
   const term=f.records.get('officer_assignments/'+f.records.get('users/first').officerAssignmentId);
-  assert.equal(term.termPolicy,'until-turnover');assert.equal(term.expectedEndsAtMs,Date.parse('2025-02-28T09:15:00+08:00'));assert.equal(term.actualEndsAtMs,null);
-  await p.locator('#assignmentList').getByText('Active — awaiting turnover',{exact:true}).waitFor();
+  assert.equal(term.termPolicy,'until-turnover');assert.equal(term.expectedEndMonth,'2027-03');assert.equal(term.expectedEndsAtMs,null);assert.equal(term.actualEndsAtMs,null);
+  await p.locator('#assignmentList').getByText('Active',{exact:true}).waitFor();
   // Explicit administrator adoption is required for old hard-cutoff records.
   delete term.termPolicy;term.endsAtMs=f.now-1;
   await p.locator('#refreshHistory').click();await p.getByRole('button',{name:'Adopt expected-end policy'}).click();
   await p.getByText('Expected-end policy adopted. Access continues until the term is completed.').waitFor();
   assert.equal(f.records.get('officer_assignments/'+f.records.get('users/first').officerAssignmentId).termPolicy,'until-turnover');assert.equal(f.records.get('officer_assignments/'+f.records.get('users/first').officerAssignmentId).policyAdoptedBy,'admin');
   await p.locator('[data-officer-uid="first"]').waitFor();
-  assert.match(await p.locator('[data-officer-uid="first"]').innerText(),/Synthetic 2026–2027/);
+  assert.match(await p.locator('[data-officer-uid="first"]').innerText(),/2026–2027/);
   await p.locator('#registeredOfficersPanel').screenshot({path:path.join(out,'registered-officers-table.png')});
 
   for(const width of [1440,768,390]){await p.setViewportSize({width,height:1000});assert.equal(await p.evaluate(()=>document.documentElement.scrollWidth>innerWidth+1),false);
@@ -89,6 +89,6 @@ const server=http.createServer((req,res)=>{const u=new URL(req.url,origin);if(u.
   await p.goto(origin+'/usc-admin/student-registration/officer-registration.html');await p.waitForURL('**/officer-management.html');await p.locator('#appointmentForm').waitFor();
   await p.goto(origin+'/usc-admin/admin-dashboard/users.html');await p.locator('[data-open-user="first"]').click();assert.equal(await p.evaluate(()=>document.documentElement.scrollWidth>innerWidth+1),false);await p.screenshot({path:path.join(out,'directory-account-mobile.png')});
   assert.deepEqual(errors,[]);
-  console.log('PASS: expected date auto-calculation, leap day, Philippine timezone, read-only end, delayed turnover, explicit legacy adoption and actual end/reason; retired routes redirect; directory retains student registration with read-only officer scope; account updates omit role fields; Student ID handoff; promotion and term completion preserve UID; roster handles legacy/restricted accounts, safe text, pagination, refresh, errors and mobile scrolling; 1440/768/390 responsive layouts; no browser errors. Synthetic data only.');
+  console.log('PASS: March end from academic year despite November start, academic-year changes, Philippine timezone, read-only end, delayed turnover, explicit legacy adoption and actual end/reason; retired routes redirect; directory retains student registration with read-only officer scope; account updates omit role fields; Student ID handoff; promotion and term completion preserve UID; roster handles legacy/restricted accounts, safe text, pagination, refresh, errors and mobile scrolling; 1440/768/390 responsive layouts; no browser errors. Synthetic data only.');
  }finally{await browser.close();await new Promise(r=>server.close(r));}
 })().catch(e=>{console.error(e);server.close();process.exitCode=1;});

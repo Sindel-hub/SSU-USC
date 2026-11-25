@@ -1,6 +1,6 @@
 "use strict";
 const { createHash, randomUUID } = require("node:crypto");
-const { POLICY, active, expectedEnd } = require("./officer-term.cjs");
+const { POLICY, active, expectedEnd, expectedMonth, awaitingTurnover } = require("./officer-term.cjs");
 const { ServiceError } = require("./settings.cjs");
 const { DEPARTMENTS } = require("../functions/needs-assessment-model.js");
 const POSITIONS = Object.freeze({
@@ -134,8 +134,8 @@ function createOfficerHistory({ db, adminAuth, requireActiveRole, requireRecentA
             uid: doc.id, fullName: p.fullName || p.displayName || "Unnamed officer", studentId: p.studentId || "",
             position: term?.position || p.officePosition || "Not assigned", department: term?.department || p.college || p.department || "Not recorded",
             accountStatus: p.accountStatus || "pending", isActive: p.isActive !== false, studentStanding: p.studentStanding || "active",
-            term: term ? { administration: term.administration, startsAtMs: term.startsAtMs, endsAtMs: term.endsAtMs, termPolicy: term.termPolicy || "fixed", inductionAtMs: term.inductionAtMs ?? term.startsAtMs, expectedEndsAtMs: term.expectedEndsAtMs ?? term.endsAtMs, actualEndsAtMs: term.actualEndsAtMs ?? term.completedAtMs ?? null, deactivationReason: term.completionReason || "",
-              status: term.status === "completed" ? "completed" : term.startsAtMs > clock() ? "scheduled" : !active(term, clock()) ? "expired" : term.termPolicy === POLICY && term.expectedEndsAtMs <= clock() ? "awaiting-turnover" : "active",
+            term: term ? { administration: term.administration, startsAtMs: term.startsAtMs, endsAtMs: term.endsAtMs, termPolicy: term.termPolicy || "fixed", inductionAtMs: term.inductionAtMs ?? term.startsAtMs, expectedEndMonth: expectedMonth(term), expectedEndsAtMs: term.expectedEndsAtMs ?? term.endsAtMs, actualEndsAtMs: term.actualEndsAtMs ?? term.completedAtMs ?? null, deactivationReason: term.completionReason || "",
+              status: term.status === "completed" ? "completed" : term.startsAtMs > clock() ? "scheduled" : !active(term, clock()) ? "expired" : term.termPolicy === POLICY && awaitingTurnover(term, clock()) ? "awaiting-turnover" : "active",
               authSyncPending: term.authSyncPending === true } : null
           };
         }));
@@ -162,10 +162,11 @@ function createOfficerHistory({ db, adminAuth, requireActiveRole, requireRecentA
           const administration = text(d.administration, "administration period", 80);
           const reason = text(d.authorization, "appointment authorization reference", 240);
           const uid = id(d.officerUid), startsAtMs = Number(d.startsAtMs);
-          const expectedEndsAtMs = expectedEnd(startsAtMs);
+          const expectedEndMonth = expectedEnd(administration);
+          if (!expectedEndMonth) fail("invalid-argument", "Academic year must be YYYY-YYYY, for example 2026-2027.");
           // Legacy clients must refresh; do not reinterpret a submitted hard cutoff.
           if (d.termPolicy !== POLICY) fail("failed-precondition", "Refresh Officer Management before creating an assignment.");
-          if (!Number.isSafeInteger(startsAtMs) || startsAtMs <= 0 || startsAtMs > clock() || !Number.isSafeInteger(expectedEndsAtMs)) fail("invalid-argument", "Choose a valid term start date up to today.");
+          if (!Number.isSafeInteger(startsAtMs) || startsAtMs <= 0 || startsAtMs > clock()) fail("invalid-argument", "Choose a valid term start date up to today.");
           const permissions = d.permissions || POSITIONS[position];
           if (!Array.isArray(permissions) || !permissions.includes("dashboard.view") || permissions.some(v => !POSITIONS[position].includes(v)) || new Set(permissions).size !== permissions.length) fail("invalid-argument", "Permissions must be a subset of the selected office responsibilities.");
           const assignmentId = id(d.assignmentId || randomUUID());
@@ -185,7 +186,7 @@ function createOfficerHistory({ db, adminAuth, requireActiveRole, requireRecentA
               if (prior?.status !== "completed") fail("failed-precondition", "Complete the outgoing officer's assignment before turnover.");
             }
             const indexes = await roleIndexes(tx, p, uid);
-            a = { officerUid: uid, officerName: text(p.fullName || p.displayName, "officer name"), position, department, administration, startsAtMs, expectedEndsAtMs, endsAtMs: expectedEndsAtMs, actualEndsAtMs: null, termPolicy: POLICY, permissions, status: "active", authorization: reason, appointedBy: request.auth.uid, createdAtMs: clock(), authSyncPending: true };
+            a = { officerUid: uid, officerName: text(p.fullName || p.displayName, "officer name"), position, department, administration, startsAtMs, expectedEndMonth, expectedEndsAtMs: null, endsAtMs: null, actualEndsAtMs: null, termPolicy: POLICY, permissions, status: "active", authorization: reason, appointedBy: request.auth.uid, createdAtMs: clock(), authSyncPending: true };
             tx.create(ref, a);
             updateRoleIndexes(tx, indexes, "officer", position);
             tx.set(lockRef, { assignmentId });
@@ -209,10 +210,10 @@ function createOfficerHistory({ db, adminAuth, requireActiveRole, requireRecentA
             const lock = await tx.get(db.doc(`officer_office_slots/${slot(a.position, a.department)}`));
             if (lock.data()?.assignmentId !== assignmentId) fail("failed-precondition", "Resolve the office assignment before changing its term policy.");
             if (!Number.isSafeInteger(a.startsAtMs) || a.startsAtMs <= 0 || a.startsAtMs > clock()) fail("failed-precondition", "This assignment requires a valid recorded term start.");
-            const expectedEndsAtMs = expectedEnd(a.startsAtMs);
-            if (!Number.isSafeInteger(expectedEndsAtMs)) fail("invalid-argument", "Invalid term start date.");
+            const expectedEndMonth = expectedEnd(a.administration);
+            if (!expectedEndMonth) fail("failed-precondition", "This assignment requires a recorded academic year in YYYY-YYYY format.");
             const policyReason = text(d.reason, "term policy authorization", 240);
-            tx.update(ref, { termPolicy: POLICY, expectedEndsAtMs, actualEndsAtMs: null, policyAdoptedAtMs: clock(), policyAdoptedBy: request.auth.uid, policyReason });
+            tx.update(ref, { termPolicy: POLICY, expectedEndMonth, actualEndsAtMs: null, policyAdoptedAtMs: clock(), policyAdoptedBy: request.auth.uid, policyReason });
             return;
           }
           if (a.status === "completed") return;
@@ -228,6 +229,7 @@ function createOfficerHistory({ db, adminAuth, requireActiveRole, requireRecentA
         let filter = p.role === "admin" ? {} : { officerUid: request.auth.uid };
         if (request.data?.assignmentId) {
           const a = await access(request, request.data.assignmentId);
+          a.expectedEndMonth = expectedMonth(a);
           const { authorization, appointedBy, completionReason, completedBy, policyReason, policyAdoptedBy, ...safe } = a;
           return { items: [p.role === "admin" ? a : safe], next: null, positions: POSITIONS, departments: DEPARTMENTS };
         }
@@ -238,6 +240,7 @@ function createOfficerHistory({ db, adminAuth, requireActiveRole, requireRecentA
           filter = { position: a.position, department: a.department };
         }
         const result = await page(assignments, request, filter);
+        result.items = result.items.map(a => ({ ...a, expectedEndMonth: expectedMonth(a) }));
         // Appointment authorization may contain private administrative references.
         if (p.role !== "admin") result.items = result.items.map(({ authorization, appointedBy, completionReason, completedBy, policyReason, policyAdoptedBy, ...safe }) => safe);
         return { ...result, positions: POSITIONS, departments: DEPARTMENTS };

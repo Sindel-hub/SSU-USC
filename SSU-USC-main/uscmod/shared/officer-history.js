@@ -32,14 +32,20 @@ function renderPermissions() {
   $('assignmentDepartment').replaceChildren();
   for (const department of representative ? state.departments : ['University-wide']) { const option = node('option', department); option.value = department; $('assignmentDepartment').append(option); }
 }
+function awaitingTurnover(a) {
+  if (!a.expectedEndMonth) return Number.isFinite(a.expectedEndsAtMs) && a.expectedEndsAtMs <= Date.now();
+  const local = new Date(Date.now() + 8 * 3600000);
+  return `${local.getUTCFullYear()}-${String(local.getUTCMonth() + 1).padStart(2, '0')}` > a.expectedEndMonth;
+}
+const expectedLabel = a => a.expectedEndMonth ? `March ${a.expectedEndMonth.slice(0, 4)}` : date(a.expectedEndsAtMs ?? a.endsAtMs);
 function termStatus(a) {
   if (a.status === 'completed' || a.actualEndsAtMs != null) return 'Completed';
   if (a.startsAtMs > Date.now()) return 'Scheduled';
-  if (a.termPolicy === 'until-turnover') return a.expectedEndsAtMs <= Date.now() ? 'Active — awaiting turnover' : 'Active';
+  if (a.termPolicy === 'until-turnover') return awaitingTurnover(a) ? 'Active — awaiting turnover' : 'Active';
   return a.endsAtMs <= Date.now() ? 'Expired — policy review required' : 'Active — fixed cutoff';
 }
 function termDates(a) {
-  return `Start: ${date(a.startsAtMs)} · Expected end: ${date(a.expectedEndsAtMs ?? a.endsAtMs)} · Actual end: ${a.actualEndsAtMs != null || a.completedAtMs != null ? date(a.actualEndsAtMs ?? a.completedAtMs) : 'Pending'}`;
+  return `Start: ${date(a.startsAtMs)} · Expected end: ${expectedLabel(a)} · Actual end: ${a.actualEndsAtMs != null || a.completedAtMs != null ? date(a.actualEndsAtMs ?? a.completedAtMs) : 'Pending'}`;
 }
 function renderAssignments() {
   const list = $('assignmentList'); list.replaceChildren();
@@ -166,13 +172,10 @@ $('findOfficerCandidate').addEventListener('click', event => run(event.currentTa
   $('candidateSummary').textContent = `${state.candidate.fullName} · ${state.candidate.studentId}`; status('Student account found. Review the appointment and permissions.');
 }));
 function updateExpectedEnd() {
-  const value = $('termStart').value;
-  if (!value) { $('termEnd').value = ''; return; }
-  const [day, time] = value.split('T'), [year, month, date] = day.split('-').map(Number);
-  const last = new Date(Date.UTC(year + 1, month, 0)).getUTCDate();
-  $('termEnd').value = `${year + 1}-${String(month).padStart(2, '0')}-${String(Math.min(date, last)).padStart(2, '0')}T${time}`;
+  const match = /^(\d{4})\s*[-–—]\s*(\d{4})$/.exec($('administrationPeriod').value.trim());
+  $('termEnd').value = match && Number(match[2]) === Number(match[1]) + 1 ? `March ${match[2]}` : '';
 }
-$('termStart').addEventListener('input', updateExpectedEnd);
+$('administrationPeriod').addEventListener('input', updateExpectedEnd);
 $('appointmentForm').addEventListener('submit', event => { event.preventDefault(); run(event.submitter, async () => {
   if (!state.candidate) throw new Error('Find and review the student account first.');
   const data = { action: 'assign', assignmentId: crypto.randomUUID(), officerUid: state.candidate.uid, position: $('assignmentPosition').value, department: $('assignmentDepartment').value.trim(), administration: $('administrationPeriod').value.trim(), authorization: $('appointmentAuthorization').value.trim(), startsAtMs: philippineMs($('termStart').value), termPolicy: 'until-turnover', permissions: [...$('assignmentPermissions').querySelectorAll('input:checked')].map(input => input.value) };

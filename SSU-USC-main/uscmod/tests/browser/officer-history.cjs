@@ -48,7 +48,7 @@ const server = http.createServer((req, res) => {
     await page.locator('#assignmentPosition').selectOption('Treasurer');
     await page.locator('#administrationPeriod').fill(studentId === '990001' ? '2026–2027' : '2027–2028');
     await page.locator('#appointmentAuthorization').fill('Synthetic approved resolution');
-    await page.locator('#termStart').fill('2026-11-20T08:00'); assert.equal(await page.locator('#termEnd').inputValue(), '2027-11-20T08:00');
+    await page.locator('#termStart').fill('2026-11-20T08:00'); assert.equal(await page.locator('#termEnd').inputValue(), studentId === '990001' ? 'March 2027' : 'March 2028');
     await page.locator('#appointmentConfirmed').check(); await page.getByRole('button', { name: 'Create officer assignment' }).click();
     await page.getByText('Assignment created. Ask the officer to sign out and sign in again.').waitFor();
   }

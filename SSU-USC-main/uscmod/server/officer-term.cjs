@@ -7,12 +7,21 @@ function active(a, now) {
     && a.actualEndsAtMs == null
     && (a.termPolicy === POLICY || (Number.isSafeInteger(a.endsAtMs) && a.endsAtMs > now));
 }
-function expectedEnd(startsAtMs) {
-  if (!Number.isSafeInteger(startsAtMs) || !Number.isFinite(new Date(startsAtMs).getTime())) return NaN;
-  // Philippine calendar anniversary, clamped to February 28 for leap-day term start.
-  const local = new Date(startsAtMs + 8 * 3600000);
-  const year = local.getUTCFullYear() + 1, month = local.getUTCMonth();
-  const day = Math.min(local.getUTCDate(), new Date(Date.UTC(year, month + 1, 0)).getUTCDate());
-  return Date.UTC(year, month, day, local.getUTCHours(), local.getUTCMinutes(), local.getUTCSeconds(), local.getUTCMilliseconds()) - 8 * 3600000;
+function expectedEnd(administration) {
+  const match = typeof administration === "string" && /^(\d{4})\s*[-–—]\s*(\d{4})$/.exec(administration.trim());
+  if (!match || Number(match[2]) !== Number(match[1]) + 1 || Number(match[1]) < 1900 || Number(match[2]) > 9999) return null;
+  return `${match[2]}-03`;
 }
-module.exports = { POLICY, active, expectedEnd };
+function expectedMonth(a) {
+  return a.expectedEndMonth || (a.status === "active" && a.termPolicy === POLICY ? expectedEnd(a.administration) : null);
+}
+function awaitingTurnover(a, now) {
+  const expected = expectedMonth(a);
+  if (expected) {
+    const local = new Date(now + 8 * 3600000);
+    const month = `${local.getUTCFullYear()}-${String(local.getUTCMonth() + 1).padStart(2, "0")}`;
+    return month > expected;
+  }
+  return Number.isFinite(a.expectedEndsAtMs) && a.expectedEndsAtMs <= now;
+}
+module.exports = { POLICY, active, expectedEnd, expectedMonth, awaitingTurnover };
