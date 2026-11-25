@@ -22,7 +22,7 @@ Previews from the earlier import-and-provision workflow must be regenerated. Any
 
 Use these columns in order: Student ID, Last Name, First Name, Middle Name, Suffix, College Department, Course / Program, Year Level, Enrollment Status, Institution Email (Optional). Middle Name, Suffix, and Institution Email may be blank. Student IDs preserve leading zeros. Display names are generated as First Name M.I. Last Name Suffix, with the original name parts retained.
 
-Use the official department/program catalogue and year levels 1 through 6. Enrollment classification (for example Regular or Irregular), student status (for example Currently enrolled or Graduated), and account access are managed independently. An import never changes an existing Auth identity, password, activation, role, permissions, or manual access restriction. Existing email changes require the separate verified account workflow. An account absent from the file receives no writes.
+Use the official department/program catalogue and year levels 1 through 6. Enrollment classification (for example Regular or Irregular), student status (for example Currently enrolled or Graduated), and account access are managed independently. An import preserves existing Auth identity, password, activation, role, permissions and manual access restrictions. An explicit Graduated Student Status now adds the access-removal behavior documented below. Existing email changes require the separate verified account workflow. An account absent from the file receives no writes.
 
 ## Identity, history, and recovery
 
@@ -76,3 +76,20 @@ No production backend is deployed automatically by these code changes.
 `npm test` includes model, CSV/real-Excel parsing, authorized service calls, status/history updates, stale/duplicate/expired import protection, interruption recovery, activation security and private monitoring tests. Auth/Firestore service tests use serialized in-memory doubles, not live Firebase. The isolated browser test (`node tests/browser/student-records.cjs`) runs real UI and service logic with these synthetic doubles and substitutes authentication/transport; it never sends real mail or contacts production.
 
 The local ExcelJS browser build is pinned to 4.4.0, obtained from the npm `exceljs@4.4.0` distribution, with its MIT license in `vendor/exceljs/LICENSE`. No external spreadsheet CDN or new runtime package installation is needed. The browser checks ZIP metadata before extraction (at most 200 internal files and 20 MB declared expanded size); formulas and numeric Student ID cells are rejected. This is a bounded authorized-admin import path, not a general-purpose malicious-document scanner.
+
+
+## Optional Student Status column and graduation access removal
+
+The existing ten columns remain accepted unchanged. The updated downloadable template adds `Student Status` as column eleven, after `Institution Email (Optional)`. CSV and first-sheet XLSX use the same ordered headers. Student IDs must remain text in Excel; formulas and numeric IDs are rejected as before.
+
+`Undergraduate` (also `Active`), `Graduated`, and blank values are accepted case-insensitively. Enrollment Status remains a separate classification such as Regular or Irregular. Blank/omitted Student Status and Undergraduate preserve every existing account restriction; a student absent from the file is unchanged. A direct legacy API `status` value alone does not trigger this new access-removal behavior.
+
+An explicit Graduated row displays an access-removal action and warning in the existing preview. Nothing changes until an authorized administrator confirms and applies Ready rows. Matching continues to require the same Student ID ownership and name validation; existing reconciliation and recent-auth requirements remain in force.
+
+For a linked student/officer account, the transaction marks the profile graduated/inactive, removes verification/candidacy eligibility, updates associated school/masterlist flags and records academic history plus the import journal. Role, permissions, password, account status, identity and unrelated history are retained. The service then disables Firebase Auth and revokes refresh tokens. Existing live profile watchers and server/database checks deny the inactive profile; already issued tokens cannot be assumed to disappear instantly. Completion is recorded only after Auth synchronization succeeds.
+
+If Auth fails, the profile is already blocked and the per-row `access-pending` journal is retained. Load the existing import reference and apply again to resume revocation without rewriting history or failing its own stale-preview check. A manually changed profile prevents an old pending import from overwriting the new access decision. Missing Auth accounts require administrator reconciliation. Unlinked graduates remain records only and cannot be issued a new account.
+
+A later Undergraduate row never re-enables access. To correct an accidental graduation, an authorized administrator must verify the correction, restore the appropriate User Directory standing/access state and explicitly re-enable that user in Firebase Authentication. Do not bulk-enable accounts or override suspensions. No automatic restoration is added by this change.
+
+No UI layout, sidebar, navigation or CSS changes are included; only the existing instructions, preview warnings and confirmation text change. Deploy the reviewed parser/frontend and management API together. For explicitly configured callable transport, deploy the matching Student Records functions too. No live account changes or production deployment were performed during development.

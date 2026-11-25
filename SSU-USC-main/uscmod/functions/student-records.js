@@ -60,9 +60,18 @@ function createStudentRecordHandlers({db,adminAuth,requireActiveRole,requireRece
   if(record&&current&&record.uid!==current.uid)error('failed-precondition','Student ID is linked to a different permanent account.');
  }
  const revision=record=>record?.recordRevision||record?.lastAnnualImportId||null;
+ async function finishGraduation(itemRef,result,request){
+  const userRef=db.doc(`users/${result.uid}`);
+  const assertGraduated=profile=>{if(!profile||profile.studentId!==result.studentId||!['student','officer'].includes(profile.role)||profile.accountRemoved||profile.accountRemovalPending||profile.studentStanding!=='graduated'||profile.isActive!==false)error('failed-precondition','Graduation access state changed. Review the account before retrying.');};
+  assertGraduated((await userRef.get()).data());
+  await adminAuth.updateUser(result.uid,{disabled:true});
+  await adminAuth.revokeRefreshTokens(result.uid);
+  return db.runTransaction(async tx=>{const [user,item]=await Promise.all([tx.get(userRef),tx.get(itemRef)]);if(item.data()?.state==='complete')return item.data();assertGraduated(user.data());const complete={...result,state:'complete',message:'Graduated — portal access revoked.',accessRevokedAt:clock()};tx.set(itemRef,complete);audit(tx,request,'SCL_GRADUATION_ACCESS_REVOKED',result.studentId,{importId:result.importId,uid:result.uid});return complete;});
+ }
  async function applyRow(job,entry,index,request){
   const itemRef=job.ref.collection('results').doc(String(index)), prior=(await itemRef.get()).data();
   if(prior?.state==='complete')return prior;
+  if(prior?.state==='access-pending')return finishGraduation(itemRef,prior,request);
   const {row}=entry,{studentId}=row;
   const account=await resolve(studentId), saved=await getRecord(studentId);
   if(!entry.reconciled)verifyIdentity(account,saved,row);
@@ -70,12 +79,12 @@ function createStudentRecordHandlers({db,adminAuth,requireActiveRole,requireRece
   const uid=account?.uid||saved?.uid||crypto.randomUUID();
   const userRef=db.doc(`users/${uid}`),recordRef=db.doc(`student_records/${uid}`);
   const indexRef=db.doc(`student_record_ids/${studentId}`),masterRef=db.doc(`student_masterlist/${studentId}`);
-  return db.runTransaction(async tx=>{
+  const applied=await db.runTransaction(async tx=>{
    const [user,record,identity,claim,school,alias,item]=await Promise.all([
     tx.get(userRef),tx.get(recordRef),tx.get(indexRef),tx.get(db.doc(`student_id_claims/${studentId}`)),
     tx.get(db.doc(`school_accounts/${studentId}`)),tx.get(db.doc(`login_aliases/id_${studentId}`)),tx.get(itemRef)
    ]);
-   if(item.data()?.state==='complete')return item.data();
+   if(['complete','access-pending'].includes(item.data()?.state))return item.data();
    if([identity,claim,school,alias].some(s=>s.data()?.uid&&s.data().uid!==uid))error('failed-precondition','Student ID ownership changed.');
    const current=user.exists?{...user.data(),uid}:null,before=record.data();
    if(M.fingerprint(current)!==entry.fingerprint||revision(before)!==(entry.recordRevision||null))error('failed-precondition','Student record changed since preview. Create a new preview.');
@@ -83,21 +92,27 @@ function createStudentRecordHandlers({db,adminAuth,requireActiveRole,requireRece
    const {isActive,studentStanding,...academic}=M.nextAcademicProfile(before||current,row,job.data.academicYear);
    const names=Object.fromEntries(['firstName','lastName','middleName','suffix'].filter(key=>Object.hasOwn(row,key)).map(key=>[key,row[key]]));
    const updatedAtMs=clock(),accountUid=current?.uid||null;
-   const data={...academic,...names,uid,studentId,role:current?.role||'student',studentStanding:current?.studentStanding||before?.studentStanding||studentStanding,
+   const data={...academic,...names,uid,studentId,role:current?.role||'student',studentStanding:row.studentStatus==='graduated'?'graduated':current?.studentStanding||before?.studentStanding||studentStanding,
     enrollmentStatus:row.enrollmentStatus||M.enrollment(row.status),institutionalEmail:row.email||before?.institutionalEmail||current?.institutionalEmail||'',
     accountUid,provisioning:before?.provisioning||null,lastAnnualImportId:job.ref.id,recordRevision:job.ref.id,updatedAtMs};
+   const graduation=row.studentStatus==='graduated';
+   if(graduation&&current){
+    tx.update(userRef,{studentStanding:'graduated',isActive:false,isVerifiedStudent:false,candidacyApproved:false,enrollmentStatus:'Not Enrolled',enrollmentClassification:data.enrollmentStatus,standingManagedDisabled:true,graduationImportId:job.ref.id,graduatedAtMs:clock()});
+    tx.set(db.doc(`school_accounts/${studentId}`),{uid,studentId,studentStanding:'graduated',active:false,isActive:false},{merge:true});
+   }
    tx.set(indexRef,{uid});
    tx.set(recordRef,data,{merge:true});
-   tx.set(masterRef,{studentId,...academic,...names,enrollmentClassification:data.enrollmentStatus,studentRecordId:uid,updatedAt:new Date(updatedAtMs)},{merge:true});
+   tx.set(masterRef,{studentId,...academic,...names,enrollmentClassification:data.enrollmentStatus,...(graduation?{studentStanding:'graduated',eligible:false}:{}),studentRecordId:uid,updatedAt:new Date(updatedAtMs)},{merge:true});
    const previous=before||current,after=M.academicSnapshot(data);
    if(!previous||JSON.stringify(M.academicSnapshot(previous))!==JSON.stringify(after))tx.set(userRef.collection('academic_history').doc(job.ref.id),{
     academicYear:job.data.academicYear,before:previous?M.academicSnapshot(previous):null,after,importId:job.ref.id,actorUid:request.auth.uid,recordedAt:updatedAtMs
    });
-   const result={studentId,uid,action:before?'updated':'record-saved',state:'complete',appliedAt:updatedAtMs};
+   const result={studentId,uid,action:before?'updated':'record-saved',state:graduation&&current?'access-pending':'complete',...(graduation?{graduation:true,importId:job.ref.id,message:current?'Academic record saved; access revocation pending.':'Graduated — no account access can be issued.'}:{}),appliedAt:updatedAtMs};
    tx.set(itemRef,result);
-   audit(tx,request,'SCL_RECORD_APPLIED',studentId,{academicYear:job.data.academicYear,importId:job.ref.id});
+   audit(tx,request,graduation?'SCL_GRADUATION_RECORDED':'SCL_RECORD_APPLIED',studentId,{academicYear:job.data.academicYear,importId:job.ref.id});
    return result;
   });
+  return applied.state==='access-pending'?finishGraduation(itemRef,applied,request):applied;
  }
 
  function inPersonTicket(tx,profile,request){
@@ -205,7 +220,7 @@ function createStudentRecordHandlers({db,adminAuth,requireActiveRole,requireRece
      const current=await resolve(row.studentId);
      const record=await getRecord(row.studentId);
      M.nextAcademicProfile(record||current,row,year);
-     const entry={line:i+2,row,uid:current?.uid||null,fingerprint:M.fingerprint(current),recordRevision:revision(record),action:record?'update':'record-only'};
+     const entry={line:i+2,row,uid:current?.uid||null,fingerprint:M.fingerprint(current),recordRevision:revision(record),action:row.studentStatus==='graduated'?(current?'graduate-disable-access':'mark-graduated'):record?'update':'record-only',...(row.studentStatus==='graduated'?{warning:current?'Applying this row revokes the linked account’s portal access.':'Graduated record; account registration will be blocked.'}:{})};
      try{verifyIdentity(current,record,row);}catch(e){
       entries.push({...entry,error:e.message,...(current&&(!record||record.uid===current.uid)?{reviewName:record?.fullName||current.fullName}: {})});
       continue;
