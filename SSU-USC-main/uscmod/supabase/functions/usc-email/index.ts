@@ -189,6 +189,13 @@ async function passwordChanged(req: Request) {
   return jsonResponse({ ok: true, sent: true });
 }
 
+function canReleaseRetiredGmail(uid: string, profile: Record<string, any> | null, authUser: { uid: string; disabled: boolean } | null): boolean {
+  return Boolean(profile && ["student", "officer"].includes(profile.role)
+    && profile.accountRemoved === true && profile.idReservationsReleased === true
+    && profile.accountRemovalPending !== true && profile.accountStatus === "suspended" && profile.isActive === false
+    && (authUser === null || (authUser?.uid === uid && authUser.disabled === true)));
+}
+
 async function verifyToken(token: string): Promise<Response> {
   if (!/^[a-f0-9]{64}$/.test(token)) {
     return jsonResponse({ ok: false, message: "This verification link is invalid." }, 400);
@@ -198,19 +205,48 @@ async function verifyToken(token: string): Promise<Response> {
   if (error || !data) {
     return jsonResponse({ ok: false, message: "This verification link has expired or was already used. Save your Gmail again in your portal profile." }, 410);
   }
-  if (!data.requested_email || !data.verification_expires_at || new Date(data.verification_expires_at).getTime() < Date.now()) {
+  const expiresAt = Date.parse(data.verification_expires_at || "");
+  if (!data.requested_email || canonicalGmail(data.requested_email) !== data.requested_email || !Number.isFinite(expiresAt) || expiresAt <= Date.now()) {
     return jsonResponse({ ok: false, message: "This verification link has expired. Save your Gmail again in your portal profile." }, 410);
   }
-  const profile = await firestoreGet(`users/${data.firebase_uid}`);
-  if (!activeEmailProfile(profile)) {
+  const uid = String(data.firebase_uid);
+  const email = String(data.requested_email);
+  const eligible = async () => {
+    const profile = await firestoreGet(`users/${uid}`);
+    if (!profile || !activeEmailProfile(profile) || profile.accountRemoved === true || profile.accountRemovalPending === true) return null;
+    const authUser = await firebaseUserByUid(uid);
+    return authUser?.uid === uid && authUser.disabled === false ? profile : null;
+  };
+  let profile = await eligible();
+  if (!profile) {
     return jsonResponse({ ok: false, message: "This account is no longer eligible for email recovery." }, 403);
   }
-  const duplicate = await supabase.from("student_email_accounts").select("firebase_uid").eq("verified_email", data.requested_email).neq("firebase_uid", data.firebase_uid).maybeSingle();
+  const duplicate = await supabase.from("student_email_accounts").select("firebase_uid,verified_email,updated_at").eq("verified_email", email).neq("firebase_uid", uid).maybeSingle();
+  if (duplicate.error) throw duplicate.error;
+  const conflict = () => jsonResponse({ ok: false, message: "This Gmail is already connected to another portal account." }, 409);
   if (duplicate.data) {
-    return jsonResponse({ ok: false, message: "This Gmail is already connected to another portal account." }, 409);
+    const retiredUid = String(duplicate.data.firebase_uid);
+    // Only explicit, completed, irreversible retirement permits automatic cleanup.
+    // Missing profiles, recoverable suspensions and lookup failures fail closed.
+    const retiredProfile = await firestoreGet(`users/${retiredUid}`);
+    const retiredAuth = await firebaseUserByUid(retiredUid);
+    if (!canReleaseRetiredGmail(retiredUid, retiredProfile, retiredAuth) || !duplicate.data.updated_at) return conflict();
+    const { data: released, error: releaseError } = await supabase.from("student_email_accounts").update({
+      requested_email: null, verified_email: null, verified_at: null,
+      verification_token_hash: null, verification_expires_at: null, verification_sent_at: null,
+      complaints: false, elections: false, news: false, recovery: false,
+      updated_at: new Date().toISOString(),
+    }).eq("firebase_uid", retiredUid).eq("verified_email", email)
+      .eq("updated_at", duplicate.data.updated_at).select("firebase_uid").maybeSingle();
+    if (releaseError) throw releaseError;
+    if (!released) return conflict();
   }
+  // Re-check eligibility and expiry after asynchronous ownership checks.
+  profile = await eligible();
+  if (!profile) return jsonResponse({ ok: false, message: "This account is no longer eligible for email recovery." }, 403);
+  if (expiresAt <= Date.now()) return jsonResponse({ ok: false, message: "This verification link has expired. Save your Gmail again in your portal profile." }, 410);
   const now = new Date().toISOString();
-  const { error: updateError } = await supabase.from("student_email_accounts").update({
+  const { data: verified, error: updateError } = await supabase.from("student_email_accounts").update({
     account_role: roleName(profile),
     verified_email: data.requested_email,
     verified_at: now,
@@ -218,8 +254,13 @@ async function verifyToken(token: string): Promise<Response> {
     verification_expires_at: null,
     last_scan_at: now,
     updated_at: now,
-  }).eq("firebase_uid", data.firebase_uid);
+  }).eq("firebase_uid", uid).eq("requested_email", email)
+    .eq("verification_token_hash", tokenHash).eq("verification_expires_at", data.verification_expires_at)
+    .select("firebase_uid").maybeSingle();
+  // The existing unique verified-email index arbitrates concurrent claims.
+  if (updateError?.code === "23505") return conflict();
   if (updateError) throw updateError;
+  if (!verified) return jsonResponse({ ok: false, message: "This verification link has expired or was already used. Save your Gmail again in your portal profile." }, 410);
   const returnUrl = `${env().portalUrl}${portalPage(profile)}`;
   return jsonResponse({
     ok: true,

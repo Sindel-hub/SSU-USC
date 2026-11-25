@@ -17,11 +17,14 @@ const compile=source=>stripImports(stripTypeScriptTypes(source));
 const token='a'.repeat(64), uid='synthetic-student';
 let rows,profile,user,owner,handler,server,base,client,providerCalls,requests,legacyBackend,providerFailure,legacyProfile,legacyUser;
 let adminSession, adminRecords, adminAuthRecords, passwordWrites;
+let retiredAuthMissing, beforeVerificationWrite;
 function query(){
  const filters=[];let patch;
  const execute=()=>{
   if(providerFailure)return {data:null,error:Error('Synthetic provider failure')};
+  if(patch?.verified_email && beforeVerificationWrite){const hook=beforeVerificationWrite;beforeVerificationWrite=null;hook();}
   const found=rows.filter(row=>filters.every(fn=>fn(row)));
+  if(patch?.verified_email&&found.some(row=>rows.some(other=>other.firebase_uid!==row.firebase_uid&&String(other.verified_email||'').toLowerCase()===patch.verified_email.toLowerCase())))return {data:null,error:{code:'23505'}};
   if(patch)found.forEach(row=>Object.assign(row,patch));
   return {data:found[0]||null,error:null};
  };
@@ -62,7 +65,7 @@ before(async()=>{
   adminClient:()=>({from(table){assert.equal(table,'student_email_accounts');return query();},rpc:async(name,args)=>{assert.equal(name,'consume_gmail_login_budget');assert.match(args.p_identity_hash,/^[a-f0-9]{64}$/);return {data:true,error:null};}}),
   firebasePasswordIdentity:async(email,password)=>{providerCalls.push('password-proof');if(email!==user.email||password!=='synthetic-password')throw Error('Invalid credentials');return {uid:user.uid};},
   firestoreGet:async path=>{if(legacyUser&&path==='users/'+legacyUser.uid)return legacyProfile;assert.equal(path,'users/'+uid);providerCalls.push('profile');return profile;},
-  firebaseUserByUid:async id=>{if(adminSession)return adminAuthRecords.get(id)||null;providerCalls.push('auth-user');if(id==='unavailable-gmail-login')return null;if(legacyUser&&id===legacyUser.uid)return legacyUser;assert.equal(id,uid);return user;},
+  firebaseUserByUid:async id=>{if(adminSession)return adminAuthRecords.get(id)||null;providerCalls.push('auth-user');if(id==='unavailable-gmail-login')return null;if(legacyUser&&id===legacyUser.uid)return retiredAuthMissing?null:legacyUser;assert.equal(id,uid);return user;},
   firebaseUserByEmail:async email=>{providerCalls.push('auth-owner');return owner;},
   env:()=>({portalUrl:'https://synthetic-staging.invalid'}),
  });
@@ -82,7 +85,7 @@ before(async()=>{
 after(async()=>{if(server)await new Promise(resolve=>server.close(resolve));});
 beforeEach(()=>{
  adminSession=null;adminRecords=new Map();adminAuthRecords=new Map();passwordWrites=[];
- providerCalls=[];requests=[];owner=null;legacyProfile=null;legacyUser=null;legacyBackend=false;providerFailure=false;
+ providerCalls=[];requests=[];owner=null;legacyProfile=null;legacyUser=null;legacyBackend=false;providerFailure=false;retiredAuthMissing=false;beforeVerificationWrite=null;
  profile={uid,role:'student',schoolProvisioned:true,accountStatus:'approved',isActive:true,studentStanding:'active'};
  user={uid,email:'001234@student.ssu-usc.local',disabled:false};
  rows=[{firebase_uid:uid,requested_email:'personal@gmail.com',verified_email:null,verified_at:null,
@@ -183,4 +186,42 @@ test('existing generated admin reset still succeeds without manual input',async(
  assert.ok(result.temporaryPassword);assert.equal(passwordWrites.length,1);
  assert.equal(passwordWrites[0].uid,uid);assert.equal(passwordWrites[0].password,result.temporaryPassword);
  assert.ok(!JSON.stringify([...adminRecords]).includes(result.temporaryPassword));
+});
+
+function retiredGmailFixture(){
+ legacyUser={uid:'retired-mock',email:'personal@gmail.com',disabled:true};
+ legacyProfile={role:'student',accountRemoved:true,idReservationsReleased:true,accountRemovalPending:false,accountStatus:'suspended',isActive:false};
+ rows.push({firebase_uid:legacyUser.uid,requested_email:'personal@gmail.com',verified_email:'personal@gmail.com',verified_at:new Date().toISOString(),updated_at:new Date().toISOString(),recovery:true,verification_token_hash:'old-token'});
+}
+for(const missing of [false,true])test('fresh verification reclaims a retired Gmail mapping (Auth missing: '+missing+')',async()=>{
+ retiredGmailFixture();retiredAuthMissing=missing;const oldProfile=JSON.stringify(legacyProfile);
+ await verify();
+ assert.equal(rows[0].verified_email,'personal@gmail.com');assert.equal(rows[0].verification_token_hash,null);
+ assert.equal(rows[1].verified_email,null);assert.equal(rows[1].requested_email,null);assert.equal(rows[1].recovery,false);assert.equal(rows[1].verification_token_hash,null);
+ assert.equal(JSON.stringify(legacyProfile),oldProfile);assert.equal(legacyUser.disabled,true);
+ assert.equal((await post({action:'verify',token})).status,410);
+ const result=await client.authenticateVerifiedGmailLogin('personal@gmail.com','synthetic-password');assert.equal(result.uid,uid);
+});
+for(const state of ['active','restorable','pending','unknown','auth-enabled','admin','no-release-marker'])test('retired Gmail check protects '+state+' ownership',async()=>{
+ retiredGmailFixture();
+ if(state==='active'){legacyProfile.accountStatus='approved';legacyProfile.isActive=true;}
+ if(state==='restorable')legacyProfile.accountRemoved=false;
+ if(state==='pending')legacyProfile.accountRemovalPending=true;
+ if(state==='unknown')legacyProfile=null;
+ if(state==='auth-enabled')legacyUser.disabled=false;
+ if(state==='admin')legacyProfile.role='admin';
+ if(state==='no-release-marker')delete legacyProfile.idReservationsReleased;
+ const before=JSON.stringify(rows);assert.equal((await post({action:'verify',token})).status,409);assert.equal(JSON.stringify(rows),before);
+});
+test('expired link cannot release a retired Gmail mapping',async()=>{
+ retiredGmailFixture();rows[0].verification_expires_at=new Date(Date.now()-1).toISOString();const before=JSON.stringify(rows);
+ assert.equal((await post({action:'verify',token})).status,410);assert.equal(JSON.stringify(rows),before);
+});
+test('a rotated verification token cannot claim a Gmail',async()=>{
+ beforeVerificationWrite=()=>{rows[0].verification_token_hash='new-token';};
+ assert.equal((await post({action:'verify',token})).status,410);assert.equal(rows[0].verified_email,null);assert.equal(rows[0].verification_token_hash,'new-token');
+});
+test('a concurrent verified Gmail claim is not overwritten',async()=>{
+ beforeVerificationWrite=()=>rows.push({firebase_uid:'concurrent-owner',requested_email:'personal@gmail.com',verified_email:'personal@gmail.com'});
+ assert.equal((await post({action:'verify',token})).status,409);assert.equal(rows[0].verified_email,null);assert.equal(rows[1].verified_email,'personal@gmail.com');
 });
