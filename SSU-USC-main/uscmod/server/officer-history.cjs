@@ -1,5 +1,6 @@
 "use strict";
 const { createHash, randomUUID } = require("node:crypto");
+const { POLICY, active, expectedEnd } = require("./officer-term.cjs");
 const { ServiceError } = require("./settings.cjs");
 const { DEPARTMENTS } = require("../functions/needs-assessment-model.js");
 const POSITIONS = Object.freeze({
@@ -32,7 +33,6 @@ function text(value, name, max = 120, optional = false) {
   return value.trim();
 }
 function id(value) { const v = text(value, "record ID", 128); if (!/^[a-zA-Z0-9_-]+$/.test(v)) fail("invalid-argument", "Invalid record ID."); return v; }
-function active(a, now) { return a?.status === "active" && a.startsAtMs <= now && a.endsAtMs > now; }
 const slot = (position, department) => createHash("sha256").update(`${position}:${department}`).digest("hex");
 function createOfficerHistory({ db, adminAuth, requireActiveRole, requireRecentAuth, clock = Date.now }) {
   const assignments = db.collection("officer_assignments"), records = db.collection("officer_records");
@@ -134,8 +134,8 @@ function createOfficerHistory({ db, adminAuth, requireActiveRole, requireRecentA
             uid: doc.id, fullName: p.fullName || p.displayName || "Unnamed officer", studentId: p.studentId || "",
             position: term?.position || p.officePosition || "Not assigned", department: term?.department || p.college || p.department || "Not recorded",
             accountStatus: p.accountStatus || "pending", isActive: p.isActive !== false, studentStanding: p.studentStanding || "active",
-            term: term ? { administration: term.administration, startsAtMs: term.startsAtMs, endsAtMs: term.endsAtMs,
-              status: term.status === "completed" ? "completed" : term.startsAtMs > clock() ? "scheduled" : term.endsAtMs <= clock() ? "expired" : "active",
+            term: term ? { administration: term.administration, startsAtMs: term.startsAtMs, endsAtMs: term.endsAtMs, termPolicy: term.termPolicy || "fixed", inductionAtMs: term.inductionAtMs ?? term.startsAtMs, expectedEndsAtMs: term.expectedEndsAtMs ?? term.endsAtMs, actualEndsAtMs: term.actualEndsAtMs ?? term.completedAtMs ?? null, deactivationReason: term.completionReason || "",
+              status: term.status === "completed" ? "completed" : term.startsAtMs > clock() ? "scheduled" : !active(term, clock()) ? "expired" : term.termPolicy === POLICY && term.expectedEndsAtMs <= clock() ? "awaiting-turnover" : "active",
               authSyncPending: term.authSyncPending === true } : null
           };
         }));
@@ -161,8 +161,12 @@ function createOfficerHistory({ db, adminAuth, requireActiveRole, requireRecentA
           if (position === "USC Representative" && !DEPARTMENTS.includes(department)) fail("invalid-argument", "Select a recognized SSU department.");
           const administration = text(d.administration, "administration period", 80);
           const reason = text(d.authorization, "appointment authorization reference", 240);
-          const uid = id(d.officerUid), startsAtMs = Number(d.startsAtMs), endsAtMs = Number(d.endsAtMs);
-          if (!Number.isSafeInteger(startsAtMs) || !Number.isSafeInteger(endsAtMs) || startsAtMs > clock() || endsAtMs <= clock() || endsAtMs <= startsAtMs || endsAtMs - startsAtMs > 4 * 366 * 86400000) fail("invalid-argument", "Choose a current term ending in the future (at most four years).");
+          const uid = id(d.officerUid), startsAtMs = Number(d.startsAtMs);
+          const inductionAtMs = Number(d.inductionAtMs ?? d.startsAtMs);
+          const expectedEndsAtMs = expectedEnd(inductionAtMs);
+          // Legacy clients must refresh; do not reinterpret a submitted hard cutoff.
+          if (d.termPolicy !== POLICY) fail("failed-precondition", "Refresh Officer Management before creating an assignment.");
+          if (!Number.isSafeInteger(startsAtMs) || startsAtMs <= 0 || startsAtMs > clock() || !Number.isSafeInteger(inductionAtMs) || inductionAtMs < startsAtMs || inductionAtMs > clock() || !Number.isSafeInteger(expectedEndsAtMs)) fail("invalid-argument", "Choose valid proclamation and induction dates up to today, with induction on or after proclamation.");
           const permissions = d.permissions || POSITIONS[position];
           if (!Array.isArray(permissions) || !permissions.includes("dashboard.view") || permissions.some(v => !POSITIONS[position].includes(v)) || new Set(permissions).size !== permissions.length) fail("invalid-argument", "Permissions must be a subset of the selected office responsibilities.");
           const assignmentId = id(d.assignmentId || randomUUID());
@@ -182,7 +186,7 @@ function createOfficerHistory({ db, adminAuth, requireActiveRole, requireRecentA
               if (prior?.status !== "completed") fail("failed-precondition", "Complete the outgoing officer's assignment before turnover.");
             }
             const indexes = await roleIndexes(tx, p, uid);
-            a = { officerUid: uid, officerName: text(p.fullName || p.displayName, "officer name"), position, department, administration, startsAtMs, endsAtMs, permissions, status: "active", authorization: reason, appointedBy: request.auth.uid, createdAtMs: clock(), authSyncPending: true };
+            a = { officerUid: uid, officerName: text(p.fullName || p.displayName, "officer name"), position, department, administration, startsAtMs, inductionAtMs, expectedEndsAtMs, endsAtMs: expectedEndsAtMs, actualEndsAtMs: null, termPolicy: POLICY, permissions, status: "active", authorization: reason, appointedBy: request.auth.uid, createdAtMs: clock(), authSyncPending: true };
             tx.create(ref, a);
             updateRoleIndexes(tx, indexes, "officer", position);
             tx.set(lockRef, { assignmentId });
@@ -190,7 +194,7 @@ function createOfficerHistory({ db, adminAuth, requireActiveRole, requireRecentA
           });
           return { id: assignmentId, authSyncPending: await sync(a, assignmentId) };
         }
-        if (!["complete", "sync"].includes(d.action)) fail("invalid-argument", "Unknown assignment action.");
+        if (!["complete", "sync", "adopt-policy"].includes(d.action)) fail("invalid-argument", "Unknown assignment action.");
         const assignmentId = id(d.assignmentId), ref = assignments.doc(assignmentId);
         let a;
         await db.runTransaction(async tx => {
@@ -199,20 +203,34 @@ function createOfficerHistory({ db, adminAuth, requireActiveRole, requireRecentA
           a = snap.data();
           const userRef = db.doc(`users/${a.officerUid}`), person = await tx.get(userRef);
           if (d.action === "sync") return;
+          if (d.action === "adopt-policy") {
+            if (a.status !== "active" || a.actualEndsAtMs != null) fail("failed-precondition", "Completed assignments cannot be restored by a term policy change.");
+            const p = person.data();
+            if (!p || p.officerAssignmentId !== assignmentId || p.role !== "officer" || p.accountStatus !== "approved" || p.isActive === false || p.accountRemoved || p.accountRemovalPending || (p.studentStanding && p.studentStanding !== "active")) fail("failed-precondition", "Only the current approved, active officer can adopt this policy.");
+            const lock = await tx.get(db.doc(`officer_office_slots/${slot(a.position, a.department)}`));
+            if (lock.data()?.assignmentId !== assignmentId) fail("failed-precondition", "Resolve the office assignment before changing its term policy.");
+            const inductionAtMs = Number(d.inductionAtMs ?? a.startsAtMs);
+            if (!Number.isSafeInteger(inductionAtMs) || inductionAtMs < a.startsAtMs || inductionAtMs > clock()) fail("invalid-argument", "Choose a valid induction date on or after proclamation and up to today.");
+            const expectedEndsAtMs = expectedEnd(inductionAtMs);
+            if (!Number.isSafeInteger(expectedEndsAtMs)) fail("invalid-argument", "Invalid induction date.");
+            const policyReason = text(d.reason, "term policy authorization", 240);
+            tx.update(ref, { termPolicy: POLICY, inductionAtMs, expectedEndsAtMs, actualEndsAtMs: null, policyAdoptedAtMs: clock(), policyAdoptedBy: request.auth.uid, policyReason });
+            return;
+          }
           if (a.status === "completed") return;
           const completionReason = text(d.reason, "turnover reason/reference", 240);
           const indexes = await roleIndexes(tx, person.data(), a.officerUid);
-          tx.update(ref, { status: "completed", completedAtMs: clock(), completedBy: request.auth.uid, completionReason, authSyncPending: true });
+          tx.update(ref, { status: "completed", actualEndsAtMs: clock(), completedAtMs: clock(), completedBy: request.auth.uid, completionReason, authSyncPending: true });
           if (person.data()?.officerAssignmentId === assignmentId) { updateRoleIndexes(tx, indexes, "student", ""); tx.update(userRef, { role: "student", officePosition: "", officerPermissions: [], officerPermissionSource: "", updatedAt: new Date(clock()) }); }
         });
-        return { id: assignmentId, authSyncPending: await sync(a, assignmentId) };
+        return { id: assignmentId, authSyncPending: d.action === "adopt-policy" ? a.authSyncPending === true : await sync(a, assignmentId) };
       },
       async officerAssignments(request) {
         const p = await requireActiveRole(request, ["student", "officer", "admin"]);
         let filter = p.role === "admin" ? {} : { officerUid: request.auth.uid };
         if (request.data?.assignmentId) {
           const a = await access(request, request.data.assignmentId);
-          const { authorization, appointedBy, completionReason, completedBy, ...safe } = a;
+          const { authorization, appointedBy, completionReason, completedBy, policyReason, policyAdoptedBy, ...safe } = a;
           return { items: [p.role === "admin" ? a : safe], next: null, positions: POSITIONS, departments: DEPARTMENTS };
         }
         if (request.data?.scope === "office") {
@@ -223,7 +241,7 @@ function createOfficerHistory({ db, adminAuth, requireActiveRole, requireRecentA
         }
         const result = await page(assignments, request, filter);
         // Appointment authorization may contain private administrative references.
-        if (p.role !== "admin") result.items = result.items.map(({ authorization, appointedBy, completionReason, completedBy, ...safe }) => safe);
+        if (p.role !== "admin") result.items = result.items.map(({ authorization, appointedBy, completionReason, completedBy, policyReason, policyAdoptedBy, ...safe }) => safe);
         return { ...result, positions: POSITIONS, departments: DEPARTMENTS };
       },
       async officerActivityList(request) {

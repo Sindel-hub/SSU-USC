@@ -26,7 +26,10 @@ service cloud.firestore {
     function currentOfficerTerm() {
       let a = get(/databases/$(database)/documents/officer_assignments/$(ownProfile().officerAssignmentId)).data;
       return a.officerUid == uid() && a.status == "active"
-        && a.startsAtMs <= request.time.toMillis() && a.endsAtMs > request.time.toMillis();
+        && a.startsAtMs <= request.time.toMillis()
+        && (!("actualEndsAtMs" in a) || a.actualEndsAtMs == null)
+        && (("termPolicy" in a && a.termPolicy == "until-turnover")
+          || a.endsAtMs > request.time.toMillis());
     }
     function isOfficer() { return activeProfileRole("officer")
       && (!("officerAssignmentId" in ownProfile()) || currentOfficerTerm()); }

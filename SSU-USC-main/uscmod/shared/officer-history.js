@@ -8,7 +8,9 @@ try { profile = JSON.parse(sessionStorage.getItem('studentProfile') || '{}'); } 
 const admin = profile.role === 'admin';
 const $ = id => document.getElementById(id);
 const state = { assignments: [], assignmentNext: null, activities: [], activityNext: null, selected: null, candidate: null, positions: {}, departments: [], record: null, officers: [], officerNext: null };
-const date = value => Number.isFinite(value) ? new Date(value).toLocaleString() : 'Not recorded';
+const philippineInput = value => new Date(value + 8 * 3600000).toISOString().slice(0, 16);
+const philippineMs = value => /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(value || '') ? new Date(value + ':00+08:00').getTime() : NaN;
+const date = value => Number.isFinite(value) ? new Date(value).toLocaleString('en-PH', { timeZone: 'Asia/Manila' }) : 'Not recorded';
 function node(tag, text, className) { const el = document.createElement(tag); if (text !== undefined) el.textContent = text; if (className) el.className = className; return el; }
 function status(message, error = false) { $('historyStatus').textContent = message; $('historyStatus').classList.toggle('history-error', error); }
 async function run(button, operation) {
@@ -31,14 +33,34 @@ function renderPermissions() {
   $('assignmentDepartment').replaceChildren();
   for (const department of representative ? state.departments : ['University-wide']) { const option = node('option', department); option.value = department; $('assignmentDepartment').append(option); }
 }
+function termStatus(a) {
+  if (a.status === 'completed' || a.actualEndsAtMs != null) return 'Completed';
+  if (a.startsAtMs > Date.now()) return 'Scheduled';
+  if (a.termPolicy === 'until-turnover') return a.expectedEndsAtMs <= Date.now() ? 'Active — awaiting turnover' : 'Active';
+  return a.endsAtMs <= Date.now() ? 'Expired — policy review required' : 'Active — fixed cutoff';
+}
+function termDates(a) {
+  return `Start: ${date(a.startsAtMs)} · Expected end: ${date(a.expectedEndsAtMs ?? a.endsAtMs)} · Actual end: ${a.actualEndsAtMs != null || a.completedAtMs != null ? date(a.actualEndsAtMs ?? a.completedAtMs) : 'Pending'}`;
+}
 function renderAssignments() {
   const list = $('assignmentList'); list.replaceChildren();
   if (!state.assignments.length) list.append(node('p', 'No authorized officer assignments found. Existing legacy officers must be assigned a position and term before tracked activity begins.'));
   for (const a of state.assignments) {
     const card = node('article', undefined, 'history-term');
-    card.append(node('h3', `${a.position} · ${a.administration}`), node('p', `${a.officerName} · ${a.department}`), node('p', `${date(a.startsAtMs)} – ${date(a.endsAtMs)}`));
-    const termStatus = a.status === 'completed' ? 'Completed' : a.endsAtMs <= Date.now() ? 'Expired — turnover required' : 'Active';
-    card.append(node('strong', termStatus), node('p', `Permissions: ${(a.permissions || []).filter(p => !p.startsWith('elections.')).map(p => permissionDefinition(p)?.label || p).join(', ')}`));
+    card.append(node('h3', `${a.position} · ${a.administration}`), node('p', `${a.officerName} · ${a.department}`), node('p', termDates(a)));
+    card.append(node('strong', termStatus(a)), node('p', `Permissions: ${(a.permissions || []).filter(p => !p.startsWith('elections.')).map(p => permissionDefinition(p)?.label || p).join(', ')}`));
+    if (a.completionReason) card.append(node('p', `Deactivation reason: ${a.completionReason}`));
+    if (admin && a.status === 'active' && a.termPolicy !== 'until-turnover') card.append(button('Adopt expected-end policy', async () => {
+      const induction = prompt('Induction in Philippine time (YYYY-MM-DDTHH:mm):', philippineInput(a.inductionAtMs ?? a.startsAtMs));
+      if (induction === null) return;
+      const inductionAtMs = philippineMs(induction.trim());
+      if (!Number.isSafeInteger(inductionAtMs)) throw new Error('Enter a valid induction date and time.');
+      const reason = prompt('Enter the approved policy authorization/reference.');
+      if (!reason?.trim()) return;
+      if (!confirm(`Allow ${a.officerName} to serve until explicit turnover? This can restore access for an expired fixed term.`)) return;
+      await call('officerAssignmentManage', { action: 'adopt-policy', assignmentId: a.id, inductionAtMs, reason });
+      await loadAssignments(); status('Expected-end policy adopted. Access continues until the term is completed.');
+    }));
     if (a.authSyncPending) card.append(node('p', 'Authentication synchronization pending. Administrator action required.', 'history-error'));
     card.append(button('View tracklist', () => loadActivities(a)));
     if (admin && a.status !== 'completed') card.append(button('Complete term', async () => {
@@ -55,17 +77,17 @@ function renderAssignments() {
     list.append(card);
   }
   $('moreAssignments').hidden = !state.assignmentNext;
-  $('financialReportPanel').hidden = !state.assignments.some(a => a.officerUid === profile.uid && a.position === 'Treasurer' && a.status === 'active' && a.endsAtMs > Date.now() && a.permissions.includes('reports.generate'));
+  $('financialReportPanel').hidden = !state.assignments.some(a => a.officerUid === profile.uid && a.position === 'Treasurer' && a.status === 'active' && a.startsAtMs <= Date.now() && a.actualEndsAtMs == null && (a.termPolicy === 'until-turnover' || a.endsAtMs > Date.now()) && a.permissions.includes('reports.generate'));
 }
 function renderOfficerDirectory() {
   const rows = $('registeredOfficerRows'); rows.replaceChildren();
-  const statusLabels = { approved: 'Approved', suspended: 'Suspended', pending: 'Pending', active: 'Active term', expired: 'Expired term', completed: 'Completed term', scheduled: 'Scheduled term' };
+  const statusLabels = { approved: 'Approved', suspended: 'Suspended', pending: 'Pending', active: 'Active term', expired: 'Expired term', completed: 'Completed term', scheduled: 'Scheduled term', 'awaiting-turnover': 'Active — awaiting turnover' };
   for (const officer of state.officers) {
     const row = node('tr'); row.dataset.officerUid = officer.uid;
     row.append(node('td', officer.fullName), node('td', officer.studentId || '—'), node('td', officer.position), node('td', officer.department));
     const termCell = node('td');
     if (officer.term) {
-      termCell.append(node('strong', officer.term.administration), node('span', `${date(officer.term.startsAtMs)} – ${date(officer.term.endsAtMs)}`, 'history-officer-dates'));
+      termCell.append(node('strong', officer.term.administration), node('span', termDates(officer.term), 'history-officer-dates'));
     } else termCell.textContent = 'No term recorded';
     const accessCell = node('td');
     const blocked = officer.accountStatus !== 'approved' || !officer.isActive || officer.studentStanding !== 'active';
@@ -73,6 +95,7 @@ function renderOfficerDirectory() {
     if (officer.studentStanding !== 'active') accessCell.append(node('span', officer.studentStanding.charAt(0).toUpperCase() + officer.studentStanding.slice(1), 'history-officer-dates'));
     else if (!officer.isActive) accessCell.append(node('span', 'Account inactive', 'history-officer-dates'));
     if (officer.term) accessCell.append(node('span', statusLabels[officer.term.status], 'history-officer-dates'));
+    if (officer.term?.deactivationReason) termCell.append(node('span', `Deactivation reason: ${officer.term.deactivationReason}`, 'history-officer-dates'));
     if (officer.term?.authSyncPending) accessCell.append(node('span', 'Authentication sync pending', 'history-officer-dates history-error'));
     row.append(termCell, accessCell); rows.append(row);
   }
@@ -147,9 +170,18 @@ $('findOfficerCandidate').addEventListener('click', event => run(event.currentTa
   state.candidate = await call('officerCandidateFind', { studentId: $('candidateStudentId').value.trim() });
   $('candidateSummary').textContent = `${state.candidate.fullName} · ${state.candidate.studentId}`; status('Student account found. Review the appointment and permissions.');
 }));
+function updateExpectedEnd() {
+  const value = $('inductionDate').value;
+  if (!value) { $('termEnd').value = ''; return; }
+  const [day, time] = value.split('T'), [year, month, date] = day.split('-').map(Number);
+  const last = new Date(Date.UTC(year + 1, month, 0)).getUTCDate();
+  $('termEnd').value = `${year + 1}-${String(month).padStart(2, '0')}-${String(Math.min(date, last)).padStart(2, '0')}T${time}`;
+}
+$('termStart').addEventListener('input', () => { if (!$('inductionDate').dataset.edited) { $('inductionDate').value = $('termStart').value; updateExpectedEnd(); } });
+$('inductionDate').addEventListener('input', () => { $('inductionDate').dataset.edited = 'true'; updateExpectedEnd(); });
 $('appointmentForm').addEventListener('submit', event => { event.preventDefault(); run(event.submitter, async () => {
   if (!state.candidate) throw new Error('Find and review the student account first.');
-  const data = { action: 'assign', assignmentId: crypto.randomUUID(), officerUid: state.candidate.uid, position: $('assignmentPosition').value, department: $('assignmentDepartment').value.trim(), administration: $('administrationPeriod').value.trim(), authorization: $('appointmentAuthorization').value.trim(), startsAtMs: new Date($('termStart').value).getTime(), endsAtMs: new Date($('termEnd').value).getTime(), permissions: [...$('assignmentPermissions').querySelectorAll('input:checked')].map(input => input.value) };
+  const data = { action: 'assign', assignmentId: crypto.randomUUID(), officerUid: state.candidate.uid, position: $('assignmentPosition').value, department: $('assignmentDepartment').value.trim(), administration: $('administrationPeriod').value.trim(), authorization: $('appointmentAuthorization').value.trim(), startsAtMs: philippineMs($('termStart').value), inductionAtMs: philippineMs($('inductionDate').value), termPolicy: 'until-turnover', permissions: [...$('assignmentPermissions').querySelectorAll('input:checked')].map(input => input.value) };
   const r = await call('officerAssignmentManage', data); $('appointmentConfirmed').checked = false;
   await loadAssignments(); status(r.authSyncPending ? 'Assignment saved. Authentication synchronization is pending; retry before officer sign-in.' : 'Assignment created. Ask the officer to sign out and sign in again.');
 }); });

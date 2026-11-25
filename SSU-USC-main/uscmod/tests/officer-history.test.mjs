@@ -70,7 +70,7 @@ test('turnover revokes previous writes, preserves attribution and grants only sa
   assert.equal(detail.items[0].authorization, undefined);
 });
 test('assignment expiry blocks stale tokens without a scheduler and still requires explicit turnover', async () => {
-  const f = historyFixture(); await f.assign(); f.advance(86400001);
+  const f = historyFixture(); await f.assign(); Object.assign(f.records.get('officer_assignments/assignment-first'), { termPolicy: 'fixed', endsAtMs: f.now + 86400000 }); f.advance(86400001);
   await assert.rejects(f.h.officerReportSubmit(f.req('first', { operationId: 'late', title: 'Late', content: 'Denied' })), { code: 'permission-denied' });
   await assert.rejects(f.assign('second'), { code: 'failed-precondition' });
   await f.h.officerAssignmentManage(f.req('admin', { action: 'complete', assignmentId: 'assignment-first', reason: 'Term expired' }));

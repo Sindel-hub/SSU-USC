@@ -16,7 +16,7 @@ function historyFixture() {
   const seed = (uid, studentId) => f.seed({ uid, studentId, fullName: 'Synthetic ' + uid, email: uid + '@example.invalid', role: 'student', accountStatus: 'approved', isActive: true, studentStanding: 'active' });
   for (const [uid, sid] of [['first', '990001'], ['second', '990002'], ['other', '990003']]) seed(uid, sid);
   async function assign(uid = 'first', position = 'Treasurer', extra = {}) {
-    const data = { action: 'assign', assignmentId: 'assignment-' + uid, officerUid: uid, position, department: DEPARTMENTS[0], administration: '2026–2027', authorization: 'Synthetic approved appointment', startsAtMs: f.now - 1000, endsAtMs: f.now + 86400000, ...extra };
+    const data = { action: 'assign', assignmentId: 'assignment-' + uid, officerUid: uid, position, department: DEPARTMENTS[0], administration: '2026–2027', authorization: 'Synthetic approved appointment', termPolicy: 'until-turnover', startsAtMs: f.now - 1000, ...extra };
     return handlers.officerAssignmentManage(req('admin', data));
   }
   const reports = () => [...f.records.entries()].filter(([p]) => p.startsWith('officer_records/')).map(([p, v]) => ({ id: p.split('/').at(-1), ...v }));
