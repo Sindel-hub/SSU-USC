@@ -68,8 +68,8 @@ function audienceLabel(item) {
 const eventRegistrationModeInput = document.getElementById("eventRegistrationMode");
 const eventRegistrationDeadlineInput = document.getElementById("eventRegistrationDeadline");
 const eventRegistrationDeadlineField = document.getElementById("eventRegistrationDeadlineField");
-const eventExternalRegistrationField = document.getElementById("eventExternalRegistrationField");
-const eventExternalRegistrationUrlInput = document.getElementById("eventExternalRegistrationUrl");
+
+const legacyRegistrationNotice = document.getElementById("legacyRegistrationNotice");
 const eventParticipationNotesInput = document.getElementById("eventParticipationNotes");
 const eventBackgroundImageInput = document.getElementById("eventBackgroundImage");
 const eventImagePickerBtn = document.getElementById("eventImagePickerBtn");
@@ -219,9 +219,7 @@ async function uploadEventImage(file) {
 }
 
 function syncRegistrationFields() {
-  const mode = safeText(eventRegistrationModeInput?.value, "internal").toLowerCase();
-  const needsDeadline = mode === "internal" || mode === "external";
-  const needsExternalLink = mode === "external";
+  const needsDeadline = eventRegistrationModeInput?.value === "internal";
 
   if (eventRegistrationDeadlineField) eventRegistrationDeadlineField.hidden = !needsDeadline;
   if (eventRegistrationDeadlineInput) {
@@ -229,11 +227,7 @@ function syncRegistrationFields() {
     if (!needsDeadline) eventRegistrationDeadlineInput.value = "";
   }
 
-  if (eventExternalRegistrationField) eventExternalRegistrationField.hidden = !needsExternalLink;
-  if (eventExternalRegistrationUrlInput) {
-    eventExternalRegistrationUrlInput.required = needsExternalLink;
-    if (!needsExternalLink) eventExternalRegistrationUrlInput.value = "";
-  }
+
 }
 
 function resetEventForm() {
@@ -250,6 +244,7 @@ function resetEventForm() {
   if (eventAudienceInput) eventAudienceInput.value = "All Students";
   audienceScope.value="college"; audienceCollege.value=""; syncAudienceTarget("");
   if (eventRegistrationModeInput) eventRegistrationModeInput.value = "internal";
+  if (legacyRegistrationNotice) legacyRegistrationNotice.hidden = true;
   if (eventCategoryInput) eventCategoryInput.value = "Assembly";
   syncRegistrationFields();
   setLoadingState(false);
@@ -587,9 +582,9 @@ eventForm?.addEventListener("submit", async (event) => {
   const targetCollege=selectedGroup?audienceCollege.value:"";
   const targetProgram=selectedGroup&&targetScope==="program"?audienceProgram.value:"";
   if(selectedGroup&&(!Object.hasOwn(SSU_PROGRAMS,targetCollege)||!["college","program"].includes(targetScope)||(targetScope==="program"&&!isValidSsuProgram(targetCollege,targetProgram)))){alert("Please select a valid department and program, if applicable.");return;}
-  const registrationMode = safeText(eventRegistrationModeInput?.value, "internal").toLowerCase();
+  const registrationMode = eventRegistrationModeInput?.value;
+  if (!["internal","none"].includes(registrationMode)) { alert("Choose portal registration or no registration."); return; }
   const deadlineRaw = safeText(eventRegistrationDeadlineInput?.value);
-  const externalRegistrationUrl = safeText(eventExternalRegistrationUrlInput?.value);
   const participationNotes = safeText(eventParticipationNotesInput?.value);
 
   if (!title || !eventDate || !venue || !description) {
@@ -602,7 +597,7 @@ eventForm?.addEventListener("submit", async (event) => {
     return;
   }
 
-  const needsRegistration = registrationMode === "internal" || registrationMode === "external";
+  const needsRegistration = registrationMode === "internal";
   let registrationDeadline = null;
 
   if (needsRegistration) {
@@ -631,10 +626,6 @@ eventForm?.addEventListener("submit", async (event) => {
     registrationDeadline = Timestamp.fromDate(unchangedDeadline ? oldDeadline : deadlineDate);
   }
 
-  if (registrationMode === "external" && !isValidExternalUrl(externalRegistrationUrl)) {
-    alert("Please enter a valid http:// or https:// external registration URL.");
-    return;
-  }
 
   setLoadingState(true);
 
@@ -658,7 +649,7 @@ eventForm?.addEventListener("submit", async (event) => {
       reminderEnabled: true,
       registrationMode,
       registrationDeadline,
-      externalRegistrationUrl: registrationMode === "external" ? externalRegistrationUrl : "",
+      externalRegistrationUrl: "",
       participationNotes,
       imageUrl,
       imagePath,
@@ -697,8 +688,9 @@ recentEventsList?.addEventListener("click", async (event) => {
     const saved = lastEvents.find(row => row.id === editButton.dataset.editEvent);
     if (!saved || saved.officerArchived || savingRecord || !hasOfficerPermission('events.manage')) return;
     resetEventForm(); editingEventId = saved.id;
-    const fields = { title: eventTitleInput, eventDate: eventDateInput, venue: eventVenueInput, startTime: eventStartTimeInput, endTime: eventEndTimeInput, category: eventCategoryInput, description: eventDescriptionInput, audience: eventAudienceInput, registrationMode: eventRegistrationModeInput, externalRegistrationUrl: eventExternalRegistrationUrlInput, participationNotes: eventParticipationNotesInput };
+    const fields = { title: eventTitleInput, eventDate: eventDateInput, venue: eventVenueInput, startTime: eventStartTimeInput, endTime: eventEndTimeInput, category: eventCategoryInput, description: eventDescriptionInput, audience: eventAudienceInput, registrationMode: eventRegistrationModeInput, participationNotes: eventParticipationNotesInput };
     for (const [key, input] of Object.entries(fields)) if (input) input.value = saved[key] || '';
+    if (saved.registrationMode === 'external') { eventRegistrationModeInput.value = ''; legacyRegistrationNotice.hidden = false; }
     if(!eventAudienceInput.value)eventAudienceInput.value="All Students";
     audienceScope.value=saved.audienceScope==="program"?"program":"college";
     audienceCollege.value=saved.audienceCollege||"";

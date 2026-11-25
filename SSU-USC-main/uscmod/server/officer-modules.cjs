@@ -24,6 +24,8 @@ function createOfficerModuleHandlers({ db, history, requireActiveRole, Timestamp
     if (out.startTime && out.endTime && out.endTime <= out.startTime) fail("End time must follow start time.");
     out.registrationMode = input.registrationMode;
     if (!["internal", "external", "none"].includes(out.registrationMode)) fail("Invalid registration mode.");
+    if (module === "events" && out.registrationMode === "external") fail("University events must use portal registration or no registration.");
+    if (out.registrationMode !== "external") out.externalRegistrationUrl = "";
     const deadline = input.registrationDeadlineMs;
     // Existing closed registration deadlines may be preserved during unrelated edits; never accept a newly entered past deadline.
     const previousDeadline = previous?.registrationDeadline?.toMillis?.() ?? previous?.registrationDeadline;
