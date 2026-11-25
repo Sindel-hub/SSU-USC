@@ -33,5 +33,13 @@ test('term-managed officer rules enforce server-only history, expiry and mutatio
     await env.withSecurityRulesDisabled(c => updateDoc(doc(c.firestore(), 'officer_assignments', 'term'), { endsAtMs: now - 1 }));
     await assertFails(getDoc(doc(db, 'complaints', 'case')));
     await assertFails(updateDoc(doc(db, 'complaints', 'case'), { status: 'Resolved' }));
+    // An expected anniversary is informational only for explicitly adopted terms.
+    await env.withSecurityRulesDisabled(c => updateDoc(doc(c.firestore(), 'officer_assignments', 'term'), { termPolicy: 'until-turnover', expectedEndsAtMs: now - 1, actualEndsAtMs: null }));
+    await assertSucceeds(getDoc(doc(db, 'complaints', 'case')));
+    await assertFails(updateDoc(doc(db, 'officer_assignments', 'term'), { termPolicy: 'until-turnover', actualEndsAtMs: null }));
+    await env.withSecurityRulesDisabled(c => updateDoc(doc(c.firestore(), 'officer_assignments', 'term'), { status: 'completed', actualEndsAtMs: now }));
+    await assertFails(getDoc(doc(db, 'complaints', 'case')));
+    await env.withSecurityRulesDisabled(c => updateDoc(doc(c.firestore(), 'officer_assignments', 'term'), { status: 'active' }));
+    await assertFails(getDoc(doc(db, 'complaints', 'case')));
   } finally { await env.cleanup(); }
 });

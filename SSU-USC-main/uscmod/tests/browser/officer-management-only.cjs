@@ -26,7 +26,7 @@ const server=http.createServer((req,res)=>{const u=new URL(req.url,origin);if(u.
    if(u.pathname==='/shared/security-client.js')return route.fulfill({contentType:'text/javascript',body:'export {auth} from "/firebase/firebase-config.js";export const callSecure=async(name,data)=>{if(name==="getElectionContext")return{electionId:"synthetic"};directoryWrites.push({name,data});return{updated:true};};'});
    return route.continue();
   });
-  const p=await context.newPage(),errors=[];p.on('pageerror',e=>errors.push(e.message));p.on('dialog',d=>d.type()==='prompt'?d.accept('Synthetic approved term completion'):d.accept());
+  const p=await context.newPage(),errors=[];p.on('pageerror',e=>errors.push(e.message));p.on('dialog',d=>d.type()==='prompt'?d.accept(d.message().startsWith('Induction in Philippine')?d.defaultValue():'Synthetic approved term completion'):d.accept());
   await p.goto(origin+'/usc-admin/admin-dashboard/queue.html');await p.waitForURL('**/users.html');
   await p.locator('[data-open-user="first"]').waitFor();
   await p.screenshot({path:path.join(out,'directory-desktop.png'),fullPage:true});
@@ -49,9 +49,17 @@ const server=http.createServer((req,res)=>{const u=new URL(req.url,origin);if(u.
   f.records.get('users/legacy').fullName='Synthetic Legacy Officer';
 
   await p.locator('#assignmentPosition').selectOption('Treasurer');await p.locator('#administrationPeriod').fill('Synthetic 2026–2027');await p.locator('#appointmentAuthorization').fill('Synthetic authorized resolution');
-  await p.locator('#termStart').fill(new Date(f.now-60000).toISOString().slice(0,16));await p.locator('#termEnd').fill(new Date(f.now+86400000).toISOString().slice(0,16));await p.locator('#appointmentConfirmed').check();
+  await p.locator('#termStart').fill('2024-02-28T09:15');await p.locator('#inductionDate').fill('2024-02-29T09:15');assert.equal(await p.locator('#termEnd').inputValue(),'2025-02-28T09:15');assert.equal(await p.locator('#termEnd').getAttribute('readonly'), '');assert.ok(await p.locator('#termEnd').inputValue());await p.locator('#appointmentConfirmed').check();
   const count=f.authUsers.size;await p.getByRole('button',{name:'Create officer assignment'}).click();await p.getByText('Assignment created. Ask the officer to sign out and sign in again.').waitFor();
   assert.equal(f.records.get('users/first').role,'officer');assert.equal(f.authUsers.size,count);
+  const term=f.records.get('officer_assignments/'+f.records.get('users/first').officerAssignmentId);
+  assert.equal(term.termPolicy,'until-turnover');assert.equal(term.expectedEndsAtMs,Date.parse('2025-02-28T09:15:00+08:00'));assert.equal(term.actualEndsAtMs,null);
+  await p.locator('#assignmentList').getByText('Active — awaiting turnover',{exact:true}).waitFor();
+  // Explicit administrator adoption is required for old hard-cutoff records.
+  delete term.termPolicy;term.endsAtMs=f.now-1;
+  await p.locator('#refreshHistory').click();await p.getByRole('button',{name:'Adopt expected-end policy'}).click();
+  await p.getByText('Expected-end policy adopted. Access continues until the term is completed.').waitFor();
+  assert.equal(f.records.get('officer_assignments/'+f.records.get('users/first').officerAssignmentId).termPolicy,'until-turnover');assert.equal(f.records.get('officer_assignments/'+f.records.get('users/first').officerAssignmentId).policyAdoptedBy,'admin');
   await p.locator('[data-officer-uid="first"]').waitFor();
   assert.match(await p.locator('[data-officer-uid="first"]').innerText(),/Synthetic 2026–2027/);
   await p.locator('#registeredOfficersPanel').screenshot({path:path.join(out,'registered-officers-table.png')});
@@ -62,10 +70,10 @@ const server=http.createServer((req,res)=>{const u=new URL(req.url,origin);if(u.
    const lookup=await p.locator('.history-candidate-search').evaluate(el=>{const a=el.querySelector('input').getBoundingClientRect(),b=el.querySelector('button').getBoundingClientRect();return {input:a.y,button:b.y};});
    assert.equal(lookup.input,lookup.button);
    if(width===390){await p.locator('.history-officer-table-scroll').evaluate(el=>el.scrollLeft=el.scrollWidth);assert.ok(await p.locator('.history-officer-table-scroll').evaluate(el=>el.scrollLeft>0));await p.locator('.history-officer-table-scroll').evaluate(el=>el.scrollLeft=0);}
-   await p.screenshot({path:path.join(out,`officer-management-${width}.png`),fullPage:true});}
+   await p.screenshot({path:path.join(out,`officer-management-${width}.png`),fullPage:true});await p.locator('#termStart').scrollIntoViewIfNeeded();await p.screenshot({path:path.join(out,`officer-term-form-${width}.png`),fullPage:true});}
   await p.getByRole('button',{name:'Complete term'}).click();await p.getByText('Term completed. Historical records are preserved; the outgoing officer must sign in again.').waitFor();
-  assert.equal(f.records.get('users/first').role,'student');assert.deepEqual(f.records.get('users/first').officerPermissions,[]);assert.equal(f.authUsers.size,count);
-  await p.locator('[data-officer-uid="first"]').waitFor({state:'detached'});
+  assert.equal(f.records.get('officer_assignments/'+f.records.get('users/first').officerAssignmentId).actualEndsAtMs,f.now);assert.match(await p.locator('#assignmentList').innerText(),/Deactivation reason: Synthetic approved term completion/);assert.equal(f.records.get('users/first').role,'student');assert.deepEqual(f.records.get('users/first').officerPermissions,[]);assert.equal(f.authUsers.size,count);
+  await p.locator('[data-officer-uid="first"]').waitFor({state:'detached'});await p.locator('#assignmentList').scrollIntoViewIfNeeded();await p.screenshot({path:path.join(out,'completed-term-mobile.png')});
   assert.equal(await p.locator('[data-officer-uid="legacy"]').count(),1);
   let failRoster=true;
   await p.route('**/api/management',route=>route.request().postDataJSON().action==='officerDirectory'&&failRoster?route.fulfill({status:503,contentType:'application/json',body:JSON.stringify({error:{message:'Synthetic roster unavailable'}})}):route.continue());
@@ -81,6 +89,6 @@ const server=http.createServer((req,res)=>{const u=new URL(req.url,origin);if(u.
   await p.goto(origin+'/usc-admin/student-registration/officer-registration.html');await p.waitForURL('**/officer-management.html');await p.locator('#appointmentForm').waitFor();
   await p.goto(origin+'/usc-admin/admin-dashboard/users.html');await p.locator('[data-open-user="first"]').click();assert.equal(await p.evaluate(()=>document.documentElement.scrollWidth>innerWidth+1),false);await p.screenshot({path:path.join(out,'directory-account-mobile.png')});
   assert.deepEqual(errors,[]);
-  console.log('PASS: retired routes redirect; directory retains student registration with read-only officer scope; account updates omit role fields; Student ID handoff; promotion and term completion preserve UID; roster handles legacy/restricted accounts, safe text, pagination, refresh, errors and mobile scrolling; 1440/768/390 responsive layouts; no browser errors. Synthetic data only.');
+  console.log('PASS: expected date auto-calculation, leap day, Philippine timezone, read-only end, delayed turnover, explicit legacy adoption and actual end/reason; retired routes redirect; directory retains student registration with read-only officer scope; account updates omit role fields; Student ID handoff; promotion and term completion preserve UID; roster handles legacy/restricted accounts, safe text, pagination, refresh, errors and mobile scrolling; 1440/768/390 responsive layouts; no browser errors. Synthetic data only.');
  }finally{await browser.close();await new Promise(r=>server.close(r));}
 })().catch(e=>{console.error(e);server.close();process.exitCode=1;});

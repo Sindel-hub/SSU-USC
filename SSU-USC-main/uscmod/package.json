@@ -45,7 +45,7 @@
     "test:student-records": "node --test tests/student-records.test.mjs tests/student-year-authority.test.mjs tests/student-import-correction.test.mjs",
     "build:hosted": "node scripts/build-hosted.mjs",
     "test:hosted-management": "node --test tests/hosted-management.test.mjs tests/hosted-runtime-startup.test.cjs",
-    "test:officer-history": "node --test tests/officer-directory.test.mjs tests/officer-history.test.mjs tests/officer-management-access.test.mjs tests/admin-queue-metrics-ui.test.mjs tests/admin-user-directory-provision-height.test.mjs tests/student-officer-slip-modal.test.mjs",
+    "test:officer-history": "node --test tests/officer-term-policy.test.mjs tests/officer-directory.test.mjs tests/officer-history.test.mjs tests/officer-management-access.test.mjs tests/admin-queue-metrics-ui.test.mjs tests/admin-user-directory-provision-height.test.mjs tests/student-officer-slip-modal.test.mjs",
     "test:officer-history-rules": "firebase emulators:exec --project demo-ssu-officer-history --only firestore \"node --test tests/officer-history.rules.test.mjs\"",
     "test:notification-reads": "node --test tests/notification-read-persistence.test.mjs",
     "test:announcement-review": "node --test tests/announcement-workflow.test.cjs",

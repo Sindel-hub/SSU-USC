@@ -20,7 +20,7 @@ test('roster follows promotions and term completion without treating historical 
  const f=historyFixture();await f.assign();
  let officer=(await list(f)).items[0];assert.equal(officer.uid,'first');assert.equal(officer.term.status,'active');assert.equal(officer.term.administration,'2026–2027');
  assert.equal(officer.department,'University-wide');assert.equal(officer.term.authorization,undefined);
- f.advance(86400001);assert.equal((await list(f)).items[0].term.status,'expired');
+ f.advance(366*86400000);assert.equal((await list(f)).items[0].term.status,'awaiting-turnover');
  await f.h.officerAssignmentManage(f.req('admin',{action:'complete',assignmentId:'assignment-first',reason:'Turnover'}));
  assert.deepEqual((await list(f)).items,[]);assert.equal(f.records.get('officer_assignments/assignment-first').status,'completed');
 });
