@@ -1,4 +1,3 @@
-import { matchesEventAudience } from "../../shared/event-audience.mjs";
 import { auth, db } from "../../firebase/firebase-config.js";
 import {
   collection,
@@ -572,7 +571,7 @@ function rebuildMergedFeed() {
   const now = new Date();
   now.setHours(0, 0, 0, 0);
   const allItems = [...sourceFeeds.events, ...sourceFeeds.programs]
-    .filter((eventItem) => clean(eventItem.status, "Published") === "Published" && (itemSource(eventItem) === "program" || matchesEventAudience(eventItem, studentProfile)))
+    .filter((eventItem) => clean(eventItem.status, "Published") === "Published")
     .sort((a, b) => eventSortValue(a) - eventSortValue(b));
 
   const upcoming = allItems.filter((eventItem) => {
