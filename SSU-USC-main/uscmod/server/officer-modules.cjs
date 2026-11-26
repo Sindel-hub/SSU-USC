@@ -1,6 +1,5 @@
 "use strict";
 const { ServiceError } = require("./settings.cjs");
-const { canonicalDepartment, canonicalProgram } = require("../functions/student-records-model.js");
 const { id, text, actorAttribution } = require("./officer-history.cjs");
 const fail = message => { throw new ServiceError("invalid-argument", message); };
 function createOfficerModuleHandlers({ db, history, requireActiveRole, Timestamp, clock = Date.now }) {
@@ -31,20 +30,6 @@ function createOfficerModuleHandlers({ db, history, requireActiveRole, Timestamp
     if (out.registrationMode !== "none" && (!Number.isSafeInteger(deadline) || (deadline <= clock() && !unchangedDeadline) || deadline > Date.parse(out.eventDate + "T23:59:59+08:00"))) fail("Choose a future registration deadline no later than the event date.");
     if (out.registrationMode === "external" && !out.externalRegistrationUrl) fail("External registration URL is required.");
     out.registrationDeadline = out.registrationMode === "none" ? null : Timestamp.fromMillis(deadline);
-    out.audience = out.audience || "All Students";
-    if (!["All Students", "Selected Group", "Registered Group Only"].includes(out.audience)) fail("Invalid audience.");
-    if (module === "programs" && out.audience === "Selected Group") fail("External programs must use a university-wide audience or registered students.");
-    if (module === "events") {
-      out.audienceScope = ""; out.audienceCollege = ""; out.audienceProgram = "";
-      if (out.audience === "Selected Group") {
-        const scope = input.audienceScope;
-        const college = canonicalDepartment(input.audienceCollege);
-        if (!college || !["college","program"].includes(scope)) fail("Select a valid department and target group.");
-        const program = scope === "program" ? canonicalProgram(college,input.audienceProgram) : "";
-        if (scope === "program" && !program) fail("Select a program belonging to the selected department.");
-        out.audienceScope = scope; out.audienceCollege = college; out.audienceProgram = program;
-      }
-    }
     out.reminderEnabled = input.reminderEnabled === true;
     if (module === "programs") { out.sourceType = "program"; out.externalProgram = true; }
     return out;

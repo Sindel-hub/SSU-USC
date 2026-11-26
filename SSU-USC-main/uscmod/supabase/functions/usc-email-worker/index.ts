@@ -80,7 +80,7 @@ Deno.serve(async (req) => {
     ]);
     if (error) throw error;
     const election = pointer?.electionId ? await firestoreGet(`elections/${pointer.electionId}`) : null;
-    const news = [...announcements, ...events.filter(item => !item.officerArchived).map(item => ({...item, isUniversityEvent: true})), ...programs.filter(item => !item.officerArchived)];
+    const news = [...announcements, ...events, ...programs];
     let sent = 0;
 
     for (const account of accounts || []) {
@@ -89,12 +89,7 @@ Deno.serve(async (req) => {
       if (!activeEmailProfile(profile)) continue;
       const role = roleName(profile);
       const since = account.last_scan_at ? new Date(account.last_scan_at).getTime() : now;
-      const relevantNews = role === "student" ? news.filter(item => {
-        if (!item.isUniversityEvent || item.audience !== "Selected Group" || !item.audienceScope) return true;
-        if (!item.audienceCollege || profile?.college !== item.audienceCollege) return false;
-        return item.audienceScope === "college" || (item.audienceScope === "program" && Boolean(item.audienceProgram) && profile?.program === item.audienceProgram);
-      }) : news;
-      const lines = updatesFor({ uid: account.firebase_uid, role, prefs: account, complaints, election, news: relevantNews, since, now });
+      const lines = updatesFor({ uid: account.firebase_uid, role, prefs: account, complaints, election, news, since, now });
       let deliverySucceeded = true;
       if (lines.length) {
         const portalPath = role === "officer" ? "/usc-admin/overview/overview.html" : "/dashboard/dashboard.html";
