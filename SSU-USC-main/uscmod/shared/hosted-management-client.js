@@ -26,6 +26,8 @@ export async function hostedManagementCall(action, data = {}) {
   if (!response.ok || !result || !Object.hasOwn(result, 'data')) {
     const error = new Error(result?.error?.message || 'The hosted service is unavailable. Please try again later.');
     error.code = result?.error?.code || 'unavailable';
+    const requestId = result?.error?.requestId;
+    if (typeof requestId === 'string' && /^[a-f0-9-]{36}$/i.test(requestId)) error.requestId = requestId;
     throw error;
   }
   return result.data;

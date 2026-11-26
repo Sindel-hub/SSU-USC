@@ -219,3 +219,29 @@ test('startup diagnostics classify failures without logging private exception da
     assert.equal(response.body.includes(category),false);
   }
 });
+
+
+test('survey database failures have safe, correlated diagnostics without exposing records', async () => {
+  const f = hostedFixture();
+  for (const [sdkCode, category] of [[7,'database-access-denied'],[9,'database-precondition'],[14,'database-unavailable']]) {
+    f.runtime.handlers.needsAssessmentList = () => { throw Object.assign(new Error('PRIVATE-KEY-PASSWORD-TOKEN survey/doc/student'), {code:sdkCode}); };
+    const result = await request(f, 'needsAssessmentList');
+    assert.equal(result.statusCode, 500);
+    assert.equal(f.logs.at(-1).action, 'needsAssessmentList');
+    assert.equal(f.logs.at(-1).category, category);
+    assert.equal(f.logs.at(-1).requestId, result.body.error.requestId);
+    assert.equal(JSON.stringify([result, f.logs]).includes('PRIVATE-KEY-PASSWORD-TOKEN'), false);
+    assert.equal(JSON.stringify([result, f.logs]).includes('survey/doc/student'), false);
+  }
+});
+
+test('survey client preserves safe service messages and support references', async () => {
+  const source = (await fs.readFile(path.join(import.meta.dirname, '../shared/needs-assessment-client.js'), 'utf8')).replace(/^import .*;\n/, '').replace('export async function surveyCall','async function surveyCall').split('export const escapeHtml')[0];
+  const requestId='12345678-1234-1234-1234-123456789abc';
+  let error=Object.assign(new Error('Hosted services are not configured. Contact the administrator.'),{code:'unavailable',requestId});
+  const context=vm.createContext({hostedManagementCall:async()=>{throw error;}});
+  vm.runInContext(source+';globalThis.call=surveyCall;',context);
+  await assert.rejects(context.call('List'), e=>e.code==='unavailable' && e.message.includes('Hosted services are not configured') && e.requestId===requestId && e.message.includes(requestId));
+  error=Object.assign(new Error('PRIVATE SDK MESSAGE'),{code:'internal',requestId});
+  await assert.rejects(context.call('List'), e=>!e.message.includes('PRIVATE SDK MESSAGE') && e.message.includes(requestId));
+});
