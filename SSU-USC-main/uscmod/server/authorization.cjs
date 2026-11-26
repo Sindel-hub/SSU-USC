@@ -31,7 +31,7 @@ function createAuthorization({ db, clock = Date.now }) {
     if (!Number.isFinite(authTime) || authTime <= 0 || authTime > now + 60 || now - authTime > 1800) throw new ServiceError("failed-precondition", message);
   }
   async function requireOfficerPermission(request, permission) {
-    const profile = await requireActiveRole(request, ["officer", "admin"]);
+    const profile = await requireActiveRole(request, ["officer", "admin"], { useOfficerProfile: true });
     if (request.auth.token.role === "admin") return profile;
     const { effectiveOfficerPermissions } = await import("../shared/officer-permissions.js");
     if (!effectiveOfficerPermissions(profile, { legacyFullAccess: false }).includes(permission)) throw new ServiceError("permission-denied", "Your assigned office does not have this permission.");

@@ -113,3 +113,16 @@ body.officer-app-shell .facebook-publish-option input { width:20px !important; h
 .facebook-delivery-status { display:flex; gap:10px; flex-wrap:wrap; align-items:center; padding:10px 0; font-size:14px; color:#365675; }
 .facebook-delivery-status span { flex-basis:100%; }
 .facebook-delivery-status a { color:#1d3770; text-decoration:underline; }
+
+/* Keep the preview readable inside the composer, including long posts and images. */
+#announcementComposeDialog .announcement-workspace > .card { min-width: 0; }
+body.announcement-management-page #announcementPreviewCard #announcementPreviewImageWrap.empty {
+  height: auto; min-height: 64px; border-radius: 0;
+}
+body.announcement-management-page #announcementPreviewCard #announcementPreviewImage:not([hidden]) {
+  display: block; width: 100%; height: auto; max-height: 360px; object-fit: contain;
+}
+#announcementPreviewPlaceholder[hidden] { display: none !important; }
+#announcementComposeDialog .announcement-workspace:has(> #announcementFormCard[hidden]) {
+  grid-template-columns: minmax(0, 1fr) !important;
+}
