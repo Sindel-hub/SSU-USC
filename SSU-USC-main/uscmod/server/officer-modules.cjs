@@ -32,10 +32,8 @@ function createOfficerModuleHandlers({ db, history, requireActiveRole, Timestamp
     if (out.registrationMode === "external" && !out.externalRegistrationUrl) fail("External registration URL is required.");
     out.registrationDeadline = out.registrationMode === "none" ? null : Timestamp.fromMillis(deadline);
     out.audience = out.audience || "All Students";
-    // Normalize legacy clients without restoring a restricted audience option.
-    if (out.audience === "Registered Group Only") out.audience = "All Students";
-    if (!["All Students", "Selected Group"].includes(out.audience)) fail("Invalid audience.");
-    if (module === "programs" && out.audience === "Selected Group") fail("External programs must use a university-wide audience.");
+    if (!["All Students", "Selected Group", "Registered Group Only"].includes(out.audience)) fail("Invalid audience.");
+    if (module === "programs" && out.audience === "Selected Group") fail("External programs must use a university-wide audience or registered students.");
     if (module === "events") {
       out.audienceScope = ""; out.audienceCollege = ""; out.audienceProgram = "";
       if (out.audience === "Selected Group") {
