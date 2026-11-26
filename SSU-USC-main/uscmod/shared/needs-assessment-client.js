@@ -2,10 +2,10 @@ import { hostedManagementCall } from './hosted-management-client.js';
 export async function surveyCall(action, data = {}) {
   try { return await hostedManagementCall(`needsAssessment${action}`, data); }
   catch (error) {
-    if (/not-found|unavailable|internal|unknown/.test(error.code || '') && !error.message?.includes('Survey')) {
-      throw new Error('The survey service is unavailable. Please try again later.');
-    }
-    throw Object.assign(new Error(error.message || 'Unable to complete the survey request.'), {code:error.code});
+    const unavailable = /not-found|internal|unknown/.test(error.code || '') && !error.message?.includes('Survey');
+    const message = unavailable ? 'Unable to load the survey service. Please try again or contact the administrator.' : error.message || 'Unable to complete the survey request.';
+    const requestId = typeof error.requestId === 'string' && /^[a-f0-9-]{36}$/i.test(error.requestId) ? error.requestId : '';
+    throw Object.assign(new Error(message + (requestId ? ` Reference: ${requestId}` : '')), {code:error.code, ...(requestId ? {requestId} : {})});
   }
 }
 export const escapeHtml = value => String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));

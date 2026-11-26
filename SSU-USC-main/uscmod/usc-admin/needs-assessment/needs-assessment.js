@@ -105,7 +105,21 @@ function renderSurveys() {
   $('naMore').hidden = !next;
 }
 async function refresh(more = false) {
-  const result=await surveyCall('List',more?{after:next}:{});surveys=more?[...surveys,...result.surveys]:result.surveys;next=result.next;renderStatusFilters();renderSurveys();
+  const host = $('naSurveys');
+  host.setAttribute('aria-busy', 'true');
+  if (!surveys.length) host.textContent = 'Loading surveys…';
+  try {
+    const result = await surveyCall('List', more ? { after: next } : {});
+    surveys = more ? [...surveys, ...result.surveys] : result.surveys;
+    next = result.next;
+    renderStatusFilters();
+    renderSurveys();
+    message('');
+  } catch (error) {
+    if (!surveys.length) host.textContent = 'Unable to load surveys. Select Refresh to try again.';
+    // Keep previously loaded surveys visible when a refresh fails.
+    throw error;
+  } finally { host.removeAttribute('aria-busy'); }
 }
 function updateReport() {
   const filter=$('naDepartmentFilter').value; report=summarize(reportSurvey,responses,filter);

@@ -21,6 +21,17 @@ function startupCategory(error) {
   const codes = new Map([["app/invalid-credential", "firebase-credential-invalid"], ["app/invalid-app-options", "firebase-app-options-invalid"], ["app/duplicate-app", "firebase-app-already-initialized"], ["MODULE_NOT_FOUND", "runtime-dependency-missing"]]);
   return codes.get(error?.code) || "runtime-startup-failed";
 }
+// Static categories let operators diagnose database outages without logging
+// SDK messages, which can include account identities, document paths or secrets.
+function failureCategory(error) {
+  const grpc = new Map([[3, 'database-invalid-query'], [4, 'database-timeout'], [5, 'database-not-found'],
+    [7, 'database-access-denied'], [8, 'database-resource-exhausted'], [9, 'database-precondition'],
+    [14, 'database-unavailable'], [16, 'database-unauthenticated']]);
+  return grpc.get(error?.code) || new Map([
+    ['ERR_MODULE_NOT_FOUND', 'runtime-dependency-missing'], ['MODULE_NOT_FOUND', 'runtime-dependency-missing'],
+    ['ERR_REQUIRE_ESM', 'runtime-module-format'], ['ERR_REQUIRE_ASYNC_MODULE', 'runtime-module-format']
+  ]).get(error?.code) || 'request-failed';
+}
 const MAX_BYTES = 1024 * 1024;
 async function readBody(req) {
   let body = req.body;
@@ -54,9 +65,11 @@ function createManagementHTTPHandler({ getRuntime, hosted = Boolean(process.env.
     res.setHeader("X-Request-ID", requestId);
     const send = (status, data) => { res.statusCode = status; res.end(JSON.stringify(data)); };
     if (req.method !== "POST") { res.setHeader("Allow", "POST"); return send(405, { error: { code: "invalid-argument", message: "Use POST." } }); }
+    let actionName;
     try {
       if (!/^application\/json(?:\s*;|$)/i.test(req.headers["content-type"] || "")) throw new ServiceError("invalid-argument", "Use application/json.");
       const { action, data } = await readBody(req);
+      actionName = action;
       let runtime;
       try { runtime = await getRuntime(); } catch (error) {
         log({ requestId, stage: "runtime-startup", category: startupCategory(error),
@@ -88,7 +101,7 @@ function createManagementHTTPHandler({ getRuntime, hosted = Boolean(process.env.
     } catch (error) {
       const expected = error instanceof ServiceError;
       const code = expected && STATUS[error.code] ? error.code : "internal";
-      log({ requestId, code }); // Never log request bodies, passwords, tokens, keys or SMTP errors.
+      log({ requestId, code, ...(actionName ? { action: actionName } : {}), ...(!expected ? { category: failureCategory(error) } : {}) }); // Never log request bodies or raw SDK messages.
       send(STATUS[code] || 500, { error: { code, message: expected && code !== "internal" ? error.message : "The request could not be completed. Please retry later.", requestId } });
     }
   };
