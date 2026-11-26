@@ -262,8 +262,8 @@
                                         <div class="field">
                                             <label for="eventRegistrationMode"><i class="fa-solid fa-ticket" aria-hidden="true"></i> Registration Method</label>
                                             <select id="eventRegistrationMode" required>
-                                                <option value="" disabled hidden>Choose registration method</option>
-                                                <option value="internal" selected>Register inside USC Portal</option>
+                                                <option value="internal">Register inside USC Portal</option>
+                                                <option value="external">External registration link</option>
                                                 <option value="none">No registration required</option>
                                             </select>
                                         </div>
@@ -275,7 +275,11 @@
                                         </div>
                                     </div>
 
-                                    <p id="legacyRegistrationNotice" hidden style="padding:12px;margin:8px 0;background:#f5faff;border:1px solid #d5e5f1;border-radius:9px;color:#315575;font-size:13px;line-height:1.5">This existing event uses an external registration link. Choose portal registration or no registration to save changes. Its existing published link remains unchanged until you save.</p>
+                                    <div class="field" id="eventExternalRegistrationField" hidden>
+                                        <label for="eventExternalRegistrationUrl"><i class="fa-solid fa-link" aria-hidden="true"></i> External Registration URL</label>
+                                        <input id="eventExternalRegistrationUrl" type="url" placeholder="https://forms.google.com/..." />
+                                        <small>Students will be sent to this link instead of registering in the portal.</small>
+                                    </div>
 
                                     <div class="field">
                                         <label for="eventParticipationNotes"><i class="fa-solid fa-list-check" aria-hidden="true"></i> Instructions</label>
@@ -355,7 +359,7 @@
 </footer>
 
     <script src="../shared/js/nav-active.js?v=flash-fix-1"></script>
-    <script type="module" src="js/events.js?v=internal-registration-1"></script>
+    <script type="module" src="js/events.js?v=open-audience-1"></script>
     <script type="module" src="../shared/js/admin-auth.js?v=rbac4"></script>
 <script type="module" src="../../shared/profile-manager.js?v=registered-name-2&amp;refinements=1"></script>
   <script type="module" src="../shared/js/officer-rbac.js?v=6"></script>
