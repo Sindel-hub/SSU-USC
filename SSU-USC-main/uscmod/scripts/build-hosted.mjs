@@ -5,7 +5,7 @@ import { createRequire } from 'node:module';
 const require = createRequire(import.meta.url);
 const { readPublicSettings } = require('../server/settings.cjs');
 const DEFAULT_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
-export const PUBLIC_FOLDERS = ['activate', 'assets', 'complaint', 'config', 'dashboard', 'data', 'email', 'firebase', 'home', 'index', 'shared', 'supabase', 'survey', 'usc-admin', 'vendor', 'voting'];
+export const PUBLIC_FOLDERS = ['activate', 'assets', 'complaint', 'config', 'dashboard', 'data', 'email', 'firebase', 'home', 'index', 'shared', 'supabase', 'survey', 'usc-admin', 'vendor'];
 function privateName(name) {
   return name.startsWith('.') || /\.(?:local-backup|cjs|log|pem|key|sql|toml|yaml|yml|sh|ps1|py)$/i.test(name) || /(?:secret|service[-_]account|credentials|private[-_]key)/i.test(name) || /^(?:seed-local|configure-local|local-activation-test)/.test(name);
 }

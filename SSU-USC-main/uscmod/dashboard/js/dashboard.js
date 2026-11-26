@@ -13,7 +13,7 @@ import {
   where
 } from "https://www.gstatic.com/firebasejs/12.12.0/firebase-firestore.js";
 import { signOut } from "https://www.gstatic.com/firebasejs/12.12.0/firebase-auth.js";
-import { callSecure, hydrateMediaImages, resolveMediaUrl } from "../../shared/security-client.js";
+import { hydrateMediaImages, resolveMediaUrl } from "../../shared/security-client.js";
 
 const uscAuthAllowed = await (globalThis.USC_AUTH_READY || Promise.resolve(false));
 if (uscAuthAllowed !== true) await new Promise(() => {});
@@ -174,17 +174,6 @@ function getAnnouncementElements() {
   };
 }
 
-function getVoteElements() {
-  return {
-    eligibleVoters: document.getElementById("dashboardEligibleVoters"),
-    votesCast: document.getElementById("dashboardVotesCast"),
-    turnoutRate: document.getElementById("dashboardTurnoutRate"),
-    turnoutProgress: document.getElementById("dashboardTurnoutProgress"),
-    voteStatus: document.getElementById("dashboardVoteStatus"),
-    voteLeaders: document.getElementById("dashboardVoteLeaders")
-  };
-}
-
 function getProfileElements() {
   return {
     dashboardUserName: document.getElementById("dashboardUserName"),
@@ -293,30 +282,6 @@ function buildAnnouncementCard(announcement) {
       </div>
     </article>
   `;
-}
-
-function setVoteStats(turnoutData = {}, voterStatus = {}, electionContext = {}) {
-  const els = getVoteElements();
-  const totalVotes = Number(turnoutData.ballotsCast || 0);
-  const eligibleVoters = Number(turnoutData.eligibleVoters || electionContext.eligibleVoterCount || 0);
-  const turnout = eligibleVoters > 0 ? (totalVotes / eligibleVoters) * 100 : 0;
-  if (els.eligibleVoters) els.eligibleVoters.textContent = String(eligibleVoters);
-  if (els.votesCast) els.votesCast.textContent = String(totalVotes);
-  if (els.turnoutRate) els.turnoutRate.textContent = `${turnout.toFixed(1)}%`;
-  if (els.turnoutProgress) {
-    els.turnoutProgress.textContent = `${totalVotes} / ${eligibleVoters}`;
-    els.turnoutProgress.style.width = `${Math.min(turnout, 100)}%`;
-  }
-  if (els.voteLeaders) {
-    els.voteLeaders.textContent = electionContext.resultsVisible
-      ? "Official results are available in the Election module."
-      : "Candidate totals are hidden until official result publication.";
-  }
-  if (els.voteStatus) {
-    els.voteStatus.textContent = voterStatus?.hasVoted
-      ? `Ballot recorded. Receipt: ${safeText(voterStatus.receiptReference, "Recorded")}`
-      : (electionContext.votingOpen ? "Voting is open. Your ballot has not been submitted yet." : "No ballot recorded for this election.");
-  }
 }
 
 function getComplaintStatusClass(status) {
@@ -878,36 +843,6 @@ function startAnnouncementListener() {
       renderSlider();
     }
   );
-}
-
-function startVoteListener(studentProfile) {
-  let unsubTurnout = null;
-  let unsubStatus = null;
-  let latestTurnout = {};
-  let latestStatus = {};
-  let latestContext = {};
-
-  const render = () => setVoteStats(latestTurnout, latestStatus, latestContext);
-  const connect = async () => {
-    try {
-      latestContext = await callSecure("getElectionContext");
-      unsubTurnout?.();
-      unsubStatus?.();
-      const turnoutRef = doc(db, "elections", latestContext.electionId, "turnout", "public");
-      const statusRef = doc(db, "elections", latestContext.electionId, "voterStatus", studentProfile.uid);
-      unsubTurnout = onSnapshot(turnoutRef, (snap) => { latestTurnout = snap.exists() ? snap.data() : {}; render(); }, (error) => console.warn("Turnout listener:", error));
-      unsubStatus = onSnapshot(statusRef, (snap) => { latestStatus = snap.exists() ? snap.data() : {}; render(); }, (error) => console.warn("Voter-status listener:", error));
-      render();
-    } catch (error) {
-      console.error("Dashboard election status unavailable:", error);
-      latestContext = {};
-      latestTurnout = {};
-      latestStatus = {};
-      render();
-    }
-  };
-  connect();
-  setInterval(connect, 60000);
 }
 
 function setPanelActive(button) {

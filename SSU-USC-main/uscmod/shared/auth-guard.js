@@ -8,7 +8,6 @@ import { effectiveOfficerPermissions } from "./officer-permissions.js";
 
 const SESSION_MS = 15 * 60 * 1000;
 const LOGIN_URL = new URL("../index/index.html", import.meta.url).href;
-const ELECTION_URL = new URL("../dashboard/election.html", import.meta.url).href;
 let lastTouch = 0;
 let settled = false;
 let profileWatcherBound = false;
@@ -25,22 +24,8 @@ function expectedRoles() {
   const path = location.pathname.toLowerCase();
   if (path.includes("/usc-admin/admin-dashboard/") || path.includes("/usc-admin/student-registration/")) return ["admin"];
   if (path.includes("/usc-admin/")) return ["officer", "admin"];
-  if (path.includes("/dashboard/") || path.includes("/complaint/") || path.includes("/voting/")) return ["student"];
+  if (path.includes("/dashboard/") || path.includes("/complaint/")) return ["student"];
   return [];
-}
-
-function isElectionProtectedPath() {
-  // Viewing the Student Election module is part of normal portal access.
-  // Only legacy/direct voting routes require voter eligibility at route level.
-  const path = location.pathname.toLowerCase();
-  return path.includes("/voting/");
-}
-
-function redirectToElection(message) {
-  settle(false);
-  if (message) sessionStorage.setItem("electionAccessMessage", message);
-  location.replace(ELECTION_URL);
-  return false;
 }
 
 function clearLocalSession() {
@@ -60,25 +45,7 @@ function activeEnrollment(value) {
   return ["enrolled", "active", "currently enrolled", "graduating"].includes(String(value || "").trim().toLowerCase());
 }
 
-async function currentElectionEligibility(profile) {
-  if (!profile?.studentId) return { configured: false, eligible: false, electionId: "" };
-  try {
-    const pointer = await getDoc(doc(db, "election_config", "current"));
-    if (!pointer.exists() || !pointer.data()?.electionId) return { configured: false, eligible: true, electionId: "" };
-    return {
-      configured: true,
-      electionId: String(pointer.data().electionId),
-      // Every active, approved school-provisioned student may vote. The voter roster
-      // is no longer used as an exclusion list for student suffrage.
-      eligible: true
-    };
-  } catch (error) {
-    console.warn("Current election availability check failed:", error);
-    return { configured: true, electionId: "", eligible: true, unavailable: true };
-  }
-}
-
-function refreshSession(profile, claims = {}, electionEligibility = null, resolvedRole = "") {
+function refreshSession(profile, claims = {}, resolvedRole = "") {
   const now = Date.now();
   const role = String(resolvedRole || claims.role || profile.role || "student").toLowerCase();
   const session = {
@@ -100,12 +67,7 @@ function refreshSession(profile, claims = {}, electionEligibility = null, resolv
     program: profile.program || "",
     enrollmentStatus: profile.enrollmentStatus || "",
     yearLevel: profile.yearLevel || "",
-    studentStanding: profile.studentStanding || "active",
-    currentElectionId: electionEligibility?.electionId || "",
-    electionEligible: electionEligibility?.eligible === true,
-    electionEligibilityConfigured: electionEligibility?.configured === true,
-    electionEligibilityUnavailable: electionEligibility?.unavailable === true,
-    candidacyApproved: profile.candidacyApproved === true
+    studentStanding: profile.studentStanding || "active"
   };
   sessionStorage.setItem("activeSession", "true");
   sessionStorage.setItem("studentProfile", JSON.stringify(session));
@@ -192,15 +154,10 @@ async function verifyProtectedPage() {
           if (status !== "approved" || profile.schoolProvisioned !== true) {
             resolve(await fail("This is not an active school-provisioned student account. Contact the system administrator.")); return;
           }
-          const electionEligibility = await currentElectionEligibility(profile);
-          if (isElectionProtectedPath() && electionEligibility.unavailable) {
-            resolve(redirectToElection("Election services are temporarily unavailable. Please try again."));
-            return;
-          }
-          refreshSession(profile, token.claims, electionEligibility, role);
+          refreshSession(profile, token.claims, role);
         } else {
           if (status !== "approved") { resolve(await fail("This privileged account is not approved for dashboard access.")); return; }
-          refreshSession(profile, token.claims, null, role);
+          refreshSession(profile, token.claims, role);
         }
 
         if (auth.currentUser?.uid !== user.uid) {

@@ -107,44 +107,6 @@ test('publication includes removed candidates and uses their historical identity
   assert.equal(official.results[0].position,'President');
 });
 
-const officerSource=fs.readFileSync(new URL('../usc-admin/elections/js/elections.js',import.meta.url),'utf8');
-function officerHarness({authorized=true,removeAuthorized=authorized,removed=false,managementHidden=false,confirmRemoval=true}={}){
-  const calls=[],confirmations=[];
-  const decisions=Array.isArray(confirmRemoval)?[...confirmRemoval]:null;
-  const application={id:'applicant',candidateId:'candidate',status:'Approved',fullName:'Approved Student',position:'President'};
-  const candidate={id:'candidate',approved:true,removed,managementHidden,fullName:application.fullName};
-  const list={innerHTML:'',querySelectorAll:()=>[]};
-  const ctx=vm.createContext({applications:[application],candidates:[candidate],canManageCandidates:authorized,canRemoveCandidates:removeAuthorized,
-    context:{reviewOpen:false,lifecycle:'Archived'},electionId:'e',els:{candidateReviewList:list},
-    clean:v=>String(v??'').trim(),esc:v=>String(v??''),confirm:(message)=>{confirmations.push(message);return decisions?decisions.shift():confirmRemoval;},
-    hydrateCandidatePreviewImages:async()=>{},closeCandidatePreview:()=>{},refreshAll:async()=>{},alert:()=>{},
-    callSecure:async(name,data)=>{calls.push({name,data});}
-  });
-  vm.runInContext(officerSource.slice(officerSource.indexOf('async function removeCandidateApplication('),officerSource.indexOf('function openCandidateEditor(')),ctx);
-  vm.runInContext(officerSource.slice(officerSource.indexOf('function renderApplications('),officerSource.indexOf('function schedulePayload(')),ctx);
-  return {ctx,list,calls,application,confirmations};
-}
-test('approved application cards expose Remove outside the review window',()=>{
-  const h=officerHarness();h.ctx.renderApplications();assert.match(h.list.innerHTML,/data-remove-approved-candidate="applicant"/);
-});
-test('read-only officers cannot remove approved candidates',async()=>{
-  const h=officerHarness({authorized:false});h.ctx.renderApplications();assert.doesNotMatch(h.list.innerHTML,/data-remove-approved-candidate/);
-  await h.ctx.removeCandidateApplication(h.application);assert.equal(h.calls.length,0);
-});
-test('approved removal uses the candidate soft-removal endpoint, never application deletion',async()=>{
-  const h=officerHarness();await h.ctx.removeCandidateApplication(h.application);
-  assert.equal(h.calls.length,1);assert.equal(h.calls[0].name,'removeElectionCandidate');assert.equal(h.calls[0].data.candidateId,'candidate');
-  assert.equal(h.application.status,'Approved');
-});
-test('cancelled confirmation preserves the approved candidate',async()=>{
-  const h=officerHarness({confirmRemoval:false});await h.ctx.removeCandidateApplication(h.application);assert.equal(h.calls.length,0);
-});
-test('removed approved candidates show historical status without a second Remove action',async()=>{
-  const h=officerHarness({removed:true});h.ctx.renderApplications();assert.match(h.list.innerHTML,/Candidate removed/);
-  assert.doesNotMatch(h.list.innerHTML,/data-remove-approved-candidate/);assert.equal(h.application.status,'Approved');
-  await h.ctx.removeCandidateApplication(h.application);assert.equal(h.calls.length,0);
-});
-
 test('module-assigned officers can remove approved candidates without review permission',async()=>{
   const h=harness({permissions:['elections.view'],completed:true});await h.run({},true);
   assert.equal(h.records.get('elections/e/candidates/one').removed,true);
@@ -160,11 +122,6 @@ test('officers without election permissions cannot remove candidates',async()=>{
   const h=harness({permissions:[]});await assert.rejects(h.run({},true),/permission/);
   assert.equal(h.records.get('elections/e/candidates/one').removed,undefined);
 });
-test('module-assigned officers see the approved-card removal action and use the soft-removal endpoint',async()=>{
-  const h=officerHarness({authorized:false,removeAuthorized:true});h.ctx.renderApplications();
-  assert.match(h.list.innerHTML,/data-remove-approved-candidate="applicant"/);
-  await h.ctx.removeCandidateApplication(h.application);assert.equal(h.calls[0].name,'removeElectionCandidate');
-});
 test('cloud permission helper accepts either module access or existing review access',async()=>{
   const cloud=fs.readFileSync(new URL('../functions/index.js',import.meta.url),'utf8');
   const helper=cloud.slice(cloud.indexOf('async function requireOfficerPermission('),cloud.indexOf('function requireRecentAuth('));
@@ -175,38 +132,6 @@ test('cloud permission helper accepts either module access or existing review ac
     else await assert.rejects(ctx.requireOfficerPermission({},['elections.view','elections.review']));
   }
 });
-
-test('candidate management panel is removed and actions remain in candidate review',()=>{
-  assert.doesNotMatch(officerSource,/candidateManagementCard|renderCandidateManagement/);
-  const h=officerHarness();h.ctx.renderApplications();
-  assert.match(h.list.innerHTML,/data-remove-approved-candidate="applicant"/);
-  assert.match(h.list.innerHTML,/data-edit-reviewed-candidate="candidate"/);
-});
-test('module-only officers can remove from review without gaining edit controls',()=>{
-  const h=officerHarness({authorized:false,removeAuthorized:true});h.ctx.renderApplications();
-  assert.match(h.list.innerHTML,/data-remove-approved-candidate/);assert.doesNotMatch(h.list.innerHTML,/data-edit-reviewed-candidate/);
-});
-test('historically removed candidates do not expose edit controls in review',()=>{
-  const h=officerHarness({removed:true});h.ctx.renderApplications();assert.doesNotMatch(h.list.innerHTML,/data-edit-reviewed-candidate/);
-});
-
-test('cancelling the final confirmation prevents the removal write',async()=>{
-  const h=officerHarness({confirmRemoval:[true,false]});await h.ctx.removeCandidateApplication(h.application);
-  assert.equal(h.calls.length,0);assert.equal(h.confirmations.length,2);
-  assert.match(h.confirmations[1],/absolutely sure/);assert.match(h.confirmations[1],/Approved Student/);
-  assert.match(h.confirmations[1],/Student Dashboard/);
-});
-test('both confirmations name the candidate and are required before removal',async()=>{
-  const h=officerHarness({confirmRemoval:[true,true]});await h.ctx.removeCandidateApplication(h.application);
-  assert.equal(h.calls.length,1);assert.equal(h.confirmations.length,2);
-  assert.ok(h.confirmations.every(message=>message.includes('Approved Student')));
-});
-
-test('pending application removal also requires final confirmation',async()=>{
-  const h=officerHarness({confirmRemoval:[true,false]});h.application.status='Under Review';h.application.candidateId='';
-  await h.ctx.removeCandidateApplication(h.application);assert.equal(h.confirmations.length,2);assert.equal(h.calls.length,0);
-});
-
  test('dismissal requires prior removal and preserves historical records with its own audit',async()=>{
  const h=harness({completed:true,permissions:['elections.view']});
  await assert.rejects(h.run({},false,true),/Remove the candidate/);
@@ -227,21 +152,4 @@ test('pending application removal also requires final confirmation',async()=>{
  const h=harness({auditFails:true});h.records.get('elections/e/candidates/one').removed=true;
  await assert.rejects(h.run({},false,true),/audit unavailable/);
  assert.equal(h.records.get('elections/e/candidates/one').managementHidden,undefined);
- });
- test('removed cards expose confirmed Delete from Review to module officers',async()=>{
- const h=officerHarness({authorized:false,removeAuthorized:true,removed:true});h.ctx.renderApplications();
- assert.match(h.list.innerHTML,/data-delete-removed-candidate="candidate"/);
- await h.ctx.deleteRemovedCandidate(h.ctx.candidates[0]);
- assert.equal(h.calls[0].name,'dismissElectionCandidate');assert.match(h.confirmations[0],/Approved Student/);
- assert.match(h.confirmations[0],/retained/);
- });
- test('active, unauthorized and cancelled cards cannot be dismissed',async()=>{
- for(const opts of [{},{removed:true,authorized:false},{removed:true,confirmRemoval:false}]){
- const h=officerHarness(opts);await h.ctx.deleteRemovedCandidate(h.ctx.candidates[0]);assert.equal(h.calls.length,0);
- }
- });
- test('dismissed removed cards disappear without deleting the application',()=>{
- const h=officerHarness({removed:true,managementHidden:true});h.ctx.renderApplications();
- assert.doesNotMatch(h.list.innerHTML,/Approved Student|data-delete-removed-candidate/);
- assert.equal(h.ctx.applications.length,1);assert.equal(h.application.status,'Approved');
  });

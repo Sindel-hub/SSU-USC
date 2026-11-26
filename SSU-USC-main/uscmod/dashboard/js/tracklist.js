@@ -1,6 +1,6 @@
 
 import { auth, db } from "../../firebase/firebase-config.js";
-import { collection, doc, getDoc, onSnapshot, query, where } from "https://www.gstatic.com/firebasejs/12.12.0/firebase-firestore.js";
+import { collection, onSnapshot, query, where } from "https://www.gstatic.com/firebasejs/12.12.0/firebase-firestore.js";
 import { complaintAttachmentMeta, downloadBlob, loadComplaintAttachmentBlob } from "../../shared/complaint-attachments.js";
 
 const uscAuthAllowed = await (globalThis.USC_AUTH_READY || Promise.resolve(false));
@@ -18,7 +18,7 @@ function formatDate(v) { const d = toDate(v) || (clean(v) ? new Date(v) : null);
 function formatDateTime(v) { const d = toDate(v) || (clean(v) ? new Date(v) : null); return d && !Number.isNaN(d.getTime()) ? d.toLocaleString([], { month: "short", day: "2-digit", year: "numeric", hour: "numeric", minute: "2-digit" }) : "—"; }
 function escapeHtml(v) { return clean(v).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
 
-const state = { complaints: [], participation: [], selectedComplaintId: '' };
+const state = { complaints: [], selectedComplaintId: '' };
 const statusClassMap = { Submitted: 'info', 'Under Review': 'warning', 'In Review': 'warning', 'In Progress': 'progress', Resolved: 'success', Closed: 'muted' };
 
 const COMPLAINT_CLASSIFICATIONS = ["Student Level", "Administrative Level", "Crisis Level"];
@@ -62,7 +62,6 @@ function normalizeComplaintRecord(record = {}) {
 
 function getStatusClass(status) { return statusClassMap[clean(status, 'Submitted')] || 'info'; }
 function latestComplaint() { return state.complaints[0] || null; }
-function latestParticipation() { return state.participation[0] || null; }
 
 function setText(id, value) { const el = document.getElementById(id); if (el) el.textContent = value; }
 
@@ -73,7 +72,6 @@ function renderOverview() {
   setText('overviewTotalComplaints', String(total).padStart(2,'0'));
   setText('overviewActiveComplaints', String(active).padStart(2,'0'));
   setText('overviewResolvedComplaints', String(resolved).padStart(2,'0'));
-  setText('overviewElectionRecords', String(state.participation.length).padStart(2,'0'));
 }
 
 function renderComplaintPreview() {
@@ -124,42 +122,7 @@ function renderRecentActivity() {
       </div>`;
     return;
   }
-  host.innerHTML = items.map(item => `<article class="activity-item"><span class="activity-icon"><i class="fa-solid ${item.title === 'Vote Recorded' ? 'fa-check-to-slot' : 'fa-message'}"></i></span><div><h4>${escapeHtml(item.title)}</h4><p>${escapeHtml(item.text)}</p><small>${escapeHtml(item.when)}</small></div></article>`).join('');
-}
-
-function buildVoteRows(vote) {
-  const receipt = clean(vote.receiptReference, 'Recorded');
-  const college = clean(vote.college, 'Verified voter record');
-  return `<tr><td>Anonymous Ballot</td><td>Selections confidential</td><td>${escapeHtml(college)}</td><td>${escapeHtml(receipt)}</td></tr>`;
-}
-
-function renderVotePreview() {
-  const host = document.getElementById('votePreviewHost');
-  const vote = latestParticipation();
-  if (!host) return;
-  if (!vote) {
-    host.innerHTML = `
-      <div class="track-election-empty">
-        <div class="track-empty-illustration ballot"><i class="fa-solid fa-check-to-slot"></i></div>
-        <div class="track-election-empty-copy"><h3>No election submission yet.</h3><p>Your submitted vote will appear here after voting.</p></div>
-        <button class="track-primary-btn" onclick="window.location.href='election.html'"><i class="fa-solid fa-arrow-up-right-from-square"></i> Go to Election</button>
-      </div>`;
-    return;
-  }
-  const electionName = clean(vote.electionName, 'USC Election');
-  host.innerHTML = `
-    <div class="vote-preview-box">
-      <div class="vote-preview-top"><h3>${escapeHtml(electionName)}</h3><span class="status-pill success">Vote Recorded</span></div>
-      <div class="preview-meta">Vote submitted: ${escapeHtml(formatDateTime(vote.votedAt))}</div>
-      <p>Your vote has been successfully recorded. No further action is needed for this election.</p>
-      <div class="preview-actions"><button class="modal-btn primary" data-open-modal="trackElectionModal" type="button">View Details</button></div>
-    </div>`;
-
-  const voteDate = toDate(vote.votedAt);
-  document.getElementById('voteElectionName').textContent = electionName;
-  document.getElementById('voteElectionDate').textContent = voteDate ? voteDate.toLocaleDateString([], { month:'long', day:'2-digit', year:'numeric' }) : '—';
-  document.getElementById('voteElectionTime').textContent = voteDate ? voteDate.toLocaleTimeString([], { hour:'numeric', minute:'2-digit' }) : '—';
-  document.getElementById('voteTableBody').innerHTML = buildVoteRows(vote);
+  host.innerHTML = items.map(item => `<article class="activity-item"><span class="activity-icon"><i class="fa-solid fa-message"></i></span><div><h4>${escapeHtml(item.title)}</h4><p>${escapeHtml(item.text)}</p><small>${escapeHtml(item.when)}</small></div></article>`).join('');
 }
 
 function renderComplaintTable() {
@@ -451,39 +414,6 @@ function listenComplaints() {
     state.complaints = snapshot.docs.map(doc => normalizeComplaintRecord({ id: doc.id, ...doc.data() })).sort((a,b) => (toDate(b.updatedAt || b.createdAt)?.getTime() || 0) - (toDate(a.updatedAt || a.createdAt)?.getTime() || 0));
     renderAll();
   }, renderComplaintLoadError);
-}
-
-async function loadTracklistElectionContext() {
-  const pointer = await getDoc(doc(db, 'election_config', 'current'));
-  const electionId = clean(pointer.data()?.electionId);
-  if (!pointer.exists() || !electionId) return null;
-  const election = await getDoc(doc(db, 'elections', electionId));
-  if (!election.exists()) return null;
-  return { electionId, title: clean(election.data()?.title, 'USC Election') };
-}
-
-async function listenVotes() {
-  const studentUid = currentStudentUid();
-  if (!studentUid) return renderAll();
-  try {
-    const context = await loadTracklistElectionContext();
-    if (!context?.electionId) {
-      state.participation = [];
-      renderAll();
-      return;
-    }
-    const statusRef = doc(db, 'elections', context.electionId, 'voterStatus', studentUid);
-    onSnapshot(statusRef, snapshot => {
-      state.participation = snapshot.exists() && snapshot.data().hasVoted === true
-        ? [{ id: snapshot.id, ...snapshot.data(), electionName: context.title, electionId: context.electionId }]
-        : [];
-      renderAll();
-    }, () => { state.participation = []; renderAll(); });
-  } catch (error) {
-    console.warn('Election participation status unavailable:', error);
-    state.participation = [];
-    renderAll();
-  }
 }
 
 bindModalClose();
