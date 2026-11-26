@@ -1,4 +1,4 @@
-import { eventAudienceLabel } from "../../shared/event-audience.mjs?v=open-audience-1";
+import { matchesEventAudience } from "../../shared/event-audience.mjs";
 import { auth, db } from "../../firebase/firebase-config.js";
 import {
   collection,
@@ -472,8 +472,6 @@ function renderDetail(eventItem, registration = null) {
   detailDeadline.textContent = mode === "none" ? "Not required" : formatDeadline(eventItem);
   detailMode.textContent = registrationModeLabel(eventItem);
   if (detailOrganizer) detailOrganizer.textContent = itemOrganizer(eventItem);
-  const audience=document.getElementById("eventsDetailAudience");
-  if(audience) audience.textContent = eventAudienceLabel(eventItem);
   detailStatus.textContent = mode === "none"
     ? (itemSource(eventItem) === "program" ? "Open program" : "Open event")
     : (open ? "Registration open" : "Registration closed");
@@ -574,7 +572,7 @@ function rebuildMergedFeed() {
   const now = new Date();
   now.setHours(0, 0, 0, 0);
   const allItems = [...sourceFeeds.events, ...sourceFeeds.programs]
-    .filter((eventItem) => clean(eventItem.status, "Published") === "Published")
+    .filter((eventItem) => clean(eventItem.status, "Published") === "Published" && (itemSource(eventItem) === "program" || matchesEventAudience(eventItem, studentProfile)))
     .sort((a, b) => eventSortValue(a) - eventSortValue(b));
 
   const upcoming = allItems.filter((eventItem) => {
