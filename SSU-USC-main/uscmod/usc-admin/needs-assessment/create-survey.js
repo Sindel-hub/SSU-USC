@@ -35,5 +35,22 @@ if(q&&b.dataset.array){const k=b.dataset.array,i=+b.dataset.index,arr=q[k];if(ac
 render()});
 let drag='';app.addEventListener('dragstart',ev=>{drag=ev.target.dataset.drag||'';if(drag)ev.dataTransfer.setData('text/plain',drag)});app.addEventListener('dragover',ev=>{if(drag&&ev.target.closest('[data-question]'))ev.preventDefault()});app.addEventListener('drop',ev=>{const dest=byQ(ev.target.closest('[data-question]')?.dataset.question),src=byQ(drag);if(dest&&src&&dest!==src){ev.preventDefault();data.questions=data.questions.filter(q=>q!==src);src.sectionId=dest.sectionId;data.questions.splice(data.questions.indexOf(dest),0,src);selected=src.id;render()}drag=''});
 $('preview').onclick=()=>{preview=!preview;$('preview').textContent=preview?'Back to editor':'Student preview';$('save').hidden=preview;render()};
-$('save').onclick=async()=>{$('save').disabled=true;try{const input={...data,questions:data.sections.flatMap(s=>data.questions.filter(q=>q.sectionId===s.id))};const result=await surveyCall('Manage',{action:'save',surveyId:savedId||undefined,input});savedId=result.id;status.textContent='Draft saved. Return to Needs Assessment to publish.';const url=new URL(location.href);url.search='';url.searchParams.set('id',savedId);history.replaceState(null,'',url)}catch(err){status.textContent=err.message}finally{$('save').disabled=false}};
+$('save').onclick = async () => {
+  $('save').disabled = true;
+  status.textContent = 'Saving draft…';
+  try {
+    const input = {...data, questions: data.sections.flatMap(section => data.questions.filter(question => question.sectionId === section.id))};
+    const result = await surveyCall('Manage', {action: 'save', surveyId: savedId || undefined, input});
+    savedId = result.id;
+    status.textContent = 'Draft saved. Return to Needs Assessment to publish.';
+    const url = new URL(location.href);
+    url.search = '';
+    url.searchParams.set('id', savedId);
+    history.replaceState(null, '', url);
+  } catch (error) {
+    status.textContent = `Could not confirm the draft was saved. Keep this tab open to retain your edits. ${error.message}`;
+  } finally {
+    $('save').disabled = false;
+  }
+};
 $('preview').hidden=false;$('save').hidden=false;status.textContent='';render();
