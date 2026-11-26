@@ -30,10 +30,10 @@ function createNeedsAssessmentHandlers({ db, requireActiveRole, requireOfficerPe
         const content = validate(() => validateSurvey(input));
         const ref = surveyId ? surveys.doc(id(surveyId)) : surveys.doc();
         await db.runTransaction(async tx => {
-          const assignment = history ? await history.context(tx, request, 'bulletin.manage') : null;
+          const assignment = history ? await history.context(tx, request, 'bulletin.manage', { includeLegacy: true }) : null;
           const snap = await tx.get(ref);
           if (surveyId && !snap.exists) throw new HttpsError('not-found', 'Survey not found.');
-          if (assignment && snap.exists && snap.data().officerAssignmentId !== assignment.assignmentId) throw new HttpsError('permission-denied', 'Previous officers’ surveys are read-only. Create your own survey.');
+          if (assignment && snap.exists && ((snap.data().officerAssignmentId || null) !== assignment.assignmentId || (!assignment.assignmentId && snap.data().createdBy !== request.auth.uid))) throw new HttpsError('permission-denied', 'Previous officers’ surveys are read-only. Create your own survey.');
           if (snap.exists && snap.data().status !== 'draft') throw new HttpsError('failed-precondition', 'Only drafts can be edited. Duplicate a published survey to change its questions.');
           tx.set(ref, { ...content, status: 'draft', responseCount: 0, createdAt: snap.exists ? snap.data().createdAt : clock(), updatedAt: clock(), createdBy: snap.exists ? snap.data().createdBy : request.auth.uid, ...(assignment ? { officerAssignmentId: assignment.assignmentId } : {}) });
           if (history) history.append(tx, assignment, { module: 'Needs Assessment', action: snap.exists ? 'Survey draft updated' : 'Survey created', status: 'draft', recordId: ref.id, snapshot: content });
@@ -43,11 +43,11 @@ function createNeedsAssessmentHandlers({ db, requireActiveRole, requireOfficerPe
       if (!['publish','close','archive'].includes(action)) throw new HttpsError('invalid-argument', 'Unknown action.');
       const ref = surveys.doc(id(surveyId));
       await db.runTransaction(async tx => {
-        const assignment = history ? await history.context(tx, request, 'bulletin.manage') : null;
+        const assignment = history ? await history.context(tx, request, 'bulletin.manage', { includeLegacy: true }) : null;
         const snap = await tx.get(ref);
         if (!snap.exists) throw new HttpsError('not-found', 'Survey not found.');
         const s = snap.data();
-        if (assignment && s.officerAssignmentId !== assignment.assignmentId) throw new HttpsError('permission-denied', 'Previous officers’ surveys are read-only.');
+        if (assignment && ((s.officerAssignmentId || null) !== assignment.assignmentId || (!assignment.assignmentId && s.createdBy !== request.auth.uid))) throw new HttpsError('permission-denied', 'Previous officers’ surveys are read-only.');
         if (action === 'publish' && (s.status !== 'draft' || s.closesAt <= clock())) throw new HttpsError('failed-precondition', 'Only a draft with a future closing time can be published.');
         if (action === 'close' && s.status !== 'published') throw new HttpsError('failed-precondition', 'Only published surveys can be closed.');
         if (action === 'archive' && s.status === 'published' && surveyStatus(s, clock()) !== 'closed') throw new HttpsError('failed-precondition', 'Close the survey before archiving.');
@@ -57,7 +57,7 @@ function createNeedsAssessmentHandlers({ db, requireActiveRole, requireOfficerPe
       return { id: ref.id };
     },
     async needsAssessmentList(request) {
-      await requireActiveRole(request, ['officer','admin']);
+      await requireActiveRole(request, ['officer','admin'], { useOfficerProfile: true });
       const after = request.data?.after;
       let q = surveys.orderBy('__name__').limit(51);
       if (after) q = q.startAfter(id(after));
@@ -65,7 +65,7 @@ function createNeedsAssessmentHandlers({ db, requireActiveRole, requireOfficerPe
       return { surveys: docs.slice(0,50).map(d => ({ id: d.id, ...d.data(), lifecycle: surveyStatus(d.data(), clock()) })), next: docs.length > 50 ? docs[49].id : null };
     },
     async needsAssessmentResponses(request) {
-      await requireActiveRole(request, ['officer','admin']);
+      await requireActiveRole(request, ['officer','admin'], { useOfficerProfile: true });
       const ref = surveys.doc(id(request.data?.surveyId));
       const s = await survey(ref);
       let q = ref.collection('responses').orderBy('__name__').limit(201);

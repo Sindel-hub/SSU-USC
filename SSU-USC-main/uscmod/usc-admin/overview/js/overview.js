@@ -4,7 +4,7 @@ import { summarizeStudentSignIns } from "./student-signin-model.mjs";
 import { statusBreakdown, renderOverviewChart } from "./overview-charts.js?v=1";
 import { db } from "../../../firebase/firebase-config.js";
 import { resolveMediaUrl } from "../../../shared/security-client.js";
-import { collection, collectionGroup, getCountFromServer, limit, onSnapshot, orderBy, query, where } from "https://www.gstatic.com/firebasejs/12.12.0/firebase-firestore.js";
+import { collection, collectionGroup, documentId, getCountFromServer, getDocs, limit, onSnapshot, orderBy, query, startAfter, where } from "https://www.gstatic.com/firebasejs/12.12.0/firebase-firestore.js";
 
 const uscAuthAllowed = await (globalThis.USC_AUTH_READY || Promise.resolve(false));
 if (uscAuthAllowed !== true) await new Promise(() => {});
@@ -147,7 +147,36 @@ function renderRecentComplaints(){
   }).join("");
 }
 let complaintCountRefreshTimer = 0;
+let complaintStatsLoading = false;
+async function readComplaintDashboardStats() {
+  const counts = { total: 0, active: 0, resolved: 0, closed: 0, student: 0, administrative: 0, crisis: 0 };
+  const classifications = { 'Student Level': 'student', 'Administrative Level': 'administrative', 'Crisis Level': 'crisis' };
+  let cursor = null;
+  while (true) {
+    const page = await getDocs(query(collection(db, 'complaints'), orderBy(documentId()), ...(cursor ? [startAfter(cursor)] : []), limit(200)));
+    for (const record of page.docs) {
+      const item = record.data();
+      counts.total++;
+      if (PENDING_COMPLAINT_STATUSES.has(item.status)) counts.active++;
+      if (item.status === 'Resolved') counts.resolved++;
+      if (item.status === 'Closed') counts.closed++;
+      if (Object.hasOwn(classifications, item.classification)) counts[classifications[item.classification]]++;
+    }
+    if (page.docs.length < 200) return counts;
+    cursor = page.docs.at(-1);
+  }
+}
+function applyComplaintDashboardStats(counts) {
+  state.complaintAnalytics = counts;
+  state.feeds.complaints = true;
+  for (const [selector, key] of [['total-complaints', 'total'], ['pending-complaints', 'active'], ['complaint-student', 'student'], ['complaint-administrative', 'administrative'], ['complaint-crisis', 'crisis']]) {
+    setText(`[data-overview-${selector}]`, counts[key]);
+  }
+  renderComplaintAnalytics();
+}
 async function refreshComplaintDashboardStats(){
+  if (complaintStatsLoading) return;
+  complaintStatsLoading = true;
   try {
     const pendingQuery = query(collection(db,"complaints"), where("status","in",Array.from(PENDING_COMPLAINT_STATUSES)));
     const studentQuery = query(collection(db,"complaints"), where("classification","==","Student Level"));
@@ -164,27 +193,20 @@ async function refreshComplaintDashboardStats(){
       getCountFromServer(administrativeQuery),
       getCountFromServer(crisisQuery)
     ]);
-    setText("[data-overview-total-complaints]", total.data().count || 0);
-    setText("[data-overview-pending-complaints]", pending.data().count || 0);
-    setText("[data-overview-complaint-student]", student.data().count || 0);
-    setText("[data-overview-complaint-administrative]", administrative.data().count || 0);
-    setText("[data-overview-complaint-crisis]", crisis.data().count || 0);
-    state.complaintAnalytics = {
-      total: total.data().count || 0,
-      active: pending.data().count || 0,
-      resolved: resolved.data().count || 0,
-      closed: closed.data().count || 0,
-      student: student.data().count || 0,
-      administrative: administrative.data().count || 0,
-      crisis: crisis.data().count || 0
-    };
-    state.feeds.complaints = true;
-    renderComplaintAnalytics();
+    applyComplaintDashboardStats(Object.fromEntries([
+      ['total', total], ['active', pending], ['resolved', resolved], ['closed', closed],
+      ['student', student], ['administrative', administrative], ['crisis', crisis]
+    ].map(([key, result]) => [key, result.data().count || 0])));
   } catch (error) {
-    state.feeds.complaints = "error";
-    renderComplaintAnalytics();
-    console.warn("Complaint dashboard statistics unavailable:", error);
-  }
+    // Aggregate failures must not discard readable records. Use bounded pages
+    // with the same Firestore authorization and publish only a complete result.
+    try { applyComplaintDashboardStats(await readComplaintDashboardStats()); }
+    catch (readError) {
+      state.feeds.complaints = "error";
+      renderComplaintAnalytics();
+      console.warn("Complaint dashboard statistics unavailable:", readError);
+    }
+  } finally { complaintStatsLoading = false; }
 }
 function schedulePendingComplaintCountRefresh(){
   clearTimeout(complaintCountRefreshTimer);

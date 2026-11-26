@@ -9,7 +9,7 @@ let directoryRequest=0,directoryTimer=null,directoryLoading=false;
 let recordOpener=null;
 const detailDialog=$('studentDetail');
 const directoryDialog=$('studentDirectoryDialog');
-$('openStudentDirectory').onclick=()=>{if(!directoryDialog.open){directoryDialog.showModal();document.documentElement.classList.add('student-directory-modal-open');$('findStudentId').focus();}};
+$('openStudentDirectory').onclick=()=>{if(!directoryDialog.open){directoryDialog.showModal();document.documentElement.classList.add('student-directory-modal-open');$('findStudentId').focus();void list();}};
 $('closeStudentDirectory').onclick=()=>directoryDialog.close();
 directoryDialog.addEventListener('close',()=>{document.documentElement.classList.remove('student-directory-modal-open');$('openStudentDirectory').focus({preventScroll:true});});
 
@@ -65,7 +65,7 @@ async function list(more=false){
  const filters={studentStanding:$('studentStatusFilter').value,search};
  let cursor=more?next:null,found=[];
  if(!more){students=[];next=null;$('studentRecordRows').replaceChildren();}
- directoryLoading=true;$('moreStudents').hidden=true;
+ directoryLoading=true;$('moreStudents').hidden=true;$('studentRecordRows').setAttribute('aria-busy','true');
  $('studentListSummary').textContent='Searching student records…';
  try{
   do{
@@ -74,8 +74,8 @@ async function list(more=false){
    found=result.students;cursor=result.next;
   }while(!found.length&&cursor);
   students=more?[...students,...found]:found;next=cursor;renderStudents();
- }catch(error){if(request===directoryRequest){$('studentListSummary').textContent=error.message||'Unable to search records. Please try again.';$('moreStudents').hidden=!next;}}
- finally{if(request===directoryRequest)directoryLoading=false;}
+ }catch(error){if(request===directoryRequest){$('studentListSummary').textContent=error.message||'Unable to search records. Please try again.';$('moreStudents').hidden=!next;if(!students.length)$('studentRecordRows').innerHTML='<tr><td colspan="6">Student records could not be loaded. Select Refresh to try again.</td></tr>';}}
+ finally{if(request===directoryRequest){directoryLoading=false;$('studentRecordRows').removeAttribute('aria-busy');}}
 }
 function scheduleDirectorySearch(delay=0){
  clearTimeout(directoryTimer);++directoryRequest;directoryLoading=true;
@@ -148,4 +148,4 @@ $('recordStandingForm').onsubmit=event=>{event.preventDefault();run(async()=>{
  $('studentDetailStatus').textContent='Student status saved.';
  await list();
 });};
-await run(()=>list());
+$('studentListSummary').textContent='Open the directory to load student records.';

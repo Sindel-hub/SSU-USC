@@ -12,6 +12,7 @@ const POSITIONS = Object.freeze({
 });
 const ACTIVITY_MODULES = {
   "Bulletin Board": ["bulletin.draft", "bulletin.review", "bulletin.publish", "bulletin.manage"],
+  "Needs Assessment": ["bulletin.manage", "bulletin.review", "bulletin.publish"],
   Events: ["events.manage"],
   Programs: ["programs.manage"],
   Complaints: ["complaints.view", "complaints.review"]
