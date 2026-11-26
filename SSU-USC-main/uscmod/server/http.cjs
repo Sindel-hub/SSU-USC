@@ -100,9 +100,15 @@ function createManagementHTTPHandler({ getRuntime, hosted = Boolean(process.env.
       send(200, { data: result });
     } catch (error) {
       const expected = error instanceof ServiceError;
-      const code = expected && STATUS[error.code] ? error.code : "internal";
-      log({ requestId, code, ...(actionName ? { action: actionName } : {}), ...(!expected ? { category: failureCategory(error) } : {}) }); // Never log request bodies or raw SDK messages.
-      send(STATUS[code] || 500, { error: { code, message: expected && code !== "internal" ? error.message : "The request could not be completed. Please retry later.", requestId } });
+      const category = expected ? null : failureCategory(error);
+      let code = expected && STATUS[error.code] ? error.code : "internal";
+      let message = expected && code !== "internal" ? error.message : "The request could not be completed. Please retry later.";
+      if (category === "database-resource-exhausted") {
+        code = "unavailable";
+        message = "The database has reached a usage limit. Please try again later.";
+      }
+      log({ requestId, code, ...(actionName ? { action: actionName } : {}), ...(category ? { category } : {}) }); // Never log request bodies or raw SDK messages.
+      send(STATUS[code] || 500, { error: { code, message, requestId } });
     }
   };
 }

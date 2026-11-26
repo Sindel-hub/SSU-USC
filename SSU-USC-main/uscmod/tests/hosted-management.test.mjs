@@ -235,6 +235,20 @@ test('survey database failures have safe, correlated diagnostics without exposin
   }
 });
 
+test('a Firestore quota error gives survey reads and writes a recoverable service response', async () => {
+  const f = hostedFixture();
+  for (const action of ['needsAssessmentList', 'needsAssessmentManage']) {
+    f.runtime.handlers[action] = () => { throw Object.assign(new Error('private database quota details'), {code:8}); };
+    const result = await request(f, action);
+    assert.equal(result.statusCode, 503);
+    assert.equal(result.body.error.code, 'unavailable');
+    assert.match(result.body.error.message, /database has reached a usage limit/);
+    assert.equal(result.body.error.requestId, f.logs.at(-1).requestId);
+    assert.equal(f.logs.at(-1).category, 'database-resource-exhausted');
+    assert.doesNotMatch(JSON.stringify([result, f.logs]), /private database quota details/);
+  }
+});
+
 test('survey client preserves safe service messages and support references', async () => {
   const source = (await fs.readFile(path.join(import.meta.dirname, '../shared/needs-assessment-client.js'), 'utf8')).replace(/^import .*;\n/, '').replace('export async function surveyCall','async function surveyCall').split('export const escapeHtml')[0];
   const requestId='12345678-1234-1234-1234-123456789abc';

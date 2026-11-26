@@ -148,6 +148,8 @@ function renderRecentComplaints(){
 }
 let complaintCountRefreshTimer = 0;
 let complaintStatsLoading = false;
+let complaintStatsRetryAt = 0;
+const COMPLAINT_READ_COOLDOWN_MS = 5 * 60 * 1000;
 async function readComplaintDashboardStats() {
   const counts = { total: 0, active: 0, resolved: 0, closed: 0, student: 0, administrative: 0, crisis: 0 };
   const classifications = { 'Student Level': 'student', 'Administrative Level': 'administrative', 'Crisis Level': 'crisis' };
@@ -175,7 +177,7 @@ function applyComplaintDashboardStats(counts) {
   renderComplaintAnalytics();
 }
 async function refreshComplaintDashboardStats(){
-  if (complaintStatsLoading) return;
+  if (document.hidden || complaintStatsLoading || Date.now() < complaintStatsRetryAt) return;
   complaintStatsLoading = true;
   try {
     const pendingQuery = query(collection(db,"complaints"), where("status","in",Array.from(PENDING_COMPLAINT_STATUSES)));
@@ -198,12 +200,18 @@ async function refreshComplaintDashboardStats(){
       ['student', student], ['administrative', administrative], ['crisis', crisis]
     ].map(([key, result]) => [key, result.data().count || 0])));
   } catch (error) {
-    // Aggregate failures must not discard readable records. Use bounded pages
-    // with the same Firestore authorization and publish only a complete result.
-    try { applyComplaintDashboardStats(await readComplaintDashboardStats()); }
+    // A collection scan costs more reads. Reserve it for unsupported counts
+    // and back off before trying again, including after a quota failure.
+    complaintStatsRetryAt = Date.now() + COMPLAINT_READ_COOLDOWN_MS;
+    try {
+      if (!['failed-precondition', 'unimplemented'].includes(error.code)) throw error;
+      applyComplaintDashboardStats(await readComplaintDashboardStats());
+    }
     catch (readError) {
-      state.feeds.complaints = "error";
-      renderComplaintAnalytics();
+      if (state.feeds.complaints !== true) {
+        state.feeds.complaints = "error";
+        renderComplaintAnalytics();
+      }
       console.warn("Complaint dashboard statistics unavailable:", readError);
     }
   } finally { complaintStatsLoading = false; }
