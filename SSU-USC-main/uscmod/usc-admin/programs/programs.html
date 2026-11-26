@@ -237,7 +237,7 @@
                                 </fieldset>
                                 <fieldset class="event-form-section"><legend>Participation</legend>
                                 <div class="grid-2">
-                                    <div class="field" style="grid-column:1/-1">
+                                    <div class="field">
                                         <label for="eventAudience"><i class="fa-solid fa-users" aria-hidden="true"></i> Audience</label>
                                         <select id="eventAudience" required>
                                             <option value="All Students">All Students</option>
@@ -246,7 +246,13 @@
                                         </select>
                                     </div>
 
-                                    
+                                    <div class="field">
+                                        <label for="eventReminderEnabled"><i class="fa-regular fa-bell" aria-hidden="true"></i> Reminders</label>
+                                        <select id="eventReminderEnabled" required>
+                                            <option value="true">Enable Reminder</option>
+                                            <option value="false">Disable Reminder</option>
+                                        </select>
+                                    </div>
                                 </div>
 
                                 <div class="event-registration-config">
@@ -359,7 +365,7 @@
 </footer>
 
     <script src="../shared/js/nav-active.js?v=flash-fix-1"></script>
-    <script type="module" src="js/programs.js?v=automatic-notifications-1"></script>
+    <script type="module" src="js/programs.js?v=published-compact-2"></script>
     <script type="module" src="../shared/js/admin-auth.js?v=rbac4"></script>
 <script type="module" src="../../shared/profile-manager.js?v=registered-name-2&amp;refinements=1"></script>
   <script type="module" src="../shared/js/officer-rbac.js?v=programs-1"></script>

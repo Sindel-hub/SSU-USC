@@ -36,6 +36,7 @@ const eventEndTimeInput = document.getElementById("eventEndTime");
 const eventCategoryInput = document.getElementById("eventCategory");
 const eventDescriptionInput = document.getElementById("eventDescription");
 const eventAudienceInput = document.getElementById("eventAudience");
+const eventReminderEnabledInput = document.getElementById("eventReminderEnabled");
 const eventRegistrationModeInput = document.getElementById("eventRegistrationMode");
 const eventRegistrationDeadlineInput = document.getElementById("eventRegistrationDeadline");
 const eventRegistrationDeadlineField = document.getElementById("eventRegistrationDeadlineField");
@@ -54,6 +55,7 @@ const scrollToEventFormBtn = document.getElementById("scrollToEventFormBtn");
 
 const upcomingEventCountEl = document.getElementById("upcomingEventCount");
 const publishedEventCountEl = document.getElementById("publishedEventCount");
+const reminderEnabledCountEl = document.getElementById("reminderEnabledCount");
 const confirmedAttendanceCountEl = document.getElementById("confirmedAttendanceCount");
 const recentEventsList = document.getElementById("recentEventsList");
 
@@ -220,6 +222,7 @@ function resetEventForm() {
   setEventImagePreview();
 
   if (eventAudienceInput) eventAudienceInput.value = "All Students";
+  if (eventReminderEnabledInput) eventReminderEnabledInput.value = "true";
   if (eventRegistrationModeInput) eventRegistrationModeInput.value = "internal";
   if (eventCategoryInput) eventCategoryInput.value = "Community Outreach";
   if (programHostOrganizationInput) programHostOrganizationInput.value = "";
@@ -257,9 +260,11 @@ function totalWebsiteRegistrations() {
 
 function updateStats(events) {
   const upcomingEvents = events.filter(isUpcomingEvent);
+  const remindersEnabled = events.filter((eventItem) => eventItem.reminderEnabled === true);
 
   if (upcomingEventCountEl) upcomingEventCountEl.textContent = String(upcomingEvents.length);
   if (publishedEventCountEl) publishedEventCountEl.textContent = String(events.length);
+  if (reminderEnabledCountEl) reminderEnabledCountEl.textContent = String(remindersEnabled.length);
   if (confirmedAttendanceCountEl) confirmedAttendanceCountEl.textContent = String(totalWebsiteRegistrations());
   if (eventsFeedReady) engagementAnalytics.update(events, reportRegistrations);
 }
@@ -320,6 +325,7 @@ function renderEvents(events) {
     .map((eventItem) => {
       const status = getEventStatus(eventItem);
       const badgeClass = status === "Upcoming" ? "live" : "review";
+      const reminderText = eventItem.reminderEnabled ? "Reminders on" : "Reminders off";
       const mode = safeText(eventItem.registrationMode, "none").toLowerCase();
       const websiteRegistrations = registrationCounts.get(eventItem.id) || 0;
       const imageUrl = safeText(eventItem.imageUrl || eventItem.posterUrl);
@@ -369,6 +375,7 @@ function renderEvents(events) {
           <div class="item-text">${escapeHtml(safeText(eventItem.description, "No program description provided."))}</div>
           <div class="event-meta-line">
             <span><i class="fa-solid fa-users"></i> ${escapeHtml(safeText(eventItem.audience, "All Students"))}</span>
+            <span><i class="fa-regular fa-bell"></i> ${reminderText}</span>
             <span><i class="fa-solid fa-ticket"></i> ${escapeHtml(registrationModeLabel(mode))}</span>
             ${mode !== "none" ? `<span class="event-deadline"><i class="fa-solid fa-hourglass-end" aria-hidden="true"></i> Registration closes: ${escapeHtml(formatRegistrationDeadline(eventItem))}</span>` : ""}
           </div>
@@ -555,6 +562,7 @@ eventForm?.addEventListener("submit", async (event) => {
   const category = safeText(eventCategoryInput?.value, "Community Outreach");
   const description = safeText(eventDescriptionInput?.value);
   const audience = safeText(eventAudienceInput?.value, "All Students");
+  const reminderEnabled = safeText(eventReminderEnabledInput?.value, "true") === "true";
   const registrationMode = safeText(eventRegistrationModeInput?.value, "internal").toLowerCase();
   const deadlineRaw = safeText(eventRegistrationDeadlineInput?.value);
   const externalRegistrationUrl = safeText(eventExternalRegistrationUrlInput?.value);
@@ -621,7 +629,7 @@ eventForm?.addEventListener("submit", async (event) => {
       category,
       description,
       audience,
-      reminderEnabled: true,
+      reminderEnabled,
       registrationMode,
       registrationDeadline,
       externalRegistrationUrl: registrationMode === "external" ? externalRegistrationUrl : "",
@@ -668,6 +676,7 @@ recentEventsList?.addEventListener("click", async (event) => {
     resetEventForm(); editingEventId = saved.id;
     const fields = { title: eventTitleInput, eventDate: eventDateInput, venue: eventVenueInput, startTime: eventStartTimeInput, endTime: eventEndTimeInput, category: eventCategoryInput, description: eventDescriptionInput, audience: eventAudienceInput, registrationMode: eventRegistrationModeInput, externalRegistrationUrl: eventExternalRegistrationUrlInput, participationNotes: eventParticipationNotesInput, hostOrganization: programHostOrganizationInput };
     for (const [key, input] of Object.entries(fields)) if (input) input.value = saved[key] || '';
+    eventReminderEnabledInput.value = String(saved.reminderEnabled === true);
     const deadline = timestampDate(saved.registrationDeadline);
     if (deadline) { const local = new Date(deadline.getTime() - deadline.getTimezoneOffset() * 60000); eventRegistrationDeadlineInput.value = local.toISOString().slice(0, 16); }
     syncRegistrationFields();
