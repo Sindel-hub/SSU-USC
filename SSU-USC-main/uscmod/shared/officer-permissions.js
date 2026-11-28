@@ -112,6 +112,7 @@ export const OFFICER_POSITION_PERMISSION_PRESETS = Object.freeze({
 export const OFFICER_MODULE_PERMISSION_BY_PATH = Object.freeze({
   "/usc-admin/announcements/": "bulletin.manage",
   "/usc-admin/elections/": "elections.view",
+  "/usc-admin/reporting/": "reports.generate",
   "/usc-admin/events/": "events.manage",
   "/usc-admin/programs/": "programs.manage",
   "/usc-admin/organizational-chart/": "organization.view",
@@ -122,6 +123,7 @@ export const OFFICER_MODULE_PERMISSION_BY_PATH = Object.freeze({
 export const OFFICER_MODULE_PERMISSION_BY_HREF = Object.freeze({
   "announcements/announcements.html": "bulletin.manage",
   "elections/elections.html": "elections.view",
+  "reporting/reporting.html": "reports.generate",
   "events/events.html": "events.manage",
   "programs/programs.html": "programs.manage",
   "organizational-chart/organizational-chart.html": "organization.view",

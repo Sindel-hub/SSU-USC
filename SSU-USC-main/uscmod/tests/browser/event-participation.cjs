@@ -117,7 +117,24 @@ const server = http.createServer(async (req, res) => {
     log: () => {},
     getRuntime: () => ({
       settings: { allowedOrigins: new Set([base]), enforceAppCheck: false },
-      handlers: { ...f.h, ...published },
+      handlers: {
+        ...f.h,
+        ...published,
+        ...require("../../server/reporting.cjs").createReportingHandlers({
+          db: f.db,
+          history: f.history,
+          ...f.authorization,
+          clock: () => f.now,
+        }),
+        ...require("../../server/reporting-eligibility.cjs").createEligibilityHandlers(
+          {
+            db: f.db,
+            history: f.history,
+            ...f.authorization,
+            clock: () => f.now,
+          },
+        ),
+      },
       verifyIdToken: async (uid) => ({
         uid,
         role: f.records.get("users/" + uid)?.role,
@@ -320,22 +337,18 @@ const server = http.createServer(async (req, res) => {
   await officer.locator(".participation-camera-dialog[open]").waitFor();
   await officer.locator("[data-confirm]").waitFor();
   await officer.setViewportSize({ width: 390, height: 844 });
-  await officer
-    .locator(".participation-camera-dialog")
-    .screenshot({
-      path: "/workspace/review-artifacts/participation-ui/camera-popup-mobile.png",
-    });
+  await officer.locator(".participation-camera-dialog").screenshot({
+    path: "/workspace/review-artifacts/participation-ui/camera-popup-mobile.png",
+  });
   assert.ok(
     await officer
       .locator(".participation-camera-dialog")
       .evaluate((el) => el.getBoundingClientRect().width <= window.innerWidth),
   );
   await officer.setViewportSize({ width: 1440, height: 1000 });
-  await officer
-    .locator(".participation-camera-dialog")
-    .screenshot({
-      path: "/workspace/review-artifacts/participation-ui/scanner-identity.png",
-    });
+  await officer.locator(".participation-camera-dialog").screenshot({
+    path: "/workspace/review-artifacts/participation-ui/scanner-identity.png",
+  });
   assert.equal(
     f.records.get("events/assembly/registrations/first").timeInAtMs,
     undefined,
@@ -541,6 +554,115 @@ const server = http.createServer(async (req, res) => {
     () => document.querySelector("#eventTitle").value === "",
   );
   assert.equal(f.records.get(created[0]).title, "Browser Edited Assembly");
+  assert.equal(f.records.get(created[0]).eligibilitySnapshotState, "ready");
+  const newPolicyStudent = await pageFor("first", "/dashboard/events.html");
+  await newPolicyStudent
+    .locator(`[data-participate-event="${createdId}"]`)
+    .click();
+  await newPolicyStudent
+    .locator(`[data-register-event="${createdId}"]`)
+    .click();
+  await newPolicyStudent.waitForFunction(() =>
+    document
+      .querySelector("#eventsRegistrationState")
+      .textContent.includes("Registered"),
+  );
+  assert.equal(
+    f.records.get("events/" + createdId + "/registrations/first")
+      .academicSnapshot.section,
+    "4A",
+  );
+  Object.assign(f.records.get("users/operator"), {
+    officerPermissions: [
+      "events.manage",
+      "programs.manage",
+      "reports.generate",
+      "complaints.view",
+      "complaints.review",
+      "complaints.report",
+    ],
+  });
+  f.records.set("complaints/report-case", {
+    complaintRef: "USC-REPORT-001",
+    subject: "Synthetic reporting concern",
+    studentDepartment: "College of Arts and Sciences",
+    status: "In Progress",
+    createdAt: f.now - 60000,
+    updatedAt: f.now,
+    details: "PRIVATE student text",
+  });
+  await officer.goto(base + "/usc-admin/reporting/reporting.html");
+  await officer.evaluate(() =>
+    document.documentElement.classList.remove("usc-officer-access-pending"),
+  );
+  await officer.waitForFunction(() =>
+    document.querySelector("#reportMessage").textContent.startsWith("Updated"),
+  );
+  await officer.locator("#reportEvents").selectOption("events/" + createdId);
+  await officer.waitForFunction(() =>
+    document.querySelector("#reportMessage").textContent.startsWith("Updated"),
+  );
+  assert.ok(
+    (await officer.locator("#reportStats").innerText()).includes("Eligible"),
+  );
+  for (let level = 0; level < 4; level++)
+    await officer.locator("#reportTable [data-group]").first().click();
+  await officer.locator("#reportTable [data-student]").first().click();
+  assert.equal(await officer.locator("dialog.report-detail").count(), 1);
+  await officer.keyboard.press("Escape");
+  const reportDownload = officer.waitForEvent("download");
+  await officer.locator("#reportExport").click();
+  const downloaded = await reportDownload;
+  const reportPath = path.join(output, "reporting-attendance.xlsx");
+  await downloaded.saveAs(reportPath);
+  const reportingBook = new ExcelJS.Workbook();
+  await reportingBook.xlsx.load(fs.readFileSync(reportPath));
+  assert.ok(reportingBook.getWorksheet("Attendance Summary"));
+  assert.ok(reportingBook.getWorksheet("Individual Attendance Records"));
+  await officer.locator('[data-tab="complaints"]').click();
+  await officer.waitForFunction(() =>
+    document.querySelector("#reportMessage").textContent.startsWith("Updated"),
+  );
+  await officer.locator('[name="search"]').fill("USC-REPORT-001");
+  await officer.waitForFunction(() =>
+    document
+      .querySelector("#reportTable")
+      .textContent.includes("Synthetic reporting concern"),
+  );
+  await officer.locator('[name="search"]').fill("nonexistent-ref");
+  await officer.waitForFunction(() =>
+    document
+      .querySelector("#reportTable")
+      .textContent.includes("No complaints found"),
+  );
+  await officer.locator('[data-tab="activities"]').click();
+  await officer.waitForFunction(() =>
+    document.querySelector("#reportMessage").textContent.startsWith("Updated"),
+  );
+  assert.ok(
+    (await officer.locator("#reportTable").innerText()).includes(
+      "Report export authorized",
+    ),
+  );
+  for (const [width, name] of [
+    [1440, "desktop"],
+    [768, "tablet"],
+    [390, "mobile"],
+  ]) {
+    await officer.setViewportSize({ width, height: 1000 });
+    await officer.screenshot({
+      path: path.join(output, "reporting-" + name + ".png"),
+      fullPage: true,
+    });
+    assert.ok(
+      await officer.evaluate(
+        () => document.documentElement.scrollWidth <= innerWidth + 1,
+      ),
+    );
+  }
+  console.log(
+    "PASS: reporting drill-down, student modal, real Excel download, complaint search/empty state, activity audit, responsive layouts. Synthetic database/Auth only.",
+  );
   console.log("Browser errors:", errors);
   assert.deepEqual(errors, []);
   await browser.close();
@@ -550,6 +672,7 @@ const server = http.createServer(async (req, res) => {
 })()
   .catch(async (error) => {
     console.error(error);
+
     for (const context of browser?.contexts() || [])
       for (const page of context.pages())
         await page.screenshot({

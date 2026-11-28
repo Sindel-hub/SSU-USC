@@ -2,7 +2,7 @@
   "name": "usc-election-system",
   "private": true,
   "scripts": {
-    "test": "npm run test:signin-analytics && npm run test:syntax && npm run test:landing-ui && npm run test:static && npm run test:candidate-management && npm run test:lifecycle && npm run test:admin-auth && npm run test:verify && npm run test:school-login && npm run test:auth-regressions && npm run test:complaints && npm run test:complaint-tracklist && npm run test:capstone && npm run test:navigation-profile && npm run test:complaint-delete && npm run test:rbac && npm run test:no-backend && npm run test:needs-assessment && npm run test:student-records && npm run test:hosted-management && npm run test:officer-history && npm run test:announcement-review && npm run test:notification-reads && npm run test:portal-data && npm run test:event-participation",
+    "test": "npm run test:signin-analytics && npm run test:syntax && npm run test:landing-ui && npm run test:static && npm run test:candidate-management && npm run test:lifecycle && npm run test:admin-auth && npm run test:verify && npm run test:school-login && npm run test:auth-regressions && npm run test:complaints && npm run test:complaint-tracklist && npm run test:capstone && npm run test:navigation-profile && npm run test:complaint-delete && npm run test:rbac && npm run test:no-backend && npm run test:needs-assessment && npm run test:student-records && npm run test:hosted-management && npm run test:officer-history && npm run test:announcement-review && npm run test:notification-reads && npm run test:portal-data && npm run test:event-participation && npm run test:reporting",
     "test:portal-data": "node --test tests/portal-data-regressions.test.cjs",
     "test:portal-data-browser": "node tests/browser/portal-data.cjs",
     "test:signin-analytics": "node --test tests/officer-signin-analytics.test.mjs",
@@ -53,7 +53,8 @@
     "test:announcement-review": "node --test tests/announcement-workflow.test.cjs",
     "test:announcement-review-rules": "firebase emulators:exec --project demo-ssu-announcement-review --only firestore \"node --test tests/announcement-review.rules.test.mjs\"",
     "test:event-attendance-browser": "node tests/browser/event-participation.cjs",
-    "test:event-participation-rules": "firebase emulators:exec --project demo-ssu-participation --only firestore \"node --test tests/event-participation.rules.test.mjs\""
+    "test:event-participation-rules": "firebase emulators:exec --project demo-ssu-participation --only firestore \"node --test tests/event-participation.rules.test.mjs\"",
+    "test:reporting": "node --test tests/reporting.test.mjs"
   },
   "devDependencies": {
     "@firebase/rules-unit-testing": "^4.0.1",

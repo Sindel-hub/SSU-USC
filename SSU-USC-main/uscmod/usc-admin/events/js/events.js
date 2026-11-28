@@ -1,3 +1,4 @@
+import { prepareEventEligibility } from '../../../shared/reporting-capture.js';
 import {mountParticipationTracklist} from "../../../shared/participation-tracklist.js";
 import {bindParticipationForm} from "../../../shared/participation-form.js";
 import {mountParticipationOfficer} from "../../../shared/participation-officer.js";
@@ -14,6 +15,7 @@ import {
   deleteDoc,
   doc,
   getDocs,
+  getDoc,
   onSnapshot,
   orderBy,
   query,
@@ -652,16 +654,19 @@ eventForm?.addEventListener("submit", async (event) => {
       updatedAt: serverTimestamp()
     };
     const tracked = await trackedOfficerAction({ module: "events", action: editingEventId ? "update" : "publish", recordId: editingEventId || undefined, input: publicationInput });
+    let publishedId=tracked?.recordId || tracked?.id || editingEventId;
     if (!tracked) {
       if (editingEventId) {
         const { createdByUid, createdByEmail, publishedAt, publishedAtMs, registeredParticipants, confirmedAttendance, ...changes } = publicationInput;
         await updateDoc(doc(eventsCollection, editingEventId), changes);
-      } else await addDoc(eventsCollection, publicationInput);
+      } else { const created=await addDoc(eventsCollection,{...publicationInput,eligibilityPolicyVersion:1});publishedId=created.id; }
     }
 
-    alert(editingEventId ? "Current record updated. Earlier versions remain preserved in My O-Tracklists." : imageUrl
+    let preparationMessage="";
+    if (publishedId) try { const savedPublication=await getDoc(doc(db,"events",publishedId));if(savedPublication.data()?.eligibilityPolicyVersion===1)await prepareEventEligibility("events",publishedId); } catch(error) { preparationMessage="The record was saved. Student eligibility preparation is pending; open Reporting & Analytics to resume. "+error.message; }
+    alert(preparationMessage || (editingEventId ? "Current record updated. Earlier versions remain preserved in My O-Tracklists." : imageUrl
       ? "Event published successfully. Students can now view its participation options."
-      : "Event published successfully. Students can now view its participation options.");
+      : "Event published successfully. Students can now view its participation options."));
     resetEventForm();
   } catch (error) {
     console.error("Unable to publish event:", error);

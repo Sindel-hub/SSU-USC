@@ -1,6 +1,7 @@
 const OFFICER_OVERVIEW_PATH = "../overview/overview.html";
 const ADMIN_DASHBOARD_PATH = "../admin-dashboard/admin-dashboard.html";
 const OFFICER_MODULES = [
+  {name:"Reporting & Analytics",detail:"Participation, complaints and council activity reports",href:"../reporting/reporting.html",icon:"fa-chart-column",keywords:"report reporting analytics attendance participation export excel"},
   { name: "Needs Assessment", detail: "Student surveys and department analytics", href: "../needs-assessment/needs-assessment.html", icon: "fa-clipboard-list", keywords: "needs assessment survey questionnaire responses analytics departments" },
   {
     name: "Dashboard",
@@ -825,6 +826,9 @@ document.addEventListener("DOMContentLoaded", () => {
     return;
   }
 
+  for(const nav of document.querySelectorAll('.officer-module-nav'))if(!nav.querySelector('[href*="reporting/reporting.html"]')){
+    const link=document.createElement('a');link.className='nav-btn';link.href='../reporting/reporting.html';link.innerHTML='<span class="icon"><i class="fa-solid fa-chart-column" aria-hidden="true"></i></span><span>Reporting &amp; Analytics</span>';nav.insertBefore(link,nav.querySelector('[href*="officer-tracklist/"]'));
+  }
   setActiveSidebarLink();
   bindDataNavButtons();
 

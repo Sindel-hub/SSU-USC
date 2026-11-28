@@ -1,5 +1,6 @@
 "use strict";
 const { ServiceError } = require("./settings.cjs");
+const {captureNeeded,queueEligibility}=require("./reporting-eligibility.cjs");
 const { id, text, actorAttribution } = require("./officer-history.cjs");
 const fail = message => { throw new ServiceError("invalid-argument", message); };
 function createOfficerModuleHandlers({ db, history, requireActiveRole, Timestamp, clock = Date.now }) {
@@ -7,7 +8,7 @@ function createOfficerModuleHandlers({ db, history, requireActiveRole, Timestamp
   async function validate(module, input, previous = null) {
     const title = text(input.title, "title", 160);
     const out = { title };
-    const fields = { venue: 240, category: 80, description: 20000, audience: 120, participationNotes: 2000, hostOrganization: 240, imageUrl: 2000, imagePath: 500, externalRegistrationUrl: 2000 };
+    const fields = { academicYear:80,semester:80,venue: 240, category: 80, description: 20000, audience: 120, participationNotes: 2000, hostOrganization: 240, imageUrl: 2000, imagePath: 500, externalRegistrationUrl: 2000 };
     for (const [key, max] of Object.entries(fields)) out[key] = text(input[key], key, max, !["description", "venue"].includes(key));
     for (const key of ["imageUrl", "externalRegistrationUrl"]) if (out[key]) {
       if (key === "imageUrl" && /^firestore-media:\/\/[a-zA-Z0-9_-]+$/.test(out[key])) continue;
@@ -41,7 +42,7 @@ function createOfficerModuleHandlers({ db, history, requireActiveRole, Timestamp
       let config;
       try { config = validateParticipationSchedule(input); } catch (error) { fail(error.message); }
       const scheduleChanged = previous?.participationStarted && (
-        ["eventDate", "startTime", "endTime"].some(key => out[key] !== previous[key]) ||
+        ["eventDate", "startTime", "endTime", "academicYear", "semester"].some(key => out[key] !== previous[key]) ||
         Object.entries(config).some(([key, value]) => JSON.stringify(previous[key]) !== JSON.stringify(value))
       );
       if (scheduleChanged) fail("Registration has started. Participation schedules and target groups are locked to preserve attendance history.");
@@ -108,6 +109,7 @@ function createOfficerModuleHandlers({ db, history, requireActiveRole, Timestamp
             tx.create(receipt, { result, operation: { ...operation, documentId } });
             return;
           }
+          if(patch.status){if(patch.status==='Resolved'){patch.resolvedAt=Timestamp.fromMillis(clock());patch.resolutionOutcome='resolved';}else if(patch.status!=='Closed'){patch.resolutionOutcome='pending';}}
           tx.update(ref, { ...patch, updatedAt: Timestamp.fromMillis(clock()) });
           // Deliberately no complaint text, student identity, classification or attachment snapshot.
           if (patch.status) history.append(tx, a, { module: "Complaints", action: patch.status === "Resolved" ? "Resolved" : "Status updated", status, recordId: documentId });
@@ -128,6 +130,7 @@ function createOfficerModuleHandlers({ db, history, requireActiveRole, Timestamp
             tx.create(receipt, { result, operation: { ...operation, documentId } });
             return;
           }
+          if(captureNeeded(previousData,payload))Object.assign(payload,queueEligibility(tx,db,ref,payload,request.auth.uid,clock));
           const timestamp = Timestamp.fromMillis(clock());
           const attribution = actorAttribution(a, clock());
           if (action === "update") tx.update(ref, { ...payload, updatedAt: timestamp, activityAttribution: { ...previousData.activityAttribution, updated: attribution } });

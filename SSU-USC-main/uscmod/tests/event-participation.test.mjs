@@ -40,7 +40,7 @@ test("portal registration stores only the signed-in student's participation reco
   assert.match(rules, /allow create, update, delete: if false/);
   const backend = fs.readFileSync(new URL('../server/event-participation.cjs',import.meta.url),'utf8');
   assert.match(backend, /activeStudent\(profile\)/);
-  assert.match(backend, /registrationState\(event,\s*profile,\s*null,\s*now\)/);
+  assert.match(backend, /registrationState\(event,\s*capturedAcademic\s*\|\|\s*profile,\s*null,\s*now\)/);
 
 });
 

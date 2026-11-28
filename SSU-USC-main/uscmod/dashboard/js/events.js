@@ -451,7 +451,7 @@ async function ownRegistration(eventId) {
   return snap.exists() && !snap.data().officerArchived ? { id: snap.id, ...snap.data() } : null;
 }
 
-function renderDetail(eventItem, registration = null) {
+function renderDetail(eventItem, registration = null, eligibilityState = null) {
   if (!eventItem || !detailModal) return;
   const mode = registrationMode(eventItem);
   const open = isRegistrationOpen(eventItem);
@@ -482,7 +482,7 @@ function renderDetail(eventItem, registration = null) {
   detailActions.innerHTML = "";
   registrationState.innerHTML = "";
 
-  const participation = eventRegistrationState(eventItem, studentProfile || {}, registration);
+  const participation = eligibilityState || eventRegistrationState(eventItem, studentProfile || {}, registration);
   registrationStateElement(eventItem, participation, registration);
 }
 
@@ -513,7 +513,8 @@ async function openEventDetails(id) {
     detailActions.innerHTML = "";
     try {
       const registration = await ownRegistration(id);
-      if (currentDetailEventId === id) renderDetail(eventItem, registration);
+      const eligibilityState=eventItem.eligibilityPolicyVersion===1?(await hostedManagementCall('participationEligible',{source:itemCollection(eventItem),eventId:id})).state:null;
+      if (currentDetailEventId === id) renderDetail(eventItem, registration,eligibilityState);
     } catch (error) {
       console.error("Unable to read event registration:", error);
       if (currentDetailEventId === id) {

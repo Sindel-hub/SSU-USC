@@ -79,7 +79,14 @@ function createEventParticipationHandlers({
     activeStudent(student);
     const m = await model();
     const now = clock();
-    if (!m.eligibleForEvent(event, student))
+    if (
+      !m.eligibleForEvent(
+        event,
+        event.eligibilityPolicyVersion === 1 && registration?.academicSnapshot
+          ? registration.academicSnapshot
+          : student,
+      )
+    )
       fail("permission-denied", "Student is not eligible for this event.");
     if (!registration || registration.studentUid !== uid) {
       const closed =
@@ -212,6 +219,42 @@ function createEventParticipationHandlers({
         );
       const profile = (await db.doc(`users/${uid}`).get()).data();
       const m = await model();
+      if (request.data?.eventId) {
+        const eventRef = db.doc(`${source}/${safeId(request.data.eventId)}`),
+          event = (await eventRef.get()).data();
+        published(event);
+        const registration = (
+          await eventRef.collection("registrations").doc(uid).get()
+        ).data();
+        if (registration)
+          return {
+            state: m.participationStatus(registration, event, clock()),
+            nowMs: clock(),
+          };
+        let academic = profile;
+        if (event.eligibilityPolicyVersion === 1) {
+          if (
+            event.eligibilitySnapshotState !== "ready" ||
+            !event.eligibilitySnapshotId
+          )
+            return { state: "Preparing registration", nowMs: clock() };
+          const membership = await db
+            .doc(`reporting_eligibility/${safeId(event.eligibilitySnapshotId)}`)
+            .collection("chunks")
+            .where("uids", "array-contains", uid)
+            .limit(1)
+            .get();
+          academic = membership.docs[0]
+            ?.data()
+            .rows.find((row) => row.uid === uid);
+        }
+        return {
+          state: academic
+            ? m.registrationState(event, academic, null, clock())
+            : "Not Eligible",
+          nowMs: clock(),
+        };
+      }
       let query = db
         .collection(source)
         .where("status", "==", "Published")
@@ -222,8 +265,25 @@ function createEventParticipationHandlers({
       const rows = [];
       for (const doc of page.docs.slice(0, 50)) {
         const event = doc.data();
-        if (event.officerArchived || !m.eligibleForEvent(event, profile))
-          continue;
+        if (event.officerArchived) continue;
+        let eligibleProfile = profile;
+        if (event.eligibilityPolicyVersion === 1) {
+          if (
+            event.eligibilitySnapshotState !== "ready" ||
+            !event.eligibilitySnapshotId
+          )
+            continue;
+          const membership = await db
+            .doc(`reporting_eligibility/${safeId(event.eligibilitySnapshotId)}`)
+            .collection("chunks")
+            .where("uids", "array-contains", uid)
+            .limit(1)
+            .get();
+          eligibleProfile = membership.docs[0]
+            ?.data()
+            .rows.find((row) => row.uid === uid);
+          if (!eligibleProfile) continue;
+        } else if (!m.eligibleForEvent(event, profile)) continue;
         const registration = (
           await doc.ref.collection("registrations").doc(uid).get()
         ).data();
@@ -233,8 +293,8 @@ function createEventParticipationHandlers({
             eventId: doc.id,
             source,
             studentUid: uid,
-            ...m.academicSnapshot(profile),
-            academicSnapshot: m.academicSnapshot(profile),
+            ...m.academicSnapshot(eligibleProfile),
+            academicSnapshot: m.academicSnapshot(eligibleProfile),
             eventSnapshot: {
               title: event.title,
               eventDate: event.eventDate,
@@ -311,7 +371,10 @@ function createEventParticipationHandlers({
         activeStudent(profile);
         published(event);
         const m = await model();
-        if (!m.eligibleForEvent(event, profile))
+        if (
+          event.eligibilityPolicyVersion !== 1 &&
+          !m.eligibleForEvent(event, profile)
+        )
           fail(
             "permission-denied",
             "Not eligible for this event’s target participants.",
@@ -329,8 +392,39 @@ function createEventParticipationHandlers({
             "failed-precondition",
             "This event must be configured for internal registration.",
           );
+        let capturedAcademic;
+        if (event.eligibilityPolicyVersion === 1) {
+          if (
+            event.eligibilitySnapshotState !== "ready" ||
+            !event.eligibilitySnapshotId
+          )
+            fail(
+              "failed-precondition",
+              "Student eligibility is being prepared. Registration will open when preparation finishes.",
+            );
+          const membership = await tx.get(
+            db
+              .doc(`reporting_eligibility/${event.eligibilitySnapshotId}`)
+              .collection("chunks")
+              .where("uids", "array-contains", uid)
+              .limit(1),
+          );
+          capturedAcademic = membership.docs[0]
+            ?.data()
+            .rows.find((row) => row.uid === uid);
+          if (!capturedAcademic)
+            fail(
+              "permission-denied",
+              "This account is not part of the event’s saved eligible population.",
+            );
+        }
         const now = clock();
-        const state = m.registrationState(event, profile, null, now);
+        const state = m.registrationState(
+          event,
+          capturedAcademic || profile,
+          null,
+          now,
+        );
         if (state !== "Register") fail("failed-precondition", state);
         result = {
           eventId: r.eventId,
@@ -340,7 +434,10 @@ function createEventParticipationHandlers({
           status: "Registered",
           registeredAt: new Date(now),
           registeredAtMs: now,
-          academicSnapshot: m.academicSnapshot(profile),
+          academicSnapshot: capturedAcademic
+            ? m.academicSnapshot(capturedAcademic)
+            : m.academicSnapshot(profile),
+          reportUpdatedAtMs: now,
           eventSnapshot: {
             title: event.title,
             eventDate: event.eventDate,
@@ -468,6 +565,7 @@ function createEventParticipationHandlers({
               };
         // Existing registrations enter monitored attendance only after a verified scan.
         // Old registrations must not become retrospective absences when schedules are added.
+        patch.reportUpdatedAtMs = now;
         patch.schemaVersion = 1;
         patch.attendanceClosesAtMs = c.event.timeOutClosesAtMs;
         result = { ...c.registration, ...patch };
@@ -496,28 +594,63 @@ function createEventParticipationHandlers({
       if (!event) fail("not-found", "Event not found.");
       const m = await model();
       const unregistered = request.data?.unregistered === true;
-      let query = unregistered
-        ? db.collection("users").where("role", "==", "student")
-        : r.event.collection("registrations");
+      const captured = unregistered && event.eligibilityPolicyVersion === 1;
+      if (
+        captured &&
+        (event.eligibilitySnapshotState !== "ready" ||
+          !event.eligibilitySnapshotId)
+      )
+        fail(
+          "failed-precondition",
+          "Student eligibility preparation is pending.",
+        );
+      let query = captured
+        ? db
+            .doc(`reporting_eligibility/${safeId(event.eligibilitySnapshotId)}`)
+            .collection("chunks")
+        : unregistered
+          ? db.collection("users").where("role", "==", "student")
+          : r.event.collection("registrations");
       query = query.orderBy("__name__");
       if (request.data?.after)
         query = query.startAfter(safeId(request.data.after));
-      const page = await query.limit(51).get();
-      const docs = page.docs.slice(0, 50);
+      const page = await query.limit(captured ? 2 : 51).get();
+      const docs = captured
+        ? (page.docs[0]?.data().rows || []).map((row) => ({
+            id: row.uid,
+            data: () => row,
+          }))
+        : page.docs.slice(0, 50);
       const rows = [];
+      const capturedRecords =
+        captured && docs.length && db.getAll
+          ? new Map(
+              (
+                await db.getAll(
+                  ...docs.map((doc) =>
+                    r.event.collection("registrations").doc(doc.id),
+                  ),
+                )
+              ).map((snap) => [snap.id, snap.data()]),
+            )
+          : null;
       for (const doc of docs) {
         const item = doc.data();
         let record = item;
         if (unregistered) {
-          try {
-            activeStudent(item);
-          } catch {
-            continue;
+          if (!captured) {
+            try {
+              activeStudent(item);
+            } catch {
+              continue;
+            }
+            if (!m.eligibleForEvent(event, item)) continue;
           }
-          if (!m.eligibleForEvent(event, item)) continue;
-          record = (
-            await r.event.collection("registrations").doc(doc.id).get()
-          ).data();
+          record = capturedRecords
+            ? capturedRecords.get(doc.id)
+            : (
+                await r.event.collection("registrations").doc(doc.id).get()
+              ).data();
           if (record) continue;
         }
         const academic = unregistered
@@ -557,7 +690,13 @@ function createEventParticipationHandlers({
         event,
         rows,
         recent,
-        next: page.docs.length > 50 ? docs.at(-1).id : null,
+        next: captured
+          ? page.docs.length > 1
+            ? page.docs[0].id
+            : null
+          : page.docs.length > 50
+            ? docs.at(-1).id
+            : null,
         totals: {
           registered,
           checkedIn: closed ? 0 : everChecked - finished,

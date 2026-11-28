@@ -1414,6 +1414,10 @@ exports.updateComplaintCase = onCall(callableOptions(), async (request) => {
     if (feedback) threadEntries.push({ by: "Officer", kind: "feedback", message: feedback, at: Timestamp.now() });
 
     const patch = { status: effectiveStatus, updatedAt: FieldValue.serverTimestamp() };
+    if(effectiveStatus !== previousStatus) {
+      if(effectiveStatus === "Resolved") {patch.resolvedAt=FieldValue.serverTimestamp();patch.resolutionOutcome="resolved";}
+      else if(effectiveStatus !== "Closed")patch.resolutionOutcome="pending";
+    }
     if (classification) patch.classification = classification;
     if (threadEntries.length) patch.thread = FieldValue.arrayUnion(...threadEntries);
     tx.update(ref, patch);

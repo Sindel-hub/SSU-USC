@@ -351,6 +351,9 @@ test("published events use configured participation schedules and lock them afte
     }),
   );
   assert.equal(f.records.get("events/new-assembly").participationVersion, 1);
+  const {createEligibilityHandlers}=require('../server/reporting-eligibility.cjs');
+  const capture=createEligibilityHandlers({db:f.db,history:f.history,...f.authorization,clock:()=>f.now});
+  await capture.reportingCaptureEligibility(f.req('operator',{source:'events',eventId:'new-assembly'}));
   await f.h.participationRegister(f.req("first", { eventId: "new-assembly" }));
   await assert.rejects(
     h.officerModuleAction(

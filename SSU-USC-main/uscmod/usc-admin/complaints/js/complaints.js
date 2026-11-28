@@ -7,6 +7,8 @@ import { callSecure } from "../../../shared/security-client.js?v=complaint-revie
 import { complaintAttachmentMeta, downloadBlob, isImageAttachment, loadComplaintAttachmentBlob } from "../../../shared/complaint-attachments.js";
 import {
   collection,
+  doc,
+  getDoc,
   getCountFromServer,
   getDocs,
   limit,
@@ -834,4 +836,16 @@ for (const dialog of document.querySelectorAll('.complaint-floating-dialog')) {
 // Overview analytics links open the existing authorized detailed report.
 if (new URLSearchParams(location.search).get('analytics')) {
   document.getElementById('openAcademicBreakdown')?.click();
+}
+
+const reportingRecordId=new URLSearchParams(location.search).get('record');
+if (reportingRecordId && /^[\w-]{1,128}$/.test(reportingRecordId)) {
+  try {
+    const selected=await getDoc(doc(db,'complaints',reportingRecordId));
+    if(selected.exists()) {
+      const record=normalizeComplaintRecord({id:selected.id,...selected.data()});
+      if(!complaintsCache.some(r=>r.id===record.id))olderComplaints.push(record);
+      mergeComplaintPages();selectComplaint(record.id);
+    }
+  } catch(error) { console.warn('Complaint record is unavailable for this account.',error); }
 }

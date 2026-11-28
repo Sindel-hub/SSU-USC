@@ -45,6 +45,48 @@
           "order": "ASCENDING"
         }
       ]
+    },
+    {
+      "collectionGroup": "officer_records",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "officerUid",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "createdAtMs",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "attendance_audit",
+      "queryScope": "COLLECTION_GROUP",
+      "fields": [
+        {
+          "fieldPath": "officerUid",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "recordedAtMs",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "reporting_audit",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "officerUid",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "createdAtMs",
+          "order": "ASCENDING"
+        }
+      ]
     }
   ],
   "fieldOverrides": [
@@ -94,6 +136,42 @@
       "collectionGroup": "annual_student_imports",
       "fieldPath": "entries",
       "indexes": []
+    },
+    {
+      "collectionGroup": "attendance_audit",
+      "fieldPath": "recordedAtMs",
+      "indexes": [
+        {
+          "order": "ASCENDING",
+          "queryScope": "COLLECTION_GROUP"
+        },
+        {
+          "order": "ASCENDING",
+          "queryScope": "COLLECTION"
+        },
+        {
+          "order": "DESCENDING",
+          "queryScope": "COLLECTION"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "attendance_audit",
+      "fieldPath": "officerUid",
+      "indexes": [
+        {
+          "order": "ASCENDING",
+          "queryScope": "COLLECTION_GROUP"
+        },
+        {
+          "order": "ASCENDING",
+          "queryScope": "COLLECTION"
+        },
+        {
+          "order": "DESCENDING",
+          "queryScope": "COLLECTION"
+        }
+      ]
     }
   ]
 }

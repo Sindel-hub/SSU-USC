@@ -47,6 +47,7 @@ export function participationStatus(record, event, now = Date.now()) {
 }
 export function registrationState(event, profile, record, now = Date.now()) {
   if (record) return participationStatus(record, event, now);
+  if(event.eligibilityPolicyVersion===1&&event.eligibilitySnapshotState!=='ready')return 'Preparing registration';
   if (!eligibleForEvent(event, profile)) return "Not Eligible";
   if (
     now >=

@@ -47,7 +47,7 @@ function participationFixture() {
             (key) =>
               (!after || (group ? key : key.split("/").at(-1)) > after) &&
               filters.every(({ key: field, op, value }) =>
-                op === ">="
+                op === "array-contains" ? f.records.get(key)[field]?.includes(value) : op === ">="
                   ? f.records.get(key)[field] >= value
                   : f.records.get(key)[field] === value,
               ),

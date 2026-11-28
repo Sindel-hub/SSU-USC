@@ -25,6 +25,20 @@ export function bindParticipationForm(form, source) {
     element.append(input);
     grid.append(element);
   }
+  const terms = {};
+  for (const [key, label] of Object.entries({
+    academicYear: "Academic year",
+    semester: "Semester",
+  })) {
+    const el = document.createElement("label");
+    el.textContent = label;
+    const control = document.createElement("input");
+    control.maxLength = 80;
+    control.dataset.reportingTerm = key;
+    el.append(control);
+    grid.append(el);
+    terms[key] = control;
+  }
   const groups = {};
   for (const [key, label] of Object.entries({
     college: "Departments",
@@ -151,6 +165,7 @@ export function bindParticipationForm(form, source) {
     const control = form.querySelector("#" + id);
     if (control) control.required = true;
   }
+  let savedParticipation = null;
   function read() {
     const input = {
       targetParticipants: Object.fromEntries(
@@ -164,7 +179,24 @@ export function bindParticipationForm(form, source) {
         control.value + ":00+08:00",
       );
     const config = validateParticipationSchedule(input);
-    return config;
+    const result = {
+      ...config,
+      ...Object.fromEntries(
+        Object.entries(terms).map(([key, input]) => [key, input.value.trim()]),
+      ),
+    };
+    if (
+      savedParticipation?.participationStarted &&
+      Object.entries(result).some(
+        ([key, value]) =>
+          JSON.stringify(savedParticipation[key] ?? "") !==
+          JSON.stringify(value ?? ""),
+      )
+    )
+      throw Error(
+        "Registration has started. Participation schedules and academic classifications are locked.",
+      );
+    return result;
   }
   panel.addEventListener("input", () => {
     if (deadline) {
@@ -177,6 +209,9 @@ export function bindParticipationForm(form, source) {
   let fillVersion = 0;
   function fill(saved = {}) {
     fillVersion++;
+    savedParticipation = saved;
+    for (const [key, input] of Object.entries(terms))
+      input.value = saved[key] || "";
     for (const control of panel.querySelectorAll(
       "[data-participation-schedule]",
     )) {

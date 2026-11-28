@@ -331,7 +331,13 @@ async function browserUpdateComplaintStatus(data = {}) {
   // complaint document. Audit logging is best-effort afterwards so a log rule
   // can never roll back a valid USC review.
   const modernPatch = { updatedAt: serverTimestamp() };
-  if (statusChanged) modernPatch.status = nextStatus;
+  if (statusChanged) {
+    modernPatch.status = nextStatus;
+    if(role === "admin") {
+      if(nextStatus === "Resolved") {modernPatch.resolvedAt=serverTimestamp();modernPatch.resolutionOutcome="resolved";}
+      else if(nextStatus !== "Closed")modernPatch.resolutionOutcome="pending";
+    }
+  }
   // Older clients stored classification only in the thread. Include the known
   // classification when saving status so current rules can validate the case.
   // Firestore still checks complaints.classify if this adds/changes the field.
