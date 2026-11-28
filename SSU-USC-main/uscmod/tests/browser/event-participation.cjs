@@ -206,6 +206,19 @@ const server = http.createServer(async (req, res) => {
       );
       throw error;
     });
+  fs.mkdirSync("/workspace/review-artifacts/participation-ui", {
+    recursive: true,
+  });
+  await student.screenshot({
+    path: "/workspace/review-artifacts/participation-ui/my-qr-desktop.png",
+    fullPage: true,
+  });
+  await student.setViewportSize({ width: 390, height: 844 });
+  await student.screenshot({
+    path: "/workspace/review-artifacts/participation-ui/my-qr-mobile.png",
+    fullPage: true,
+  });
+  await student.setViewportSize({ width: 1440, height: 1000 });
   const firstQR = await student.locator("#myStudentQR").innerHTML();
   await student.reload();
   await student.locator("#myStudentQR svg").waitFor();
@@ -266,7 +279,23 @@ const server = http.createServer(async (req, res) => {
       for (let x = 0; x < size; x++)
         if (code.isDark(y, x))
           c.fillRect((x + margin) * scale, (y + margin) * scale, scale, scale);
-    setInterval(() => c.fillRect(0, 0, 1, 1), 100);
+    const fullFrame = document.createElement("canvas");
+    fullFrame.width = 1920;
+    fullFrame.height = 1080;
+    const frameContext = fullFrame.getContext("2d");
+    frameContext.fillStyle = "#aaa";
+    frameContext.fillRect(0, 0, 1920, 1080);
+    frameContext.drawImage(canvas, 900, 480, 120, 120);
+    globalThis.TEST_QR_CANVAS = fullFrame;
+    const legacy = document.createElement("canvas");
+    legacy.width = 640;
+    legacy.height = 360;
+    const legacyContext = legacy.getContext("2d");
+    legacyContext.drawImage(fullFrame, 0, 0, 640, 360);
+    const legacyPixels = legacyContext.getImageData(0, 0, 640, 360);
+    globalThis.TEST_LEGACY_DECODE =
+      globalThis.jsQR(legacyPixels.data, 640, 360)?.data || null;
+    setInterval(() => frameContext.fillRect(0, 0, 1, 1), 100);
     Object.defineProperty(navigator.mediaDevices, "getUserMedia", {
       configurable: true,
       value: async () => globalThis.TEST_QR_CANVAS.captureStream(5),
@@ -282,8 +311,16 @@ const server = http.createServer(async (req, res) => {
       ],
     });
   }, qr.payload);
+  assert.equal(
+    await officer.evaluate(() => globalThis.TEST_LEGACY_DECODE),
+    null,
+    "Old 640px scan misses this small QR in a 1080p frame",
+  );
   await dialog.locator("[data-start]").click();
   await dialog.locator("[data-confirm]").waitFor();
+  await dialog.screenshot({
+    path: "/workspace/review-artifacts/participation-ui/scanner-identity.png",
+  });
   assert.equal(
     f.records.get("events/assembly/registrations/first").timeInAtMs,
     undefined,
@@ -324,6 +361,12 @@ const server = http.createServer(async (req, res) => {
     .getByRole("cell")
     .filter({ hasText: "Synthetic General Assembly" })
     .waitFor();
+  await officer
+    .locator(".participation-dialog")
+    .filter({ hasText: "Student Participation History" })
+    .screenshot({
+      path: "/workspace/review-artifacts/participation-ui/history.png",
+    });
   await officer
     .locator(".participation-dialog")
     .filter({ hasText: "Student Participation History" })

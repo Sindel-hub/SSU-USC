@@ -1,3 +1,7 @@
+import {
+  styleParticipationDialog,
+  participationBadge,
+} from "./participation-ui.js";
 import { hostedManagementCall as call } from "./hosted-management-client.js";
 import {
   manilaTime,
@@ -21,6 +25,7 @@ export function mountParticipationOfficer(source) {
       "",
     ) +
     '</select></label><button type="button" data-refresh>Refresh</button></div><div class="participation-scroll"><table class="participation-table"><thead><tr><th>Student</th><th>Time-in / out</th><th>Duration</th><th>Status</th><th>Record</th></tr></thead><tbody></tbody></table></div><button type="button" data-more hidden>Load more</button></section><section class="participation-card" data-scanner hidden><h3>Attendance scanner</h3><div class="participation-controls"><label>Mode<select data-mode><option value="">Choose scanning mode</option><option value="in">Time-in</option><option value="out">Time-out</option></select></label><label>Camera<select data-camera></select></label><button type="button" data-start>Start camera</button><button type="button" data-stop>Stop camera</button></div><video class="participation-camera" autoplay muted playsinline hidden></video><canvas hidden></canvas><div data-identity></div><button type="button" data-confirm hidden>Confirm Identity and Record Attendance</button><button type="button" data-next>Scan next student</button><h4>Recent attendance activity</h4><ul data-recent></ul></section>';
+  styleParticipationDialog(dialog);
   document.body.append(dialog);
   const get = (selector) => dialog.querySelector(selector),
     message = get('[role="status"]');
@@ -91,7 +96,7 @@ export function mountParticipationOfficer(source) {
       ? shown
           .map(
             (row) =>
-              `<tr><td><strong>${escape(row.fullName)}</strong><br>${escape(row.studentId)}<br>${escape([row.college, row.program, row.yearLevel, row.section].filter(Boolean).join(" · "))}</td><td>${escape(manilaTime(row.timeInAtMs))}<br>${escape(manilaTime(row.timeOutAtMs))}</td><td>${escape(durationLabel(row.durationMs))}</td><td>${escape(row.status)}</td><td><button type="button" data-student="${escape(row.uid)}">View Record</button></td></tr>`,
+              `<tr><td><strong>${escape(row.fullName)}</strong><br>${escape(row.studentId)}<br>${escape([row.college, row.program, row.yearLevel, row.section].filter(Boolean).join(" · "))}</td><td>${escape(manilaTime(row.timeInAtMs))}<br>${escape(manilaTime(row.timeOutAtMs))}</td><td>${escape(durationLabel(row.durationMs))}</td><td>${participationBadge(row.status)}</td><td><button type="button" data-student="${escape(row.uid)}">View Record</button></td></tr>`,
           )
           .join("")
       : '<tr><td colspan="5">No participants found on this page. Load more records if available.</td></tr>';
@@ -194,25 +199,67 @@ export function mountParticipationOfficer(source) {
   }
   async function scanFrame(generation) {
     if (generation !== cameraGeneration || !stream || !dialog.open) return;
-    const video = get("video"),
-      canvas = get("canvas");
-    if (!busy && !pending && video.readyState >= 2) {
-      canvas.width = Math.min(640, video.videoWidth);
-      canvas.height = Math.round(
-        (video.videoHeight * canvas.width) / video.videoWidth,
-      );
-      const context = canvas.getContext("2d", { willReadFrequently: true });
-      context.drawImage(video, 0, 0, canvas.width, canvas.height);
-      const pixels = context.getImageData(0, 0, canvas.width, canvas.height);
-      const found = globalThis.jsQR(pixels.data, pixels.width, pixels.height);
-      if (found) {
-        await lookup(found.data);
-        await new Promise((resolve) => setTimeout(resolve, 1200));
+    try {
+      const video = get("video"),
+        canvas = get("canvas");
+      if (
+        !busy &&
+        !pending &&
+        video.readyState >= 2 &&
+        video.videoWidth &&
+        video.videoHeight
+      ) {
+        const width = video.videoWidth,
+          height = video.videoHeight;
+        const center = Math.min(width, height, 720);
+        // Preserve small QR modules in the central area instead of shrinking the
+        // whole camera image to 640px. Also search the full frame for off-center codes.
+        const regions = [
+          [(width - center) / 2, (height - center) / 2, center, center],
+          [0, 0, width, height],
+        ];
+        let found;
+        for (const [x, y, w, h] of regions) {
+          const scale = Math.min(1, 1280 / Math.max(w, h));
+          canvas.width = Math.round(w * scale);
+          canvas.height = Math.round(h * scale);
+          const context = canvas.getContext("2d", { willReadFrequently: true });
+          context.drawImage(
+            video,
+            x,
+            y,
+            w,
+            h,
+            0,
+            0,
+            canvas.width,
+            canvas.height,
+          );
+          const pixels = context.getImageData(
+            0,
+            0,
+            canvas.width,
+            canvas.height,
+          );
+          found = globalThis.jsQR(pixels.data, pixels.width, pixels.height, {
+            inversionAttempts: "attemptBoth",
+          });
+          if (found) break;
+        }
+        if (found) {
+          await lookup(found.data);
+          await new Promise((resolve) => setTimeout(resolve, 1200));
+        }
       }
+    } catch (error) {
+      message.textContent =
+        "Unable to read the camera image. Stop and restart the camera.";
+      console.warn("Attendance QR frame could not be read:", error.name);
+    } finally {
+      await new Promise((resolve) => setTimeout(resolve, 250));
+      if (generation === cameraGeneration && stream && dialog.open)
+        frame = requestAnimationFrame(() => scanFrame(generation));
     }
-    await new Promise((resolve) => setTimeout(resolve, 200));
-    if (generation === cameraGeneration)
-      frame = requestAnimationFrame(() => scanFrame(generation));
   }
   get("[data-start]").onclick = async () => {
     if (!get("[data-mode]").value) {
@@ -231,8 +278,16 @@ export function mountParticipationOfficer(source) {
       const deviceId = get("[data-camera]").value;
       const requestedStream = await navigator.mediaDevices.getUserMedia({
         video: deviceId
-          ? { deviceId: { exact: deviceId } }
-          : { facingMode: { ideal: "environment" } },
+          ? {
+              deviceId: { exact: deviceId },
+              width: { ideal: 1280 },
+              height: { ideal: 720 },
+            }
+          : {
+              facingMode: { ideal: "environment" },
+              width: { ideal: 1280 },
+              height: { ideal: 720 },
+            },
         audio: false,
       });
       if (!dialog.open || generation !== cameraGeneration) {
@@ -258,7 +313,16 @@ export function mountParticipationOfficer(source) {
               ),
           ),
       );
-      message.textContent = "Camera ready. Present the student QR code.";
+      const activeDevice = stream.getVideoTracks()[0]?.getSettings?.().deviceId;
+      if (
+        activeDevice &&
+        [...get("[data-camera]").options].some(
+          (option) => option.value === activeDevice,
+        )
+      )
+        get("[data-camera]").value = activeDevice;
+      message.textContent =
+        "Camera ready. Hold the full QR code steady near the center, with its white border visible.";
       scanFrame(generation);
     } catch (error) {
       stop();
