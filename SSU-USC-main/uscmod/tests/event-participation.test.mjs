@@ -9,16 +9,16 @@ const adminHtml = fs.readFileSync(new URL("../usc-admin/events/events.html", imp
 const adminJs = fs.readFileSync(new URL("../usc-admin/events/js/events.js", import.meta.url), "utf8");
 const rules = fs.readFileSync(new URL("../firestore.rules", import.meta.url), "utf8");
 
-test("officers can choose portal, external, or no-registration participation", () => {
+test("officers publish internal participation with registration and attendance schedules", () => {
   assert.match(adminHtml, /id="eventRegistrationMode"/);
   assert.match(adminHtml, /value="internal">Register inside USC Portal/);
-  assert.match(adminHtml, /value="external">External registration link/);
-  assert.match(adminHtml, /value="none">No registration required/);
+  assert.doesNotMatch(adminHtml, /value="external"/);
+  assert.doesNotMatch(adminHtml, /value="none"/);
   assert.match(adminHtml, /id="eventRegistrationDeadline"/);
   assert.match(adminHtml, /id="eventExternalRegistrationUrl"/);
   assert.match(adminHtml, /id="eventParticipationNotes"/);
-  assert.match(adminJs, /registrationDeadline = Timestamp\.fromDate\(deadlineDate\)/);
-  assert.match(adminJs, /externalRegistrationUrl: registrationMode === "external"/);
+  assert.match(adminJs, /registrationDeadline = Timestamp\.fromDate\(/);
+  assert.match(adminJs, /participationForm.read\(\)/);
 });
 
 test("student Events contains a real participation flow instead of display-only cards", () => {
@@ -26,10 +26,10 @@ test("student Events contains a real participation flow instead of display-only 
   assert.match(studentHtml, /id="eventsDetailModal"/);
   assert.match(studentHtml, /id="eventsRegistrationState"/);
   assert.match(studentJs, /data-register-event/);
-  assert.match(studentJs, /setDoc\(registrationRef/);
-  assert.match(studentJs, /data-cancel-registration/);
-  assert.match(studentJs, /deleteDoc\(registrationRef\)/);
-  assert.match(studentJs, /Open registration form/);
+  assert.match(studentJs, /hostedManagementCall\('participationRegister'/);
+  assert.match(studentJs, /eventRegistrationState/);
+  assert.doesNotMatch(studentJs, /deleteDoc\(registrationRef\)/);
+  assert.doesNotMatch(studentJs, /Open registration form/);
   assert.match(studentCss, /STUDENT EVENT PARTICIPATION MODULE - 2026-09-07/);
 });
 
@@ -37,10 +37,11 @@ test("portal registration stores only the signed-in student's participation reco
   assert.match(rules, /match \/events\/\{eventId\}/);
   assert.match(rules, /match \/registrations\/\{userId\}/);
   assert.match(rules, /ownUser\(userId\)/);
-  assert.match(rules, /registrationMode == "internal"/);
-  assert.match(rules, /request\.time < get\([\s\S]*?\)\.data\.registrationDeadline/);
-  assert.match(rules, /request\.resource\.data\.studentId == ownProfile\(\)\.studentId/);
-  assert.match(rules, /request\.resource\.data\.status == "registered"/);
+  assert.match(rules, /allow create, update, delete: if false/);
+  const backend = fs.readFileSync(new URL('../server/event-participation.cjs',import.meta.url),'utf8');
+  assert.match(backend, /activeStudent\(profile\)/);
+  assert.match(backend, /registrationState\(event,\s*profile,\s*null,\s*now\)/);
+
 });
 
 test("officer Events can inspect website registrations", () => {

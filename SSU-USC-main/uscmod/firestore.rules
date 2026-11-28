@@ -194,6 +194,10 @@ service cloud.firestore {
       allow read, write: if false;
       match /events/{eventId} { allow read, write: if false; }
     }
+    // QR identity links and scan confirmations are private and server-owned.
+    match /student_qr/{uid} { allow read, write: if false; }
+    match /student_qr_tokens/{tokenHash} { allow read, write: if false; }
+    match /attendance_confirmations/{confirmationHash} { allow read, write: if false; }
     function restoringPublishedPost(postId) {
       let archived = /databases/$(database)/documents/archived_announcements/$(postId);
       let deleted = /databases/$(database)/documents/deleted_announcements/$(postId);
@@ -242,35 +246,12 @@ service cloud.firestore {
       allow read: if true;
       allow create, update, delete: if isAdmin();
 
-      // Student event participation is self-service. A student can only create
-      // or cancel their own portal registration while the officer-defined
-      // registration window is still open. Students never edit the event itself.
+      // Students may read their own participation. Trusted API transactions own writes.
       match /registrations/{userId} {
         allow read: if (schoolStudent() && ownUser(userId)) || isOfficerOrAdmin();
-        allow create: if schoolStudent()
-          && ownUser(userId)
-          && get(/databases/$(database)/documents/events/$(eventId)).data.status == "Published"
-          && get(/databases/$(database)/documents/events/$(eventId)).data.registrationMode == "internal"
-          && get(/databases/$(database)/documents/events/$(eventId)).data.registrationDeadline is timestamp
-          && request.time < get(/databases/$(database)/documents/events/$(eventId)).data.registrationDeadline
-          && request.resource.data.keys().hasOnly([
-            "eventId", "studentUid", "studentId", "fullName", "schoolEmail",
-            "college", "program", "yearLevel", "status", "registeredAt"
-          ])
-          && request.resource.data.eventId == eventId
-          && request.resource.data.studentUid == uid()
-          && request.resource.data.studentId == ownProfile().studentId
-          && request.resource.data.college == ownProfile().college
-          && request.resource.data.program == ownProfile().program
-          && request.resource.data.status == "registered"
-          && request.resource.data.registeredAt == request.time;
-        allow update: if false;
-        allow delete: if legacyModuleWriter("events.manage")
-          || (schoolStudent()
-            && ownUser(userId)
-            && get(/databases/$(database)/documents/events/$(eventId)).data.registrationMode == "internal"
-            && get(/databases/$(database)/documents/events/$(eventId)).data.registrationDeadline is timestamp
-            && request.time < get(/databases/$(database)/documents/events/$(eventId)).data.registrationDeadline);
+        // Schedules, eligibility, UID identity and attendance are validated atomically
+        // by the authenticated participation API. Browser clients cannot bypass it.
+        allow create, update, delete: if false;
       }
     }
 
@@ -278,34 +259,12 @@ service cloud.firestore {
       allow read: if true;
       allow create, update, delete: if isAdmin();
 
-      // External program participation mirrors event self-registration but is
-      // stored separately so outside-university programs remain independently managed.
+      // Program registrations follow the same trusted participation workflow.
       match /registrations/{userId} {
         allow read: if (schoolStudent() && ownUser(userId)) || isOfficerOrAdmin();
-        allow create: if schoolStudent()
-          && ownUser(userId)
-          && get(/databases/$(database)/documents/programs/$(programId)).data.status == "Published"
-          && get(/databases/$(database)/documents/programs/$(programId)).data.registrationMode == "internal"
-          && get(/databases/$(database)/documents/programs/$(programId)).data.registrationDeadline is timestamp
-          && request.time < get(/databases/$(database)/documents/programs/$(programId)).data.registrationDeadline
-          && request.resource.data.keys().hasOnly([
-            "programId", "studentUid", "studentId", "fullName", "schoolEmail",
-            "college", "program", "yearLevel", "status", "registeredAt"
-          ])
-          && request.resource.data.programId == programId
-          && request.resource.data.studentUid == uid()
-          && request.resource.data.studentId == ownProfile().studentId
-          && request.resource.data.college == ownProfile().college
-          && request.resource.data.program == ownProfile().program
-          && request.resource.data.status == "registered"
-          && request.resource.data.registeredAt == request.time;
-        allow update: if false;
-        allow delete: if legacyModuleWriter("programs.manage")
-          || (schoolStudent()
-            && ownUser(userId)
-            && get(/databases/$(database)/documents/programs/$(programId)).data.registrationMode == "internal"
-            && get(/databases/$(database)/documents/programs/$(programId)).data.registrationDeadline is timestamp
-            && request.time < get(/databases/$(database)/documents/programs/$(programId)).data.registrationDeadline);
+        // Schedules, eligibility, UID identity and attendance are validated atomically
+        // by the authenticated participation API. Browser clients cannot bypass it.
+        allow create, update, delete: if false;
       }
     }
 

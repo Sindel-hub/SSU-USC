@@ -1,15 +1,14 @@
+import {hostedManagementCall} from "../../shared/hosted-management-client.js";
+import {registrationState as eventRegistrationState} from "../../shared/event-participation-model.mjs";
 import { auth, db } from "../../firebase/firebase-config.js";
 import {
   collection,
-  deleteDoc,
   doc,
   getDoc,
   limit,
   onSnapshot,
   orderBy,
-  query,
-  serverTimestamp,
-  setDoc
+  query
 } from "https://www.gstatic.com/firebasejs/12.12.0/firebase-firestore.js";
 import { signOut } from "https://www.gstatic.com/firebasejs/12.12.0/firebase-auth.js";
 import { resolveMediaUrl } from "../../shared/security-client.js";
@@ -170,7 +169,7 @@ function formatSchedule(eventItem) {
 }
 
 function formatDeadline(eventItem) {
-  const deadline = timestampDate(eventItem.registrationDeadline);
+  const deadline = timestampDate(eventItem.registrationClosesAtMs || eventItem.registrationDeadline);
   if (!deadline) return "No registration deadline";
   return deadline.toLocaleString([], {
     month: "long",
@@ -196,17 +195,13 @@ function registrationModeLabel(eventItem) {
 function isRegistrationOpen(eventItem) {
   const mode = registrationMode(eventItem);
   if (mode === "none") return false;
-  const deadline = timestampDate(eventItem.registrationDeadline);
-  if (!deadline) return false;
-  const eventDate = parseEventDate(eventItem.eventDate);
-  const eventEnded = eventDate ? eventDate.getTime() + 86400000 <= Date.now() : false;
-  return !eventEnded && Date.now() < deadline.getTime();
+  return eventRegistrationState(eventItem, studentProfile || {}, null) === 'Register';
 }
 
 function deadlineBadge(eventItem) {
   const mode = registrationMode(eventItem);
   if (mode === "none") return "Open participation";
-  const deadline = timestampDate(eventItem.registrationDeadline);
+  const deadline = timestampDate(eventItem.registrationClosesAtMs || eventItem.registrationDeadline);
   if (!deadline) return "Registration details pending";
   if (!isRegistrationOpen(eventItem)) return "Registration closed";
   const remaining = deadline.getTime() - Date.now();
@@ -487,55 +482,19 @@ function renderDetail(eventItem, registration = null) {
   detailActions.innerHTML = "";
   registrationState.innerHTML = "";
 
-  if (mode === "internal") {
-    if (registration) {
-      registrationState.innerHTML = `
-        <div class="events-registration-confirmed">
-          <i class="fa-solid fa-circle-check"></i>
-          <div><strong>You are registered</strong><span>Your portal registration is recorded for this event or program.</span></div>
-        </div>`;
-      if (open) {
-        detailActions.innerHTML = `
-          <button class="events-detail-secondary" type="button" data-cancel-registration="${escapeHtml(eventItem.id)}">
-            Cancel registration
-          </button>`;
-      } else {
-        detailActions.innerHTML = `<button class="events-detail-primary" type="button" disabled>Registration deadline passed</button>`;
-      }
-    } else if (open) {
-      registrationState.innerHTML = `
-        <div class="events-registration-prompt">
-          <i class="fa-solid fa-id-card"></i>
-          <div><strong>Register using your student account</strong><span>Your Student ID and profile details will be used automatically. No separate form is needed.</span></div>
-        </div>`;
-      detailActions.innerHTML = `
-        <button class="events-detail-primary" type="button" data-register-event="${escapeHtml(eventItem.id)}">
-          <i class="fa-solid fa-ticket"></i> Register for this event / program
-        </button>`;
-    } else {
-      registrationState.innerHTML = `<p class="events-registration-closed-copy">The registration deadline has passed. You can still view the details, but new registrations are closed.</p>`;
-      detailActions.innerHTML = `<button class="events-detail-primary" type="button" disabled>Registration closed</button>`;
-    }
-  } else if (mode === "external") {
-    registrationState.innerHTML = open
-      ? `<div class="events-registration-prompt"><i class="fa-solid fa-arrow-up-right-from-square"></i><div><strong>Registration is handled externally</strong><span>You will leave the USC Portal to complete the organizer's registration form.</span></div></div>`
-      : `<p class="events-registration-closed-copy">The external registration deadline has passed.</p>`;
-    if (open && externalUrl) {
-      detailActions.innerHTML = `
-        <a class="events-detail-primary" href="${escapeHtml(externalUrl)}" target="_blank" rel="noopener noreferrer">
-          Open registration form <i class="fa-solid fa-arrow-up-right-from-square"></i>
-        </a>`;
-    } else {
-      detailActions.innerHTML = `<button class="events-detail-primary" type="button" disabled>${open ? "Registration link unavailable" : "Registration closed"}</button>`;
-    }
-  } else {
-    registrationState.innerHTML = `
-      <div class="events-registration-prompt">
-        <i class="fa-solid fa-people-group"></i>
-        <div><strong>No registration is required</strong><span>You can participate directly according to the organizer's instructions.</span></div>
-      </div>`;
-    detailActions.innerHTML = `<button class="events-detail-primary" type="button" disabled>No registration needed</button>`;
-  }
+  const participation = eventRegistrationState(eventItem, studentProfile || {}, registration);
+  registrationStateElement(eventItem, participation, registration);
+}
+
+function registrationStateElement(eventItem, state, registration) {
+  registrationState.innerHTML = '';
+  const note = document.createElement('p');
+  note.textContent = state === 'Not Eligible' ? `This event is intended for specific student groups. ${eventItem.audience || ''}` : registration ? `Participation status: ${state}` : 'Registration and attendance are recorded separately.';
+  registrationState.append(note);
+  detailActions.innerHTML = state === 'Register' && registrationMode(eventItem) === 'internal'
+    ? `<button class="events-detail-primary" type="button" data-register-event="${escapeHtml(eventItem.id)}">Register</button>`
+    : `<button class="events-detail-primary" type="button" disabled>${escapeHtml(state === 'Register' ? 'Registration unavailable' : state)}</button>`;
+
 }
 
 async function openEventDetails(id) {
@@ -687,42 +646,18 @@ detailClose?.addEventListener("click", closeEventDetails);
 
 detailActions?.addEventListener("click", async (event) => {
   const registerButton = event.target.closest?.("[data-register-event]");
-  const cancelButton = event.target.closest?.("[data-cancel-registration]");
-  if ((!registerButton && !cancelButton) || detailBusy) return;
+  if (!registerButton || detailBusy) return;
 
-  const eventId = clean(registerButton?.dataset.registerEvent || cancelButton?.dataset.cancelRegistration);
+  const eventId = clean(registerButton.dataset.registerEvent);
   const eventItem = eventById(eventId);
   const uid = clean(auth.currentUser?.uid || studentProfile?.uid);
   if (!eventId || !eventItem || !uid) return;
 
-  if (!isRegistrationOpen(eventItem)) {
-    renderDetail(eventItem, await ownRegistration(eventId).catch(() => null));
-    return;
-  }
 
   setDetailBusy(true);
   try {
-    const registrationRef = doc(db, itemCollection(eventItem), eventId, "registrations", uid);
-
-    if (registerButton) {
-      const identityField = itemSource(eventItem) === "program" ? { programId: eventId } : { eventId };
-      await setDoc(registrationRef, {
-        ...identityField,
-        studentUid: uid,
-        studentId: clean(studentProfile?.studentId),
-        fullName: clean(studentProfile?.fullName, "Student"),
-        schoolEmail: clean(studentProfile?.email || studentProfile?.institutionalEmail),
-        college: clean(studentProfile?.college),
-        program: clean(studentProfile?.program),
-        yearLevel: clean(studentProfile?.yearLevel),
-        status: "registered",
-        registeredAt: serverTimestamp()
-      });
-    } else {
-      const confirmed = window.confirm(`Cancel your registration for this ${itemSource(eventItem) === "program" ? "program" : "event"}?`);
-      if (!confirmed) return;
-      await deleteDoc(registrationRef);
-    }
+    if (!registerButton) return;
+    await hostedManagementCall('participationRegister',{source:itemCollection(eventItem),eventId});
 
     const registration = await ownRegistration(eventId);
     renderDetail(eventItem, registration);

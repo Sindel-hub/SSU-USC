@@ -16,7 +16,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
 <link rel="stylesheet" href="../shared/mobile-usability.css?v=4" />
 <link rel="stylesheet" href="../shared/scrollbars.css?v=2" />
-</head>
+<link rel="stylesheet" href="../shared/participation.css" /></head>
 <body class="student-app-shell">
   <header class="dashboard-header">
     <div class="dashboard-brand">
@@ -33,7 +33,8 @@
     <aside class="student-sidebar page-sidebar">
       <div class="sidebar-student-mark"><i class="fa-solid fa-user-graduate"></i></div>
       <nav class="student-nav" aria-label="Student module navigation">
-        <a class="student-nav-link" href="dashboard.html"><i class="fa-solid fa-briefcase"></i><span>Dashboard</span></a>
+        <a class="student-nav-link" href="my-qr.html"><i class="fa-solid fa-qrcode"></i><span>My QR Code</span></a>
+<a class="student-nav-link" href="dashboard.html"><i class="fa-solid fa-briefcase"></i><span>Dashboard</span></a>
         <a class="student-nav-link" href="bulletin.html"><i class="fa-solid fa-note-sticky"></i><span>Bulletin Board</span></a>
 
         <a class="student-nav-link" href="events.html"><i class="fa-regular fa-calendar"></i><span>Events / Programs</span></a>
@@ -126,7 +127,7 @@
 
           </div>
         </section>
-      </main>
+      <section class="participation-card"><h2>Event and Program Participation</h2><button type="button" id="studentParticipationHistory">View Participation History</button></section></main>
     </div>
   </div>
 
@@ -217,5 +218,5 @@
   <script type="module" src="js/tracklist.js?v=tracklist-ui-fix-20260910"></script>
 <script type="module" src="../shared/profile-manager.js?v=registered-name-2&amp;refinements=1"></script>
 <script src="../shared/student-sidebar-navigation.js"></script>
-</body>
+<script type="module" src="../shared/participation-student.js"></script></body>
 </html>

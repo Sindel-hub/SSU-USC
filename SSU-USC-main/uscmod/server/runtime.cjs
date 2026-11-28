@@ -10,6 +10,7 @@ const { createNeedsAssessmentHandlers } = require("../functions/needs-assessment
 const { createAnnouncementWorkflow } = require("./announcement-workflow.cjs");
 const { createNotificationReadHandlers } = require("./notification-reads.cjs");
 const { createAccountReplacementHandlers } = require("./account-replacement.cjs");
+const {createEventParticipationHandlers} = require("./event-participation.cjs");
 let cached;
 function startupStep(step, operation) {
   try { return operation(); }
@@ -54,7 +55,7 @@ function getRuntime() {
   const history = createOfficerHistory({ ...dependencies });
   cached = {
     settings,
-    handlers: { ...createAccountReplacementHandlers(dependencies), ...createNotificationReadHandlers(dependencies), ...createAnnouncementWorkflow({ ...dependencies, history, Timestamp, publicOrigin: settings.publicOrigin }), ...createNeedsAssessmentHandlers({ ...dependencies, history }), ...createStudentRecordHandlers(dependencies), ...history.handlers, ...createOfficerModuleHandlers({ ...dependencies, history, Timestamp }) },
+    handlers: { ...createEventParticipationHandlers({...dependencies, history}), ...createAccountReplacementHandlers(dependencies), ...createNotificationReadHandlers(dependencies), ...createAnnouncementWorkflow({ ...dependencies, history, Timestamp, publicOrigin: settings.publicOrigin }), ...createNeedsAssessmentHandlers({ ...dependencies, history }), ...createStudentRecordHandlers(dependencies), ...history.handlers, ...createOfficerModuleHandlers({ ...dependencies, history, Timestamp }) },
     verifyIdToken: token => adminAuth.verifyIdToken(token, true),
     verifyAppCheckToken: token => getAppCheck(app).verifyToken(token),
     limitPublicRequest: createPublicLimiter({ db, key: settings.account.private_key })

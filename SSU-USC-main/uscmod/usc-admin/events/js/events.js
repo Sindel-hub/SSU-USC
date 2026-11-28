@@ -1,3 +1,6 @@
+import {mountParticipationTracklist} from "../../../shared/participation-tracklist.js";
+import {bindParticipationForm} from "../../../shared/participation-form.js";
+import {mountParticipationOfficer} from "../../../shared/participation-officer.js";
 import { trackedOfficerAction, activityAttributionText, activityHistoryHref } from '../../../shared/officer-activity-client.js';
 import { classifyEngagement } from "../../../shared/engagement-report-model.mjs";
 import { mountEngagementAnalytics } from "../../../shared/engagement-analytics.js?v=3";
@@ -28,6 +31,11 @@ let eventsFeedReady = false;
 const eventsCollection = collection(db, "events");
 
 const eventForm = document.getElementById("eventForm");
+const participationForm = bindParticipationForm(eventForm,"events");
+if (hasOfficerPermission("events.manage")) {
+  mountParticipationOfficer("events");
+  mountParticipationTracklist("events");
+}
 const eventTitleInput = document.getElementById("eventTitle");
 const eventDateInput = document.getElementById("eventDate");
 const eventVenueInput = document.getElementById("eventVenue");
@@ -196,9 +204,9 @@ function syncRegistrationFields() {
   const needsDeadline = mode === "internal" || mode === "external";
   const needsExternalLink = mode === "external";
 
-  if (eventRegistrationDeadlineField) eventRegistrationDeadlineField.hidden = !needsDeadline;
+  if (eventRegistrationDeadlineField) eventRegistrationDeadlineField.hidden = true;
   if (eventRegistrationDeadlineInput) {
-    eventRegistrationDeadlineInput.required = needsDeadline;
+    eventRegistrationDeadlineInput.required = false;
     if (!needsDeadline) eventRegistrationDeadlineInput.value = "";
   }
 
@@ -560,7 +568,7 @@ eventForm?.addEventListener("submit", async (event) => {
   const description = safeText(eventDescriptionInput?.value);
   const audience = safeText(eventAudienceInput?.value, "All Students");
   const reminderEnabled = safeText(eventReminderEnabledInput?.value, "true") === "true";
-  const registrationMode = safeText(eventRegistrationModeInput?.value, "internal").toLowerCase();
+  const registrationMode = "internal";
   const deadlineRaw = safeText(eventRegistrationDeadlineInput?.value);
   const externalRegistrationUrl = safeText(eventExternalRegistrationUrlInput?.value);
   const participationNotes = safeText(eventParticipationNotesInput?.value);
@@ -583,7 +591,7 @@ eventForm?.addEventListener("submit", async (event) => {
       alert("Please set a registration deadline.");
       return;
     }
-    const deadlineDate = new Date(deadlineRaw);
+    const deadlineDate = new Date(deadlineRaw + ":00+08:00");
     if (Number.isNaN(deadlineDate.getTime())) {
       alert("The registration deadline is invalid.");
       return;
@@ -596,7 +604,7 @@ eventForm?.addEventListener("submit", async (event) => {
       return;
     }
 
-    const eventEndBoundary = new Date(`${eventDate}T23:59:59`);
+    const eventEndBoundary = new Date(`${eventDate}T23:59:59+08:00`);
     if (!Number.isNaN(eventEndBoundary.getTime()) && deadlineDate.getTime() > eventEndBoundary.getTime()) {
       alert("Registration deadline cannot be after the event date.");
       return;
@@ -616,7 +624,9 @@ eventForm?.addEventListener("submit", async (event) => {
     if (editingEventId && !existing) throw new Error("This record is no longer available. Refresh the page and try again.");
     const { imageUrl, imagePath } = !selectedEventImageFile && existing ? { imageUrl: safeText(existing.imageUrl || existing.posterUrl), imagePath: safeText(existing.imagePath) } : await uploadEventImage(selectedEventImageFile);
 
+    const participationConfig = participationForm.read();
     const publicationInput = {
+      ...participationConfig,
       title,
       eventDate,
       venue,
@@ -669,9 +679,10 @@ recentEventsList?.addEventListener("click", async (event) => {
     resetEventForm(); editingEventId = saved.id;
     const fields = { title: eventTitleInput, eventDate: eventDateInput, venue: eventVenueInput, startTime: eventStartTimeInput, endTime: eventEndTimeInput, category: eventCategoryInput, description: eventDescriptionInput, audience: eventAudienceInput, registrationMode: eventRegistrationModeInput, externalRegistrationUrl: eventExternalRegistrationUrlInput, participationNotes: eventParticipationNotesInput };
     for (const [key, input] of Object.entries(fields)) if (input) input.value = saved[key] || '';
+    participationForm.fill(saved);
     eventReminderEnabledInput.value = String(saved.reminderEnabled === true);
     const deadline = timestampDate(saved.registrationDeadline);
-    if (deadline) { const local = new Date(deadline.getTime() - deadline.getTimezoneOffset() * 60000); eventRegistrationDeadlineInput.value = local.toISOString().slice(0, 16); }
+    if (deadline && !saved.registrationClosesAtMs) eventRegistrationDeadlineInput.value = new Date(deadline.getTime()+8*3600000).toISOString().slice(0,16);
     syncRegistrationFields();
     const composer = document.getElementById('eventFormCard');
     if (composer) composer.open = true;

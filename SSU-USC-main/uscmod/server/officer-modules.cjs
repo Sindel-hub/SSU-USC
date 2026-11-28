@@ -4,7 +4,7 @@ const { id, text, actorAttribution } = require("./officer-history.cjs");
 const fail = message => { throw new ServiceError("invalid-argument", message); };
 function createOfficerModuleHandlers({ db, history, requireActiveRole, Timestamp, clock = Date.now }) {
   const permissions = { announcements: "bulletin.manage", events: "events.manage", programs: "programs.manage", complaints: "complaints.review" };
-  function validate(module, input, previous = null) {
+  async function validate(module, input, previous = null) {
     const title = text(input.title, "title", 160);
     const out = { title };
     const fields = { venue: 240, category: 80, description: 20000, audience: 120, participationNotes: 2000, hostOrganization: 240, imageUrl: 2000, imagePath: 500, externalRegistrationUrl: 2000 };
@@ -23,7 +23,10 @@ function createOfficerModuleHandlers({ db, history, requireActiveRole, Timestamp
     if (out.startTime && out.endTime && out.endTime <= out.startTime) fail("End time must follow start time.");
     out.registrationMode = input.registrationMode;
     if (!["internal", "external", "none"].includes(out.registrationMode)) fail("Invalid registration mode.");
-    const deadline = input.registrationDeadlineMs;
+    if ((!previous || previous.participationVersion === 1) && input.participationVersion !== 1) {
+      fail("Configure internal registration and attendance schedules before publishing.");
+    }
+    const deadline = input.participationVersion === 1 ? input.registrationClosesAtMs : input.registrationDeadlineMs;
     // Existing closed registration deadlines may be preserved during unrelated edits; never accept a newly entered past deadline.
     const previousDeadline = previous?.registrationDeadline?.toMillis?.() ?? previous?.registrationDeadline;
     const unchangedDeadline = previous?.registrationMode === out.registrationMode && deadline === previousDeadline;
@@ -32,6 +35,19 @@ function createOfficerModuleHandlers({ db, history, requireActiveRole, Timestamp
     out.registrationDeadline = out.registrationMode === "none" ? null : Timestamp.fromMillis(deadline);
     out.reminderEnabled = input.reminderEnabled === true;
     if (module === "programs") { out.sourceType = "program"; out.externalProgram = true; }
+    if (input.participationVersion === 1) {
+      if (!out.startTime || !out.endTime) fail("Event start and end time are required.");
+      const { validateParticipationSchedule } = await import("../shared/event-participation-model.mjs");
+      let config;
+      try { config = validateParticipationSchedule(input); } catch (error) { fail(error.message); }
+      const scheduleChanged = previous?.participationStarted && (
+        ["eventDate", "startTime", "endTime"].some(key => out[key] !== previous[key]) ||
+        Object.entries(config).some(([key, value]) => JSON.stringify(previous[key]) !== JSON.stringify(value))
+      );
+      if (scheduleChanged) fail("Registration has started. Participation schedules and target groups are locked to preserve attendance history.");
+      Object.assign(out, config);
+      out.registrationDeadline = Timestamp.fromMillis(config.registrationClosesAtMs);
+    }
     return out;
   }
   return {
@@ -103,10 +119,10 @@ function createOfficerModuleHandlers({ db, history, requireActiveRole, Timestamp
           if (action === "publish" && existing.exists) throw new ServiceError("already-exists", "This record already exists.");
           if (action === "update" && (!existing.exists || existing.data().officerArchived)) throw new ServiceError("permission-denied", "Only live records can be updated.");
           const previousData = existing.data();
-          const payload = validate(module, input, action === "update" ? previousData : null);
+          const payload = await validate(module, input, action === "update" ? previousData : null);
           if (action === "update" && Object.entries(payload).every(([key, value]) => {
             const previous = previousData[key];
-            return value?.isEqual ? Boolean(previous?.isEqual && value.isEqual(previous)) : value === previous;
+            return value?.isEqual ? Boolean(previous?.isEqual && value.isEqual(previous)) : value && typeof value === "object" ? JSON.stringify(value) === JSON.stringify(previous) : value === previous;
           })) {
             result = { id: documentId, unchanged: true };
             tx.create(receipt, { result, operation: { ...operation, documentId } });
@@ -116,7 +132,7 @@ function createOfficerModuleHandlers({ db, history, requireActiveRole, Timestamp
           const attribution = actorAttribution(a, clock());
           if (action === "update") tx.update(ref, { ...payload, updatedAt: timestamp, activityAttribution: { ...previousData.activityAttribution, updated: attribution } });
           else tx.create(ref, { ...payload, ...(a.assignmentId ? { officerAssignmentId: a.assignmentId } : {}), activityAttribution: { created: attribution }, createdByUid: a.officerUid, createdByEmail: "", status: "Published", registeredParticipants: 0, confirmedAttendance: 0, publishedAt: timestamp, publishedAtMs: clock(), updatedAt: timestamp });
-          history.append(tx, a, { module: module === "events" ? "Events" : "Programs", action: action === "update" ? "Updated" : "Published", status: "published", recordId: documentId, recordTitle: payload.title, snapshot: { ...payload, registrationDeadline: input.registrationDeadlineMs ?? null } });
+          history.append(tx, a, { module: module === "events" ? "Events" : "Programs", action: action === "update" ? "Updated" : "Published", status: "published", recordId: documentId, recordTitle: payload.title, snapshot: { ...payload, registrationDeadline: input.registrationClosesAtMs ?? input.registrationDeadlineMs ?? null } });
           result = { id: documentId };
         } else if (module === "announcements" && ["archive", "delete", "restore", "permanent-delete"].includes(action)) {
           if (!["announcements", "archived_announcements", "deleted_announcements"].includes(sourceCollection)) fail("Invalid bulletin collection.");

@@ -117,7 +117,7 @@ test('announcement archive/delete/restore retain the original immutable snapshot
 test('events and programs publish with server attribution and preserve registrations when archived', async () => {
   const f = historyFixture(); await f.assign('first', 'Public Information Officer');
   for (const module of ['events', 'programs']) {
-    const input = { title: 'Synthetic ' + module, description: 'Public activity', venue: 'SSU', eventDate: '2026-12-01', registrationMode: 'none' };
+    const input = { title: 'Synthetic ' + module, description: 'Public activity', venue: 'SSU', eventDate: '2026-12-01', startTime:'08:00',endTime:'18:00',participationVersion:1,registrationMode:'internal',registrationOpensAtMs:f.now-1000,registrationClosesAtMs:Date.parse('2026-12-01T07:00:00+08:00'),timeInOpensAtMs:Date.parse('2026-12-01T08:00:00+08:00'),timeInClosesAtMs:Date.parse('2026-12-01T10:00:00+08:00'),timeOutOpensAtMs:Date.parse('2026-12-01T16:00:00+08:00'),timeOutClosesAtMs:Date.parse('2026-12-01T18:00:00+08:00'),targetParticipants:{} };
     await f.h.officerModuleAction(f.req('first', { module, action: 'publish', operationId: module, input }));
     await f.h.officerModuleAction(f.req('first', { module, action: 'update', operationId: 'update-' + module, recordId: module, input: { ...input, title: 'Updated ' + module } }));
     assert.equal(f.records.get(`${module}/${module}`).createdByUid, 'first');
@@ -191,7 +191,7 @@ test('the actual User Directory adapter preserves term permissions during status
 test('activity feed retains authors across turnover, deletion and reuse of a Student ID', async () => {
   const f = historyFixture();
   await f.assign('first', 'Public Information Officer');
-  const input = { title: 'Campus workshop', description: 'Public activity', venue: 'SSU', eventDate: '2026-12-01', registrationMode: 'none' };
+  const input = { title: 'Campus workshop', description: 'Public activity', venue: 'SSU', eventDate: '2026-12-01', startTime:'08:00',endTime:'18:00',participationVersion:1,registrationMode:'internal',registrationOpensAtMs:f.now-1000,registrationClosesAtMs:Date.parse('2026-12-01T07:00:00+08:00'),timeInOpensAtMs:Date.parse('2026-12-01T08:00:00+08:00'),timeInClosesAtMs:Date.parse('2026-12-01T10:00:00+08:00'),timeOutOpensAtMs:Date.parse('2026-12-01T16:00:00+08:00'),timeOutClosesAtMs:Date.parse('2026-12-01T18:00:00+08:00'),targetParticipants:{} };
   const create = { module: 'events', action: 'publish', operationId: 'workshop', input };
   await Promise.all([f.h.officerModuleAction(f.req('first', create)), f.h.officerModuleAction(f.req('first', create))]);
   await f.h.officerAssignmentManage(f.req('admin', { action: 'complete', assignmentId: 'assignment-first', reason: 'Turnover' }));
