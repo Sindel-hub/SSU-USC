@@ -1,3 +1,4 @@
+import { showParticipationExport } from "./participation-export.js";
 import {
   styleParticipationDialog,
   participationBadge,
@@ -20,14 +21,26 @@ export function mountParticipationOfficer(source) {
   const dialog = document.createElement("dialog");
   dialog.className = "participation-dialog";
   dialog.innerHTML =
-    '<button type="button" class="participation-close" aria-label="Close attendance">×</button><h2>Event Participation Monitoring</h2><h3 data-event-title></h3><div class="participation-message" role="status" aria-live="polite"></div><div class="participation-stats"></div><div class="participation-tabs"><button type="button" data-roster-tab aria-pressed="true">Participants</button><button type="button" data-scanner-tab aria-pressed="false">Scan attendance</button></div><section data-roster><div class="participation-controls"><label>Search student<input type="search" data-search placeholder="Student ID or name"></label><label>Status<select data-status><option value="">All</option>' +
+    '<button type="button" class="participation-close" aria-label="Close attendance">×</button><h2>Event Participation Monitoring</h2><h3 data-event-title></h3><div class="participation-message" role="status" aria-live="polite"></div><div class="participation-stats"></div><div class="participation-tabs"><button type="button" data-roster-tab aria-pressed="true">Participants</button><button type="button" data-scanner-tab aria-pressed="false">Scan attendance</button></div><button type="button" data-excel-analytics>Excel analytics</button><section data-roster><div class="participation-controls"><label>Search student<input type="search" data-search placeholder="Student ID or name"></label><label>Status<select data-status><option value="">All</option>' +
     PARTICIPATION_STATUSES.map((status) => `<option>${status}</option>`).join(
       "",
     ) +
     '</select></label><button type="button" data-refresh>Refresh</button></div><div class="participation-scroll"><table class="participation-table"><thead><tr><th>Student</th><th>Time-in / out</th><th>Duration</th><th>Status</th><th>Record</th></tr></thead><tbody></tbody></table></div><button type="button" data-more hidden>Load more</button></section><section class="participation-card" data-scanner hidden><h3>Attendance scanner</h3><div class="participation-controls"><label>Mode<select data-mode><option value="">Choose scanning mode</option><option value="in">Time-in</option><option value="out">Time-out</option></select></label><label>Camera<select data-camera></select></label><button type="button" data-start>Start camera</button><button type="button" data-stop>Stop camera</button></div><video class="participation-camera" autoplay muted playsinline hidden></video><canvas hidden></canvas><div data-identity></div><button type="button" data-confirm hidden>Confirm Identity and Record Attendance</button><button type="button" data-next>Scan next student</button><h4>Recent attendance activity</h4><ul data-recent></ul></section>';
   styleParticipationDialog(dialog);
   document.body.append(dialog);
-  const get = (selector) => dialog.querySelector(selector),
+  const cameraDialog = document.createElement("dialog");
+  cameraDialog.className = "participation-dialog participation-camera-dialog";
+  cameraDialog.innerHTML =
+    '<button type="button" class="participation-close" aria-label="Close camera scanner">×</button><h2>Scan attendance</h2>';
+  styleParticipationDialog(cameraDialog);
+  document.body.append(cameraDialog);
+  const scannerSection = dialog.querySelector("[data-scanner]"),
+    scannerAnchor = document.createComment("scanner card"),
+    messageAnchor = document.createComment("scanner status");
+  scannerSection.before(scannerAnchor);
+  dialog.querySelector(".participation-message").before(messageAnchor);
+  const get = (selector) =>
+      dialog.querySelector(selector) || cameraDialog.querySelector(selector),
     message = get('[role="status"]');
   let eventId = "",
     rows = [],
@@ -41,6 +54,33 @@ export function mountParticipationOfficer(source) {
     cameraGeneration = 0;
   const request = (action, data = {}) =>
     call(action, { source, eventId, ...data });
+  function openCameraCard() {
+    if (cameraDialog.open) return;
+    cameraDialog.append(message, scannerSection);
+    cameraDialog.showModal();
+    cameraDialog.scrollTop = 0;
+  }
+  function closeCameraCard() {
+    requestVersion++;
+    stop();
+    clearIdentity();
+    cameraDialog.close();
+  }
+  cameraDialog.querySelector(".participation-close").onclick = closeCameraCard;
+  cameraDialog.addEventListener("cancel", (event) => {
+    event.preventDefault();
+    closeCameraCard();
+  });
+  cameraDialog.addEventListener("close", () => {
+    requestVersion++;
+    stop();
+    clearIdentity();
+    scannerAnchor.after(scannerSection);
+    messageAnchor.after(message);
+    message.textContent = "Camera closed.";
+  });
+  get("[data-excel-analytics]").onclick = () =>
+    showParticipationExport(source, eventId);
   function stop() {
     cameraGeneration++;
     cancelAnimationFrame(frame);
@@ -71,6 +111,7 @@ export function mountParticipationOfficer(source) {
   dialog.querySelector(".participation-close").onclick = () => dialog.close();
   dialog.addEventListener("close", () => {
     requestVersion++;
+    if (cameraDialog.open) cameraDialog.close();
     stop();
     clearIdentity();
   });
@@ -275,6 +316,7 @@ export function mountParticipationOfficer(source) {
         );
       if (!navigator.mediaDevices?.getUserMedia)
         throw Error("Camera scanning requires a supported browser and HTTPS.");
+      openCameraCard();
       const deviceId = get("[data-camera]").value;
       const requestedStream = await navigator.mediaDevices.getUserMedia({
         video: deviceId
@@ -290,7 +332,11 @@ export function mountParticipationOfficer(source) {
             },
         audio: false,
       });
-      if (!dialog.open || generation !== cameraGeneration) {
+      if (
+        !dialog.open ||
+        !cameraDialog.open ||
+        generation !== cameraGeneration
+      ) {
         requestedStream.getTracks().forEach((track) => track.stop());
         return;
       }

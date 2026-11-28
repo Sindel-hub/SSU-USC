@@ -258,7 +258,7 @@ const server = http.createServer(async (req, res) => {
     .filter({ hasText: "Event Participation Monitoring" });
   await dialog.getByText("Synthetic first", { exact: true }).waitFor();
   await dialog.locator("[data-scanner-tab]").click();
-  await dialog.locator("[data-mode]").selectOption("in");
+  await officer.locator("[data-mode]").selectOption("in");
   const qr = await f.h.participationQR(f.req("first"));
   await officer.addScriptTag({ url: base + "/vendor/qr/qrcode.js" });
   await officer.evaluate((payload) => {
@@ -316,16 +316,31 @@ const server = http.createServer(async (req, res) => {
     null,
     "Old 640px scan misses this small QR in a 1080p frame",
   );
-  await dialog.locator("[data-start]").click();
-  await dialog.locator("[data-confirm]").waitFor();
-  await dialog.screenshot({
-    path: "/workspace/review-artifacts/participation-ui/scanner-identity.png",
-  });
+  await officer.locator("[data-start]").click();
+  await officer.locator(".participation-camera-dialog[open]").waitFor();
+  await officer.locator("[data-confirm]").waitFor();
+  await officer.setViewportSize({ width: 390, height: 844 });
+  await officer
+    .locator(".participation-camera-dialog")
+    .screenshot({
+      path: "/workspace/review-artifacts/participation-ui/camera-popup-mobile.png",
+    });
+  assert.ok(
+    await officer
+      .locator(".participation-camera-dialog")
+      .evaluate((el) => el.getBoundingClientRect().width <= window.innerWidth),
+  );
+  await officer.setViewportSize({ width: 1440, height: 1000 });
+  await officer
+    .locator(".participation-camera-dialog")
+    .screenshot({
+      path: "/workspace/review-artifacts/participation-ui/scanner-identity.png",
+    });
   assert.equal(
     f.records.get("events/assembly/registrations/first").timeInAtMs,
     undefined,
   );
-  await dialog.locator("[data-confirm]").click();
+  await officer.locator("[data-confirm]").click();
   await officer.waitForFunction(() =>
     document
       .querySelector(".participation-message")
@@ -335,22 +350,41 @@ const server = http.createServer(async (req, res) => {
     f.records.get("events/assembly/registrations/first").timeInOfficerUid,
     "operator",
   );
-  await dialog.locator("[data-stop]").click();
+  await officer
+    .locator(".participation-camera-dialog video")
+    .evaluate(
+      (video) =>
+        (globalThis.TEST_CAMERA_TRACK = video.srcObject.getVideoTracks()[0]),
+    );
+  await officer.keyboard.press("Escape");
+  await officer.waitForFunction(
+    () => !document.querySelector(".participation-camera-dialog").open,
+  );
+  assert.equal(
+    await officer.evaluate(() => globalThis.TEST_CAMERA_TRACK.readyState),
+    "ended",
+  );
   f.advance(60000);
-  await dialog.locator("[data-mode]").selectOption("out");
-  await dialog.locator("[data-start]").click();
-  await dialog.locator("[data-confirm]").waitFor();
+  await officer.locator("[data-mode]").selectOption("out");
+  await officer.locator("[data-start]").click();
+  await officer.locator("[data-confirm]").waitFor();
   assert.equal(
     f.records.get("events/assembly/registrations/first").timeOutAtMs,
     undefined,
   );
-  await dialog.locator("[data-confirm]").click();
+  await officer.locator("[data-confirm]").click();
   await officer.waitForFunction(() =>
     document
       .querySelector(".participation-message")
       .textContent.includes("Time-out"),
   );
-  await dialog.locator("[data-stop]").click();
+  await officer.locator("[data-stop]").click();
+  if (
+    await officer
+      .locator(".participation-camera-dialog")
+      .evaluate((el) => el.open)
+  )
+    await officer.getByLabel("Close camera scanner").click();
   await dialog.locator("[data-roster-tab]").click();
   await dialog.locator("[data-refresh]").click();
   await dialog.getByText("Completed", { exact: true }).last().waitFor();
@@ -373,7 +407,7 @@ const server = http.createServer(async (req, res) => {
     .getByLabel("Close participation record")
     .click();
   await dialog.locator("[data-scanner-tab]").click();
-  await dialog.locator("[data-start]").evaluate((button) => {
+  await officer.locator("[data-start]").evaluate((button) => {
     Object.defineProperty(navigator.mediaDevices, "getUserMedia", {
       configurable: true,
       value: async () => {
@@ -381,8 +415,14 @@ const server = http.createServer(async (req, res) => {
       },
     });
   });
-  await dialog.locator("[data-start]").click();
-  await dialog.getByText(/Camera permission was denied/).waitFor();
+  await officer.locator("[data-start]").click();
+  await officer.getByText(/Camera permission was denied/).waitFor();
+  if (
+    await officer
+      .locator(".participation-camera-dialog")
+      .evaluate((el) => el.open)
+  )
+    await officer.getByLabel("Close camera scanner").click();
   await dialog.locator("[data-roster-tab]").click();
   const output = "/workspace/review-artifacts/event-participation";
   fs.mkdirSync(output, { recursive: true });
@@ -396,6 +436,32 @@ const server = http.createServer(async (req, res) => {
   );
   await officer.setViewportSize({ width: 390, height: 844 });
   await dialog.screenshot({ path: path.join(output, "mobile-monitor.png") });
+  await dialog.locator("[data-excel-analytics]").click();
+  const analytics = officer.locator(".participation-export-dialog");
+  await analytics.locator("[data-export-download]:enabled").waitFor();
+  await analytics
+    .locator('[data-export-filter="program"]')
+    .selectOption("Bachelor of Science in Information Technology");
+  await analytics
+    .locator('[data-export-filter="yearLevel"]')
+    .selectOption("4th Year");
+  await analytics.locator('[data-export-filter="section"]').selectOption("4A");
+  await analytics.screenshot({
+    path: "/workspace/review-artifacts/participation-ui/excel-analytics.png",
+  });
+  const exportDownload = officer.waitForEvent("download");
+  await analytics.locator("[data-export-download]").click();
+  const workbookDownload = await exportDownload;
+  assert.ok(workbookDownload.suggestedFilename().endsWith(".xlsx"));
+  const ExcelJS = require("../../vendor/exceljs/exceljs-4.4.0.min.js");
+  const book = new ExcelJS.Workbook();
+  await book.xlsx.load(fs.readFileSync(await workbookDownload.path()));
+  assert.equal(book.getWorksheet("Attendance").getCell("A2").value, "990001");
+  assert.equal(
+    book.getWorksheet("Attendance").getCell("K2").value,
+    "Completed",
+  );
+  await analytics.getByLabel("Close Excel analytics").click();
   await dialog.getByLabel("Close attendance").click();
   await officer
     .getByRole("button", {
