@@ -266,7 +266,23 @@ const server = http.createServer(async (req, res) => {
       for (let x = 0; x < size; x++)
         if (code.isDark(y, x))
           c.fillRect((x + margin) * scale, (y + margin) * scale, scale, scale);
-    setInterval(() => c.fillRect(0, 0, 1, 1), 100);
+    const fullFrame = document.createElement("canvas");
+    fullFrame.width = 1920;
+    fullFrame.height = 1080;
+    const frameContext = fullFrame.getContext("2d");
+    frameContext.fillStyle = "#aaa";
+    frameContext.fillRect(0, 0, 1920, 1080);
+    frameContext.drawImage(canvas, 900, 480, 120, 120);
+    globalThis.TEST_QR_CANVAS = fullFrame;
+    const legacy = document.createElement("canvas");
+    legacy.width = 640;
+    legacy.height = 360;
+    const legacyContext = legacy.getContext("2d");
+    legacyContext.drawImage(fullFrame, 0, 0, 640, 360);
+    const legacyPixels = legacyContext.getImageData(0, 0, 640, 360);
+    globalThis.TEST_LEGACY_DECODE =
+      globalThis.jsQR(legacyPixels.data, 640, 360)?.data || null;
+    setInterval(() => frameContext.fillRect(0, 0, 1, 1), 100);
     Object.defineProperty(navigator.mediaDevices, "getUserMedia", {
       configurable: true,
       value: async () => globalThis.TEST_QR_CANVAS.captureStream(5),
@@ -282,6 +298,11 @@ const server = http.createServer(async (req, res) => {
       ],
     });
   }, qr.payload);
+  assert.equal(
+    await officer.evaluate(() => globalThis.TEST_LEGACY_DECODE),
+    null,
+    "Old 640px scan misses this small QR in a 1080p frame",
+  );
   await dialog.locator("[data-start]").click();
   await dialog.locator("[data-confirm]").waitFor();
   assert.equal(
