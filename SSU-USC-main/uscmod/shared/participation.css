@@ -736,3 +736,35 @@ fieldset.participation-card label {
     grid-row: 5;
   }
 }
+.participation-camera-dialog {
+  width: min(960px, calc(100vw - 24px));
+}
+.participation-camera-dialog > [data-scanner] {
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+.participation-camera-dialog .participation-camera {
+  max-height: 32dvh;
+}
+.participation-export-dialog {
+  width: min(760px, calc(100vw - 24px));
+}
+.participation-export-dialog > p {
+  font-size: 13px;
+  color: #61788e;
+}
+.participation-dialog [data-excel-analytics] {
+  margin: 0 0 12px;
+}
+@media (max-width: 700px) {
+  .participation-camera-dialog .participation-controls {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    align-items: end;
+  }
+  .participation-camera-dialog .participation-controls > * {
+    min-width: 0;
+    width: 100%;
+  }
+}
