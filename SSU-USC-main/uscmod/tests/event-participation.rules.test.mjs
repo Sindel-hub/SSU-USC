@@ -53,7 +53,7 @@ function registrationData(uid = "u1", studentId = "123456", eventId = "e1") {
   };
 }
 
-test("student can self-register only for an internal event before its deadline", async () => {
+test("student cannot bypass the trusted registration API with a direct write", async () => {
   await seedStudent();
   await seed("events/e1", {
     status: "Published",
@@ -62,7 +62,7 @@ test("student can self-register only for an internal event before its deadline",
   });
 
   const db = env.authenticatedContext("u1", { role: "student" }).firestore();
-  await assertSucceeds(setDoc(doc(db, "events/e1/registrations/u1"), registrationData()));
+  await assertFails(setDoc(doc(db, "events/e1/registrations/u1"), registrationData()));
 });
 
 test("student cannot create somebody else's registration or use a mismatched Student ID", async () => {
@@ -103,7 +103,7 @@ test("external registration cannot be forged as a website registration", async (
   await assertFails(setDoc(doc(db, "events/e1/registrations/u1"), registrationData()));
 });
 
-test("student can cancel their own website registration before the deadline", async () => {
+test("student cannot delete the trusted registration or its attendance history", async () => {
   await seedStudent();
   await seed("events/e1", {
     status: "Published",
@@ -116,5 +116,11 @@ test("student can cancel their own website registration before the deadline", as
   });
 
   const db = env.authenticatedContext("u1", { role: "student" }).firestore();
-  await assertSucceeds(deleteDoc(doc(db, "events/e1/registrations/u1")));
+  await assertFails(deleteDoc(doc(db, "events/e1/registrations/u1")));
+});
+
+test('public events remain visible without exposing registration or QR identity data',async()=>{
+ await seed('events/public',{title:'Published public event',status:'Published'});
+ const {getDoc}=await import('firebase/firestore');const publicDB=env.unauthenticatedContext().firestore();await assertSucceeds(getDoc(doc(publicDB,'events/public')));await assertFails(getDoc(doc(publicDB,'events/public/registrations/u1')));
+ for(const role of ['student','officer','admin']){const db=env.authenticatedContext('u1',{role,email_verified:true}).firestore();for(const path of ['student_qr/u1','student_qr_tokens/token','attendance_confirmations/ticket','events/public/attendance_audit/log']){await assertFails(getDoc(doc(db,path)));await assertFails(setDoc(doc(db,path),{uid:'u1'}));}}
 });
