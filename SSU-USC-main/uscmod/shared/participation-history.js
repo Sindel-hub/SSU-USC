@@ -1,3 +1,7 @@
+import {
+  styleParticipationDialog,
+  participationBadge,
+} from "./participation-ui.js";
 import { hostedManagementCall as call } from "./hosted-management-client.js";
 import { manilaTime, durationLabel } from "./event-participation-model.mjs";
 const text = (value) =>
@@ -24,6 +28,7 @@ export async function showParticipationHistory(studentUid, source) {
       .map((status) => `<option>${status}</option>`)
       .join("") +
     '</select></label></div><div class="participation-scroll"><table class="participation-table"><thead><tr><th>Event / Program</th><th>Registration</th><th>Time-in / out</th><th>Duration</th><th>Status</th><th>Academic record</th></tr></thead><tbody></tbody></table></div><button type="button" data-more>Load more history</button>';
+  styleParticipationDialog(dialog);
   document.body.append(dialog);
   dialog.showModal();
   let rows = [],
@@ -48,7 +53,7 @@ export async function showParticipationHistory(studentUid, source) {
       ? selected
           .map(
             (row) =>
-              `<tr><td>${text(row.eventSnapshot?.title || row.eventId)}<br>${text(row.eventSnapshot?.eventDate)}</td><td>${text(manilaTime(row.registeredAtMs || row.registeredAt))}</td><td>${text(manilaTime(row.timeInAtMs))}<br>${text(manilaTime(row.timeOutAtMs))}</td><td>${text(durationLabel(row.durationMs))}</td><td>${text(row.status)}</td><td>${text(Object.values(row.academicSnapshot || {}).join(" · "))}</td></tr>`,
+              `<tr><td>${text(row.eventSnapshot?.title || row.eventId)}<br>${text(row.eventSnapshot?.eventDate)}</td><td>${text(manilaTime(row.registeredAtMs || row.registeredAt))}</td><td>${text(manilaTime(row.timeInAtMs))}<br>${text(manilaTime(row.timeOutAtMs))}</td><td>${text(durationLabel(row.durationMs))}</td><td>${participationBadge(row.status)}</td><td>${text(Object.values(row.academicSnapshot || {}).join(" · "))}</td></tr>`,
           )
           .join("")
       : '<tr><td colspan="6">No participation records found in the loaded history.</td></tr>';

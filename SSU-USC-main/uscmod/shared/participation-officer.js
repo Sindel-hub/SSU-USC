@@ -1,3 +1,7 @@
+import {
+  styleParticipationDialog,
+  participationBadge,
+} from "./participation-ui.js";
 import { hostedManagementCall as call } from "./hosted-management-client.js";
 import {
   manilaTime,
@@ -21,6 +25,7 @@ export function mountParticipationOfficer(source) {
       "",
     ) +
     '</select></label><button type="button" data-refresh>Refresh</button></div><div class="participation-scroll"><table class="participation-table"><thead><tr><th>Student</th><th>Time-in / out</th><th>Duration</th><th>Status</th><th>Record</th></tr></thead><tbody></tbody></table></div><button type="button" data-more hidden>Load more</button></section><section class="participation-card" data-scanner hidden><h3>Attendance scanner</h3><div class="participation-controls"><label>Mode<select data-mode><option value="">Choose scanning mode</option><option value="in">Time-in</option><option value="out">Time-out</option></select></label><label>Camera<select data-camera></select></label><button type="button" data-start>Start camera</button><button type="button" data-stop>Stop camera</button></div><video class="participation-camera" autoplay muted playsinline hidden></video><canvas hidden></canvas><div data-identity></div><button type="button" data-confirm hidden>Confirm Identity and Record Attendance</button><button type="button" data-next>Scan next student</button><h4>Recent attendance activity</h4><ul data-recent></ul></section>';
+  styleParticipationDialog(dialog);
   document.body.append(dialog);
   const get = (selector) => dialog.querySelector(selector),
     message = get('[role="status"]');
@@ -91,7 +96,7 @@ export function mountParticipationOfficer(source) {
       ? shown
           .map(
             (row) =>
-              `<tr><td><strong>${escape(row.fullName)}</strong><br>${escape(row.studentId)}<br>${escape([row.college, row.program, row.yearLevel, row.section].filter(Boolean).join(" · "))}</td><td>${escape(manilaTime(row.timeInAtMs))}<br>${escape(manilaTime(row.timeOutAtMs))}</td><td>${escape(durationLabel(row.durationMs))}</td><td>${escape(row.status)}</td><td><button type="button" data-student="${escape(row.uid)}">View Record</button></td></tr>`,
+              `<tr><td><strong>${escape(row.fullName)}</strong><br>${escape(row.studentId)}<br>${escape([row.college, row.program, row.yearLevel, row.section].filter(Boolean).join(" · "))}</td><td>${escape(manilaTime(row.timeInAtMs))}<br>${escape(manilaTime(row.timeOutAtMs))}</td><td>${escape(durationLabel(row.durationMs))}</td><td>${participationBadge(row.status)}</td><td><button type="button" data-student="${escape(row.uid)}">View Record</button></td></tr>`,
           )
           .join("")
       : '<tr><td colspan="5">No participants found on this page. Load more records if available.</td></tr>';

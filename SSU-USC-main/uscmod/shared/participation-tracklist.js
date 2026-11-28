@@ -1,3 +1,7 @@
+import {
+  styleParticipationDialog,
+  participationBadge,
+} from "./participation-ui.js";
 import { hostedManagementCall as call } from "./hosted-management-client.js";
 import { showParticipationHistory } from "./participation-history.js";
 import {
@@ -42,6 +46,7 @@ export function mountParticipationTracklist(source) {
         .map((s) => `<option>${s}</option>`)
         .join("") +
       '</select></label><label data-event-filter hidden>From<input type="date" data-from></label><label data-event-filter hidden>Until<input type="date" data-until></label><button type="button" data-clear>Clear filters</button></div><p role="status">Loading…</p><div class="participation-scroll"><table class="participation-table"><thead></thead><tbody></tbody></table></div><button type="button" data-more hidden>Load more records</button>';
+    styleParticipationDialog(dialog);
     document.body.append(dialog);
     dialog.showModal();
     let rows = [],
@@ -125,7 +130,7 @@ export function mountParticipationTracklist(source) {
         ? shown
             .map(
               (row) =>
-                `<tr><td>${escape(row.fullName)}<br>${escape(row.studentId)}${row.removed ? "<br>Archived account" : ""}</td><td>${escape([row.college, row.program, row.yearLevel, row.section].filter(Boolean).join(" · "))}</td>${records ? `<td>${escape(row.eventSnapshot?.title || row.eventId)}<br>${escape(row.eventSnapshot?.eventDate)}</td><td>${escape(manilaTime(row.registeredAtMs))}</td><td>${escape(manilaTime(row.timeInAtMs))}<br>${escape(manilaTime(row.timeOutAtMs))}</td><td>${escape(durationLabel(row.durationMs))}</td><td>${escape(row.status)}</td>` : ""}<td><button type="button" data-history="${escape(row.uid)}">View Record</button></td></tr>`,
+                `<tr><td>${escape(row.fullName)}<br>${escape(row.studentId)}${row.removed ? "<br>Archived account" : ""}</td><td>${escape([row.college, row.program, row.yearLevel, row.section].filter(Boolean).join(" · "))}</td>${records ? `<td>${escape(row.eventSnapshot?.title || row.eventId)}<br>${escape(row.eventSnapshot?.eventDate)}</td><td>${escape(manilaTime(row.registeredAtMs))}</td><td>${escape(manilaTime(row.timeInAtMs))}<br>${escape(manilaTime(row.timeOutAtMs))}</td><td>${escape(durationLabel(row.durationMs))}</td><td>${participationBadge(row.status)}</td>` : ""}<td><button type="button" data-history="${escape(row.uid)}">View Record</button></td></tr>`,
             )
             .join("")
         : `<tr><td colspan="${records ? 8 : 3}">No matching records in the loaded results.</td></tr>`;

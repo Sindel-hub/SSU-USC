@@ -206,6 +206,19 @@ const server = http.createServer(async (req, res) => {
       );
       throw error;
     });
+  fs.mkdirSync("/workspace/review-artifacts/participation-ui", {
+    recursive: true,
+  });
+  await student.screenshot({
+    path: "/workspace/review-artifacts/participation-ui/my-qr-desktop.png",
+    fullPage: true,
+  });
+  await student.setViewportSize({ width: 390, height: 844 });
+  await student.screenshot({
+    path: "/workspace/review-artifacts/participation-ui/my-qr-mobile.png",
+    fullPage: true,
+  });
+  await student.setViewportSize({ width: 1440, height: 1000 });
   const firstQR = await student.locator("#myStudentQR").innerHTML();
   await student.reload();
   await student.locator("#myStudentQR svg").waitFor();
@@ -305,6 +318,9 @@ const server = http.createServer(async (req, res) => {
   );
   await dialog.locator("[data-start]").click();
   await dialog.locator("[data-confirm]").waitFor();
+  await dialog.screenshot({
+    path: "/workspace/review-artifacts/participation-ui/scanner-identity.png",
+  });
   assert.equal(
     f.records.get("events/assembly/registrations/first").timeInAtMs,
     undefined,
@@ -345,6 +361,12 @@ const server = http.createServer(async (req, res) => {
     .getByRole("cell")
     .filter({ hasText: "Synthetic General Assembly" })
     .waitFor();
+  await officer
+    .locator(".participation-dialog")
+    .filter({ hasText: "Student Participation History" })
+    .screenshot({
+      path: "/workspace/review-artifacts/participation-ui/history.png",
+    });
   await officer
     .locator(".participation-dialog")
     .filter({ hasText: "Student Participation History" })
